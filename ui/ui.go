@@ -4,6 +4,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/image"
 )
 
@@ -21,9 +22,10 @@ type Ui struct {
 	nextButton       *gtk.Button
 	prevButton       *gtk.Button
 	currentImageView *gtk.Viewport
+	broker           *event.Broker
 }
 
-func Init(imageManager *image.Manager) *Ui {
+func Init(imageManager *image.Manager, broker *event.Broker) *Ui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -37,6 +39,7 @@ func Init(imageManager *image.Manager) *Ui {
 	ui := Ui{
 		application: application,
 		imageManager: imageManager,
+		broker: broker,
 	}
 
 	ui.Init()
@@ -91,12 +94,10 @@ func (s *Ui) Init() {
 		})
 
 		s.nextButton.Connect("clicked", func() {
-			s.imageManager.NextImage()
-			s.UpdateImages()
+			s.broker.Send(event.New(event.NEXT_IMAGE))
 		})
 		s.prevButton.Connect("clicked", func() {
-			s.imageManager.PrevImage()
-			s.UpdateImages()
+			s.broker.Send(event.New(event.PREV_IMAGE))
 		})
 
 		s.UpdateImages()
