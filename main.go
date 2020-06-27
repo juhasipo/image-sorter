@@ -8,6 +8,25 @@ import (
 	"vincit.fi/image-sorter/image"
 )
 
+func CreateImageList(view *gtk.TreeView, title string) *gtk.ListStore {
+	view.SetSizeRequest(100, -1)
+	store, _ := gtk.ListStoreNew(image.PixbufGetType())
+	view.SetModel(store)
+	renderer, _ := gtk.CellRendererPixbufNew()
+	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "pixbuf", 0)
+	view.AppendColumn(column)
+	return store
+}
+
+func AddImagesToStore(model *gtk.ListStore, manager *image.Manager, images []image.Handle) {
+	model.Clear()
+	for i := range images {
+		iter := model.Append()
+		img := images[i]
+		model.SetValue(iter, 0, manager.GetThumbnail(&img))
+	}
+}
+
 func main() {
 	flag.Parse()
 	// Create Gtk Application, change appID to your application domain name reversed.
@@ -34,7 +53,7 @@ func main() {
 		win := getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
 
 		root := flag.Arg(0)
-		var manager = image.ManagerForDir(root)
+		manager := image.ManagerForDir(root)
 		currentImageView := getObjectOrPanic(builder, "current-image-view").(*gtk.Viewport)
 
 		currentImage := getObjectOrPanic(builder, "current-image").(*gtk.Image)
@@ -51,23 +70,37 @@ func main() {
 			log.Panic(err)
 		}
 
+		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
+		nextImageStore := CreateImageList(nextImagesList, "Next images")
+		prevImagesList := getObjectOrPanic(builder, "prev-images").(*gtk.TreeView)
+		prevImageStore := CreateImageList(prevImagesList, "Prev images")
+
+		updateImages := func(currentImageHandle *image.Handle) {
+			scaled := manager.GetScaled(
+				currentImageHandle,
+				currentImageView.GetAllocatedWidth(),
+				currentImageView.GetAllocatedHeight())
+			currentImage.SetFromPixbuf(scaled)
+			AddImagesToStore(nextImageStore, &manager, manager.GetNextImages(5))
+			AddImagesToStore(prevImageStore, &manager, manager.GetPrevImages(5))
+		}
+
 		nextButton := getObjectOrPanic(builder, "next-button").(*gtk.Button)
 		nextButton.Connect("clicked", func() {
-			scaled := manager.GetScaled(manager.NextImage(), currentImageView.GetAllocatedWidth(), currentImageView.GetAllocatedHeight())
-			currentImage.SetFromPixbuf(scaled)
+			updateImages(manager.NextImage())
 		})
 		prevButton := getObjectOrPanic(builder, "prev-button").(*gtk.Button)
 		prevButton.Connect("clicked", func() {
-			scaled := manager.GetScaled(manager.PrevImage(), currentImageView.GetAllocatedWidth(), currentImageView.GetAllocatedHeight())
-			currentImage.SetFromPixbuf(scaled)
+			updateImages(manager.PrevImage())
 		})
 
+		updateImages(manager.GetCurrentImage())
 		// Show the Window and all of its components.
 		win.Show()
 		application.AddWindow(win)
 	})
 	// Run Gtk application
-	application.Run()
+	application.Run([]string{})
 }
 
 func getObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
