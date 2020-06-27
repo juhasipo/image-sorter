@@ -6,11 +6,37 @@ import "C"
 import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
+	"github.com/gotk3/gotk3/gtk"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+type Size struct {
+	width int
+	height int
+}
+
+func SizeFromViewport(widget *gtk.Viewport) Size {
+	return Size {
+		width: widget.GetAllocatedWidth(),
+		height: widget.GetAllocatedHeight(),
+	}
+}
+func SizeFromWidget(widget *gtk.Widget) Size {
+	return Size {
+		width: widget.GetAllocatedWidth(),
+		height: widget.GetAllocatedHeight(),
+	}
+}
+
+func SizeFromInt(width int, height int) Size {
+	return Size {
+		width: width,
+		height: height,
+	}
+}
 
 // PixbufGetType is a wrapper around gdk_pixbuf_get_type().
 func PixbufGetType() glib.Type {
@@ -30,7 +56,7 @@ type Instance struct {
 	loader *Loader
 }
 
-func (s* Instance) GetScaled(width int, height int) *gdk.Pixbuf {
+func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 	if s.handle == nil {
 		log.Print("Nil handle")
 		return nil
@@ -41,12 +67,12 @@ func (s* Instance) GetScaled(width int, height int) *gdk.Pixbuf {
 	}
 
 	ratio := float32(s.full.GetWidth()) / float32(s.full.GetHeight())
-	newWidth := int(float32(height) * ratio)
-	newHeight := height
+	newWidth := int(float32(size.height) * ratio)
+	newHeight := size.height
 
-	if newWidth > width {
-		newWidth = width
-		newHeight = int(float32(width) / ratio)
+	if newWidth > size.width {
+		newWidth = size.width
+		newHeight = int(float32(size.width) / ratio)
 	}
 
 	if s.scaled == nil {
@@ -156,6 +182,8 @@ var (
 	EMPTY_HANDLE []Handle
 )
 
+type ImageList func(numeber int) []Handle
+
 func (s* Manager) GetNextImages(number int) []Handle {
 	startIndex := s.index + 1
 	endIndex := startIndex + number
@@ -178,9 +206,9 @@ func (s* Manager) GetPrevImages(number int) []Handle {
         return s.imageList[prevIndex:s.index]
     }
 
-func (s *Manager) GetScaled(handle *Handle, width int, height int) *gdk.Pixbuf {
+func (s *Manager) GetScaled(handle *Handle, size Size) *gdk.Pixbuf {
 	image := s.imageCache[*handle]
-	return image.GetScaled(width, height)
+	return image.GetScaled(size)
 }
 func (s *Manager) GetThumbnail(handle *Handle) *gdk.Pixbuf {
 	image := s.imageCache[*handle]
