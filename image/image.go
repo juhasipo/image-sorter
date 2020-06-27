@@ -191,23 +191,3 @@ func (s *Manager) AddImage(h Handle, instance Instance) {
 	s.imageList = append(s.imageList, h)
 	s.imageCache[h] = &instance
 }
-
-type CategoryOperation int
-const(
-	COPY CategoryOperation = 0
-	MOVE CategoryOperation = 1
-)
-
-type Category struct {
-	name string
-	subPath string
-}
-
-type CategorizedImage struct {
-	category Category
-	operation CategoryOperation
-}
-
-type CategoryManager struct {
-	imageCategory map[Handle]CategorizedImage
-}
