@@ -51,8 +51,7 @@ type Manager struct {
 
 func FromCategories(categories []string) []*Entry {
 	var categoryEntries []*Entry
-	for i := range categories {
-		categoryName := categories[i]
+	for _, categoryName := range categories {
 		categoryEntries = append(categoryEntries, &Entry {
 			name: categoryName,
 			subPath: categoryName,

@@ -114,8 +114,7 @@ func (s *Ui) UpdateCategories(categories []*category.Entry) {
 		// TODO: Remove
 	}
 
-	for i := range categories {
-		entry := categories[i]
+	for _, entry := range categories {
 		send := func() {
 			s.broker.SendToTopicWithData(
 				event.CATEGORIZE_IMAGE,
@@ -157,9 +156,8 @@ func (s *Ui) SetCurrentImage(handle *common.Handle) {
 
 func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
 	list.model.Clear()
-	for i := range images {
+	for _, img := range images {
 		iter := list.model.Append()
-		img := images[i]
 		list.model.SetValue(iter, 0, s.pixbufCache.GetThumbnail(img))
 	}
 }
