@@ -4,6 +4,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
@@ -20,6 +21,7 @@ type CurrentImage struct {
 }
 
 type Ui struct {
+	win              *gtk.ApplicationWindow
 	application      *gtk.Application
 	imageManager     *library.Manager
 	pixbufCache      *PixbufCache
@@ -29,10 +31,11 @@ type Ui struct {
 	nextButton       *gtk.Button
 	prevButton       *gtk.Button
 	currentImageView *gtk.Viewport
-	broker           *event.Broker
+	categoriesView   *gtk.Box
+	broker           event.Sender
 }
 
-func Init(broker *event.Broker) *Ui {
+func Init(broker event.Sender) *Ui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -71,8 +74,8 @@ func (s *Ui) Init() {
 		}
 
 		// Get the object with the id of "main_window".
-		win := getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
-		win.SetSizeRequest(800, 600)
+		s.win = getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
+		s.win.SetSizeRequest(800, 600)
 
 		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
 		nextImageStore := CreateImageList(nextImagesList, "Next images")
@@ -93,24 +96,50 @@ func (s *Ui) Init() {
 		s.currentImageView = getObjectOrPanic(builder, "current-image-view").(*gtk.Viewport)
 		s.nextButton = getObjectOrPanic(builder, "next-button").(*gtk.Button)
 		s.prevButton = getObjectOrPanic(builder, "prev-button").(*gtk.Button)
+		s.categoriesView = getObjectOrPanic(builder, "categories").(*gtk.Box)
 
 		s.currentImageView.Connect("size-allocate", func(widget *glib.Object, data uintptr) {
 			s.UpdateCurrentImage()
 		})
 
 		s.nextButton.Connect("clicked", func() {
-			s.broker.Send(event.New(event.NEXT_IMAGE))
+			s.broker.SendToTopic(event.NEXT_IMAGE)
 		})
 		s.prevButton.Connect("clicked", func() {
-			s.broker.Send(event.New(event.PREV_IMAGE))
+			s.broker.SendToTopic(event.PREV_IMAGE)
 		})
 
-		s.broker.Send(event.New(event.CURRENT_IMAGE))
+		s.broker.SendToTopic(event.UI_READY)
 
 		// Show the Window and all of its components.
-		win.Show()
-		s.application.AddWindow(win)
+		s.win.Show()
+		s.application.AddWindow(s.win)
 	})
+}
+
+func (s *Ui) UpdateCategories(categories []*category.Entry) {
+	children := s.categoriesView.GetChildren()
+
+	for iter := children; iter != nil; iter = children.Next() {
+		// TODO: Remove
+	}
+
+	for i := range categories {
+		entry := categories[i]
+		send := func() {
+			s.broker.SendToTopicWithData(
+				event.CATEGORIZE_IMAGE,
+				category.CategorizeCommandNew(
+					s.currentImage.image, entry, category.COPY,
+					))
+		}
+		button, _ := gtk.ButtonNewWithLabel(entry.GetName())
+		button.Connect("clicked", func(button *gtk.Button) {
+			send()
+		})
+		s.categoriesView.Add(button)
+	}
+	s.win.ShowAll()
 }
 
 func (s *Ui) UpdateCurrentImage() {
@@ -147,6 +176,11 @@ func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
 
 func (s *Ui) Run(args []string) {
 	s.application.Run(args)
+}
+
+func (s *Ui) SetImageCategory(commands *category.CategorizeCommand) {
+	// TODO: Mark image category
+	log.Print("Mark image category")
 }
 
 

@@ -1,11 +1,21 @@
 package library
 
 import (
+	"log"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/util"
 )
+
+type ImageCommand struct {
+	handles []*common.Handle
+	event.Command
+}
+
+func (s *ImageCommand) GetHandles() []*common.Handle {
+	return s.handles
+}
 
 type Manager struct {
 	imageList []*common.Handle
@@ -18,7 +28,7 @@ const (
 	IMAGE_LIST_SIZE = 5
 )
 
-func ForHandles(handles []*common.Handle, sender *event.Broker) *Manager {
+func ForHandles(handles []*common.Handle, sender event.Sender) *Manager {
 	var manager = Manager{
 		imageList: handles,
 		index: 0,
@@ -28,16 +38,20 @@ func ForHandles(handles []*common.Handle, sender *event.Broker) *Manager {
 	return &manager
 }
 
-func (s *Manager) SetCategory(handle *common.Handle, entry *category.Entry, operation category.Operation) {
-	if val, ok := s.imageCategory[handle]; ok {
-		if operation != category.NONE {
-			val.SetOperation(operation)
+func (s *Manager) SetCategory(command *category.CategorizeCommand) {
+	log.Print("Categorize ", command.GetHandle().GetPath(), " as ", command.GetEntry().GetName())
+	if val, ok := s.imageCategory[command.GetHandle()]; ok {
+		if command.GetOperation() != category.NONE {
+			val.SetOperation(command.GetOperation())
 		} else {
-			delete(s.imageCategory, handle)
+			delete(s.imageCategory, command.GetHandle())
 		}
 	} else {
-		s.imageCategory[handle] = category.CategorizedImageNew(entry, operation)
+		s.imageCategory[command.GetHandle()] = category.CategorizedImageNew(command.GetEntry(), command.GetOperation())
 	}
+	s.sender.SendToTopicWithData(
+		event.IMAGE_CATEGORIZED,
+		category.CategorizeCommandNew(command.GetHandle(), command.GetEntry(), command.GetOperation()))
 }
 
 func (s *Manager) NextImage() *common.Handle {
@@ -45,9 +59,9 @@ func (s *Manager) NextImage() *common.Handle {
 	if s.index >= len(s.imageList) {
 		s.index = len(s.imageList) - 1
 	}
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE)))
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE)))
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle {s.GetCurrentImage()}))
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {s.GetCurrentImage()}})
 	return s.GetCurrentImage()
 }
 
@@ -56,9 +70,9 @@ func (s *Manager) PrevImage() *common.Handle {
 	if s.index < 0 {
 		s.index = 0
 	}
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE)))
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE)))
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle {s.GetCurrentImage()}))
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {s.GetCurrentImage()}})
 	return s.GetCurrentImage()
 }
 
@@ -70,9 +84,9 @@ func (s *Manager) GetCurrentImage() *common.Handle {
 		currentImage = common.GetEmptyHandle()
 	}
 
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE)))
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE)))
-	s.sender.Send(event.NewWithSubAndData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle {currentImage}))
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {currentImage}})
 
 	return currentImage
 }

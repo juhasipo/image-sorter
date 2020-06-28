@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
@@ -10,13 +11,24 @@ import (
 
 func main() {
 	flag.Parse()
-	root := flag.Arg(0)
 	broker := event.InitBus(1000)
+
+	root := flag.Arg(0)
 	handles := common.LoadImages(root)
-	//categories := category.FromCategories([]string{"Good", "Maybe", "Bad"})
+	categoryManager := category.New(broker)
 	imageLibrary := library.ForHandles(handles, broker)
 	gui := ui.Init(broker)
 
+	// Startup
+	broker.Subscribe(event.UI_READY, func(message event.Message) {
+		categoryManager.RequestCategories()
+		imageLibrary.GetCurrentImage()
+	})
+
+	// UI -> Library
+	broker.Subscribe(event.CATEGORIZE_IMAGE, func(message event.Message) {
+		imageLibrary.SetCategory(message.GetData().(*category.CategorizeCommand))
+	})
 	broker.Subscribe(event.NEXT_IMAGE, func(message event.Message) {
 		imageLibrary.NextImage()
 	})
@@ -26,8 +38,16 @@ func main() {
 	broker.Subscribe(event.CURRENT_IMAGE, func(message event.Message) {
 		imageLibrary.GetCurrentImage()
 	})
+
+	// Library -> UI
 	broker.SubscribeGuiEvent(event.IMAGES_UPDATED, func(message event.Message) {
-		gui.SetImages(message.GetData().([]*common.Handle), message.GetSubTopic())
+		gui.SetImages(message.GetData().(*library.ImageCommand).GetHandles(), message.GetSubTopic())
+	})
+	broker.SubscribeGuiEvent(event.CATEGORIES_UPDATED, func(message event.Message) {
+		gui.UpdateCategories(message.GetData().(*category.CategoriesCommand).GetCategories())
+	})
+	broker.SubscribeGuiEvent(event.IMAGE_CATEGORIZED, func(message event.Message) {
+		gui.SetImageCategory(message.GetData().(*category.CategorizeCommand))
 	})
 
 	gui.Run([]string{})
