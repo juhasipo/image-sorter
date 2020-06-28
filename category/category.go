@@ -20,7 +20,6 @@ type CategorizedImage struct {
 
 type Manager struct {
 	categories []*Entry
-	imageCategory map[*image.Handle]CategorizedImage
 }
 
 func (s *Manager) AddCategory(name string, subPath string) *Entry {
@@ -33,7 +32,7 @@ func (s *Manager) GetCategories() []*Entry {
 	return s.categories
 }
 
-func (s *Manager) ToggleCategory(image *image.Handle, category *Entry, operation Operation) {
+func (s *Manager) ToggleCategory(image *library.Handle, category *Entry, operation Operation) {
 	if val, ok := s.imageCategory[image]; ok {
 		if val.operation != operation {
 			val.operation = operation

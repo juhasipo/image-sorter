@@ -1,4 +1,4 @@
-package image
+package ui
 
 // #cgo pkg-config: gdk-3.0 glib-2.0 gobject-2.0
 // #include <gdk/gdk.h>
@@ -8,9 +8,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
+	"vincit.fi/image-sorter/common"
 )
 
 type Size struct {
@@ -43,27 +41,31 @@ func PixbufGetType() glib.Type {
 	return glib.Type(C.gdk_pixbuf_get_type())
 }
 
-type Handle struct {
-	id string
-}
-
 type Instance struct {
-	path string
-	handle *Handle
+	handle *common.Handle
 	full *gdk.Pixbuf
 	thumbnail *gdk.Pixbuf
 	scaled *gdk.Pixbuf
-	loader *Loader
+	loader *PixbufCache
 }
 
+func (s *Instance) IsValid() bool {
+	return s.handle != nil
+}
+
+var (
+	EMPTY_INSTANCE = Instance {}
+)
+
 func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
-	if s.handle == nil {
-		log.Print("Nil handle")
+	if !s.IsValid() {
+		log.Print("Empty instance")
 		return nil
 	}
+
 	if s.full == nil {
 		log.Print(" * Loading full image...")
-		s.full, _ = s.loader.loadFromFile(s.path)
+		s.full, _ = s.loader.loadFromHandle(s.handle)
 	}
 
 	ratio := float32(s.full.GetWidth()) / float32(s.full.GetHeight())
@@ -99,7 +101,7 @@ func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 	}
 	if s.full == nil {
 		//log.Print(" * Loading full image...")
-		s.full, _ = s.loader.loadFromFile(s.path)
+		s.full, _ = s.loader.loadFromHandle(s.handle)
 	}
 	if s.thumbnail == nil {
 		width, height := 100, 100
@@ -117,105 +119,34 @@ func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 	return s.thumbnail
 }
 
-type Loader struct {
+type PixbufCache struct {
+	imageCache map[common.Handle]*Instance
 }
 
-func (s*Loader) loadFromFile(path string) (*gdk.Pixbuf, error) {
-	return gdk.PixbufNewFromFile(path)
-}
-
-type Manager struct {
-	imageList []Handle
-	imageCache map[Handle]*Instance
-	index int
-}
-
-func ManagerForDir(dir string) Manager {
-	var manager = Manager{
-		imageList: []Handle {},
-		imageCache: map[Handle]*Instance{},
-		index: 0,
-	}
-	loader := Loader{}
-	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if filepath.Ext(strings.ToLower(path)) != ".jpg" {
-			return nil
+func (s *PixbufCache) GetInstance(handle *common.Handle) *Instance {
+	if handle.IsValid() {
+		if val, ok := s.imageCache[*handle]; !ok {
+			instance := &Instance{
+				handle: handle,
+				loader: s,
+			}
+			s.imageCache[*handle] = instance
+			return instance
+		} else {
+			return val
 		}
-		handle := Handle {id: path}
-		instance := Instance{
-			path:      path,
-			handle:    &handle,
-			full:      nil,
-			thumbnail: nil,
-			scaled:    nil,
-			loader:    &loader,
-		}
-		manager.AddImage(handle, instance)
-		return nil
-	})
-
-	return manager
-}
-
-func (s *Manager) NextImage() *Handle {
-	s.index++
-	if s.index >= len(s.imageList) {
-		s.index = len(s.imageList) - 1
+	} else {
+		return &EMPTY_INSTANCE
 	}
-	return s.GetCurrentImage()
 }
 
-func (s *Manager) PrevImage() *Handle {
-	s.index--
-	if s.index < 0 {
-		s.index = 0
-	}
-	return s.GetCurrentImage()
+func (s *PixbufCache) GetScaled(handle *common.Handle, size Size) *gdk.Pixbuf {
+	return s.GetInstance(handle).GetScaled(size)
+}
+func (s *PixbufCache) GetThumbnail(handle *common.Handle) *gdk.Pixbuf {
+	return s.GetInstance(handle).GetThumbnail()
 }
 
-func (s *Manager) GetCurrentImage() *Handle {
-	handle := s.imageList[s.index]
-	return &handle
-}
-
-var (
-	EMPTY_HANDLE []Handle
-)
-
-type ImageList func(numeber int) []Handle
-
-func (s* Manager) GetNextImages(number int) []Handle {
-	startIndex := s.index + 1
-	endIndex := startIndex + number
-	if endIndex > len(s.imageList) {
-		endIndex = len(s.imageList)
-	}
-
-	if startIndex >= len(s.imageList) - 1 {
-		return EMPTY_HANDLE
-	}
-
-	return s.imageList[startIndex:endIndex]
-}
-
-func (s* Manager) GetPrevImages(number int) []Handle {
-        prevIndex := s.index-number
-        if prevIndex < 0 {
-            prevIndex = 0
-        }
-        return s.imageList[prevIndex:s.index]
-    }
-
-func (s *Manager) GetScaled(handle *Handle, size Size) *gdk.Pixbuf {
-	image := s.imageCache[*handle]
-	return image.GetScaled(size)
-}
-func (s *Manager) GetThumbnail(handle *Handle) *gdk.Pixbuf {
-	image := s.imageCache[*handle]
-	return image.GetThumbnail()
-}
-
-func (s *Manager) AddImage(h Handle, instance Instance) {
-	s.imageList = append(s.imageList, h)
-	s.imageCache[h] = &instance
+func (s*PixbufCache) loadFromHandle(handle *common.Handle) (*gdk.Pixbuf, error) {
+	return gdk.PixbufNewFromFile(handle.GetPath())
 }

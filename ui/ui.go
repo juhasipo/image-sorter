@@ -4,8 +4,9 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/image"
+	"vincit.fi/image-sorter/library"
 )
 
 type ImageList struct {
@@ -15,7 +16,8 @@ type ImageList struct {
 
 type Ui struct {
 	application      *gtk.Application
-	imageManager     *image.Manager
+	imageManager     *library.Manager
+	pixbufCache      *PixbufCache
 	currentImage     *gtk.Image
 	nextImages       *ImageList
 	prevImages       *ImageList
@@ -25,7 +27,7 @@ type Ui struct {
 	broker           *event.Broker
 }
 
-func Init(imageManager *image.Manager, broker *event.Broker) *Ui {
+func Init(imageManager *library.Manager, broker *event.Broker) *Ui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -39,6 +41,9 @@ func Init(imageManager *image.Manager, broker *event.Broker) *Ui {
 	ui := Ui{
 		application: application,
 		imageManager: imageManager,
+		pixbufCache: &PixbufCache {
+			imageCache: map[common.Handle]*Instance{},
+		},
 		broker: broker,
 	}
 
@@ -86,9 +91,9 @@ func (s *Ui) Init() {
 		s.prevButton = getObjectOrPanic(builder, "prev-button").(*gtk.Button)
 
 		s.currentImageView.Connect("size-allocate", func(widget *glib.Object, data uintptr) {
-			scaled := s.imageManager.GetScaled(
+			scaled := s.pixbufCache.GetScaled(
 				s.imageManager.GetCurrentImage(),
-				image.SizeFromViewport(s.currentImageView),
+				SizeFromViewport(s.currentImageView),
 			)
 			s.currentImage.SetFromPixbuf(scaled)
 		})
@@ -109,21 +114,21 @@ func (s *Ui) Init() {
 }
 
 func (s *Ui) UpdateImages() {
-	scaled := s.imageManager.GetScaled(
+	scaled := s.pixbufCache.GetScaled(
 		s.imageManager.GetCurrentImage(),
-				image.SizeFromViewport(s.currentImageView))
+		SizeFromViewport(s.currentImageView))
 	s.currentImage.SetFromPixbuf(scaled)
 	s.AddImagesToStore(s.nextImages, s.imageManager.GetNextImages)
 	s.AddImagesToStore(s.prevImages, s.imageManager.GetPrevImages)
 }
 
-func (s *Ui) AddImagesToStore(list *ImageList, imageFunc image.ImageList) {
+func (s *Ui) AddImagesToStore(list *ImageList, imageFunc library.ImageList) {
 	list.model.Clear()
 	images := imageFunc(5)
 	for i := range images {
 		iter := list.model.Append()
 		img := images[i]
-		list.model.SetValue(iter, 0, s.imageManager.GetThumbnail(&img))
+		list.model.SetValue(iter, 0, s.pixbufCache.GetThumbnail(img))
 	}
 }
 
@@ -150,7 +155,7 @@ func errorCheck(e error) {
 
 func CreateImageList(view *gtk.TreeView, title string) *gtk.ListStore {
 	view.SetSizeRequest(100, -1)
-	store, _ := gtk.ListStoreNew(image.PixbufGetType())
+	store, _ := gtk.ListStoreNew(PixbufGetType())
 	view.SetModel(store)
 	renderer, _ := gtk.CellRendererPixbufNew()
 	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "pixbuf", 0)
