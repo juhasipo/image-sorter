@@ -8,6 +8,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"sync"
 	"vincit.fi/image-sorter/common"
 )
 
@@ -121,20 +122,24 @@ func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 
 type PixbufCache struct {
 	imageCache map[common.Handle]*Instance
+	mux sync.Mutex
 }
 
 func (s *PixbufCache) GetInstance(handle *common.Handle) *Instance {
 	if handle.IsValid() {
+		s.mux.Lock()
+		var instance *Instance
 		if val, ok := s.imageCache[*handle]; !ok {
-			instance := &Instance{
+			instance = &Instance{
 				handle: handle,
 				loader: s,
 			}
 			s.imageCache[*handle] = instance
-			return instance
 		} else {
-			return val
+			instance = val
 		}
+		s.mux.Unlock()
+		return instance
 	} else {
 		return &EMPTY_INSTANCE
 	}

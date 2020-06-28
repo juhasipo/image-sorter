@@ -14,11 +14,16 @@ type ImageList struct {
 	model *gtk.ListStore
 }
 
+type CurrentImage struct {
+	view *gtk.Image
+	image *common.Handle
+}
+
 type Ui struct {
 	application      *gtk.Application
 	imageManager     *library.Manager
 	pixbufCache      *PixbufCache
-	currentImage     *gtk.Image
+	currentImage     *CurrentImage
 	nextImages       *ImageList
 	prevImages       *ImageList
 	nextButton       *gtk.Button
@@ -27,7 +32,7 @@ type Ui struct {
 	broker           *event.Broker
 }
 
-func Init(imageManager *library.Manager, broker *event.Broker) *Ui {
+func Init(broker *event.Broker) *Ui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -40,7 +45,6 @@ func Init(imageManager *library.Manager, broker *event.Broker) *Ui {
 
 	ui := Ui{
 		application: application,
-		imageManager: imageManager,
 		pixbufCache: &PixbufCache {
 			imageCache: map[common.Handle]*Instance{},
 		},
@@ -68,9 +72,6 @@ func (s *Ui) Init() {
 
 		// Get the object with the id of "main_window".
 		win := getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
-		if err != nil {
-			log.Fatal("Could not find main window.", err)
-		}
 
 		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
 		nextImageStore := CreateImageList(nextImagesList, "Next images")
@@ -85,17 +86,15 @@ func (s *Ui) Init() {
 			component: prevImagesList,
 			model:    prevImageStore,
 		}
-		s.currentImage = getObjectOrPanic(builder, "current-image").(*gtk.Image)
+		s.currentImage = &CurrentImage {
+			view: getObjectOrPanic(builder, "current-image").(*gtk.Image),
+		}
 		s.currentImageView = getObjectOrPanic(builder, "current-image-view").(*gtk.Viewport)
 		s.nextButton = getObjectOrPanic(builder, "next-button").(*gtk.Button)
 		s.prevButton = getObjectOrPanic(builder, "prev-button").(*gtk.Button)
 
 		s.currentImageView.Connect("size-allocate", func(widget *glib.Object, data uintptr) {
-			scaled := s.pixbufCache.GetScaled(
-				s.imageManager.GetCurrentImage(),
-				SizeFromViewport(s.currentImageView),
-			)
-			s.currentImage.SetFromPixbuf(scaled)
+			s.UpdateCurrentImage()
 		})
 
 		s.nextButton.Connect("clicked", func() {
@@ -105,7 +104,7 @@ func (s *Ui) Init() {
 			s.broker.Send(event.New(event.PREV_IMAGE))
 		})
 
-		s.UpdateImages()
+		s.broker.Send(event.New(event.CURRENT_IMAGE))
 
 		// Show the Window and all of its components.
 		win.Show()
@@ -113,18 +112,31 @@ func (s *Ui) Init() {
 	})
 }
 
-func (s *Ui) UpdateImages() {
+func (s *Ui) UpdateCurrentImage() {
 	scaled := s.pixbufCache.GetScaled(
-		s.imageManager.GetCurrentImage(),
-		SizeFromViewport(s.currentImageView))
-	s.currentImage.SetFromPixbuf(scaled)
-	s.AddImagesToStore(s.nextImages, s.imageManager.GetNextImages)
-	s.AddImagesToStore(s.prevImages, s.imageManager.GetPrevImages)
+		s.currentImage.image,
+		SizeFromViewport(s.currentImageView),
+	)
+	s.currentImage.view.SetFromPixbuf(scaled)
 }
 
-func (s *Ui) AddImagesToStore(list *ImageList, imageFunc library.ImageList) {
+func (s* Ui) SetImages(handles []*common.Handle, imageTarget event.Topic) {
+	if imageTarget == event.NEXT_IMAGE {
+		s.AddImagesToStore(s.nextImages, handles)
+	} else if imageTarget == event.PREV_IMAGE {
+		s.AddImagesToStore(s.prevImages, handles)
+	} else {
+		s.SetCurrentImage(handles[0])
+	}
+}
+
+func (s *Ui) SetCurrentImage(handle *common.Handle) {
+	s.currentImage.image = handle
+	s.UpdateCurrentImage()
+}
+
+func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
 	list.model.Clear()
-	images := imageFunc(5)
 	for i := range images {
 		iter := list.model.Append()
 		img := images[i]
@@ -143,13 +155,6 @@ func getObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 		log.Panic("Could not load object " + name)
 	}
 	return obj
-}
-
-func errorCheck(e error) {
-	if e != nil {
-		// panic for any errors.
-		log.Panic(e)
-	}
 }
 
 

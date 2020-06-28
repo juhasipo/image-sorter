@@ -1,11 +1,10 @@
 package category
 
-import "vincit.fi/image-sorter/image"
-
 type Operation int
 const(
-	COPY Operation = 0
-	MOVE Operation = 1
+	NONE Operation = 0
+	COPY Operation = 1
+	MOVE Operation = 2
 )
 
 type Entry struct {
@@ -18,8 +17,39 @@ type CategorizedImage struct {
 	operation Operation
 }
 
+func CategorizedImageNew(entry *Entry, operation Operation) *CategorizedImage {
+	return &CategorizedImage {
+		category: entry,
+		operation: operation,
+	}
+}
+
+func (s* CategorizedImage) GetOperation() Operation {
+	return s.operation
+}
+
+func (s* CategorizedImage) SetOperation(operation Operation) {
+	s.operation = operation
+}
+
+func (s* CategorizedImage) GetEntry() *Entry {
+	return s.category
+}
+
 type Manager struct {
 	categories []*Entry
+}
+
+func FromCategories(categories []string) []*Entry {
+	var categoryEntries []*Entry
+	for i := range categories {
+		categoryName := categories[i]
+		categoryEntries = append(categoryEntries, &Entry {
+			name: categoryName,
+			subPath: categoryName,
+		})
+	}
+	return categoryEntries
 }
 
 func (s *Manager) AddCategory(name string, subPath string) *Entry {
@@ -30,19 +60,4 @@ func (s *Manager) AddCategory(name string, subPath string) *Entry {
 
 func (s *Manager) GetCategories() []*Entry {
 	return s.categories
-}
-
-func (s *Manager) ToggleCategory(image *library.Handle, category *Entry, operation Operation) {
-	if val, ok := s.imageCategory[image]; ok {
-		if val.operation != operation {
-			val.operation = operation
-		} else {
-			delete(s.imageCategory, image)
-		}
-	} else {
-		s.imageCategory[image] = CategorizedImage{
-			category:  category,
-			operation: operation,
-		}
-	}
 }

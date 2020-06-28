@@ -6,13 +6,20 @@ import (
 	"strings"
 )
 
+type ImageTarget string
+const (
+	CURRENT_IMAGE = "current-image"
+	NEXT_IMAGES = "next-images"
+	PREV_IMAGES = "prev-images"
+)
+
 type Handle struct {
 	id string
 	path string
 }
 
 func (s *Handle) IsValid() bool {
-	return s.id != ""
+	return s != nil && s.id != ""
 }
 
 var (
