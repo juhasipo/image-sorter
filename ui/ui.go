@@ -72,6 +72,7 @@ func (s *Ui) Init() {
 
 		// Get the object with the id of "main_window".
 		win := getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
+		win.SetSizeRequest(800, 600)
 
 		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
 		nextImageStore := CreateImageList(nextImagesList, "Next images")
