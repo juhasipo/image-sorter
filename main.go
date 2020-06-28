@@ -22,7 +22,7 @@ func main() {
 	// Startup
 	broker.Subscribe(event.UI_READY, func(message event.Message) {
 		categoryManager.RequestCategories()
-		imageLibrary.GetCurrentImage()
+		imageLibrary.RequestImages()
 	})
 
 	// UI -> Library
@@ -30,13 +30,13 @@ func main() {
 		imageLibrary.SetCategory(message.GetData().(*category.CategorizeCommand))
 	})
 	broker.Subscribe(event.NEXT_IMAGE, func(message event.Message) {
-		imageLibrary.NextImage()
+		imageLibrary.RequestNextImage()
 	})
 	broker.Subscribe(event.PREV_IMAGE, func(message event.Message) {
-		imageLibrary.PrevImage()
+		imageLibrary.RequestPrevImage()
 	})
 	broker.Subscribe(event.CURRENT_IMAGE, func(message event.Message) {
-		imageLibrary.GetCurrentImage()
+		imageLibrary.RequestImages()
 	})
 
 	// Library -> UI

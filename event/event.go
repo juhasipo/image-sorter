@@ -38,6 +38,7 @@ func (s *Broker) SubscribeGuiEvent(topic Topic, guidCall GuiCall) {
 }
 
 func (s *Broker) Send(message Message) {
+	log.Printf("Sending message to '%s'", message.ToString())
 	s.bus.Publish(string(message.topic), message)
 }
 func (s *Broker) SendToTopic(topic Topic) {

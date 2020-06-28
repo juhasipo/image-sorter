@@ -23,9 +23,11 @@ type Manager struct {
 	index         int
 	imageCategory map[*common.Handle]*category.CategorizedImage
 	sender        event.Sender
+
+	Library
 }
 
-func ForHandles(handles []*common.Handle, sender event.Sender) *Manager {
+func ForHandles(handles []*common.Handle, sender event.Sender) Library {
 	var manager = Manager{
 		imageList: handles,
 		index: 0,
@@ -51,7 +53,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		category.CategorizeCommandNew(command.GetHandle(), command.GetEntry(), command.GetOperation()))
 }
 
-func (s *Manager) NextImage() *common.Handle {
+func (s *Manager) RequestNextImage() {
 	s.index++
 	if s.index >= len(s.imageList) {
 		s.index = len(s.imageList) - 1
@@ -59,10 +61,9 @@ func (s *Manager) NextImage() *common.Handle {
 	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
 	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
 	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {s.GetCurrentImage()}})
-	return s.GetCurrentImage()
 }
 
-func (s *Manager) PrevImage() *common.Handle {
+func (s *Manager) RequestPrevImage() {
 	s.index--
 	if s.index < 0 {
 		s.index = 0
@@ -70,7 +71,14 @@ func (s *Manager) PrevImage() *common.Handle {
 	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
 	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
 	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {s.GetCurrentImage()}})
-	return s.GetCurrentImage()
+}
+
+func (s *Manager) RequestImages() {
+	currentImage := s.GetCurrentImage()
+
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
+	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle{currentImage}})
 }
 
 func (s *Manager) GetCurrentImage() *common.Handle {
@@ -80,11 +88,6 @@ func (s *Manager) GetCurrentImage() *common.Handle {
 	} else {
 		currentImage = common.GetEmptyHandle()
 	}
-
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {currentImage}})
-
 	return currentImage
 }
 

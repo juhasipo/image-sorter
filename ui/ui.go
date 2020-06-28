@@ -23,9 +23,11 @@ type Ui struct {
 	currentImageView *gtk.Viewport
 	categoriesView   *gtk.Box
 	broker           event.Sender
+
+	Gui
 }
 
-func Init(broker event.Sender) *Ui {
+func Init(broker event.Sender) Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
