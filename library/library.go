@@ -8,25 +8,22 @@ import (
 	"vincit.fi/image-sorter/util"
 )
 
-type ImageCommand struct {
-	handles []*common.Handle
-	event.Command
-}
-
-func (s *ImageCommand) GetHandles() []*common.Handle {
-	return s.handles
-}
-
-type Manager struct {
-	imageList []*common.Handle
-	index int
-	imageCategory map[*common.Handle]*category.CategorizedImage
-	sender event.Sender
-}
+var (
+	EMPTY_HANDLES []*common.Handle
+)
 
 const (
 	IMAGE_LIST_SIZE = 5
 )
+
+type ImageList func(number int) []*common.Handle
+
+type Manager struct {
+	imageList     []*common.Handle
+	index         int
+	imageCategory map[*common.Handle]*category.CategorizedImage
+	sender        event.Sender
+}
 
 func ForHandles(handles []*common.Handle, sender event.Sender) *Manager {
 	var manager = Manager{
@@ -90,13 +87,6 @@ func (s *Manager) GetCurrentImage() *common.Handle {
 
 	return currentImage
 }
-
-
-var (
-	EMPTY_HANDLES []*common.Handle
-)
-
-type ImageList func(number int) []*common.Handle
 
 func (s* Manager) GetNextImages(number int) []*common.Handle {
 	startIndex := s.index + 1

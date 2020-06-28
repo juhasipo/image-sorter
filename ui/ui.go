@@ -10,16 +10,6 @@ import (
 	"vincit.fi/image-sorter/library"
 )
 
-type ImageList struct {
-	component *gtk.TreeView
-	model *gtk.ListStore
-}
-
-type CurrentImage struct {
-	view *gtk.Image
-	image *common.Handle
-}
-
 type Ui struct {
 	win              *gtk.ApplicationWindow
 	application      *gtk.Application
@@ -181,25 +171,5 @@ func (s *Ui) Run(args []string) {
 func (s *Ui) SetImageCategory(commands *category.CategorizeCommand) {
 	// TODO: Mark image category
 	log.Print("Mark image category")
-}
-
-
-func getObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
-	obj, err := builder.GetObject(name)
-	if err != nil {
-		log.Panic("Could not load object " + name)
-	}
-	return obj
-}
-
-
-func CreateImageList(view *gtk.TreeView, title string) *gtk.ListStore {
-	view.SetSizeRequest(100, -1)
-	store, _ := gtk.ListStoreNew(PixbufGetType())
-	view.SetModel(store)
-	renderer, _ := gtk.CellRendererPixbufNew()
-	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "pixbuf", 0)
-	view.AppendColumn(column)
-	return store
 }
 
