@@ -4,6 +4,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	messagebus "github.com/vardius/message-bus"
 	"log"
+	"reflect"
 )
 
 type Broker struct {
@@ -37,16 +38,30 @@ func (s *Broker) SubscribeGuiEvent(topic Topic, guidCall GuiCall) {
 	}
 }
 
-func (s *Broker) Send(message Message) {
-	log.Printf("Sending message to '%s'", message.ToString())
-	s.bus.Publish(string(message.topic), message)
+type GuiCallback func (data ...interface{})
+
+func (s *Broker) ConnectToGui(topic Topic, callback interface{}) {
+	cb := func(params ...interface{}) {
+		glib.IdleAdd(func() {
+			log.Printf("Calling topic '%s'", topic)
+			args := make([]reflect.Value, 0, len(params))
+			for _, param := range params {
+				args = append(args, reflect.ValueOf(param))
+			}
+			reflect.ValueOf(callback).Call(args)
+		})
+	}
+	err := s.bus.Subscribe(string(topic), cb)
+	if err != nil {
+		log.Panic("Could not subscribe")
+	}
 }
+
 func (s *Broker) SendToTopic(topic Topic) {
-	s.Send(Message {topic: topic})
+	log.Printf("Sending to '%s'", topic)
+	s.bus.Publish(string(topic))
 }
-func (s *Broker) SendToTopicWithData(topic Topic, data Command) {
-	s.Send(Message {topic: topic, data: data})
-}
-func (s *Broker) SendToSubTopicWithData(topic Topic, subTopic Topic, data Command) {
-	s.Send(Message {topic: topic, subTopic: subTopic, data: data})
+func (s *Broker) SendToTopicWithData(topic Topic, data ...interface{}) {
+	log.Printf("Sending to '%s' with %d arguments", topic, len(data))
+	s.bus.Publish(string(topic), data...)
 }

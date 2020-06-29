@@ -20,35 +20,21 @@ func main() {
 	gui := ui.Init(broker)
 
 	// Startup
-	broker.Subscribe(event.UI_READY, func(message event.Message) {
+	broker.Subscribe(event.UI_READY, func() {
 		categoryManager.RequestCategories()
 		imageLibrary.RequestImages()
 	})
 
 	// UI -> Library
-	broker.Subscribe(event.CATEGORIZE_IMAGE, func(message event.Message) {
-		imageLibrary.SetCategory(message.GetData().(*category.CategorizeCommand))
-	})
-	broker.Subscribe(event.NEXT_IMAGE, func(message event.Message) {
-		imageLibrary.RequestNextImage()
-	})
-	broker.Subscribe(event.PREV_IMAGE, func(message event.Message) {
-		imageLibrary.RequestPrevImage()
-	})
-	broker.Subscribe(event.CURRENT_IMAGE, func(message event.Message) {
-		imageLibrary.RequestImages()
-	})
+	broker.Subscribe(event.CATEGORIZE_IMAGE, imageLibrary.SetCategory)
+	broker.Subscribe(event.NEXT_IMAGE, imageLibrary.RequestNextImage)
+	broker.Subscribe(event.PREV_IMAGE, imageLibrary.RequestPrevImage)
+	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
 
 	// Library -> UI
-	broker.SubscribeGuiEvent(event.IMAGES_UPDATED, func(message event.Message) {
-		gui.SetImages(message.GetData().(*library.ImageCommand).GetHandles(), message.GetSubTopic())
-	})
-	broker.SubscribeGuiEvent(event.CATEGORIES_UPDATED, func(message event.Message) {
-		gui.UpdateCategories(message.GetData().(*category.CategoriesCommand).GetCategories())
-	})
-	broker.SubscribeGuiEvent(event.IMAGE_CATEGORIZED, func(message event.Message) {
-		gui.SetImageCategory(message.GetData().(*category.CategorizeCommand))
-	})
+	broker.ConnectToGui(event.IMAGES_UPDATED, gui.SetImages)
+	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
+	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
 
 	gui.Run([]string{})
 }

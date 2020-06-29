@@ -58,9 +58,13 @@ func (s *Manager) RequestNextImage() {
 	if s.index >= len(s.imageList) {
 		s.index = len(s.imageList) - 1
 	}
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {s.GetCurrentImage()}})
+	s.SendImages()
+}
+
+func (s *Manager) SendImages() {
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE))
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE))
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{s.GetCurrentImage()})
 }
 
 func (s *Manager) RequestPrevImage() {
@@ -68,17 +72,11 @@ func (s *Manager) RequestPrevImage() {
 	if s.index < 0 {
 		s.index = 0
 	}
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle {s.GetCurrentImage()}})
+	s.SendImages()
 }
 
 func (s *Manager) RequestImages() {
-	currentImage := s.GetCurrentImage()
-
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, &ImageCommand{handles: s.GetNextImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, &ImageCommand{handles: s.GetPrevImages(IMAGE_LIST_SIZE)})
-	s.sender.SendToSubTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, &ImageCommand{handles: []*common.Handle{currentImage}})
+	s.SendImages()
 }
 
 func (s *Manager) GetCurrentImage() *common.Handle {

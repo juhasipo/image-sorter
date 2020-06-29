@@ -2,14 +2,14 @@ package event
 
 type Topic string
 const(
-	UI_READY = "event-ui-ready"
-	NEXT_IMAGE = "event-next-image"
-	PREV_IMAGE = "event-prev-image"
-	CURRENT_IMAGE = "event-current-image"
-	CATEGORIZE_IMAGE = "event-categorize-image"
+	UI_READY Topic = "event-ui-ready"
+	NEXT_IMAGE Topic = "event-next-image"
+	PREV_IMAGE Topic = "event-prev-image"
+	CURRENT_IMAGE Topic = "event-current-image"
+	CATEGORIZE_IMAGE Topic = "event-categorize-image"
 
-	IMAGES_UPDATED = "event-images-updated"
-	CATEGORIES_UPDATED = "event-categories-updated"
-	IMAGE_CATEGORIZED = "event-image-categorized"
+	IMAGES_UPDATED Topic = "event-images-updated"
+	CATEGORIES_UPDATED Topic = "event-categories-updated"
+	IMAGE_CATEGORIZED Topic = "event-image-categorized"
 )
 

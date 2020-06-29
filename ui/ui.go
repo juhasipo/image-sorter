@@ -109,14 +109,14 @@ func (s *Ui) Init() {
 	})
 }
 
-func (s *Ui) UpdateCategories(categories []*category.Entry) {
+func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	children := s.categoriesView.GetChildren()
 
 	for iter := children; iter != nil; iter = children.Next() {
 		// TODO: Remove
 	}
 
-	for _, entry := range categories {
+	for _, entry := range categories.GetCategories() {
 		send := func() {
 			s.broker.SendToTopicWithData(
 				event.CATEGORIZE_IMAGE,
@@ -141,7 +141,7 @@ func (s *Ui) UpdateCurrentImage() {
 	s.currentImage.view.SetFromPixbuf(scaled)
 }
 
-func (s* Ui) SetImages(handles []*common.Handle, imageTarget event.Topic) {
+func (s* Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
 	if imageTarget == event.NEXT_IMAGE {
 		s.AddImagesToStore(s.nextImages, handles)
 	} else if imageTarget == event.PREV_IMAGE {
