@@ -1,6 +1,8 @@
 package category
 
 import (
+	"github.com/gotk3/gotk3/gdk"
+	"strings"
 	"vincit.fi/image-sorter/event"
 )
 
@@ -14,6 +16,7 @@ const(
 type Entry struct {
 	name string
 	subPath string
+	shortcuts []uint
 }
 
 func (s *Entry) GetSubPath() string {
@@ -22,6 +25,19 @@ func (s *Entry) GetSubPath() string {
 
 func (s *Entry) GetName() string {
 	return s.name
+}
+
+func (s* Entry) GetShortcuts() []uint {
+	return s.shortcuts
+}
+
+func (s* Entry) HasShortcut(val uint) bool {
+	for _, shortcut := range s.shortcuts {
+		if shortcut == val {
+			return true
+		}
+	}
+	return false
 }
 
 type CategorizedImage struct {
@@ -56,17 +72,32 @@ type Manager struct {
 func FromCategories(categories []string) []*Entry {
 	var categoryEntries []*Entry
 	for _, categoryName := range categories {
+		name, keys := Parse(categoryName)
 		categoryEntries = append(categoryEntries, &Entry {
-			name: categoryName,
+			name: name,
 			subPath: categoryName,
+			shortcuts: keys,
 		})
 	}
 	return categoryEntries
 }
 
+func Parse(name string) (string, []uint) {
+	parts := strings.Split(name, ":")
+
+	return parts[0], KeyToUint(parts[1])
+}
+
+func KeyToUint(key string) []uint {
+	return []uint {
+		gdk.KeyvalFromName(strings.ToLower(key)),
+		gdk.KeyvalFromName(strings.ToUpper(key)),
+	}
+}
+
 func New(sender event.Sender) *Manager {
 	return &Manager {
-		categories: FromCategories([]string {"Good", "Maybe", "Bad"}),
+		categories: FromCategories([]string {"Good:G", "Maybe:M", "Bad:B"}),
 		sender: sender,
 	}
 }

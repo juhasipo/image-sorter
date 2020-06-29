@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
@@ -59,7 +60,7 @@ func (s *Ui) Init() {
 	// shutdown ->  performs shutdown tasks
 	// Setup activate signal with a closure function.
 	s.application.Connect("activate", func() {
-		log.Println("application activate")
+		log.Println("Application activate")
 
 		builder, err := gtk.BuilderNewFromFile("ui/main-view.glade")
 		if err != nil {
@@ -69,6 +70,30 @@ func (s *Ui) Init() {
 		// Get the object with the id of "main_window".
 		s.win = getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
 		s.win.SetSizeRequest(800, 600)
+
+		s.win.Connect("key_press_event", func(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
+			keyEvent := gdk.EventKeyNewFromEvent(e)
+			key := keyEvent.KeyVal()
+			if key == gdk.KEY_Left {
+				s.broker.SendToTopic(event.PREV_IMAGE)
+				return true
+			} else if key == gdk.KEY_Right {
+				s.broker.SendToTopic(event.NEXT_IMAGE)
+				return true
+			} else {
+				for entry, button := range s.categoryButtons {
+					if entry.HasShortcut(key) {
+						keyName := KeyvalName(key)
+						log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
+						s.broker.SendToTopicWithData(
+							event.CATEGORIZE_IMAGE,
+							category.CategorizeCommandNew(s.currentImage.image, button.entry, NextOperation(button.operation)))
+						return true
+					}
+				}
+			}
+			return false
+		})
 
 		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
 		nextImageStore := CreateImageList(nextImagesList, "Next images")

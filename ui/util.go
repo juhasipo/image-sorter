@@ -32,3 +32,7 @@ func CreateImageList(view *gtk.TreeView, title string) *gtk.ListStore {
 	view.AppendColumn(column)
 	return store
 }
+
+func KeyvalName(keyval uint) string {
+	return C.GoString((*C.char)(C.gdk_keyval_name(C.guint(keyval))))
+}
