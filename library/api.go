@@ -11,6 +11,7 @@ type Library interface {
 	SetCategory(command *category.CategorizeCommand)
 	RequestNextImage()
 	RequestPrevImage()
+	PersistImageCategories()
 
 }
 

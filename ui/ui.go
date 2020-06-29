@@ -24,6 +24,7 @@ type Ui struct {
 	currentImageView *gtk.Viewport
 	categoriesView   *gtk.Box
 	categoryButtons  map[*category.Entry]*CategoryButton
+	persistButton    *gtk.Button
 	broker           event.Sender
 
 	Gui
@@ -89,6 +90,7 @@ func (s *Ui) Init() {
 		s.nextButton = getObjectOrPanic(builder, "next-button").(*gtk.Button)
 		s.prevButton = getObjectOrPanic(builder, "prev-button").(*gtk.Button)
 		s.categoriesView = getObjectOrPanic(builder, "categories").(*gtk.Box)
+		s.persistButton = getObjectOrPanic(builder, "persist-button").(*gtk.Button)
 
 		s.currentImageView.Connect("size-allocate", func(widget *glib.Object, data uintptr) {
 			s.UpdateCurrentImage()
@@ -99,6 +101,9 @@ func (s *Ui) Init() {
 		})
 		s.prevButton.Connect("clicked", func() {
 			s.broker.SendToTopic(event.PREV_IMAGE)
+		})
+		s.persistButton.Connect("clicked", func() {
+			s.broker.SendToTopic(event.PERSIST_CATEGORIES)
 		})
 
 		s.broker.SendToTopic(event.UI_READY)
@@ -144,12 +149,12 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 }
 
 func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
-	send := func() {
+	return func() {
+		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
 		s.broker.SendToTopicWithData(
 			event.CATEGORIZE_IMAGE,
 			category.CategorizeCommandNew(s.currentImage.image, categoryButton.entry, NextOperation(categoryButton.operation)))
 	}
-	return send
 }
 
 func (s *Ui) UpdateCurrentImage() {
@@ -188,12 +193,13 @@ func (s *Ui) Run(args []string) {
 }
 
 func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
-	log.Print("Marked image category")
 	for _, button := range s.categoryButtons {
 		button.button.SetLabel(button.entry.GetName())
+		button.operation = category.NONE
 	}
 
 	for _, command := range commands {
+		log.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
 		button := s.categoryButtons[command.GetEntry()]
 		button.operation = command.GetOperation()
 		button.button.SetLabel(CommandToLabel(command))

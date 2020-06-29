@@ -16,6 +16,10 @@ type Entry struct {
 	subPath string
 }
 
+func (s *Entry) GetSubPath() string {
+	return s.subPath
+}
+
 func (s *Entry) GetName() string {
 	return s.name
 }

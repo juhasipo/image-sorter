@@ -11,5 +11,4 @@ type Gui interface {
 	UpdateCategories(categories *category.CategoriesCommand)
 	SetImageCategory(command []*category.CategorizeCommand)
 	Run(args []string)
-
 }

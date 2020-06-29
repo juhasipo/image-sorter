@@ -7,6 +7,7 @@ const(
 	PREV_IMAGE Topic = "event-prev-image"
 	CURRENT_IMAGE Topic = "event-current-image"
 	CATEGORIZE_IMAGE Topic = "event-categorize-image"
+	PERSIST_CATEGORIES Topic = "event-persis-categories"
 
 	IMAGES_UPDATED Topic = "event-images-updated"
 	CATEGORIES_UPDATED Topic = "event-categories-updated"

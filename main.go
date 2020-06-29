@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"vincit.fi/image-sorter/category"
-	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/ui"
@@ -13,10 +12,10 @@ func main() {
 	flag.Parse()
 	broker := event.InitBus(1000)
 
+	flag.Parse()
 	root := flag.Arg(0)
-	handles := common.LoadImages(root)
 	categoryManager := category.New(broker)
-	imageLibrary := library.ForHandles(handles, broker)
+	imageLibrary := library.ForHandles(root, broker)
 	gui := ui.Init(broker)
 
 	// Startup
@@ -30,6 +29,7 @@ func main() {
 	broker.Subscribe(event.NEXT_IMAGE, imageLibrary.RequestNextImage)
 	broker.Subscribe(event.PREV_IMAGE, imageLibrary.RequestPrevImage)
 	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
+	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGES_UPDATED, gui.SetImages)

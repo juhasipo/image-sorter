@@ -2,6 +2,7 @@ package library
 
 import (
 	"log"
+	"path/filepath"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -19,6 +20,7 @@ const (
 type ImageList func(number int) []*common.Handle
 
 type Manager struct {
+	rootDir string
 	imageList     []*common.Handle
 	index         int
 	imageCategory map[*common.Handle]map[*category.Entry]*category.CategorizedImage
@@ -27,14 +29,27 @@ type Manager struct {
 	Library
 }
 
-func ForHandles(handles []*common.Handle, sender event.Sender) Library {
+func ForHandles(rootDir string, sender event.Sender) Library {
 	var manager = Manager{
-		imageList: handles,
+		rootDir: rootDir,
 		index: 0,
 		imageCategory: map[*common.Handle]map[*category.Entry]*category.CategorizedImage{},
 		sender: sender,
 	}
+	manager.LoadImagesFromRootDir()
 	return &manager
+}
+
+func (s *Manager) LoadImagesFromRootDir() {
+	log.Printf("Loading images from '%s'", s.rootDir)
+	s.imageList = common.LoadImages(s.rootDir)
+	// Remove non existing files from the categories in case they have been moved
+	for _, handle := range s.imageList {
+		if _, ok := s.imageCategory[handle]; !ok {
+			delete(s.imageCategory, handle)
+		}
+	}
+	s.index = 0
 }
 
 func (s *Manager) SetCategory(command *category.CategorizeCommand) {
@@ -59,7 +74,6 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		log.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
 		categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
 		image[categoryEntry] = categorizedImage
-
 	}
 
 	if operation == category.NONE || categorizedImage == nil {
@@ -153,17 +167,38 @@ func (s* Manager) GetPrevImages(number int) []*common.Handle {
 }
 
 func (s* Manager) PersistImageCategories() {
+	log.Printf("Persisting files to categories")
 	for handle, categoryEntries := range s.imageCategory {
-		for _, categorizedImage := range categoryEntries {
-			s.PersistImageCategory(handle, categorizedImage)
-		}
+		s.PersistImageCategory(handle, categoryEntries)
 	}
+
+	s.LoadImagesFromRootDir()
 
 	s.SendImages()
 }
 
-func (s* Manager) PersistImageCategory(handle *common.Handle, image *category.CategorizedImage) {
+func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[*category.Entry]*category.CategorizedImage) {
+	log.Printf(" - Persisting '%s'", handle.GetPath())
+	dir, file := filepath.Split(handle.GetPath())
 
+	var hasMove = false
+	for _, image := range categories {
+		targetDirName := image.GetEntry().GetSubPath()
+		targetDir := filepath.Join(dir, targetDirName)
+
+		// Always copy
+		if image.GetOperation() != category.NONE {
+			common.CopyFile(dir, file, targetDir, file)
+		}
+
+		// Check if any one is marked to be moved, in that case delete it later
+		if image.GetOperation() == category.MOVE {
+			hasMove = true
+		}
+	}
+	if hasMove {
+		common.RemoveFile(handle.GetPath())
+	}
 }
 
 func (s *Manager) GetCategories(image *common.Handle) []*category.CategorizedImage {
