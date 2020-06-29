@@ -8,13 +8,14 @@ import (
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
+	"vincit.fi/image-sorter/pixbuf"
 )
 
 type Ui struct {
 	win              *gtk.ApplicationWindow
 	application      *gtk.Application
 	imageManager     *library.Manager
-	pixbufCache      *PixbufCache
+	pixbufCache      *pixbuf.PixbufCache
 	currentImage     *CurrentImage
 	nextImages       *ImageList
 	prevImages       *ImageList
@@ -40,9 +41,7 @@ func Init(broker event.Sender) Gui {
 
 	ui := Ui{
 		application: application,
-		pixbufCache: &PixbufCache {
-			imageCache: map[common.Handle]*Instance{},
-		},
+		pixbufCache: pixbuf.NewPixbufCache(),
 		broker: broker,
 	}
 
@@ -136,7 +135,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 func (s *Ui) UpdateCurrentImage() {
 	scaled := s.pixbufCache.GetScaled(
 		s.currentImage.image,
-		SizeFromViewport(s.currentImageView),
+		pixbuf.SizeFromViewport(s.currentImageView),
 	)
 	s.currentImage.view.SetFromPixbuf(scaled)
 }
