@@ -9,7 +9,7 @@ import (
 type Gui interface {
 	SetImages(topic event.Topic, handles []*common.Handle)
 	UpdateCategories(categories *category.CategoriesCommand)
-	SetImageCategory(command *category.CategorizeCommand)
+	SetImageCategory(command []*category.CategorizeCommand)
 	Run(args []string)
 
 }

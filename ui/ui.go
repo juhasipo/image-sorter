@@ -23,6 +23,7 @@ type Ui struct {
 	prevButton       *gtk.Button
 	currentImageView *gtk.Viewport
 	categoriesView   *gtk.Box
+	categoryButtons  map[*category.Entry]*CategoryButton
 	broker           event.Sender
 
 	Gui
@@ -102,10 +103,18 @@ func (s *Ui) Init() {
 
 		s.broker.SendToTopic(event.UI_READY)
 
+		s.categoryButtons = map[*category.Entry]*CategoryButton{}
+
 		// Show the Window and all of its components.
 		s.win.Show()
 		s.application.AddWindow(s.win)
 	})
+}
+
+type CategoryButton struct {
+	button *gtk.Button
+	entry *category.Entry
+	operation category.Operation
 }
 
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
@@ -116,20 +125,31 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	}
 
 	for _, entry := range categories.GetCategories() {
-		send := func() {
-			s.broker.SendToTopicWithData(
-				event.CATEGORIZE_IMAGE,
-				category.CategorizeCommandNew(
-					s.currentImage.image, entry, category.COPY,
-					))
-		}
 		button, _ := gtk.ButtonNewWithLabel(entry.GetName())
+
+		categoryButton := &CategoryButton{
+			button:    button,
+			entry:     entry,
+			operation: category.NONE,
+		}
+		s.categoryButtons[entry] = categoryButton
+
+		send := s.CreateSendFuncForEntry(categoryButton)
 		button.Connect("clicked", func(button *gtk.Button) {
 			send()
 		})
 		s.categoriesView.Add(button)
 	}
 	s.win.ShowAll()
+}
+
+func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
+	send := func() {
+		s.broker.SendToTopicWithData(
+			event.CATEGORIZE_IMAGE,
+			category.CategorizeCommandNew(s.currentImage.image, categoryButton.entry, NextOperation(categoryButton.operation)))
+	}
+	return send
 }
 
 func (s *Ui) UpdateCurrentImage() {
@@ -167,8 +187,34 @@ func (s *Ui) Run(args []string) {
 	s.application.Run(args)
 }
 
-func (s *Ui) SetImageCategory(commands *category.CategorizeCommand) {
-	// TODO: Mark image category
-	log.Print("Mark image category")
+func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
+	log.Print("Marked image category")
+	for _, button := range s.categoryButtons {
+		button.button.SetLabel(button.entry.GetName())
+	}
+
+	for _, command := range commands {
+		button := s.categoryButtons[command.GetEntry()]
+		button.operation = command.GetOperation()
+		button.button.SetLabel(CommandToLabel(command))
+	}
 }
 
+func CommandToLabel(command *category.CategorizeCommand) string {
+	entryName := command.GetEntry().GetName()
+	status := ""
+	switch command.GetOperation() {
+	case category.COPY: status = "C"
+	case category.MOVE: status = "M"
+	}
+
+	if status != "" {
+		return entryName + " (" + status + ")"
+	} else {
+		return entryName
+	}
+}
+
+func NextOperation(operation category.Operation) category.Operation {
+	return (operation + 1) % 3
+}

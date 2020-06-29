@@ -21,7 +21,7 @@ type ImageList func(number int) []*common.Handle
 type Manager struct {
 	imageList     []*common.Handle
 	index         int
-	imageCategory map[*common.Handle]*category.CategorizedImage
+	imageCategory map[*common.Handle]map[*category.Entry]*category.CategorizedImage
 	sender        event.Sender
 
 	Library
@@ -31,26 +31,48 @@ func ForHandles(handles []*common.Handle, sender event.Sender) Library {
 	var manager = Manager{
 		imageList: handles,
 		index: 0,
-		imageCategory: map[*common.Handle]*category.CategorizedImage{},
+		imageCategory: map[*common.Handle]map[*category.Entry]*category.CategorizedImage{},
 		sender: sender,
 	}
 	return &manager
 }
 
 func (s *Manager) SetCategory(command *category.CategorizeCommand) {
-	log.Print("Categorize ", command.GetHandle().GetPath(), " as ", command.GetEntry().GetName())
-	if val, ok := s.imageCategory[command.GetHandle()]; ok {
-		if command.GetOperation() != category.NONE {
-			val.SetOperation(command.GetOperation())
-		} else {
-			delete(s.imageCategory, command.GetHandle())
+	defer s.SendCategories(command.GetHandle())
+
+	handle := command.GetHandle()
+	categoryEntry := command.GetEntry()
+	operation := command.GetOperation()
+
+	var image = s.imageCategory[handle]
+	var categorizedImage *category.CategorizedImage = nil
+	if image != nil {
+		categorizedImage = image[categoryEntry]
+	}
+
+	if categorizedImage == nil && operation != category.NONE {
+		if image == nil {
+			log.Printf("Create category entry for '%s'", handle.GetPath())
+			image = map[*category.Entry]*category.CategorizedImage{}
+			s.imageCategory[handle] = image
+		}
+		log.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
+		categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
+		image[categoryEntry] = categorizedImage
+
+	}
+
+	if operation == category.NONE || categorizedImage == nil {
+		log.Printf("Remove entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
+		delete(s.imageCategory[handle], categoryEntry)
+		if len(s.imageCategory[handle]) == 0 {
+			log.Printf("Remove entry for '%s'", handle.GetPath())
+			delete(s.imageCategory, handle)
 		}
 	} else {
-		s.imageCategory[command.GetHandle()] = category.CategorizedImageNew(command.GetEntry(), command.GetOperation())
+		log.Printf("Update entry for '%s:%s' to %d", handle.GetPath(), categoryEntry.GetName(), operation)
+		categorizedImage.SetOperation(operation)
 	}
-	s.sender.SendToTopicWithData(
-		event.IMAGE_CATEGORIZED,
-		category.CategorizeCommandNew(command.GetHandle(), command.GetEntry(), command.GetOperation()))
 }
 
 func (s *Manager) RequestNextImage() {
@@ -64,8 +86,20 @@ func (s *Manager) RequestNextImage() {
 func (s *Manager) SendImages() {
 	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE))
 	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE))
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{s.GetCurrentImage()})
+	currentImage := s.GetCurrentImage()
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{currentImage})
+	s.SendCategories(currentImage)
 }
+
+func (s *Manager) SendCategories(currentImage *common.Handle) {
+	var categories = s.GetCategories(currentImage)
+	var commands []*category.CategorizeCommand
+	for _, image := range categories {
+		commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
+	}
+	s.sender.SendToTopicWithData(event.IMAGE_CATEGORIZED, commands)
+}
+
 
 func (s *Manager) RequestPrevImage() {
 	s.index--
@@ -116,4 +150,30 @@ func (s* Manager) GetPrevImages(number int) []*common.Handle {
 	copy(arr[:], slice)
 	util.Reverse(arr)
 	return arr
+}
+
+func (s* Manager) PersistImageCategories() {
+	for handle, categoryEntries := range s.imageCategory {
+		for _, categorizedImage := range categoryEntries {
+			s.PersistImageCategory(handle, categorizedImage)
+		}
+	}
+
+	s.SendImages()
+}
+
+func (s* Manager) PersistImageCategory(handle *common.Handle, image *category.CategorizedImage) {
+
+}
+
+func (s *Manager) GetCategories(image *common.Handle) []*category.CategorizedImage {
+	var categories []*category.CategorizedImage
+
+	if i, ok := s.imageCategory[image]; ok {
+		for _, categorizedImage := range i {
+			categories = append(categories, categorizedImage)
+		}
+	}
+
+	return categories
 }
