@@ -136,7 +136,7 @@ func (s *Ui) Init() {
 		s.persistButton = getObjectOrPanic(builder, "persist-button").(*gtk.Button)
 		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
 
-		s.currentImageView.Connect("size-allocate", func(widget *glib.Object, data uintptr) {
+		s.currentImageView.ConnectAfter("size-allocate", func(widget *glib.Object, data uintptr) {
 			s.UpdateCurrentImage()
 		})
 
