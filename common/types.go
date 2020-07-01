@@ -1,6 +1,8 @@
 package common
 
-import "github.com/rivo/duplo"
+import (
+	duplo "vincit.fi/image-sorter/duplo"
+)
 
 type Handle struct {
 	id string

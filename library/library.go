@@ -2,7 +2,6 @@ package library
 
 import (
 	"github.com/pixiv/go-libjpeg/jpeg"
-	"github.com/rivo/duplo"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/duplo"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/util"
 )
@@ -38,11 +38,11 @@ type Manager struct {
 
 func ForHandles(rootDir string, sender event.Sender) Library {
 	var manager = Manager{
-		rootDir: rootDir,
-		index: 0,
+		rootDir:       rootDir,
+		index:         0,
 		imageCategory: map[*common.Handle]map[*category.Entry]*category.CategorizedImage{},
-		sender: sender,
-		imageHash: duplo.New(),
+		sender:        sender,
+		imageHash:     duplo.New(),
 	}
 	manager.LoadImagesFromRootDir()
 	return &manager
@@ -129,8 +129,10 @@ func (s *Manager) GenerateHashes() {
 	endTime := time.Now()
 	d := endTime.Sub(startTime)
 	log.Printf("%d hashes created in %s", hashExpected, d.String())
+
 	avg := d.Milliseconds() / int64(hashExpected)
-	f := time.Millisecond * time.Duration(avg)
+	// Remember to take thread count otherwise the avg time is too small
+	f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
 	log.Printf("  On average: %s/image", f.String())
 
 	s.SendSimilarImages(s.GetCurrentImage())
