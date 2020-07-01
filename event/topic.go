@@ -5,6 +5,8 @@ const(
 	UI_READY Topic = "event-ui-ready"
 	NEXT_IMAGE Topic = "event-next-image"
 	PREV_IMAGE Topic = "event-prev-image"
+	JUMP_NEXT_IMAGE Topic = "event-jump-next-image"
+	JUMP_PREV_IMAGE Topic = "event-jump-prev-image"
 	SIMILAR_IMAGE Topic = "event-similar-image"
 	CURRENT_IMAGE Topic = "event-current-image"
 	CATEGORIZE_IMAGE Topic = "event-categorize-image"

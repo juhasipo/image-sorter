@@ -208,7 +208,11 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 }
 
 func (s *Manager) RequestNextImage() {
-	s.index++
+	s.RequestNextImageWithOffset(1)
+}
+
+func (s *Manager) RequestNextImageWithOffset(offset int) {
+	s.index += offset
 	if s.index >= len(s.imageList) {
 		s.index = len(s.imageList) - 1
 	}
@@ -235,9 +239,13 @@ func (s *Manager) SendCategories(currentImage *common.Handle) {
 
 
 func (s *Manager) RequestPrevImage() {
-	s.index--
-	if s.index < 0 {
-		s.index = 0
+	s.RequestPrevImageWithOffset(1)
+}
+
+func (s *Manager) RequestPrevImageWithOffset(offset int) {
+	s.index -= offset
+	if s.index >= len(s.imageList) {
+		s.index = len(s.imageList) - 1
 	}
 	s.SendImages()
 }

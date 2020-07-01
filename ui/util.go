@@ -7,6 +7,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"vincit.fi/image-sorter/event"
 )
 
 // PixbufGetType is a wrapper around gdk_pixbuf_get_type().
@@ -23,12 +24,22 @@ func getObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 	return obj
 }
 
-func CreateImageList(view *gtk.TreeView, title string, horizontal bool) *gtk.ListStore {
-	if horizontal {
-		view.SetSizeRequest(100, -1)
-	} else {
-		view.SetSizeRequest(0, 100)
-	}
+type Direction int
+const (
+	FORWARD Direction = iota
+	BACKWARD
+)
+
+func CreateImageList(view *gtk.TreeView, title string, direction Direction, sender event.Sender) *gtk.ListStore {
+	view.SetSizeRequest(100, -1)
+	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
+		index := path.GetIndices()[0] + 1
+		if direction == FORWARD {
+			sender.SendToTopicWithData(event.JUMP_NEXT_IMAGE, index)
+		} else {
+			sender.SendToTopicWithData(event.JUMP_PREV_IMAGE, index)
+		}
+	})
 	store, _ := gtk.ListStoreNew(PixbufGetType())
 	view.SetModel(store)
 	renderer, _ := gtk.CellRendererPixbufNew()

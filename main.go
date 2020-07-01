@@ -27,7 +27,9 @@ func main() {
 	// UI -> Library
 	broker.Subscribe(event.CATEGORIZE_IMAGE, imageLibrary.SetCategory)
 	broker.Subscribe(event.NEXT_IMAGE, imageLibrary.RequestNextImage)
+	broker.Subscribe(event.JUMP_NEXT_IMAGE, imageLibrary.RequestNextImageWithOffset)
 	broker.Subscribe(event.PREV_IMAGE, imageLibrary.RequestPrevImage)
+	broker.Subscribe(event.JUMP_PREV_IMAGE, imageLibrary.RequestPrevImageWithOffset)
 	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
 	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
 	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.GenerateHashes)

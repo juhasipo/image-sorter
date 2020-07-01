@@ -8,9 +8,11 @@ import (
 
 type Library interface {
 	RequestImages()
-	SetCategory(command *category.CategorizeCommand)
+	SetCategory(*category.CategorizeCommand)
 	RequestNextImage()
+	RequestNextImageWithOffset(int)
 	RequestPrevImage()
+	RequestPrevImageWithOffset(int)
 	PersistImageCategories()
 	GenerateHashes()
 

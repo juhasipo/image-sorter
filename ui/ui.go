@@ -103,9 +103,9 @@ func (s *Ui) Init() {
 		})
 
 		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
-		nextImageStore := CreateImageList(nextImagesList, "Next images", true)
+		nextImageStore := CreateImageList(nextImagesList, "Next images", FORWARD, s.broker)
 		prevImagesList := getObjectOrPanic(builder, "prev-images").(*gtk.TreeView)
-		prevImageStore := CreateImageList(prevImagesList, "Prev images", true)
+		prevImageStore := CreateImageList(prevImagesList, "Prev images", BACKWARD, s.broker)
 		s.similarImagesView = getObjectOrPanic(builder, "similar-images-view").(*gtk.ScrolledWindow)
 		similarImages, _ := gtk.FlowBoxNew()
 		s.similarImages = similarImages
