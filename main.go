@@ -30,11 +30,13 @@ func main() {
 	broker.Subscribe(event.PREV_IMAGE, imageLibrary.RequestPrevImage)
 	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
 	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
+	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.GenerateHashes)
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGES_UPDATED, gui.SetImages)
 	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
 	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
+	broker.ConnectToGui(event.UPDATE_HASH_STATUS, gui.UpdateProgress)
 
 	gui.Run([]string{})
 }

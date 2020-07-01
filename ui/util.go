@@ -18,13 +18,17 @@ func PixbufGetType() glib.Type {
 func getObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 	obj, err := builder.GetObject(name)
 	if err != nil {
-		log.Panic("Could not load object " + name)
+		log.Panic("Could not load object ",name, ": ", err)
 	}
 	return obj
 }
 
-func CreateImageList(view *gtk.TreeView, title string) *gtk.ListStore {
-	view.SetSizeRequest(100, -1)
+func CreateImageList(view *gtk.TreeView, title string, horizontal bool) *gtk.ListStore {
+	if horizontal {
+		view.SetSizeRequest(100, -1)
+	} else {
+		view.SetSizeRequest(0, 100)
+	}
 	store, _ := gtk.ListStoreNew(PixbufGetType())
 	view.SetModel(store)
 	renderer, _ := gtk.CellRendererPixbufNew()

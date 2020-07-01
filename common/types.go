@@ -1,8 +1,11 @@
 package common
 
+import "github.com/rivo/duplo"
+
 type Handle struct {
 	id string
 	path string
+	hash *duplo.Hash
 }
 
 func (s *Handle) IsValid() bool {
@@ -19,4 +22,11 @@ func GetEmptyHandle() *Handle {
 
 func (s* Handle) GetPath() string {
 	return s.path
+}
+
+func (s *Handle) SetHash(hash *duplo.Hash) {
+	s.hash = hash
+}
+func (s *Handle) GetHash() *duplo.Hash {
+	return s.hash
 }

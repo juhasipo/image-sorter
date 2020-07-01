@@ -1,8 +1,14 @@
 package library
 
 import (
+	"github.com/pixiv/go-libjpeg/jpeg"
+	"github.com/rivo/duplo"
 	"log"
+	"os"
 	"path/filepath"
+	"runtime"
+	"sort"
+	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -24,6 +30,7 @@ type Manager struct {
 	imageList     []*common.Handle
 	index         int
 	imageCategory map[*common.Handle]map[*category.Entry]*category.CategorizedImage
+	imageHash     *duplo.Store
 	sender        event.Sender
 
 	Library
@@ -35,9 +42,118 @@ func ForHandles(rootDir string, sender event.Sender) Library {
 		index: 0,
 		imageCategory: map[*common.Handle]map[*category.Entry]*category.CategorizedImage{},
 		sender: sender,
+		imageHash: duplo.New(),
 	}
 	manager.LoadImagesFromRootDir()
 	return &manager
+}
+
+func HashImage(input chan *common.Handle, output chan *HashResult) {
+	for handle := range input {
+		startTime := time.Now()
+		imageFile, err := os.Open(handle.GetPath())
+		defer imageFile.Close()
+		if err != nil {
+			ReturnResult(output, handle, nil)
+		}
+		decodedImage, err := jpeg.Decode(imageFile, &jpeg.DecoderOptions{})
+		if err != nil {
+			ReturnResult(output, handle, nil)
+		}
+		endTime := time.Now()
+		log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
+
+		startTime = time.Now()
+		hash, _ := duplo.CreateHash(decodedImage)
+		endTime = time.Now()
+		log.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
+		ReturnResult(output, handle, &hash)
+	}
+
+}
+
+func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
+	channel <-&HashResult{
+		handle: handle,
+		hash:   hash,
+	}
+}
+
+type HashResult struct {
+	handle *common.Handle
+	hash *duplo.Hash
+}
+
+func (s *Manager) GenerateHashes() {
+	startTime := time.Now()
+	hashExpected := len(s.imageList)
+	log.Printf("Generate hashes for %d images...", hashExpected)
+	s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", 0, hashExpected)
+
+	// Just to make things consistent in case Go decides to change the default
+	cpuCores := runtime.NumCPU()
+	log.Printf(" * Using %d threads", cpuCores)
+	runtime.GOMAXPROCS(cpuCores)
+
+	inputChannel := make(chan *common.Handle, hashExpected)
+	outputChannel := make(chan *HashResult)
+
+	// Add images to input queue for goroutines
+	for _, handle := range s.imageList {
+		inputChannel <- handle
+	}
+
+	// Spin up goroutines which will process the data
+	// only same number as CPU cores so that we will only max X hashes are
+	// processed at once. Otherwise the goroutines might start processing
+	// all images at once which would use all available RAM
+	for i := 0; i < cpuCores; i++ {
+		go HashImage(inputChannel, outputChannel)
+	}
+
+	var i = 0
+	for result := range outputChannel {
+		i++
+		result.handle.SetHash(result.hash)
+
+		//log.Printf(" * Got hash %d/%d", i, hashExpected)
+		s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", i, hashExpected)
+		s.imageHash.Add(result.handle, *result.hash)
+
+		if i == hashExpected {
+			close(outputChannel)
+			close(inputChannel)
+		}
+	}
+
+	endTime := time.Now()
+	d := endTime.Sub(startTime)
+	log.Printf("%d hashes created in %s", hashExpected, d.String())
+	avg := d.Milliseconds() / int64(hashExpected)
+	f := time.Millisecond * time.Duration(avg)
+	log.Printf("  On average: %s/image", f.String())
+
+	s.SendSimilarImages(s.GetCurrentImage())
+}
+
+func (s *Manager) SendSimilarImages(handle *common.Handle) {
+	if s.imageHash.Size() > 0 {
+		matches := s.imageHash.Query(*handle.GetHash())
+		sort.Sort(matches)
+
+		var found []*common.Handle
+		for _, match := range matches {
+			similar := match.ID.(*common.Handle)
+			if handle != similar {
+				found = append(found, similar)
+			}
+			if len(found) == 10 {
+				break
+			}
+		}
+
+		s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.SIMILAR_IMAGE, found)
+	}
 }
 
 func (s *Manager) LoadImagesFromRootDir() {
@@ -103,6 +219,7 @@ func (s *Manager) SendImages() {
 	currentImage := s.GetCurrentImage()
 	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{currentImage})
 	s.SendCategories(currentImage)
+	s.SendSimilarImages(currentImage)
 }
 
 func (s *Manager) SendCategories(currentImage *common.Handle) {

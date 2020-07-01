@@ -5,12 +5,15 @@ const(
 	UI_READY Topic = "event-ui-ready"
 	NEXT_IMAGE Topic = "event-next-image"
 	PREV_IMAGE Topic = "event-prev-image"
+	SIMILAR_IMAGE Topic = "event-similar-image"
 	CURRENT_IMAGE Topic = "event-current-image"
 	CATEGORIZE_IMAGE Topic = "event-categorize-image"
 	PERSIST_CATEGORIES Topic = "event-persis-categories"
+	GENERATE_HASHES Topic = "event-generate-hashes"
 
 	IMAGES_UPDATED Topic = "event-images-updated"
 	CATEGORIES_UPDATED Topic = "event-categories-updated"
 	IMAGE_CATEGORIZED Topic = "event-image-categorized"
+	UPDATE_HASH_STATUS Topic = "event-update-hash-status"
 )
 

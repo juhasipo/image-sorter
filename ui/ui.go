@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -13,22 +14,28 @@ import (
 )
 
 type Ui struct {
-	win              *gtk.ApplicationWindow
-	application      *gtk.Application
-	imageManager     *library.Manager
-	pixbufCache      *pixbuf.PixbufCache
-	currentImage     *CurrentImage
-	nextImages       *ImageList
-	prevImages       *ImageList
-	nextButton       *gtk.Button
-	prevButton       *gtk.Button
-	currentImageView *gtk.Viewport
-	categoriesView   *gtk.Box
-	categoryButtons  map[*category.Entry]*CategoryButton
-	persistButton    *gtk.Button
-	broker           event.Sender
+	win               *gtk.ApplicationWindow
+	application       *gtk.Application
+	imageManager      *library.Manager
+	pixbufCache       *pixbuf.PixbufCache
+	currentImage      *CurrentImage
+	nextImages        *ImageList
+	prevImages        *ImageList
+	nextButton        *gtk.Button
+	prevButton        *gtk.Button
+	currentImageView  *gtk.Viewport
+	categoriesView    *gtk.Box
+	categoryButtons   map[*category.Entry]*CategoryButton
+	persistButton     *gtk.Button
+	broker            event.Sender
+	findSimilarButton *gtk.Button
+	progressBar       *gtk.ProgressBar
+	mainButtonsView   *gtk.Box
 
 	Gui
+	similarImagesView *gtk.ScrolledWindow
+	similarImages     *gtk.FlowBox
+
 }
 
 func Init(broker event.Sender) Gui {
@@ -96,9 +103,18 @@ func (s *Ui) Init() {
 		})
 
 		nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
-		nextImageStore := CreateImageList(nextImagesList, "Next images")
+		nextImageStore := CreateImageList(nextImagesList, "Next images", true)
 		prevImagesList := getObjectOrPanic(builder, "prev-images").(*gtk.TreeView)
-		prevImageStore := CreateImageList(prevImagesList, "Prev images")
+		prevImageStore := CreateImageList(prevImagesList, "Prev images", true)
+		s.similarImagesView = getObjectOrPanic(builder, "similar-images-view").(*gtk.ScrolledWindow)
+		similarImages, _ := gtk.FlowBoxNew()
+		s.similarImages = similarImages
+
+		s.similarImagesView.SetVisible(false)
+		s.similarImagesView.SetSizeRequest(-1, 100)
+		s.similarImages.SetSizeRequest(-1, 100)
+
+		s.similarImagesView.Add(similarImages)
 
 		s.nextImages = &ImageList{
 			component: nextImagesList,
@@ -112,10 +128,13 @@ func (s *Ui) Init() {
 			view: getObjectOrPanic(builder, "current-image").(*gtk.Image),
 		}
 		s.currentImageView = getObjectOrPanic(builder, "current-image-view").(*gtk.Viewport)
+		s.mainButtonsView = getObjectOrPanic(builder, "main-buttons-view").(*gtk.Box)
 		s.nextButton = getObjectOrPanic(builder, "next-button").(*gtk.Button)
 		s.prevButton = getObjectOrPanic(builder, "prev-button").(*gtk.Button)
+		s.findSimilarButton = getObjectOrPanic(builder, "find-similar-button").(*gtk.Button)
 		s.categoriesView = getObjectOrPanic(builder, "categories").(*gtk.Box)
 		s.persistButton = getObjectOrPanic(builder, "persist-button").(*gtk.Button)
+		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
 
 		s.currentImageView.Connect("size-allocate", func(widget *glib.Object, data uintptr) {
 			s.UpdateCurrentImage()
@@ -129,6 +148,10 @@ func (s *Ui) Init() {
 		})
 		s.persistButton.Connect("clicked", func() {
 			s.broker.SendToTopic(event.PERSIST_CATEGORIES)
+		})
+
+		s.findSimilarButton.Connect("clicked", func() {
+			s.broker.SendToTopic(event.GENERATE_HASHES)
 		})
 
 		s.broker.SendToTopic(event.UI_READY)
@@ -170,7 +193,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 		})
 		s.categoriesView.Add(button)
 	}
-	s.win.ShowAll()
+	s.categoriesView.ShowAll()
 }
 
 func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
@@ -195,6 +218,17 @@ func (s* Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
 		s.AddImagesToStore(s.nextImages, handles)
 	} else if imageTarget == event.PREV_IMAGE {
 		s.AddImagesToStore(s.prevImages, handles)
+	} else if imageTarget == event.SIMILAR_IMAGE {
+		children := s.similarImages.GetChildren()
+		children.Foreach(func(item interface{}) {
+			s.similarImages.Remove(item.(gtk.IWidget))
+		})
+		for _, handle := range handles {
+			imageWidget, _ := gtk.ImageNewFromPixbuf(s.pixbufCache.GetThumbnail(handle))
+			s.similarImages.Add(imageWidget)
+		}
+		s.similarImagesView.SetVisible(true)
+		s.similarImages.ShowAll()
 	} else {
 		s.SetCurrentImage(handles[0])
 	}
@@ -248,4 +282,21 @@ func CommandToLabel(command *category.CategorizeCommand) string {
 
 func NextOperation(operation category.Operation) category.Operation {
 	return (operation + 1) % 3
+}
+
+func (s *Ui) UpdateProgress(name string, status int, total int) {
+	if status == 0 {
+		s.progressBar.SetVisible(true)
+		s.mainButtonsView.SetVisible(false)
+	}
+
+	if status == total {
+		s.progressBar.SetVisible(false)
+		s.mainButtonsView.SetVisible(true)
+		return
+	}
+
+	statusText := fmt.Sprintf("Processed %d/%d", status, total)
+	s.progressBar.SetText(statusText)
+	s.progressBar.SetFraction(float64(status) / float64(total))
 }

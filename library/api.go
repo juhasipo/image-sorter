@@ -12,6 +12,7 @@ type Library interface {
 	RequestNextImage()
 	RequestPrevImage()
 	PersistImageCategories()
+	GenerateHashes()
 
 }
 
