@@ -72,12 +72,14 @@ type Manager struct {
 func FromCategories(categories []string) []*Entry {
 	var categoryEntries []*Entry
 	for _, categoryName := range categories {
-		name, keys := Parse(categoryName)
-		categoryEntries = append(categoryEntries, &Entry {
-			name: name,
-			subPath: categoryName,
-			shortcuts: keys,
-		})
+		if len(categoryName) > 0 {
+			name, keys := Parse(categoryName)
+			categoryEntries = append(categoryEntries, &Entry{
+				name:      name,
+				subPath:   categoryName,
+				shortcuts: keys,
+			})
+		}
 	}
 	return categoryEntries
 }
@@ -95,9 +97,9 @@ func KeyToUint(key string) []uint {
 	}
 }
 
-func New(sender event.Sender) *Manager {
+func New(sender event.Sender, categories []string) *Manager {
 	return &Manager {
-		categories: FromCategories([]string {"Good:G", "Maybe:M", "Bad:B"}),
+		categories: FromCategories(categories),
 		sender: sender,
 	}
 }

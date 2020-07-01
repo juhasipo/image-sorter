@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strings"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
@@ -9,13 +10,16 @@ import (
 )
 
 func main() {
-	flag.Parse()
-	broker := event.InitBus(1000)
+	categories := flag.String("categories", "", "Comma separated categories. Each category in format <name>:<shortcut> e.g. Good:G")
 
 	flag.Parse()
-	root := flag.Arg(0)
-	categoryManager := category.New(broker)
-	imageLibrary := library.ForHandles(root, broker)
+
+	broker := event.InitBus(1000)
+
+	categoryArr := strings.Split(*categories, ",")
+	categoryManager := category.New(broker, categoryArr)
+
+	imageLibrary := library.ForHandles(flag.Arg(0), broker)
 	gui := ui.Init(broker)
 
 	// Startup
@@ -41,6 +45,5 @@ func main() {
 	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
 	broker.ConnectToGui(event.UPDATE_HASH_STATUS, gui.UpdateProgress)
 
-	gui.Run([]string{})
+	gui.Run()
 }
-

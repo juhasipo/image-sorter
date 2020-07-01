@@ -10,7 +10,7 @@ type Gui interface {
 	SetImages(topic event.Topic, handles []*common.Handle)
 	UpdateCategories(categories *category.CategoriesCommand)
 	SetImageCategory(command []*category.CategorizeCommand)
-	Run(args []string)
+	Run()
 
 	UpdateProgress(name string, status int, total int)
 }

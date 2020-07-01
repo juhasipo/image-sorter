@@ -258,8 +258,8 @@ func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
 	}
 }
 
-func (s *Ui) Run(args []string) {
-	s.application.Run(args)
+func (s *Ui) Run() {
+	s.application.Run([]string{})
 }
 
 func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
