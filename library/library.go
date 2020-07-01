@@ -219,6 +219,15 @@ func (s *Manager) RequestNextImageWithOffset(offset int) {
 	s.SendImages()
 }
 
+func (s *Manager) RequestImage(handle *common.Handle) {
+	for i, c := range s.imageList {
+		if handle == c {
+			s.index = i
+		}
+	}
+	s.RequestImages()
+}
+
 func (s *Manager) SendImages() {
 	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE))
 	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE))

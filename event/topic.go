@@ -9,6 +9,7 @@ const(
 	JUMP_PREV_IMAGE Topic = "event-jump-prev-image"
 	SIMILAR_IMAGE Topic = "event-similar-image"
 	CURRENT_IMAGE Topic = "event-current-image"
+	JUMP_TO_IMAGE Topic = "event-jump-to-image"
 	CATEGORIZE_IMAGE Topic = "event-categorize-image"
 	PERSIST_CATEGORIES Topic = "event-persis-categories"
 	GENERATE_HASHES Topic = "event-generate-hashes"

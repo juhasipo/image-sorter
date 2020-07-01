@@ -31,6 +31,7 @@ func main() {
 	broker.Subscribe(event.PREV_IMAGE, imageLibrary.RequestPrevImage)
 	broker.Subscribe(event.JUMP_PREV_IMAGE, imageLibrary.RequestPrevImageWithOffset)
 	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
+	broker.Subscribe(event.JUMP_TO_IMAGE, imageLibrary.RequestImage)
 	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
 	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.GenerateHashes)
 

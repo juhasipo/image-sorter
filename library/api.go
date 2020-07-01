@@ -13,6 +13,7 @@ type Library interface {
 	RequestNextImageWithOffset(int)
 	RequestPrevImage()
 	RequestPrevImageWithOffset(int)
+	RequestImage(*common.Handle)
 	PersistImageCategories()
 	GenerateHashes()
 

@@ -224,14 +224,25 @@ func (s* Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
 			s.similarImages.Remove(item.(gtk.IWidget))
 		})
 		for _, handle := range handles {
-			imageWidget, _ := gtk.ImageNewFromPixbuf(s.pixbufCache.GetThumbnail(handle))
-			s.similarImages.Add(imageWidget)
+			widget := s.createSimilarImage(handle)
+			s.similarImages.Add(widget)
 		}
 		s.similarImagesView.SetVisible(true)
 		s.similarImages.ShowAll()
 	} else {
 		s.SetCurrentImage(handles[0])
 	}
+}
+
+func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
+	eventBox, _ := gtk.EventBoxNew()
+	imageWidget, _ := gtk.ImageNewFromPixbuf(s.pixbufCache.GetThumbnail(handle))
+	eventBox.Add(imageWidget)
+	eventBox.Connect("button-press-event", func() {
+		s.broker.SendToTopicWithData(event.JUMP_TO_IMAGE, handle)
+		log.Printf("Foo: %s", handle.GetPath())
+	})
+	return eventBox
 }
 
 func (s *Ui) SetCurrentImage(handle *common.Handle) {
