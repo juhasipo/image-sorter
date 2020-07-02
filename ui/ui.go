@@ -38,7 +38,7 @@ type Ui struct {
 
 }
 
-func Init(broker event.Sender) Gui {
+func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -51,7 +51,7 @@ func Init(broker event.Sender) Gui {
 
 	ui := Ui{
 		application: application,
-		pixbufCache: pixbuf.NewPixbufCache(),
+		pixbufCache: pixbufCache,
 		broker: broker,
 	}
 
@@ -136,9 +136,7 @@ func (s *Ui) Init() {
 		s.persistButton = getObjectOrPanic(builder, "persist-button").(*gtk.Button)
 		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
 
-		s.currentImageView.ConnectAfter("size-allocate", func(widget *glib.Object, data uintptr) {
-			s.UpdateCurrentImage()
-		})
+		s.currentImageView.ConnectAfter("size-allocate", s.UpdateCurrentImage)
 
 		s.nextButton.Connect("clicked", func() {
 			s.broker.SendToTopic(event.NEXT_IMAGE)
@@ -231,6 +229,7 @@ func (s* Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
 		s.similarImages.ShowAll()
 	} else {
 		s.SetCurrentImage(handles[0])
+		s.pixbufCache.Purge(s.currentImage.image)
 	}
 }
 

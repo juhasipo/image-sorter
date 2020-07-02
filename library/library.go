@@ -84,6 +84,10 @@ type HashResult struct {
 	hash *duplo.Hash
 }
 
+func (s *Manager) GetHandles() []*common.Handle {
+	return s.imageList
+}
+
 func (s *Manager) GenerateHashes() {
 	startTime := time.Now()
 	hashExpected := len(s.imageList)
@@ -253,8 +257,8 @@ func (s *Manager) RequestPrevImage() {
 
 func (s *Manager) RequestPrevImageWithOffset(offset int) {
 	s.index -= offset
-	if s.index >= len(s.imageList) {
-		s.index = len(s.imageList) - 1
+	if s.index < 0 {
+		s.index = 0
 	}
 	s.SendImages()
 }

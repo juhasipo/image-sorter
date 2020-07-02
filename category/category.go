@@ -9,8 +9,8 @@ import (
 type Operation int
 const(
 	NONE Operation = 0
-	COPY Operation = 1
-	MOVE Operation = 2
+	MOVE Operation = 1
+	COPY Operation = 2
 )
 
 type Entry struct {

@@ -2,10 +2,14 @@ package main
 
 import (
 	"flag"
+	"log"
+	"runtime"
 	"strings"
+	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
+	"vincit.fi/image-sorter/pixbuf"
 	"vincit.fi/image-sorter/ui"
 )
 
@@ -20,7 +24,8 @@ func main() {
 	categoryManager := category.New(broker, categoryArr)
 
 	imageLibrary := library.ForHandles(flag.Arg(0), broker)
-	gui := ui.Init(broker)
+	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
+	gui := ui.Init(broker, pixbufCache)
 
 	// Startup
 	broker.Subscribe(event.UI_READY, func() {
@@ -45,5 +50,18 @@ func main() {
 	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
 	broker.ConnectToGui(event.UPDATE_HASH_STATUS, gui.UpdateProgress)
 
+	StartBackgroundGC()
+
 	gui.Run()
+}
+
+func StartBackgroundGC() {
+	log.Print("Start GC background process")
+	go func() {
+		for true {
+			log.Printf("Running GC")
+			runtime.GC()
+			time.Sleep(30 * time.Second)
+		}
+	}()
 }

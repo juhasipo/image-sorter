@@ -13,25 +13,31 @@ const (
 	THUMBNAIL_SIZE = 100
 )
 
+type ExifData struct {
+	rotation gdk.PixbufRotation
+	flipped  bool
+}
+
 type Instance struct {
 	handle *common.Handle
 	full *gdk.Pixbuf
 	thumbnail *gdk.Pixbuf
-	placeholder *gdk.Pixbuf
 	scaled *gdk.Pixbuf
+	exifData *ExifData
 }
 
 func NewInstance(handle *common.Handle) *Instance {
-	fullPixbuf, _ := LoadFromHandle(handle)
-	placeholderPixbuf, _ := fullPixbuf.ScaleSimple(PLACEHOLDER_SIZE, PLACEHOLDER_SIZE, gdk.INTERP_TILES)
-	return &Instance{
+	exifData, _ := LoadExifData(handle)
+	instance := &Instance{
 		handle:      handle,
-		full:        fullPixbuf,
-		placeholder: placeholderPixbuf,
+		exifData: exifData,
 	}
+	instance.thumbnail = instance.GetThumbnail()
+
+	return instance
 }
 
-func LoadExifData(handle *common.Handle) (gdk.PixbufRotation, bool, error) {
+func LoadExifData(handle *common.Handle) (*ExifData, error) {
 	fileForExif, err := os.Open(handle.GetPath())
 	if fileForExif != nil && err == nil {
 		defer fileForExif.Close()
@@ -42,9 +48,12 @@ func LoadExifData(handle *common.Handle) (gdk.PixbufRotation, bool, error) {
 		orientationTag, _ := decodedExif.Get(exif.Orientation)
 		orientation, _ := orientationTag.Int(0)
 		angle, flip := ExifOrientationToAngleAndFlip(orientation)
-		return angle, flip, err
+		return &ExifData{
+			rotation: angle,
+			flipped: flip,
+		}, nil
 	} else {
-		return 0, false, err
+		return &ExifData{0, false}, err
 	}
 }
 
@@ -71,13 +80,15 @@ func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
 	}
 }
 
-func LoadFromHandle(handle *common.Handle) (*gdk.Pixbuf, error) {
-	angle, flip, err := LoadExifData(handle)
+func (s *Instance) LoadFull() (*gdk.Pixbuf, error) {
+	return LoadFullWithExifCorrection(s.handle, s.exifData)
+}
 
+func LoadFullWithExifCorrection(handle *common.Handle, exifData *ExifData) (*gdk.Pixbuf, error) {
 	pixbuf, err := gdk.PixbufNewFromFile(handle.GetPath())
 
-	pixbuf, err = pixbuf.RotateSimple(angle)
-	if flip {
+	pixbuf, err = pixbuf.RotateSimple(exifData.rotation)
+	if exifData.flipped {
 		pixbuf, err = pixbuf.Flip(true)
 	}
 	return pixbuf, err
@@ -93,16 +104,12 @@ var (
 
 func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 	if !s.IsValid() {
-		log.Print("Empty instance")
 		return nil
 	}
 
-	if s.full == nil {
-		log.Print(" * Loading full image...")
-		s.full, _ = LoadFromHandle(s.handle)
-	}
+	full := s.LoadFullFromCache()
 
-	ratio := float32(s.full.GetWidth()) / float32(s.full.GetHeight())
+	ratio := float32(full.GetWidth()) / float32(full.GetHeight())
 	newWidth := int(float32(size.height) * ratio)
 	newHeight := size.height
 
@@ -112,16 +119,18 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 	}
 
 	if s.scaled == nil {
-		log.Print(" * Loading new scaled ", s.handle, " (", newWidth, " x ", newHeight, ")...")
-		s.scaled, _ = s.full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
+		//log.Print(" * Loading new scaled ", s.handle, " (", newWidth, " x ", newHeight, ")...")
+		s.scaled, _ = full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
 	} else {
 		if newWidth != s.scaled.GetWidth() && newHeight != s.scaled.GetHeight() {
+			/*
 			log.Print(" * Loading re-scaled ", s.handle,
 				" (", s.scaled.GetWidth(), " x ", s.scaled.GetHeight(), ") -> ",
 				" (", newWidth, " x ", newHeight, ")...")
-			s.scaled, _ = s.full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
+			 */
+			s.scaled, _ = full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
 		} else {
-			log.Print(" * Use cached")
+			//log.Print(" * Use cached")
 		}
 	}
 
@@ -130,16 +139,14 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 
 func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 	if s.handle == nil {
-		log.Print("Nil handle")
 		return nil
 	}
-	if s.full == nil {
-		//log.Print(" * Loading full image...")
-		s.full, _ = LoadFromHandle(s.handle)
-	}
+
 	if s.thumbnail == nil {
+		full := s.LoadFullFromCache()
+
 		width, height := THUMBNAIL_SIZE, THUMBNAIL_SIZE
-		ratio := float32(s.full.GetWidth()) / float32(s.full.GetHeight())
+		ratio := float32(full.GetWidth()) / float32(full.GetHeight())
 		newWidth := int(float32(height) * ratio)
 		newHeight := height
 
@@ -148,7 +155,36 @@ func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 			newHeight = int(float32(width) / ratio)
 		}
 
-		s.thumbnail, _ = s.full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
+		s.thumbnail, _ = full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
 	}
 	return s.thumbnail
+}
+
+func (s *Instance) Purge() {
+	s.full = nil
+	s.scaled = nil
+}
+
+func (s *Instance) GetByteLength() int {
+	var byteLength = 0
+	byteLength += GetByteLength(s.scaled)
+	byteLength += GetByteLength(s.thumbnail)
+	return byteLength
+}
+
+func (s *Instance) LoadFullFromCache() *gdk.Pixbuf {
+	if s.full == nil {
+		s.full, _ = s.LoadFull()
+		return s.full
+	} else {
+		return s.full
+	}
+}
+
+func GetByteLength(pixbuf *gdk.Pixbuf) int {
+	if pixbuf != nil {
+		return pixbuf.GetByteLength()
+	} else {
+		return 0
+	}
 }
