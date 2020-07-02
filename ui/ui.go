@@ -15,6 +15,7 @@ import (
 
 type Ui struct {
 	win               *gtk.ApplicationWindow
+	fullscreen        bool
 	application       *gtk.Application
 	imageManager      *library.Manager
 	pixbufCache       *pixbuf.PixbufCache
@@ -81,6 +82,15 @@ func (s *Ui) Init() {
 		s.win.Connect("key_press_event", func(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			keyEvent := gdk.EventKeyNewFromEvent(e)
 			key := keyEvent.KeyVal()
+			if key == gdk.KEY_F11 {
+				if s.fullscreen {
+					s.win.Unfullscreen()
+					s.fullscreen = false
+				} else {
+					s.win.Fullscreen()
+					s.fullscreen = true
+				}
+			}
 			if key == gdk.KEY_Left {
 				s.broker.SendToTopic(event.PREV_IMAGE)
 				return true
