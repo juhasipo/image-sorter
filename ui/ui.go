@@ -24,6 +24,7 @@ type Ui struct {
 	prevImages        *ImageList
 	nextButton        *gtk.Button
 	prevButton        *gtk.Button
+	currentImageWindow  *gtk.ScrolledWindow
 	currentImageView  *gtk.Viewport
 	categoriesView    *gtk.Box
 	categoryButtons   map[*category.Entry]*CategoryButton
@@ -90,6 +91,7 @@ func (s *Ui) Init() {
 					s.win.Fullscreen()
 					s.fullscreen = true
 				}
+				return true
 			}
 			if key == gdk.KEY_Left {
 				s.broker.SendToTopic(event.PREV_IMAGE)
@@ -137,6 +139,7 @@ func (s *Ui) Init() {
 		s.currentImage = &CurrentImage {
 			view: getObjectOrPanic(builder, "current-image").(*gtk.Image),
 		}
+		s.currentImageWindow = getObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow)
 		s.currentImageView = getObjectOrPanic(builder, "current-image-view").(*gtk.Viewport)
 		s.mainButtonsView = getObjectOrPanic(builder, "main-buttons-view").(*gtk.Box)
 		s.nextButton = getObjectOrPanic(builder, "next-button").(*gtk.Button)
@@ -146,7 +149,7 @@ func (s *Ui) Init() {
 		s.persistButton = getObjectOrPanic(builder, "persist-button").(*gtk.Button)
 		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
 
-		s.currentImageView.ConnectAfter("size-allocate", s.UpdateCurrentImage)
+		s.currentImageView.Connect("size-allocate", s.UpdateCurrentImage)
 
 		s.nextButton.Connect("clicked", func() {
 			s.broker.SendToTopic(event.NEXT_IMAGE)
@@ -214,11 +217,16 @@ func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
 }
 
 func (s *Ui) UpdateCurrentImage() {
+	size := pixbuf.SizeFromWindow(s.currentImageWindow)
 	scaled := s.pixbufCache.GetScaled(
 		s.currentImage.image,
-		pixbuf.SizeFromViewport(s.currentImageView),
+		size,
 	)
 	s.currentImage.view.SetFromPixbuf(scaled)
+	// Hack to prevent image from being center of the scrolled
+	// window after minimize
+	s.currentImageWindow.Remove(s.currentImageView)
+	s.currentImageWindow.Add(s.currentImageView)
 }
 
 func (s* Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {

@@ -1,13 +1,31 @@
 package pixbuf
 
-import "github.com/gotk3/gotk3/gtk"
+import (
+	"github.com/gotk3/gotk3/gtk"
+	"log"
+)
 
 type Size struct {
 	width int
 	height int
 }
 
+func (s *Size) GetHeight() int {
+	return s.height
+}
+
+func (s *Size) GetWidth() int {
+	return s.width
+}
+
 func SizeFromViewport(widget *gtk.Viewport) Size {
+	return Size {
+		width: widget.GetAllocatedWidth(),
+		height: widget.GetAllocatedHeight(),
+	}
+}
+func SizeFromWindow(widget *gtk.ScrolledWindow) Size {
+	log.Printf("Size {width %d, height: %d}", widget.GetAllocatedWidth(), widget.GetAllocatedHeight())
 	return Size {
 		width: widget.GetAllocatedWidth(),
 		height: widget.GetAllocatedHeight(),
