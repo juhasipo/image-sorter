@@ -1,0 +1,34 @@
+window, treeview,  flowbox {
+    background-color: #000;
+    color: #fff
+}
+
+progressbar {
+    color: #fff
+}
+
+scrolledwindow, viewport, flowbox {
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+button{
+    background: #ccc;
+    border-top: 1px solid #eee;
+    border-left: 1px solid #eee;
+    border-bottom: 1px solid #333;
+    border-right: 1px solid #333;
+    border-radius: 0;
+}
+button label, button prelight {
+    color: #000;
+}
+button:hover {
+    background: #aaa;
+}
+flowbox flowboxchild {
+    padding: 0;
+    margin: 0;
+    border: 0;
+}

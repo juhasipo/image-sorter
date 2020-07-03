@@ -62,6 +62,11 @@ func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
 }
 
 func (s *Ui) Init() {
+	cssProvider, _ := gtk.CssProviderNew()
+	if err := cssProvider.LoadFromPath("ui/default.css"); err != nil {
+		log.Panic("Error while loading CSS ", err)
+	}
+
 	// Application signals available
 	// startup -> sets up the application when it first starts
 	// activate -> shows the default first window of the application (like a new document). This corresponds to the application being launched by the desktop environment.
@@ -70,6 +75,12 @@ func (s *Ui) Init() {
 	// Setup activate signal with a closure function.
 	s.application.Connect("activate", func() {
 		log.Println("Application activate")
+
+		screen, err := gdk.ScreenGetDefault()
+		if err != nil {
+			log.Panic("Error while loading screen ", err)
+		}
+		gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 		builder, err := gtk.BuilderNewFromFile("ui/main-view.glade")
 		if err != nil {
@@ -120,6 +131,9 @@ func (s *Ui) Init() {
 		prevImageStore := CreateImageList(prevImagesList, "Prev images", BACKWARD, s.broker)
 		s.similarImagesView = getObjectOrPanic(builder, "similar-images-view").(*gtk.ScrolledWindow)
 		similarImages, _ := gtk.FlowBoxNew()
+		similarImages.SetMaxChildrenPerLine(10)
+		similarImages.SetRowSpacing(0)
+		similarImages.SetColumnSpacing(0)
 		s.similarImages = similarImages
 
 		s.similarImagesView.SetVisible(false)
@@ -257,7 +271,6 @@ func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
 		s.broker.SendToTopicWithData(event.JUMP_TO_IMAGE, handle)
-		log.Printf("Foo: %s", handle.GetPath())
 	})
 	return eventBox
 }
