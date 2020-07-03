@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+	"github.com/google/uuid"
 	"log"
 	"runtime"
 	"strings"
 	"time"
+	"vincit.fi/image-sorter/caster"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/library"
@@ -23,9 +25,16 @@ func main() {
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr)
 
-	imageLibrary := library.ForHandles(flag.Arg(0), broker)
+	rootPath := flag.Arg(0)
+	imageLibrary := library.ForHandles(rootPath, broker)
 	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
 	gui := ui.Init(broker, pixbufCache)
+
+	secret, _ := uuid.NewRandom()
+	secretString := secret.String()
+	log.Printf("Serving secret '%s'", secretString)
+	c, _ := caster.InitCaster(secretString, broker)
+	c.StartServer(8081, rootPath)
 
 	// Startup
 	broker.Subscribe(event.UI_READY, func() {
@@ -44,11 +53,18 @@ func main() {
 	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
 	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.GenerateHashes)
 
+	// UI -> Caster
+	broker.Subscribe(event.CAST_FIND_DEVICES, c.FindDevices)
+	broker.Subscribe(event.CAST_SELECT_DEVICE, c.SelectDevice)
+	broker.Subscribe(event.IMAGE_CHANGED, c.CastImage)
+
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGES_UPDATED, gui.SetImages)
 	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
 	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
 	broker.ConnectToGui(event.UPDATE_HASH_STATUS, gui.UpdateProgress)
+	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
+	broker.ConnectToGui(event.CAST_READY, gui.CastReady)
 
 	StartBackgroundGC()
 

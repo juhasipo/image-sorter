@@ -31,6 +31,7 @@ type Ui struct {
 	persistButton     *gtk.Button
 	broker            event.Sender
 	findSimilarButton *gtk.Button
+	findDevicesButton *gtk.Button
 	progressBar       *gtk.ProgressBar
 	mainButtonsView   *gtk.Box
 
@@ -38,6 +39,14 @@ type Ui struct {
 	similarImagesView *gtk.ScrolledWindow
 	similarImages     *gtk.FlowBox
 
+	castModal         *CastModal
+}
+
+type CastModal struct {
+	modal *gtk.Dialog
+	deviceList *gtk.TreeView
+	deviceListStore *gtk.ListStore
+	cancelButton *gtk.Button
 }
 
 func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
@@ -159,9 +168,22 @@ func (s *Ui) Init() {
 		s.nextButton = getObjectOrPanic(builder, "next-button").(*gtk.Button)
 		s.prevButton = getObjectOrPanic(builder, "prev-button").(*gtk.Button)
 		s.findSimilarButton = getObjectOrPanic(builder, "find-similar-button").(*gtk.Button)
+		s.findDevicesButton = getObjectOrPanic(builder, "find-devices-button").(*gtk.Button)
 		s.categoriesView = getObjectOrPanic(builder, "categories").(*gtk.Box)
 		s.persistButton = getObjectOrPanic(builder, "persist-button").(*gtk.Button)
 		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
+
+		castModal := getObjectOrPanic(builder, "cast-dialog").(*gtk.Dialog)
+		deviceList := getObjectOrPanic(builder, "cast-device-list").(*gtk.TreeView)
+		s.castModal = &CastModal{
+			modal:           castModal,
+			deviceList:      deviceList,
+			deviceListStore: CreateDeviceList(castModal, deviceList, "Devices", s.broker),
+			cancelButton:    getObjectOrPanic(builder, "cast-dialog-cancel-button").(*gtk.Button),
+		}
+		s.castModal.cancelButton.Connect("clicked", func() {
+			s.castModal.modal.Hide()
+		})
 
 		s.currentImageView.Connect("size-allocate", s.UpdateCurrentImage)
 
@@ -177,6 +199,11 @@ func (s *Ui) Init() {
 
 		s.findSimilarButton.Connect("clicked", func() {
 			s.broker.SendToTopic(event.GENERATE_HASHES)
+		})
+		s.findDevicesButton.Connect("clicked", func() {
+			s.castModal.deviceListStore.Clear()
+			s.castModal.modal.Show()
+			s.broker.SendToTopic(event.CAST_FIND_DEVICES)
 		})
 
 		s.broker.SendToTopic(event.UI_READY)
@@ -278,6 +305,11 @@ func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
 func (s *Ui) SetCurrentImage(handle *common.Handle) {
 	s.currentImage.image = handle
 	s.UpdateCurrentImage()
+	s.sendCurrentImageChangedEvent()
+}
+
+func (s *Ui) sendCurrentImageChangedEvent() {
+	s.broker.SendToTopicWithData(event.IMAGE_CHANGED, s.currentImage.image)
 }
 
 func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
@@ -340,4 +372,13 @@ func (s *Ui) UpdateProgress(name string, status int, total int) {
 	statusText := fmt.Sprintf("Processed %d/%d", status, total)
 	s.progressBar.SetText(statusText)
 	s.progressBar.SetFraction(float64(status) / float64(total))
+}
+
+func (s *Ui) DeviceFound(name string) {
+	iter := s.castModal.deviceListStore.Append()
+	s.castModal.deviceListStore.SetValue(iter, 0, name)
+}
+
+func (s *Ui) CastReady() {
+	s.sendCurrentImageChangedEvent()
 }

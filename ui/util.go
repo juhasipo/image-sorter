@@ -48,6 +48,23 @@ func CreateImageList(view *gtk.TreeView, title string, direction Direction, send
 	return store
 }
 
+func CreateDeviceList(modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
+	store, _ := gtk.ListStoreNew(glib.TYPE_STRING)
+	view.SetSizeRequest(100, -1)
+	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
+		iter, _ := store.GetIter(path)
+		value, _ := store.GetValue(iter, 0)
+		stringValue, _ := value.GetString()
+		sender.SendToTopicWithData(event.CAST_SELECT_DEVICE, stringValue)
+		modal.Hide()
+	})
+	view.SetModel(store)
+	renderer, _ := gtk.CellRendererTextNew()
+	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 0)
+	view.AppendColumn(column)
+	return store
+}
+
 func KeyvalName(keyval uint) string {
 	return C.GoString((*C.char)(C.gdk_keyval_name(C.guint(keyval))))
 }

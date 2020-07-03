@@ -13,4 +13,7 @@ type Gui interface {
 	Run()
 
 	UpdateProgress(name string, status int, total int)
+
+	DeviceFound(name string)
+	CastReady()
 }
