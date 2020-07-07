@@ -338,7 +338,6 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 }
 
 func (s *Manager) loadImagesFromRootDir() {
-	log.Printf("Loading images from '%s'", s.rootDir)
 	s.imageList = common.LoadImages(s.rootDir)
 	// Remove non existing files from the categories in case they have been moved
 	for _, handle := range s.imageList {

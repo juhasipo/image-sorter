@@ -28,10 +28,10 @@ func LoadImages(dir string) []*Handle {
 		extension := filepath.Ext(filePath)
 		if IsSupported(extension) {
 			filePath := path.Join(dir, file.Name())
-			log.Printf(" - %s", filePath)
 			handles = append(handles, &Handle{id: filePath, path: filePath})
 		}
 	}
+	log.Printf("Found %d images", len(handles))
 
 	return handles
 }

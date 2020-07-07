@@ -2,6 +2,7 @@ package category
 
 import (
 	"github.com/gotk3/gotk3/gdk"
+	"log"
 	"strings"
 	"vincit.fi/image-sorter/event"
 )
@@ -99,6 +100,10 @@ func FromCategories(categories []string) []*Entry {
 				shortcuts: keys,
 			})
 		}
+	}
+	log.Printf("Parsed %d categories:", len(categoryEntries))
+	for _, entry := range categoryEntries {
+		log.Printf(" - %s", entry.name)
 	}
 	return categoryEntries
 }
