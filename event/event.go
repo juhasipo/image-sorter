@@ -26,18 +26,6 @@ func (s* Broker) Subscribe(topic Topic, fn interface{}) {
 	}
 }
 
-func (s *Broker) SubscribeGuiEvent(topic Topic, guidCall GuiCall) {
-	cb := func(event Message) {
-		glib.IdleAdd(func() {
-			guidCall(event)
-		})
-	}
-	err := s.bus.Subscribe(string(topic), cb)
-	if err != nil {
-		log.Panic("Could not subscribe")
-	}
-}
-
 type GuiCallback func (data ...interface{})
 
 func (s *Broker) ConnectToGui(topic Topic, callback interface{}) {
