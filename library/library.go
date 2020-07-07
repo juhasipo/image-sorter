@@ -1,9 +1,7 @@
 package library
 
 import (
-	"github.com/pixiv/go-libjpeg/jpeg"
 	"log"
-	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -44,32 +42,8 @@ func ForHandles(rootDir string, sender event.Sender) Library {
 		sender:        sender,
 		imageHash:     duplo.New(),
 	}
-	manager.LoadImagesFromRootDir()
+	manager.loadImagesFromRootDir()
 	return &manager
-}
-
-func HashImage(input chan *common.Handle, output chan *HashResult) {
-	for handle := range input {
-		startTime := time.Now()
-		imageFile, err := os.Open(handle.GetPath())
-		defer imageFile.Close()
-		if err != nil {
-			ReturnResult(output, handle, nil)
-		}
-		decodedImage, err := jpeg.Decode(imageFile, &jpeg.DecoderOptions{})
-		if err != nil {
-			ReturnResult(output, handle, nil)
-		}
-		endTime := time.Now()
-		log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
-
-		startTime = time.Now()
-		hash, _ := duplo.CreateHash(decodedImage)
-		endTime = time.Now()
-		log.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
-		ReturnResult(output, handle, &hash)
-	}
-
 }
 
 func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
@@ -79,16 +53,11 @@ func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.H
 	}
 }
 
-type HashResult struct {
-	handle *common.Handle
-	hash *duplo.Hash
-}
-
 func (s *Manager) GetHandles() []*common.Handle {
 	return s.imageList
 }
 
-func (s *Manager) GenerateHashes() {
+func (s *Manager) RequestGenerateHashes() {
 	startTime := time.Now()
 	hashExpected := len(s.imageList)
 	log.Printf("Generate hashes for %d images...", hashExpected)
@@ -112,7 +81,7 @@ func (s *Manager) GenerateHashes() {
 	// processed at once. Otherwise the goroutines might start processing
 	// all images at once which would use all available RAM
 	for i := 0; i < cpuCores; i++ {
-		go HashImage(inputChannel, outputChannel)
+		go hashImage(inputChannel, outputChannel)
 	}
 
 	var i = 0
@@ -139,43 +108,11 @@ func (s *Manager) GenerateHashes() {
 	f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
 	log.Printf("  On average: %s/image", f.String())
 
-	s.SendSimilarImages(s.GetCurrentImage())
-}
-
-func (s *Manager) SendSimilarImages(handle *common.Handle) {
-	if s.imageHash.Size() > 0 {
-		matches := s.imageHash.Query(*handle.GetHash())
-		sort.Sort(matches)
-
-		var found []*common.Handle
-		for _, match := range matches {
-			similar := match.ID.(*common.Handle)
-			if handle != similar {
-				found = append(found, similar)
-			}
-			if len(found) == 10 {
-				break
-			}
-		}
-
-		s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.SIMILAR_IMAGE, found)
-	}
-}
-
-func (s *Manager) LoadImagesFromRootDir() {
-	log.Printf("Loading images from '%s'", s.rootDir)
-	s.imageList = common.LoadImages(s.rootDir)
-	// Remove non existing files from the categories in case they have been moved
-	for _, handle := range s.imageList {
-		if _, ok := s.imageCategory[handle]; !ok {
-			delete(s.imageCategory, handle)
-		}
-	}
-	s.index = 0
+	s.sendSimilarImages(s.getCurrentImage())
 }
 
 func (s *Manager) SetCategory(command *category.CategorizeCommand) {
-	defer s.SendCategories(command.GetHandle())
+	defer s.sendCategories(command.GetHandle())
 
 	handle := command.GetHandle()
 	categoryEntry := command.GetEntry()
@@ -220,7 +157,7 @@ func (s *Manager) RequestNextImageWithOffset(offset int) {
 	if s.index >= len(s.imageList) {
 		s.index = len(s.imageList) - 1
 	}
-	s.SendImages()
+	s.sendImages()
 }
 
 func (s *Manager) RequestImage(handle *common.Handle) {
@@ -232,25 +169,6 @@ func (s *Manager) RequestImage(handle *common.Handle) {
 	s.RequestImages()
 }
 
-func (s *Manager) SendImages() {
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.GetNextImages(IMAGE_LIST_SIZE))
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.GetPrevImages(IMAGE_LIST_SIZE))
-	currentImage := s.GetCurrentImage()
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{currentImage})
-	s.SendCategories(currentImage)
-	s.SendSimilarImages(currentImage)
-}
-
-func (s *Manager) SendCategories(currentImage *common.Handle) {
-	var categories = s.GetCategories(currentImage)
-	var commands []*category.CategorizeCommand
-	for _, image := range categories {
-		commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
-	}
-	s.sender.SendToTopicWithData(event.IMAGE_CATEGORIZED, commands)
-}
-
-
 func (s *Manager) RequestPrevImage() {
 	s.RequestPrevImageWithOffset(1)
 }
@@ -260,50 +178,11 @@ func (s *Manager) RequestPrevImageWithOffset(offset int) {
 	if s.index < 0 {
 		s.index = 0
 	}
-	s.SendImages()
+	s.sendImages()
 }
 
 func (s *Manager) RequestImages() {
-	s.SendImages()
-}
-
-func (s *Manager) GetCurrentImage() *common.Handle {
-	var currentImage *common.Handle
-	if s.index < len(s.imageList) {
-		currentImage = s.imageList[s.index]
-	} else {
-		currentImage = common.GetEmptyHandle()
-	}
-	return currentImage
-}
-
-func (s* Manager) GetNextImages(number int) []*common.Handle {
-	startIndex := s.index + 1
-	endIndex := startIndex + number
-	if endIndex > len(s.imageList) {
-		endIndex = len(s.imageList)
-	}
-
-	if startIndex >= len(s.imageList) - 1 {
-		return EMPTY_HANDLES
-	}
-
-	slice := s.imageList[startIndex:endIndex]
-	arr := make([]*common.Handle, len(slice))
-	copy(arr[:], slice)
-	return arr
-}
-
-func (s* Manager) GetPrevImages(number int) []*common.Handle {
-	prevIndex := s.index-number
-	if prevIndex < 0 {
-		prevIndex = 0
-	}
-	slice := s.imageList[prevIndex:s.index]
-	arr := make([]*common.Handle, len(slice))
-	copy(arr[:], slice)
-	util.Reverse(arr)
-	return arr
+	s.sendImages()
 }
 
 func (s* Manager) PersistImageCategories() {
@@ -312,9 +191,9 @@ func (s* Manager) PersistImageCategories() {
 		s.PersistImageCategory(handle, categoryEntries)
 	}
 
-	s.LoadImagesFromRootDir()
+	s.loadImagesFromRootDir()
 
-	s.SendImages()
+	s.sendImages()
 }
 
 func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[*category.Entry]*category.CategorizedImage) {
@@ -341,7 +220,9 @@ func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[*ca
 	}
 }
 
-func (s *Manager) GetCategories(image *common.Handle) []*category.CategorizedImage {
+// Private API
+
+func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedImage {
 	var categories []*category.CategorizedImage
 
 	if i, ok := s.imageCategory[image]; ok {
@@ -351,4 +232,94 @@ func (s *Manager) GetCategories(image *common.Handle) []*category.CategorizedIma
 	}
 
 	return categories
+}
+
+func (s *Manager) sendImages() {
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.getNextImages(IMAGE_LIST_SIZE))
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.getPrevImages(IMAGE_LIST_SIZE))
+	currentImage := s.getCurrentImage()
+	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{currentImage})
+	s.sendCategories(currentImage)
+	s.sendSimilarImages(currentImage)
+}
+
+func (s *Manager) sendCategories(currentImage *common.Handle) {
+	var categories = s.getCategories(currentImage)
+	var commands []*category.CategorizeCommand
+	for _, image := range categories {
+		commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
+	}
+	s.sender.SendToTopicWithData(event.IMAGE_CATEGORIZED, commands)
+}
+
+func (s *Manager) getCurrentImage() *common.Handle {
+	var currentImage *common.Handle
+	if s.index < len(s.imageList) {
+		currentImage = s.imageList[s.index]
+	} else {
+		currentImage = common.GetEmptyHandle()
+	}
+	return currentImage
+}
+
+func (s* Manager) getNextImages(number int) []*common.Handle {
+	startIndex := s.index + 1
+	endIndex := startIndex + number
+	if endIndex > len(s.imageList) {
+		endIndex = len(s.imageList)
+	}
+
+	if startIndex >= len(s.imageList) - 1 {
+		return EMPTY_HANDLES
+	}
+
+	slice := s.imageList[startIndex:endIndex]
+	arr := make([]*common.Handle, len(slice))
+	copy(arr[:], slice)
+	return arr
+}
+
+func (s* Manager) getPrevImages(number int) []*common.Handle {
+	prevIndex := s.index-number
+	if prevIndex < 0 {
+		prevIndex = 0
+	}
+	slice := s.imageList[prevIndex:s.index]
+	arr := make([]*common.Handle, len(slice))
+	copy(arr[:], slice)
+	util.Reverse(arr)
+	return arr
+}
+
+
+func (s *Manager) sendSimilarImages(handle *common.Handle) {
+	if s.imageHash.Size() > 0 {
+		matches := s.imageHash.Query(*handle.GetHash())
+		sort.Sort(matches)
+
+		var found []*common.Handle
+		for _, match := range matches {
+			similar := match.ID.(*common.Handle)
+			if handle != similar {
+				found = append(found, similar)
+			}
+			if len(found) == 10 {
+				break
+			}
+		}
+
+		s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.SIMILAR_IMAGE, found)
+	}
+}
+
+func (s *Manager) loadImagesFromRootDir() {
+	log.Printf("Loading images from '%s'", s.rootDir)
+	s.imageList = common.LoadImages(s.rootDir)
+	// Remove non existing files from the categories in case they have been moved
+	for _, handle := range s.imageList {
+		if _, ok := s.imageCategory[handle]; !ok {
+			delete(s.imageCategory, handle)
+		}
+	}
+	s.index = 0
 }

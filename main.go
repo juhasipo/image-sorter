@@ -51,7 +51,7 @@ func main() {
 	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
 	broker.Subscribe(event.JUMP_TO_IMAGE, imageLibrary.RequestImage)
 	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
-	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.GenerateHashes)
+	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.RequestGenerateHashes)
 
 	// UI -> Caster
 	broker.Subscribe(event.CAST_FIND_DEVICES, c.FindDevices)

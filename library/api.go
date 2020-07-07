@@ -15,7 +15,7 @@ type Library interface {
 	RequestPrevImageWithOffset(int)
 	RequestImage(*common.Handle)
 	PersistImageCategories()
-	GenerateHashes()
+	RequestGenerateHashes()
 	GetHandles() []*common.Handle
 
 }
