@@ -57,6 +57,10 @@ func (s* Caster) StartServer(port int, path string) {
 }
 
 func (s *Caster) startServerAsync(port int, path string) {
+	log.Printf("Starting HTTP server:\n" +
+		" * Path: %s\n" +
+		" * Port: %d\n" +
+		" * Secret: %s", path, port, s.secret)
 	s.port = port
 	server := http.FileServer(http.Dir(path))
 	prefix := http.StripPrefix("/" + s.secret, server)

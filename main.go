@@ -17,6 +17,7 @@ import (
 
 func main() {
 	categories := flag.String("categories", "", "Comma separated categories. Each category in format <name>:<shortcut> e.g. Good:G")
+	httpPort := flag.Int("httpPort", 8080, "HTTP Server port for Chrome Cast")
 
 	flag.Parse()
 
@@ -32,9 +33,8 @@ func main() {
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
-	log.Printf("Serving secret '%s'", secretString)
 	c, _ := caster.InitCaster(secretString, broker)
-	c.StartServer(8081, rootPath)
+	c.StartServer(*httpPort, rootPath)
 
 	// Startup
 	broker.Subscribe(event.UI_READY, func() {
