@@ -20,6 +20,10 @@ import (
 	"vincit.fi/image-sorter/event"
 )
 
+const CAST_SERVICE = "_googlecast._tcp"
+const DEVICE_SEARCH_TIMEOUT = time.Second * 30
+
+
 type Caster struct {
 	secret  string
 	port    int
@@ -65,11 +69,10 @@ func (s *Caster) startServerAsync(port int, path string) {
 
 func (s* Caster) FindDevices() {
 	s.devices = map[string]*DeviceEntry{}
-	castService := "_googlecast._tcp"
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	go func() {
 		for entry := range entriesCh {
-			if !strings.Contains(entry.Name, castService) {
+			if !strings.Contains(entry.Name, CAST_SERVICE) {
 				return
 			}
 			deviceName := s.resolveDeviceName(entry)
@@ -108,15 +111,18 @@ func (s* Caster) FindDevices() {
 		}
 	}()
 
+	c := make(chan os.Signal, 1)
 	go func() {
 		mdns.Query(&mdns.QueryParam{
-			Service: castService,
-			Timeout: time.Second * 30,
+			Service: CAST_SERVICE,
+			Timeout: DEVICE_SEARCH_TIMEOUT,
 			Entries: entriesCh,
 		})
+		s.sender.SendToTopic(event.CAST_FIND_DONE)
+		close(c)
 	}()
 
-	c := make(chan os.Signal, 1)
+
 	signal.Notify(c, os.Interrupt, os.Kill)
 
 	// Block until a signal is received.

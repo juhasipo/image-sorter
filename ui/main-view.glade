@@ -24,6 +24,20 @@
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
+              <object class="GtkButton" id="cast-dialog-refresh-button">
+                <property name="label">gtk-refresh</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkButton" id="cast-dialog-cancel-button">
                 <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
@@ -45,15 +59,15 @@
           </packing>
         </child>
         <child>
-          <object class="GtkSpinner" id="cast-spinner">
+          <object class="GtkLabel" id="cast-find-status-label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="active">True</property>
+            <property name="label" translatable="yes">...</property>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
@@ -62,6 +76,7 @@
           <object class="GtkTreeView" id="cast-device-list">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="headers_visible">False</property>
             <property name="headers_clickable">False</property>
             <property name="hover_selection">True</property>
             <property name="activate_on_single_click">True</property>

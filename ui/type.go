@@ -9,11 +9,11 @@ import (
 
 type ImageList struct {
 	component *gtk.TreeView
-	model *gtk.ListStore
+	model     *gtk.ListStore
 }
 
 type TopActionView struct {
-	categoriesView *gtk.Box
+	categoriesView  *gtk.Box
 	categoryButtons map[*category.Entry]*CategoryButton
 	nextButton      *gtk.Button
 	prevButton      *gtk.Button
@@ -27,20 +27,20 @@ func (v *TopActionView) SetVisible(visible bool) {
 
 type CurrentImageView struct {
 	scrolledView *gtk.ScrolledWindow
-	viewport   *gtk.Viewport
-	view *gtk.Image
-	image *common.Handle
+	viewport     *gtk.Viewport
+	view         *gtk.Image
+	image        *common.Handle
 }
 
 type ImageView struct {
-	currentImage       *CurrentImageView
-	nextImages         *ImageList
-	prevImages         *ImageList
+	currentImage *CurrentImageView
+	nextImages   *ImageList
+	prevImages   *ImageList
 }
 
 type SimilarImagesView struct {
 	scrollLayout *gtk.ScrolledWindow
-	layout     *gtk.FlowBox
+	layout       *gtk.FlowBox
 }
 
 type BottomActionView struct {
@@ -77,8 +77,11 @@ func (v *ProgressView) SetStatus(status int, total int) {
 }
 
 type CastModal struct {
-	modal           *gtk.Dialog
-	deviceList      *gtk.TreeView
-	deviceListStore *gtk.ListStore
-	cancelButton    *gtk.Button
+	modal          *gtk.Dialog
+	deviceListView *gtk.TreeView
+	model          *gtk.ListStore
+	devices        []string
+	cancelButton   *gtk.Button
+	refreshButton   *gtk.Button
+	statusLabel    *gtk.Label
 }

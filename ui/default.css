@@ -26,6 +26,10 @@ button label, button prelight {
     color: #000;
 }
 
+label {
+    color: #fff;
+}
+
 button:hover {
     background: #aaa;
 }

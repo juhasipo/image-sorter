@@ -16,4 +16,5 @@ type Gui interface {
 
 	DeviceFound(name string)
 	CastReady()
+	CastFindDone()
 }

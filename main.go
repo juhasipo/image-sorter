@@ -54,18 +54,21 @@ func main() {
 	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.STOP_HASHES, imageLibrary.RequestStopHashes)
 
-	// UI -> Caster
-	broker.Subscribe(event.CAST_FIND_DEVICES, c.FindDevices)
-	broker.Subscribe(event.CAST_SELECT_DEVICE, c.SelectDevice)
-	broker.Subscribe(event.IMAGE_CHANGED, c.CastImage)
-
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGES_UPDATED, gui.SetImages)
 	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
 	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
 	broker.ConnectToGui(event.UPDATE_HASH_STATUS, gui.UpdateProgress)
+
+	// UI -> Caster
+	broker.Subscribe(event.CAST_FIND_DEVICES, c.FindDevices)
+	broker.Subscribe(event.CAST_SELECT_DEVICE, c.SelectDevice)
+	broker.Subscribe(event.IMAGE_CHANGED, c.CastImage)
+
+	// Caster -> UI
 	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
 	broker.ConnectToGui(event.CAST_READY, gui.CastReady)
+	broker.ConnectToGui(event.CAST_FIND_DONE, gui.CastFindDone)
 
 	StartBackgroundGC()
 

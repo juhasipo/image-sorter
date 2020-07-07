@@ -113,14 +113,17 @@ func (s *Ui) InitCastModal(builder *gtk.Builder) {
 	castModal := getObjectOrPanic(builder, "cast-dialog").(*gtk.Dialog)
 	deviceList := getObjectOrPanic(builder, "cast-device-list").(*gtk.TreeView)
 	s.castModal = &CastModal{
-		modal:           castModal,
-		deviceList:      deviceList,
-		deviceListStore: CreateDeviceList(castModal, deviceList, "Devices", s.sender),
-		cancelButton:    getObjectOrPanic(builder, "cast-dialog-cancel-button").(*gtk.Button),
+		modal:          castModal,
+		deviceListView: deviceList,
+		model:          CreateDeviceList(castModal, deviceList, "Devices", s.sender),
+		cancelButton:   getObjectOrPanic(builder, "cast-dialog-cancel-button").(*gtk.Button),
+		refreshButton:   getObjectOrPanic(builder, "cast-dialog-refresh-button").(*gtk.Button),
+		statusLabel:    getObjectOrPanic(builder, "cast-find-status-label").(*gtk.Label),
 	}
 	s.castModal.cancelButton.Connect("clicked", func() {
 		s.castModal.modal.Hide()
 	})
+	s.castModal.refreshButton.Connect("clicked", s.findDevices)
 }
 
 func (s *Ui) InitImageView(builder *gtk.Builder) {
@@ -175,13 +178,19 @@ func (s *Ui) InitBottomActions(builder *gtk.Builder) {
 	s.bottomActionView.findSimilarButton.Connect("clicked", func() {
 		s.sender.SendToTopic(event.GENERATE_HASHES)
 	})
-	s.bottomActionView.findDevicesButton.Connect("clicked", func() {
-		s.castModal.deviceList.SetVisible(false)
-		s.castModal.deviceListStore.Clear()
-		s.castModal.modal.SetTransientFor(s.application.GetActiveWindow())
-		s.castModal.modal.Show()
-		s.sender.SendToTopic(event.CAST_FIND_DEVICES)
-	})
+	s.bottomActionView.findDevicesButton.Connect("clicked", s.findDevices)
+}
+
+func (s *Ui) findDevices() {
+	s.castModal.deviceListView.SetVisible(false)
+	s.castModal.refreshButton.SetSensitive(false)
+	s.castModal.statusLabel.SetVisible(true)
+	s.castModal.statusLabel.SetText("Searching for devices...")
+	s.castModal.model.Clear()
+	s.castModal.modal.SetTransientFor(s.application.GetActiveWindow())
+	s.castModal.modal.Show()
+	s.castModal.devices = []string{}
+	s.sender.SendToTopic(event.CAST_FIND_DEVICES)
 }
 
 func (s *Ui) InitSimilarImages(builder *gtk.Builder) {
@@ -361,11 +370,21 @@ func (s *Ui) UpdateProgress(name string, status int, total int) {
 }
 
 func (s *Ui) DeviceFound(name string) {
-	s.castModal.deviceList.SetVisible(true)
-	iter := s.castModal.deviceListStore.Append()
-	s.castModal.deviceListStore.SetValue(iter, 0, name)
+	s.castModal.deviceListView.SetVisible(true)
+	s.castModal.statusLabel.SetText("")
+	s.castModal.statusLabel.SetVisible(false)
+	iter := s.castModal.model.Append()
+	s.castModal.model.SetValue(iter, 0, name)
+	s.castModal.devices = append(s.castModal.devices, name)
 }
 
 func (s *Ui) CastReady() {
 	s.sendCurrentImageChangedEvent()
+}
+func (s *Ui) CastFindDone() {
+	if len(s.castModal.devices) == 0 {
+		s.castModal.statusLabel.SetText("No devices found")
+		s.castModal.statusLabel.SetVisible(true)
+	}
+	s.castModal.refreshButton.SetSensitive(true)
 }

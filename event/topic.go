@@ -27,5 +27,6 @@ const(
 	CAST_SELECT_DEVICE Topic = "event-cast-select-device"
 	CAST_READY Topic = "event-cast-ready"
 	CAST_STOP Topic = "event-cast-stop"
+	CAST_FIND_DONE Topic = "event-find-done"
 )
 
