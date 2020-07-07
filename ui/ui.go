@@ -9,7 +9,6 @@ import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/pixbuf"
 )
 
@@ -17,7 +16,6 @@ type Ui struct {
 	win               *gtk.ApplicationWindow
 	fullscreen        bool
 	application       *gtk.Application
-	imageManager      *library.Manager
 	pixbufCache       *pixbuf.PixbufCache
 	currentImage      *CurrentImage
 	nextImages        *ImageList
