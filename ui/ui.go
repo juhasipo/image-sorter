@@ -176,7 +176,9 @@ func (s *Ui) InitBottomActions(builder *gtk.Builder) {
 		s.broker.SendToTopic(event.GENERATE_HASHES)
 	})
 	s.bottomActionView.findDevicesButton.Connect("clicked", func() {
+		s.castModal.deviceList.SetVisible(false)
 		s.castModal.deviceListStore.Clear()
+		s.castModal.modal.SetTransientFor(s.application.GetActiveWindow())
 		s.castModal.modal.Show()
 		s.broker.SendToTopic(event.CAST_FIND_DEVICES)
 	})
@@ -359,6 +361,7 @@ func (s *Ui) UpdateProgress(name string, status int, total int) {
 }
 
 func (s *Ui) DeviceFound(name string) {
+	s.castModal.deviceList.SetVisible(true)
 	iter := s.castModal.deviceListStore.Append()
 	s.castModal.deviceListStore.SetValue(iter, 0, name)
 }
