@@ -16,6 +16,7 @@ type Library interface {
 	RequestImage(*common.Handle)
 	PersistImageCategories()
 	RequestGenerateHashes()
+	RequestStopHashes()
 	GetHandles() []*common.Handle
 
 }

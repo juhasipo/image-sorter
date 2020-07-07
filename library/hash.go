@@ -14,26 +14,33 @@ type HashResult struct {
 	hash *duplo.Hash
 }
 
-func hashImage(input chan *common.Handle, output chan *HashResult) {
-	for handle := range input {
-		startTime := time.Now()
-		imageFile, err := os.Open(handle.GetPath())
-		defer imageFile.Close()
-		if err != nil {
-			ReturnResult(output, handle, nil)
-		}
-		decodedImage, err := jpeg.Decode(imageFile, &jpeg.DecoderOptions{})
-		if err != nil {
-			ReturnResult(output, handle, nil)
-		}
-		endTime := time.Now()
-		log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
+func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool) {
+	for {
+		select {
+		case <-quitChannel:
+			log.Printf("Quit")
+			return
+		case handle := <-input:
+			{
+				startTime := time.Now()
+				imageFile, err := os.Open(handle.GetPath())
+				defer imageFile.Close()
+				if err != nil {
+					ReturnResult(output, handle, nil)
+				}
+				decodedImage, err := jpeg.Decode(imageFile, &jpeg.DecoderOptions{})
+				if err != nil {
+					ReturnResult(output, handle, nil)
+				}
+				endTime := time.Now()
+				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 
-		startTime = time.Now()
-		hash, _ := duplo.CreateHash(decodedImage)
-		endTime = time.Now()
-		log.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
-		ReturnResult(output, handle, &hash)
+				startTime = time.Now()
+				hash, _ := duplo.CreateHash(decodedImage)
+				endTime = time.Now()
+				log.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
+				ReturnResult(output, handle, &hash)
+			}
+		}
 	}
-
 }

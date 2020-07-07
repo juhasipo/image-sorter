@@ -24,7 +24,7 @@ const (
 type ImageList func(number int) []*common.Handle
 
 type Manager struct {
-	rootDir string
+	rootDir       string
 	imageList     []*common.Handle
 	index         int
 	imageCategory map[*common.Handle]map[*category.Entry]*category.CategorizedImage
@@ -32,6 +32,9 @@ type Manager struct {
 	sender        event.Sender
 
 	Library
+
+	stopChannel   chan bool
+	outputChannel chan *HashResult
 }
 
 func ForHandles(rootDir string, sender event.Sender) Library {
@@ -64,12 +67,13 @@ func (s *Manager) RequestGenerateHashes() {
 	s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", 0, hashExpected)
 
 	// Just to make things consistent in case Go decides to change the default
-	cpuCores := runtime.NumCPU()
+	cpuCores := s.getTreadCount()
 	log.Printf(" * Using %d threads", cpuCores)
 	runtime.GOMAXPROCS(cpuCores)
 
+	s.stopChannel = make(chan bool)
 	inputChannel := make(chan *common.Handle, hashExpected)
-	outputChannel := make(chan *HashResult)
+	s.outputChannel = make(chan *HashResult)
 
 	// Add images to input queue for goroutines
 	for _, handle := range s.imageList {
@@ -81,11 +85,11 @@ func (s *Manager) RequestGenerateHashes() {
 	// processed at once. Otherwise the goroutines might start processing
 	// all images at once which would use all available RAM
 	for i := 0; i < cpuCores; i++ {
-		go hashImage(inputChannel, outputChannel)
+		go hashImage(inputChannel, s.outputChannel, s.stopChannel)
 	}
 
 	var i = 0
-	for result := range outputChannel {
+	for result := range s.outputChannel {
 		i++
 		result.handle.SetHash(result.hash)
 
@@ -94,10 +98,10 @@ func (s *Manager) RequestGenerateHashes() {
 		s.imageHash.Add(result.handle, *result.hash)
 
 		if i == hashExpected {
-			close(outputChannel)
-			close(inputChannel)
+			s.RequestStopHashes()
 		}
 	}
+	close(inputChannel)
 
 	endTime := time.Now()
 	d := endTime.Sub(startTime)
@@ -108,7 +112,28 @@ func (s *Manager) RequestGenerateHashes() {
 	f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
 	log.Printf("  On average: %s/image", f.String())
 
-	s.sendSimilarImages(s.getCurrentImage())
+	// Always send 100% status even if cancelled so that the progress bar is hidden
+	s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", hashExpected, hashExpected)
+	// Only send if not cancelled
+	if i == hashExpected {
+		s.sendSimilarImages(s.getCurrentImage())
+	}
+}
+
+func (s *Manager) getTreadCount() int {
+	cpuCores := runtime.NumCPU()
+	return cpuCores
+}
+
+func (s *Manager) RequestStopHashes() {
+	if s.stopChannel != nil {
+		for i := 0; i < s.getTreadCount(); i++ {
+			s.stopChannel <- true
+		}
+		close(s.outputChannel)
+		close(s.stopChannel)
+		s.stopChannel = nil
+	}
 }
 
 func (s *Manager) SetCategory(command *category.CategorizeCommand) {

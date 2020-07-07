@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
@@ -43,15 +44,36 @@ type SimilarImagesView struct {
 }
 
 type BottomActionView struct {
+	layout            *gtk.Box
 	persistButton     *gtk.Button
 	findSimilarButton *gtk.Button
 	findDevicesButton *gtk.Button
+}
+
+func (v *BottomActionView) SetVisible(visible bool) {
+	v.layout.SetVisible(visible)
 }
 
 type CategoryButton struct {
 	button    *gtk.Button
 	entry     *category.Entry
 	operation category.Operation
+}
+
+type ProgressView struct {
+	view        *gtk.Box
+	progressbar *gtk.ProgressBar
+	stopButton  *gtk.Button
+}
+
+func (v *ProgressView) SetVisible(visible bool) {
+	v.view.SetVisible(visible)
+}
+
+func (v *ProgressView) SetStatus(status int, total int) {
+	statusText := fmt.Sprintf("Processed %d/%d", status, total)
+	v.progressbar.SetText(statusText)
+	v.progressbar.SetFraction(float64(status) / float64(total))
 }
 
 type CastModal struct {

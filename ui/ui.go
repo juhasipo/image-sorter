@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -21,8 +20,7 @@ type Ui struct {
 	broker      event.Sender
 
 	// UI components
-	progressBar     *gtk.ProgressBar
-
+	progressView *ProgressView
 	topActionView  *TopActionView
 	imageView *ImageView
 	similarImagesView *SimilarImagesView
@@ -90,13 +88,24 @@ func (s *Ui) Init() {
 		s.InitTopActions(builder)
 		s.InitBottomActions(builder)
 
-		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
+		s.InitProgressView(builder)
 
 		s.broker.SendToTopic(event.UI_READY)
 
 		// Show the Window and all of its components.
 		s.win.Show()
 		s.application.AddWindow(s.win)
+	})
+}
+
+func (s *Ui) InitProgressView(builder *gtk.Builder) {
+	s.progressView = &ProgressView{
+		view:        getObjectOrPanic(builder, "progress-view").(*gtk.Box),
+		stopButton:  getObjectOrPanic(builder, "stop-progress-button").(*gtk.Button),
+		progressbar: getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar),
+	}
+	s.progressView.stopButton.Connect("clicked", func() {
+		s.broker.SendToTopic(event.STOP_HASHES)
 	})
 }
 
@@ -154,6 +163,7 @@ func (s *Ui) InitTopActions(builder *gtk.Builder) {
 
 func (s *Ui) InitBottomActions(builder *gtk.Builder) {
 	s.bottomActionView = &BottomActionView{
+		layout:            getObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
 		persistButton:     getObjectOrPanic(builder, "persist-button").(*gtk.Button),
 		findSimilarButton: getObjectOrPanic(builder, "find-similar-button").(*gtk.Button),
 		findDevicesButton: getObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
@@ -334,19 +344,18 @@ func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 
 func (s *Ui) UpdateProgress(name string, status int, total int) {
 	if status == 0 {
-		s.progressBar.SetVisible(true)
+		s.progressView.SetVisible(true)
 		s.topActionView.SetVisible(false)
+		s.bottomActionView.SetVisible(false)
 	}
 
 	if status == total {
-		s.progressBar.SetVisible(false)
+		s.progressView.SetVisible(false)
 		s.topActionView.SetVisible(true)
-		return
+		s.bottomActionView.SetVisible(true)
+	} else {
+		s.progressView.SetStatus(status, total)
 	}
-
-	statusText := fmt.Sprintf("Processed %d/%d", status, total)
-	s.progressBar.SetText(statusText)
-	s.progressBar.SetFraction(float64(status) / float64(total))
 }
 
 func (s *Ui) DeviceFound(name string) {

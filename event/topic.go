@@ -13,6 +13,7 @@ const(
 	CATEGORIZE_IMAGE Topic = "event-categorize-image"
 	PERSIST_CATEGORIES Topic = "event-persis-categories"
 	GENERATE_HASHES Topic = "event-generate-hashes"
+	STOP_HASHES Topic = "event-stop-hashes"
 
 	IMAGE_CHANGED Topic = "event-image-changed"
 
