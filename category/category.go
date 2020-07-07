@@ -13,6 +13,25 @@ const(
 	COPY Operation = 2
 )
 
+func (s *CategorizeCommand) ToLabel() string {
+	entryName := s.GetEntry().GetName()
+	status := ""
+	switch s.GetOperation() {
+	case COPY: status = "C"
+	case MOVE: status = "M"
+	}
+
+	if status != "" {
+		return entryName + " (" + status + ")"
+	} else {
+		return entryName
+	}
+}
+
+func (s Operation) NextOperation() Operation {
+	return (s + 1) % 3
+}
+
 type Entry struct {
 	name string
 	subPath string
