@@ -18,6 +18,12 @@ type TopActionView struct {
 	prevButton      *gtk.Button
 }
 
+func (v *TopActionView) SetVisible(visible bool) {
+	v.categoriesView.SetVisible(visible)
+	v.nextButton.SetVisible(visible)
+	v.prevButton.SetVisible(visible)
+}
+
 type CurrentImageView struct {
 	scrolledView *gtk.ScrolledWindow
 	viewport   *gtk.Viewport

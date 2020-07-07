@@ -21,7 +21,6 @@ type Ui struct {
 	broker      event.Sender
 
 	// UI components
-	mainLayout *gtk.Box
 	progressBar     *gtk.ProgressBar
 
 	topActionView  *TopActionView
@@ -91,7 +90,6 @@ func (s *Ui) Init() {
 		s.InitTopActions(builder)
 		s.InitBottomActions(builder)
 
-		s.mainLayout = getObjectOrPanic(builder, "main-buttons-view").(*gtk.Box)
 		s.progressBar = getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar)
 
 		s.broker.SendToTopic(event.UI_READY)
@@ -337,12 +335,12 @@ func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 func (s *Ui) UpdateProgress(name string, status int, total int) {
 	if status == 0 {
 		s.progressBar.SetVisible(true)
-		s.mainLayout.SetVisible(false)
+		s.topActionView.SetVisible(false)
 	}
 
 	if status == total {
 		s.progressBar.SetVisible(false)
-		s.mainLayout.SetVisible(true)
+		s.topActionView.SetVisible(true)
 		return
 	}
 
