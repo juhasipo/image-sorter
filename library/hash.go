@@ -1,9 +1,7 @@
 package library
 
 import (
-	"github.com/pixiv/go-libjpeg/jpeg"
 	"log"
-	"os"
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/duplo"
@@ -23,17 +21,13 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 		case handle := <-input:
 			{
 				startTime := time.Now()
-				imageFile, err := os.Open(handle.GetPath())
-				defer imageFile.Close()
-				if err != nil {
-					ReturnResult(output, handle, nil)
-				}
-				decodedImage, err := jpeg.Decode(imageFile, &jpeg.DecoderOptions{})
-				if err != nil {
-					ReturnResult(output, handle, nil)
-				}
+				decodedImage, err := loadImage(handle)
 				endTime := time.Now()
 				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
+
+				if err != nil {
+					ReturnResult(output, handle, nil)
+				}
 
 				startTime = time.Now()
 				hash, _ := duplo.CreateHash(decodedImage)
