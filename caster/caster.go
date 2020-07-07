@@ -122,7 +122,7 @@ func (s* Caster) FindDevices() {
 			Timeout: DEVICE_SEARCH_TIMEOUT,
 			Entries: entriesCh,
 		})
-		s.sender.SendToTopic(event.CAST_FIND_DONE)
+		s.sender.SendToTopic(event.CAST_DEVICES_SEARCH_DONE)
 		close(c)
 	}()
 

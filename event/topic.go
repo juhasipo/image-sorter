@@ -1,32 +1,37 @@
 package event
 
 type Topic string
-const(
-	UI_READY Topic = "event-ui-ready"
-	NEXT_IMAGE Topic = "event-next-image"
-	PREV_IMAGE Topic = "event-prev-image"
-	JUMP_NEXT_IMAGE Topic = "event-jump-next-image"
-	JUMP_PREV_IMAGE Topic = "event-jump-prev-image"
-	SIMILAR_IMAGE Topic = "event-similar-image"
-	CURRENT_IMAGE Topic = "event-current-image"
-	JUMP_TO_IMAGE Topic = "event-jump-to-image"
-	CATEGORIZE_IMAGE Topic = "event-categorize-image"
-	PERSIST_CATEGORIES Topic = "event-persis-categories"
-	GENERATE_HASHES Topic = "event-generate-hashes"
-	STOP_HASHES Topic = "event-stop-hashes"
 
-	IMAGE_CHANGED Topic = "event-image-changed"
+const (
+	// General
+	UPDATE_PROCESS_STATUS Topic = "update-process-status"
+	UI_READY Topic = "ui-ready"
 
-	IMAGES_UPDATED Topic = "event-images-updated"
-	CATEGORIES_UPDATED Topic = "event-categories-updated"
-	IMAGE_CATEGORIZED Topic = "event-image-categorized"
-	UPDATE_HASH_STATUS Topic = "event-update-hash-status"
+	// Image related
+	IMAGE_REQUEST             Topic = "image-request"
+	IMAGE_REQUEST_NEXT        Topic = "image-request-next"
+	IMAGE_REQUEST_PREV        Topic = "image-request-prev"
+	IMAGE_REQUEST_NEXT_OFFSET Topic = "image-request-next-offset"
+	IMAGE_REQUEST_PREV_OFFSET Topic = "image-request-prev-offset"
+	IMAGE_REQUEST_CURRENT     Topic = "image-request-current"
+	IMAGE_REQUEST_SIMILAR     Topic = "image-request-similar"
+	IMAGE_CHANGED             Topic = "image-changed"
+	IMAGE_UPDATE              Topic = "image-update"
 
-	CAST_FIND_DEVICES Topic = "event-cast-find-devices"
-	CAST_DEVICE_FOUND Topic = "event-cast-device-found"
-	CAST_SELECT_DEVICE Topic = "event-cast-select-device"
-	CAST_READY Topic = "event-cast-ready"
-	CAST_STOP Topic = "event-cast-stop"
-	CAST_FIND_DONE Topic = "event-find-done"
+	// Categorization
+	CATEGORIZE_IMAGE      Topic = "categorize-image"
+	CATEGORY_PERSIST_ALL  Topic = "category-persist-all"
+	CATEGORIES_UPDATED    Topic = "categories-updated"
+	CATEGORY_IMAGE_UPDATE Topic = "category-image-update"
+
+	// Similar image search
+	SIMILAR_REQUEST_SEARCH Topic = "similar-request-serach"
+	SIMILAR_REQUEST_STOP   Topic = "similar-request-stop"
+
+	// Chrome Cast
+	CAST_DEVICE_SEARCH       Topic = "cast-device-search"
+	CAST_DEVICE_FOUND        Topic = "cast-device-found"
+	CAST_DEVICE_SELECT       Topic = "cast-device-select"
+	CAST_READY               Topic = "cast-ready"
+	CAST_DEVICES_SEARCH_DONE Topic = "cast-devices-search-done"
 )
-

@@ -105,7 +105,7 @@ func (s *Ui) InitProgressView(builder *gtk.Builder) {
 		progressbar: getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar),
 	}
 	s.progressView.stopButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.STOP_HASHES)
+		s.sender.SendToTopic(event.SIMILAR_REQUEST_STOP)
 	})
 }
 
@@ -157,10 +157,10 @@ func (s *Ui) InitTopActions(builder *gtk.Builder) {
 		prevButton:      getObjectOrPanic(builder, "prev-button").(*gtk.Button),
 	}
 	s.topActionView.nextButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.NEXT_IMAGE)
+		s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 	})
 	s.topActionView.prevButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.PREV_IMAGE)
+		s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
 	})
 }
 
@@ -172,11 +172,11 @@ func (s *Ui) InitBottomActions(builder *gtk.Builder) {
 		findDevicesButton: getObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
 	}
 	s.bottomActionView.persistButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.PERSIST_CATEGORIES)
+		s.sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
 	})
 
 	s.bottomActionView.findSimilarButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.GENERATE_HASHES)
+		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
 	})
 	s.bottomActionView.findDevicesButton.Connect("clicked", s.findDevices)
 }
@@ -190,7 +190,7 @@ func (s *Ui) findDevices() {
 	s.castModal.modal.SetTransientFor(s.application.GetActiveWindow())
 	s.castModal.modal.Show()
 	s.castModal.devices = []string{}
-	s.sender.SendToTopic(event.CAST_FIND_DEVICES)
+	s.sender.SendToTopic(event.CAST_DEVICE_SEARCH)
 }
 
 func (s *Ui) InitSimilarImages(builder *gtk.Builder) {
@@ -223,10 +223,10 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		return true
 	}
 	if key == gdk.KEY_Left {
-		s.sender.SendToTopic(event.PREV_IMAGE)
+		s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
 		return true
 	} else if key == gdk.KEY_Right {
-		s.sender.SendToTopic(event.NEXT_IMAGE)
+		s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		return true
 	} else {
 		for entry, button := range s.topActionView.categoryButtons {
@@ -286,11 +286,11 @@ func (s *Ui) UpdateCurrentImage() {
 }
 
 func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
-	if imageTarget == event.NEXT_IMAGE {
+	if imageTarget == event.IMAGE_REQUEST_NEXT {
 		s.AddImagesToStore(s.imageView.nextImages, handles)
-	} else if imageTarget == event.PREV_IMAGE {
+	} else if imageTarget == event.IMAGE_REQUEST_PREV {
 		s.AddImagesToStore(s.imageView.prevImages, handles)
-	} else if imageTarget == event.SIMILAR_IMAGE {
+	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
 		children := s.similarImagesView.layout.GetChildren()
 		children.Foreach(func(item interface{}) {
 			s.similarImagesView.layout.Remove(item.(gtk.IWidget))
@@ -312,7 +312,7 @@ func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
 	imageWidget, _ := gtk.ImageNewFromPixbuf(s.pixbufCache.GetThumbnail(handle))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
-		s.sender.SendToTopicWithData(event.JUMP_TO_IMAGE, handle)
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST, handle)
 	})
 	return eventBox
 }

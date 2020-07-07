@@ -64,7 +64,7 @@ func (s *Manager) RequestGenerateHashes() {
 	startTime := time.Now()
 	hashExpected := len(s.imageList)
 	log.Printf("Generate hashes for %d images...", hashExpected)
-	s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", 0, hashExpected)
+	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", 0, hashExpected)
 
 	// Just to make things consistent in case Go decides to change the default
 	cpuCores := s.getTreadCount()
@@ -94,7 +94,7 @@ func (s *Manager) RequestGenerateHashes() {
 		result.handle.SetHash(result.hash)
 
 		//log.Printf(" * Got hash %d/%d", i, hashExpected)
-		s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", i, hashExpected)
+		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", i, hashExpected)
 		s.imageHash.Add(result.handle, *result.hash)
 
 		if i == hashExpected {
@@ -113,7 +113,7 @@ func (s *Manager) RequestGenerateHashes() {
 	log.Printf("  On average: %s/image", f.String())
 
 	// Always send 100% status even if cancelled so that the progress bar is hidden
-	s.sender.SendToTopicWithData(event.UPDATE_HASH_STATUS, "hash", hashExpected, hashExpected)
+	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", hashExpected, hashExpected)
 	// Only send if not cancelled
 	if i == hashExpected {
 		s.sendSimilarImages(s.getCurrentImage())
@@ -260,10 +260,10 @@ func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedIma
 }
 
 func (s *Manager) sendImages() {
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.NEXT_IMAGE, s.getNextImages(IMAGE_LIST_SIZE))
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.PREV_IMAGE, s.getPrevImages(IMAGE_LIST_SIZE))
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(IMAGE_LIST_SIZE))
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(IMAGE_LIST_SIZE))
 	currentImage := s.getCurrentImage()
-	s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.CURRENT_IMAGE, []*common.Handle{currentImage})
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.Handle{currentImage})
 	s.sendCategories(currentImage)
 	s.sendSimilarImages(currentImage)
 }
@@ -274,7 +274,7 @@ func (s *Manager) sendCategories(currentImage *common.Handle) {
 	for _, image := range categories {
 		commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
 	}
-	s.sender.SendToTopicWithData(event.IMAGE_CATEGORIZED, commands)
+	s.sender.SendToTopicWithData(event.CATEGORY_IMAGE_UPDATE, commands)
 }
 
 func (s *Manager) getCurrentImage() *common.Handle {
@@ -333,7 +333,7 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 			}
 		}
 
-		s.sender.SendToTopicWithData(event.IMAGES_UPDATED, event.SIMILAR_IMAGE, found)
+		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_SIMILAR, found)
 	}
 }
 

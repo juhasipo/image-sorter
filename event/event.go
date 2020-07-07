@@ -31,11 +31,11 @@ type GuiCallback func (data ...interface{})
 func (s *Broker) ConnectToGui(topic Topic, callback interface{}) {
 	cb := func(params ...interface{}) {
 		glib.IdleAdd(func() {
-			log.Printf("Calling topic '%s'", topic)
 			args := make([]reflect.Value, 0, len(params))
 			for _, param := range params {
 				args = append(args, reflect.ValueOf(param))
 			}
+			log.Printf("Calling topic '%s' with %d arguments", topic, len(args))
 			reflect.ValueOf(callback).Call(args)
 		})
 	}

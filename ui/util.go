@@ -35,9 +35,9 @@ func CreateImageList(view *gtk.TreeView, title string, direction Direction, send
 	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
 		index := path.GetIndices()[0] + 1
 		if direction == FORWARD {
-			sender.SendToTopicWithData(event.JUMP_NEXT_IMAGE, index)
+			sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, index)
 		} else {
-			sender.SendToTopicWithData(event.JUMP_PREV_IMAGE, index)
+			sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, index)
 		}
 	})
 	store, _ := gtk.ListStoreNew(PixbufGetType())
@@ -55,7 +55,7 @@ func CreateDeviceList(modal *gtk.Dialog, view *gtk.TreeView, title string, sende
 		iter, _ := store.GetIter(path)
 		value, _ := store.GetValue(iter, 0)
 		stringValue, _ := value.GetString()
-		sender.SendToTopicWithData(event.CAST_SELECT_DEVICE, stringValue)
+		sender.SendToTopicWithData(event.CAST_DEVICE_SELECT, stringValue)
 		modal.Hide()
 	})
 	view.SetModel(store)

@@ -44,31 +44,31 @@ func main() {
 
 	// UI -> Library
 	broker.Subscribe(event.CATEGORIZE_IMAGE, imageLibrary.SetCategory)
-	broker.Subscribe(event.NEXT_IMAGE, imageLibrary.RequestNextImage)
-	broker.Subscribe(event.JUMP_NEXT_IMAGE, imageLibrary.RequestNextImageWithOffset)
-	broker.Subscribe(event.PREV_IMAGE, imageLibrary.RequestPrevImage)
-	broker.Subscribe(event.JUMP_PREV_IMAGE, imageLibrary.RequestPrevImageWithOffset)
-	broker.Subscribe(event.CURRENT_IMAGE, imageLibrary.RequestImages)
-	broker.Subscribe(event.JUMP_TO_IMAGE, imageLibrary.RequestImage)
-	broker.Subscribe(event.PERSIST_CATEGORIES, imageLibrary.PersistImageCategories)
-	broker.Subscribe(event.GENERATE_HASHES, imageLibrary.RequestGenerateHashes)
-	broker.Subscribe(event.STOP_HASHES, imageLibrary.RequestStopHashes)
+	broker.Subscribe(event.IMAGE_REQUEST_NEXT, imageLibrary.RequestNextImage)
+	broker.Subscribe(event.IMAGE_REQUEST_NEXT_OFFSET, imageLibrary.RequestNextImageWithOffset)
+	broker.Subscribe(event.IMAGE_REQUEST_PREV, imageLibrary.RequestPrevImage)
+	broker.Subscribe(event.IMAGE_REQUEST_PREV_OFFSET, imageLibrary.RequestPrevImageWithOffset)
+	broker.Subscribe(event.IMAGE_REQUEST_CURRENT, imageLibrary.RequestImages)
+	broker.Subscribe(event.IMAGE_REQUEST, imageLibrary.RequestImage)
+	broker.Subscribe(event.CATEGORY_PERSIST_ALL, imageLibrary.PersistImageCategories)
+	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
+	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
 
 	// Library -> UI
-	broker.ConnectToGui(event.IMAGES_UPDATED, gui.SetImages)
+	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
 	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
-	broker.ConnectToGui(event.IMAGE_CATEGORIZED, gui.SetImageCategory)
-	broker.ConnectToGui(event.UPDATE_HASH_STATUS, gui.UpdateProgress)
+	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)
+	broker.ConnectToGui(event.UPDATE_PROCESS_STATUS, gui.UpdateProgress)
 
 	// UI -> Caster
-	broker.Subscribe(event.CAST_FIND_DEVICES, c.FindDevices)
-	broker.Subscribe(event.CAST_SELECT_DEVICE, c.SelectDevice)
+	broker.Subscribe(event.CAST_DEVICE_SEARCH, c.FindDevices)
+	broker.Subscribe(event.CAST_DEVICE_SELECT, c.SelectDevice)
 	broker.Subscribe(event.IMAGE_CHANGED, c.CastImage)
 
 	// Caster -> UI
 	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
 	broker.ConnectToGui(event.CAST_READY, gui.CastReady)
-	broker.ConnectToGui(event.CAST_FIND_DONE, gui.CastFindDone)
+	broker.ConnectToGui(event.CAST_DEVICES_SEARCH_DONE, gui.CastFindDone)
 
 	StartBackgroundGC()
 
