@@ -78,17 +78,16 @@ func (s *Ui) Init() {
 		}
 
 		// Get the object with the id of "main_window".
-		s.win = getObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
+		s.win = GetObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
 		s.win.SetSizeRequest(800, 600)
 		s.win.Connect("key_press_event", s.handleKeyPress)
 
-		s.InitSimilarImages(builder)
-		s.InitImageView(builder)
-		s.InitCastModal(builder)
-		s.InitTopActions(builder)
-		s.InitBottomActions(builder)
-
-		s.InitProgressView(builder)
+		s.similarImagesView = SimilarImagesViewNew(builder)
+		s.imageView = ImageViewNew(builder, s)
+		s.castModal = CastModalNew(builder, s, s.sender)
+		s.topActionView = TopActionsNew(builder, s.sender)
+		s.bottomActionView = BottomActionsNew(builder, s, s.sender)
+		s.progressView = ProgressViewNew(builder, s.sender)
 
 		s.sender.SendToTopic(event.UI_READY)
 
@@ -98,115 +97,9 @@ func (s *Ui) Init() {
 	})
 }
 
-func (s *Ui) InitProgressView(builder *gtk.Builder) {
-	s.progressView = &ProgressView{
-		view:        getObjectOrPanic(builder, "progress-view").(*gtk.Box),
-		stopButton:  getObjectOrPanic(builder, "stop-progress-button").(*gtk.Button),
-		progressbar: getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar),
-	}
-	s.progressView.stopButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.SIMILAR_REQUEST_STOP)
-	})
-}
-
-func (s *Ui) InitCastModal(builder *gtk.Builder) {
-	castModal := getObjectOrPanic(builder, "cast-dialog").(*gtk.Dialog)
-	deviceList := getObjectOrPanic(builder, "cast-device-list").(*gtk.TreeView)
-	s.castModal = &CastModal{
-		modal:          castModal,
-		deviceListView: deviceList,
-		model:          CreateDeviceList(castModal, deviceList, "Devices", s.sender),
-		cancelButton:   getObjectOrPanic(builder, "cast-dialog-cancel-button").(*gtk.Button),
-		refreshButton:   getObjectOrPanic(builder, "cast-dialog-refresh-button").(*gtk.Button),
-		statusLabel:    getObjectOrPanic(builder, "cast-find-status-label").(*gtk.Label),
-	}
-	s.castModal.cancelButton.Connect("clicked", func() {
-		s.castModal.modal.Hide()
-	})
-	s.castModal.refreshButton.Connect("clicked", s.findDevices)
-}
-
-func (s *Ui) InitImageView(builder *gtk.Builder) {
-	nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
-	nextImageStore := CreateImageList(nextImagesList, "Next images", FORWARD, s.sender)
-	prevImagesList := getObjectOrPanic(builder, "prev-images").(*gtk.TreeView)
-	prevImageStore := CreateImageList(prevImagesList, "Prev images", BACKWARD, s.sender)
-	s.imageView = &ImageView{
-		currentImage: &CurrentImageView{
-			scrolledView: getObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
-			viewport:     getObjectOrPanic(builder, "current-image-view").(*gtk.Viewport),
-			view:         getObjectOrPanic(builder, "current-image").(*gtk.Image),
-		},
-		nextImages: &ImageList{
-			component: nextImagesList,
-			model:     nextImageStore,
-		},
-		prevImages: &ImageList{
-			component: prevImagesList,
-			model:     prevImageStore,
-		},
-	}
-	s.imageView.currentImage.viewport.Connect("size-allocate", s.UpdateCurrentImage)
-}
-
-func (s *Ui) InitTopActions(builder *gtk.Builder) {
-	s.topActionView = &TopActionView{
-		categoriesView:  getObjectOrPanic(builder, "categories").(*gtk.Box),
-		categoryButtons: map[*category.Entry]*CategoryButton{},
-		nextButton:      getObjectOrPanic(builder, "next-button").(*gtk.Button),
-		prevButton:      getObjectOrPanic(builder, "prev-button").(*gtk.Button),
-	}
-	s.topActionView.nextButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
-	})
-	s.topActionView.prevButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
-	})
-}
-
-func (s *Ui) InitBottomActions(builder *gtk.Builder) {
-	s.bottomActionView = &BottomActionView{
-		layout:            getObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
-		persistButton:     getObjectOrPanic(builder, "persist-button").(*gtk.Button),
-		findSimilarButton: getObjectOrPanic(builder, "find-similar-button").(*gtk.Button),
-		findDevicesButton: getObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
-	}
-	s.bottomActionView.persistButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
-	})
-
-	s.bottomActionView.findSimilarButton.Connect("clicked", func() {
-		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
-	})
-	s.bottomActionView.findDevicesButton.Connect("clicked", s.findDevices)
-}
-
 func (s *Ui) findDevices() {
-	s.castModal.deviceListView.SetVisible(false)
-	s.castModal.refreshButton.SetSensitive(false)
-	s.castModal.statusLabel.SetVisible(true)
-	s.castModal.statusLabel.SetText("Searching for devices...")
-	s.castModal.model.Clear()
-	s.castModal.modal.SetTransientFor(s.application.GetActiveWindow())
-	s.castModal.modal.Show()
-	s.castModal.devices = []string{}
+	s.castModal.StartSearch(s.application.GetActiveWindow())
 	s.sender.SendToTopic(event.CAST_DEVICE_SEARCH)
-}
-
-func (s *Ui) InitSimilarImages(builder *gtk.Builder) {
-	layout, _ := gtk.FlowBoxNew()
-	s.similarImagesView = &SimilarImagesView{
-		scrollLayout: getObjectOrPanic(builder, "similar-images-view").(*gtk.ScrolledWindow),
-		layout:       layout,
-	}
-
-	s.similarImagesView.layout.SetMaxChildrenPerLine(10)
-	s.similarImagesView.layout.SetRowSpacing(0)
-	s.similarImagesView.layout.SetColumnSpacing(0)
-	s.similarImagesView.layout.SetSizeRequest(-1, 100)
-	s.similarImagesView.scrollLayout.SetVisible(false)
-	s.similarImagesView.scrollLayout.SetSizeRequest(-1, 100)
-	s.similarImagesView.scrollLayout.Add(layout)
 }
 
 func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
@@ -229,15 +122,9 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		return true
 	} else {
-		for entry, button := range s.topActionView.categoryButtons {
-			if entry.HasShortcut(key) {
-				keyName := KeyvalName(key)
-				log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-				s.sender.SendToTopicWithData(
-					event.CATEGORIZE_IMAGE,
-					category.CategorizeCommandNew(s.imageView.currentImage.image, button.entry, button.operation.NextOperation()))
-				return true
-			}
+		command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image)
+		if command != nil {
+			s.sender.SendToTopicWithData(event.CATEGORIZE_IMAGE, command)
 		}
 	}
 	return false
@@ -370,12 +257,7 @@ func (s *Ui) UpdateProgress(name string, status int, total int) {
 }
 
 func (s *Ui) DeviceFound(name string) {
-	s.castModal.deviceListView.SetVisible(true)
-	s.castModal.statusLabel.SetText("")
-	s.castModal.statusLabel.SetVisible(false)
-	iter := s.castModal.model.Append()
-	s.castModal.model.SetValue(iter, 0, name)
-	s.castModal.devices = append(s.castModal.devices, name)
+	s.castModal.AddDevice(name)
 }
 
 func (s *Ui) CastReady() {
@@ -383,8 +265,7 @@ func (s *Ui) CastReady() {
 }
 func (s *Ui) CastFindDone() {
 	if len(s.castModal.devices) == 0 {
-		s.castModal.statusLabel.SetText("No devices found")
-		s.castModal.statusLabel.SetVisible(true)
+		s.castModal.SetNoDevices()
 	}
-	s.castModal.refreshButton.SetSensitive(true)
+	s.castModal.SearchDone()
 }
