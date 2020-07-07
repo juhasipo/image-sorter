@@ -17,7 +17,7 @@ type Ui struct {
 	fullscreen  bool
 	application *gtk.Application
 	pixbufCache *pixbuf.PixbufCache
-	broker      event.Sender
+	sender      event.Sender
 
 	// UI components
 	progressView *ProgressView
@@ -44,7 +44,7 @@ func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
 	ui := Ui{
 		application: application,
 		pixbufCache: pixbufCache,
-		broker:      broker,
+		sender:      broker,
 	}
 
 	ui.Init()
@@ -90,7 +90,7 @@ func (s *Ui) Init() {
 
 		s.InitProgressView(builder)
 
-		s.broker.SendToTopic(event.UI_READY)
+		s.sender.SendToTopic(event.UI_READY)
 
 		// Show the Window and all of its components.
 		s.win.Show()
@@ -105,7 +105,7 @@ func (s *Ui) InitProgressView(builder *gtk.Builder) {
 		progressbar: getObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar),
 	}
 	s.progressView.stopButton.Connect("clicked", func() {
-		s.broker.SendToTopic(event.STOP_HASHES)
+		s.sender.SendToTopic(event.STOP_HASHES)
 	})
 }
 
@@ -115,7 +115,7 @@ func (s *Ui) InitCastModal(builder *gtk.Builder) {
 	s.castModal = &CastModal{
 		modal:           castModal,
 		deviceList:      deviceList,
-		deviceListStore: CreateDeviceList(castModal, deviceList, "Devices", s.broker),
+		deviceListStore: CreateDeviceList(castModal, deviceList, "Devices", s.sender),
 		cancelButton:    getObjectOrPanic(builder, "cast-dialog-cancel-button").(*gtk.Button),
 	}
 	s.castModal.cancelButton.Connect("clicked", func() {
@@ -125,9 +125,9 @@ func (s *Ui) InitCastModal(builder *gtk.Builder) {
 
 func (s *Ui) InitImageView(builder *gtk.Builder) {
 	nextImagesList := getObjectOrPanic(builder, "next-images").(*gtk.TreeView)
-	nextImageStore := CreateImageList(nextImagesList, "Next images", FORWARD, s.broker)
+	nextImageStore := CreateImageList(nextImagesList, "Next images", FORWARD, s.sender)
 	prevImagesList := getObjectOrPanic(builder, "prev-images").(*gtk.TreeView)
-	prevImageStore := CreateImageList(prevImagesList, "Prev images", BACKWARD, s.broker)
+	prevImageStore := CreateImageList(prevImagesList, "Prev images", BACKWARD, s.sender)
 	s.imageView = &ImageView{
 		currentImage: &CurrentImageView{
 			scrolledView: getObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
@@ -154,10 +154,10 @@ func (s *Ui) InitTopActions(builder *gtk.Builder) {
 		prevButton:      getObjectOrPanic(builder, "prev-button").(*gtk.Button),
 	}
 	s.topActionView.nextButton.Connect("clicked", func() {
-		s.broker.SendToTopic(event.NEXT_IMAGE)
+		s.sender.SendToTopic(event.NEXT_IMAGE)
 	})
 	s.topActionView.prevButton.Connect("clicked", func() {
-		s.broker.SendToTopic(event.PREV_IMAGE)
+		s.sender.SendToTopic(event.PREV_IMAGE)
 	})
 }
 
@@ -169,18 +169,18 @@ func (s *Ui) InitBottomActions(builder *gtk.Builder) {
 		findDevicesButton: getObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
 	}
 	s.bottomActionView.persistButton.Connect("clicked", func() {
-		s.broker.SendToTopic(event.PERSIST_CATEGORIES)
+		s.sender.SendToTopic(event.PERSIST_CATEGORIES)
 	})
 
 	s.bottomActionView.findSimilarButton.Connect("clicked", func() {
-		s.broker.SendToTopic(event.GENERATE_HASHES)
+		s.sender.SendToTopic(event.GENERATE_HASHES)
 	})
 	s.bottomActionView.findDevicesButton.Connect("clicked", func() {
 		s.castModal.deviceList.SetVisible(false)
 		s.castModal.deviceListStore.Clear()
 		s.castModal.modal.SetTransientFor(s.application.GetActiveWindow())
 		s.castModal.modal.Show()
-		s.broker.SendToTopic(event.CAST_FIND_DEVICES)
+		s.sender.SendToTopic(event.CAST_FIND_DEVICES)
 	})
 }
 
@@ -214,17 +214,17 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		return true
 	}
 	if key == gdk.KEY_Left {
-		s.broker.SendToTopic(event.PREV_IMAGE)
+		s.sender.SendToTopic(event.PREV_IMAGE)
 		return true
 	} else if key == gdk.KEY_Right {
-		s.broker.SendToTopic(event.NEXT_IMAGE)
+		s.sender.SendToTopic(event.NEXT_IMAGE)
 		return true
 	} else {
 		for entry, button := range s.topActionView.categoryButtons {
 			if entry.HasShortcut(key) {
 				keyName := KeyvalName(key)
 				log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-				s.broker.SendToTopicWithData(
+				s.sender.SendToTopicWithData(
 					event.CATEGORIZE_IMAGE,
 					category.CategorizeCommandNew(s.imageView.currentImage.image, button.entry, button.operation.NextOperation()))
 				return true
@@ -257,7 +257,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
 	return func() {
 		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
-		s.broker.SendToTopicWithData(
+		s.sender.SendToTopicWithData(
 			event.CATEGORIZE_IMAGE,
 			category.CategorizeCommandNew(s.imageView.currentImage.image, categoryButton.entry, categoryButton.operation.NextOperation()))
 	}
@@ -303,7 +303,7 @@ func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
 	imageWidget, _ := gtk.ImageNewFromPixbuf(s.pixbufCache.GetThumbnail(handle))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
-		s.broker.SendToTopicWithData(event.JUMP_TO_IMAGE, handle)
+		s.sender.SendToTopicWithData(event.JUMP_TO_IMAGE, handle)
 	})
 	return eventBox
 }
@@ -315,7 +315,7 @@ func (s *Ui) SetCurrentImage(handle *common.Handle) {
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {
-	s.broker.SendToTopicWithData(event.IMAGE_CHANGED, s.imageView.currentImage.image)
+	s.sender.SendToTopicWithData(event.IMAGE_CHANGED, s.imageView.currentImage.image)
 }
 
 func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
