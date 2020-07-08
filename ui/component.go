@@ -414,6 +414,18 @@ func CategoryModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Catego
 }
 
 var KEYS = []uint{
+	// Numbers
+	gdk.KEY_0,
+	gdk.KEY_1,
+	gdk.KEY_2,
+	gdk.KEY_3,
+	gdk.KEY_4,
+	gdk.KEY_5,
+	gdk.KEY_6,
+	gdk.KEY_7,
+	gdk.KEY_8,
+	gdk.KEY_9,
+	// A-Z
 	gdk.KEY_A,
 	gdk.KEY_B,
 	gdk.KEY_C,
@@ -440,6 +452,17 @@ var KEYS = []uint{
 	gdk.KEY_X,
 	gdk.KEY_Y,
 	gdk.KEY_Z,
+	// Keypad
+	gdk.KEY_KP_0,
+	gdk.KEY_KP_1,
+	gdk.KEY_KP_2,
+	gdk.KEY_KP_3,
+	gdk.KEY_KP_4,
+	gdk.KEY_KP_5,
+	gdk.KEY_KP_6,
+	gdk.KEY_KP_7,
+	gdk.KEY_KP_8,
+	gdk.KEY_KP_9,
 }
 
 func (s *CategoryModal) startEdit() {
