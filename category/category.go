@@ -1,9 +1,14 @@
 package category
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"log"
+	"os"
+	"path"
 	"strings"
+	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 )
 
@@ -68,6 +73,11 @@ func (s* Entry) HasShortcut(val uint) bool {
 	return false
 }
 
+func (s *Entry) Serialize() string {
+	shortcut := strings.ToUpper(common.KeyvalName(s.shortcuts[0]))
+	return fmt.Sprintf("%s:%s:%s", s.name, s.subPath, shortcut)
+}
+
 type CategorizedImage struct {
 	category *Entry
 	operation Operation
@@ -95,16 +105,17 @@ func (s* CategorizedImage) GetEntry() *Entry {
 type Manager struct {
 	categories []*Entry
 	sender event.Sender
+	rootDir string
 }
 
-func FromCategories(categories []string) []*Entry {
+func FromCategoriesStrings(categories []string) []*Entry {
 	var categoryEntries []*Entry
 	for _, categoryName := range categories {
 		if len(categoryName) > 0 {
-			name, keys := Parse(categoryName)
+			name, subPath, keys := Parse(categoryName)
 			categoryEntries = append(categoryEntries, &Entry{
 				name:      name,
-				subPath:   name,
+				subPath:   subPath,
 				shortcuts: keys,
 			})
 		}
@@ -116,10 +127,23 @@ func FromCategories(categories []string) []*Entry {
 	return categoryEntries
 }
 
-func Parse(name string) (string, []uint) {
+func Parse(name string) (string, string, []uint) {
 	parts := strings.Split(name, ":")
 
-	return parts[0], KeyToUint(parts[1])
+	if len(parts) == 2 {
+		return parts[0], parts[0], KeyToUint(parts[1])
+	} else {
+		return parts[0], parts[1], KeyToUint(parts[2])
+	}
+}
+func ParseToEntry(name string) *Entry {
+	name, subPath, key := Parse(name)
+
+	return &Entry{
+		name:      name,
+		subPath:   subPath,
+		shortcuts: key,
+	}
 }
 
 func KeyToUint(key string) []uint {
@@ -129,10 +153,45 @@ func KeyToUint(key string) []uint {
 	}
 }
 
-func New(sender event.Sender, categories []string) *Manager {
+func New(sender event.Sender, categories []string, rootDir string) *Manager {
+	var loadedCategories []*Entry
+
+	if len(categories) > 0 && categories[0] != "" {
+		log.Printf("Reading from command line parameters")
+		loadedCategories = FromCategoriesStrings(categories)
+	} else {
+		loadedCategories = FromFile(rootDir)
+	}
+
 	return &Manager {
-		categories: FromCategories(categories),
+		categories: loadedCategories,
 		sender: sender,
+		rootDir: rootDir,
+	}
+}
+
+const CATEGORIES_FILE_NAME = ".categories"
+
+func FromFile(fileDir string) []*Entry {
+	filePath := path.Join(fileDir, CATEGORIES_FILE_NAME)
+	log.Printf("Reading categories from file '%s'", filePath)
+
+	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
+	if err != nil {
+		return []*Entry{}
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if lines != nil {
+		return FromCategoriesStrings(lines[1:])
+	} else {
+		return []*Entry{}
 	}
 }
 
@@ -154,11 +213,34 @@ func (s *Manager) RequestCategories() {
 
 func (s *Manager) Save(categories []*Entry) {
 	s.categories = categories
+	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, categories)
 	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
 		categories: categories,
 	})
 }
 
 func (s *Manager) SaveDefault(categories []*Entry) {
-	s.Save(categories)
+	s.categories = categories
+	// TODO: Find user's home dir
+	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, categories)
+	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
+		categories: categories,
+	})
+}
+
+func saveCategoriesToFile(fileDir string, fileName string, categories []*Entry) {
+	filePath := path.Join(fileDir, fileName)
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		log.Panic("Can't write file ", filePath, err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	w.WriteString("#version:1")
+	w.WriteString("\n")
+	for _, category := range categories {
+		w.WriteString(category.Serialize())
+		w.WriteString("\n")
+	}
+	w.Flush()
 }

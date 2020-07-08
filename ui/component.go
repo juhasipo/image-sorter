@@ -35,10 +35,6 @@ func GetObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 	return obj
 }
 
-func KeyvalName(keyval uint) string {
-	return C.GoString((*C.char)(C.gdk_keyval_name(C.guint(keyval))))
-}
-
 type ImageList struct {
 	component *gtk.TreeView
 	model     *gtk.ListStore
@@ -77,7 +73,7 @@ func (v *TopActionView) SetVisible(visible bool) {
 func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
 	for entry, button := range v.categoryButtons {
 		if entry.HasShortcut(key) {
-			keyName := KeyvalName(key)
+			keyName := common.KeyvalName(key)
 			log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
 			return category.CategorizeCommandNew(handle, button.entry, button.operation.NextOperation())
 		}
@@ -521,7 +517,7 @@ func (s *CategoryModal) addKeySelections() {
 	for _, key := range KEYS {
 		isInUse := false
 		if !isInUse {
-			s.shortcutComboBox.AppendText(KeyvalName(key))
+			s.shortcutComboBox.AppendText(common.KeyvalName(key))
 		}
 	}
 }
@@ -573,7 +569,7 @@ func (s *CategoryModal) Show(parent gtk.IWindow, categories []*category.Entry) {
 		iter := s.model.Append()
 		s.model.SetValue(iter, 0, entry.GetName())
 		s.model.SetValue(iter, 1, entry.GetSubPath())
-		s.model.SetValue(iter, 2, KeyvalName(entry.GetShortcuts()[0]))
+		s.model.SetValue(iter, 2, common.KeyvalName(entry.GetShortcuts()[0]))
 	}
 
 	s.modal.SetTransientFor(parent)

@@ -20,13 +20,14 @@ func main() {
 	httpPort := flag.Int("httpPort", 8080, "HTTP Server port for Chrome Cast")
 
 	flag.Parse()
+	rootPath := flag.Arg(0)
 
 	broker := event.InitBus(1000)
 
 	categoryArr := strings.Split(*categories, ",")
-	categoryManager := category.New(broker, categoryArr)
+	categoryManager := category.New(broker, categoryArr, rootPath)
 
-	rootPath := flag.Arg(0)
+
 	imageLibrary := library.ForHandles(rootPath, broker)
 	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
 	gui := ui.Init(broker, pixbufCache)
