@@ -5,15 +5,18 @@ package ui
 import "C"
 import (
 	"fmt"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"strings"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 )
 
 type Direction int
+
 const (
 	FORWARD Direction = iota
 	BACKWARD
@@ -24,11 +27,10 @@ func PixbufGetType() glib.Type {
 	return glib.Type(C.gdk_pixbuf_get_type())
 }
 
-
 func GetObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 	obj, err := builder.GetObject(name)
 	if err != nil {
-		log.Panic("Could not load object ",name, ": ", err)
+		log.Panic("Could not load object ", name, ": ", err)
 	}
 	return obj
 }
@@ -126,7 +128,7 @@ type SimilarImagesView struct {
 	layout       *gtk.FlowBox
 }
 
-func SimilarImagesViewNew(builder *gtk.Builder) *SimilarImagesView{
+func SimilarImagesViewNew(builder *gtk.Builder) *SimilarImagesView {
 	layout, _ := gtk.FlowBoxNew()
 	similarImagesView := &SimilarImagesView{
 		scrollLayout: GetObjectOrPanic(builder, "similar-images-view").(*gtk.ScrolledWindow),
@@ -145,19 +147,19 @@ func SimilarImagesViewNew(builder *gtk.Builder) *SimilarImagesView{
 }
 
 type BottomActionView struct {
-	layout            *gtk.Box
-	persistButton     *gtk.Button
-	findSimilarButton *gtk.Button
-	findDevicesButton *gtk.Button
+	layout               *gtk.Box
+	persistButton        *gtk.Button
+	findSimilarButton    *gtk.Button
+	findDevicesButton    *gtk.Button
 	editCategoriesButton *gtk.Button
 }
 
 func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
 	bottomActionView := &BottomActionView{
-		layout:            GetObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
-		persistButton:     GetObjectOrPanic(builder, "persist-button").(*gtk.Button),
-		findSimilarButton: GetObjectOrPanic(builder, "find-similar-button").(*gtk.Button),
-		findDevicesButton: GetObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
+		layout:               GetObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
+		persistButton:        GetObjectOrPanic(builder, "persist-button").(*gtk.Button),
+		findSimilarButton:    GetObjectOrPanic(builder, "find-similar-button").(*gtk.Button),
+		findDevicesButton:    GetObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
 		editCategoriesButton: GetObjectOrPanic(builder, "edit-categories-button").(*gtk.Button),
 	}
 	bottomActionView.persistButton.Connect("clicked", func() {
@@ -190,7 +192,7 @@ type ProgressView struct {
 	stopButton  *gtk.Button
 }
 
-func ProgressViewNew(builder *gtk.Builder, sender event.Sender) *ProgressView{
+func ProgressViewNew(builder *gtk.Builder, sender event.Sender) *ProgressView {
 	progressView := &ProgressView{
 		view:        GetObjectOrPanic(builder, "progress-view").(*gtk.Box),
 		stopButton:  GetObjectOrPanic(builder, "stop-progress-button").(*gtk.Button),
@@ -213,14 +215,13 @@ func (v *ProgressView) SetStatus(status int, total int) {
 	v.progressbar.SetFraction(float64(status) / float64(total))
 }
 
-
 type CastModal struct {
 	modal          *gtk.Dialog
 	deviceListView *gtk.TreeView
 	model          *gtk.ListStore
 	devices        []string
 	cancelButton   *gtk.Button
-	refreshButton   *gtk.Button
+	refreshButton  *gtk.Button
 	statusLabel    *gtk.Label
 }
 
@@ -281,9 +282,6 @@ func (s *CastModal) SearchDone() {
 	s.refreshButton.SetSensitive(true)
 }
 
-
-
-
 func createImageList(view *gtk.TreeView, title string, direction Direction, sender event.Sender) *gtk.ListStore {
 	view.SetSizeRequest(100, -1)
 	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
@@ -326,21 +324,34 @@ type CategoryModal struct {
 
 	sender event.Sender
 
-	saveButton *gtk.Button
+	saveButton        *gtk.Button
+	saveMenuButton    *gtk.MenuButton
 	saveDefaultButton *gtk.Button
-	cancelButton *gtk.Button
+	cancelButton      *gtk.Button
 
-	addButton *gtk.Button
-	removeButton *gtk.Button
-	editButton *gtk.Button
+	categoryListActions *gtk.Box
+	addButton           *gtk.Button
+	removeButton        *gtk.Button
+	editButton          *gtk.Button
+
+	addEntryView       *gtk.Grid
+	nameEntry          *gtk.Entry
+	pathEntry          *gtk.Entry
+	shortcutComboBox   *gtk.ComboBoxText
+	addAddButton       *gtk.Button
+	addEditButton      *gtk.Button
+	editedCategoryIter *gtk.TreeIter
+	addCancelButton    *gtk.Button
 }
 
 func CategoryModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *CategoryModal {
 	modalDialog := GetObjectOrPanic(builder, "category-dialog").(*gtk.Dialog)
+	modalDialog.SetSizeRequest(400, 300)
 	deviceList := GetObjectOrPanic(builder, "category-list").(*gtk.TreeView)
 	model := createCategoryList(modalDialog, deviceList, "Categories", sender)
 
 	saveButton := GetObjectOrPanic(builder, "category-save-button").(*gtk.Button)
+	saveMenuButton := GetObjectOrPanic(builder, "category-save-menu-button").(*gtk.MenuButton)
 	saveDefaultButton := GetObjectOrPanic(builder, "category-save-default-button").(*gtk.Button)
 
 	cancelButton := GetObjectOrPanic(builder, "category-cancel-button").(*gtk.Button)
@@ -348,30 +359,215 @@ func CategoryModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Catego
 		modalDialog.Hide()
 	})
 
+	categoryListActions := GetObjectOrPanic(builder, "category-list-actions").(*gtk.Box)
 	addButton := GetObjectOrPanic(builder, "category-add-button").(*gtk.Button)
 	removeButton := GetObjectOrPanic(builder, "category-remove-button").(*gtk.Button)
 	editButton := GetObjectOrPanic(builder, "category-edit-button").(*gtk.Button)
 
+	addEntryView := GetObjectOrPanic(builder, "category-add-view").(*gtk.Grid)
+	nameEntry := GetObjectOrPanic(builder, "category-add-name").(*gtk.Entry)
+	pathEntry := GetObjectOrPanic(builder, "category-add-path").(*gtk.Entry)
+	shortcutComboBox := GetObjectOrPanic(builder, "category-add-shortcut").(*gtk.ComboBoxText)
+	addAddButton := GetObjectOrPanic(builder, "category-add-add-button").(*gtk.Button)
+	addEditButton := GetObjectOrPanic(builder, "category-add-edit-button").(*gtk.Button)
+	addCancelButton := GetObjectOrPanic(builder, "category-add-cancel-button").(*gtk.Button)
+
 	categoryModal := CategoryModal{
-		modal:             modalDialog,
-		list:              deviceList,
-		model:             model,
-		sender:            sender,
-		saveButton:        saveButton,
-		saveDefaultButton: saveDefaultButton,
-		cancelButton:      cancelButton,
-		addButton:         addButton,
-		removeButton:      removeButton,
-		editButton:        editButton,
+		modal:               modalDialog,
+		list:                deviceList,
+		model:               model,
+		sender:              sender,
+		saveButton:          saveButton,
+		saveMenuButton:      saveMenuButton,
+		saveDefaultButton:   saveDefaultButton,
+		cancelButton:        cancelButton,
+		categoryListActions: categoryListActions,
+		addButton:           addButton,
+		removeButton:        removeButton,
+		editButton:          editButton,
+		addEntryView:        addEntryView,
+		nameEntry:           nameEntry,
+		pathEntry:           pathEntry,
+		shortcutComboBox:    shortcutComboBox,
+		addAddButton:        addAddButton,
+		addEditButton:       addEditButton,
+		addCancelButton:     addCancelButton,
 	}
 
+	nameEntry.Connect("changed", func(entry *gtk.Entry) {
+		value, _ := entry.GetText()
+		if strings.TrimSpace(value) == "" {
+			categoryModal.addAddButton.SetSensitive(false)
+			categoryModal.addEditButton.SetSensitive(false)
+		} else {
+			categoryModal.addAddButton.SetSensitive(true)
+			categoryModal.addEditButton.SetSensitive(true)
+		}
+	})
 	saveButton.Connect("clicked", categoryModal.save)
+	saveDefaultButton.Connect("clicked", categoryModal.saveDefault)
 	removeButton.Connect("clicked", categoryModal.remove)
+	addButton.Connect("clicked", categoryModal.startAdd)
+	editButton.Connect("clicked", categoryModal.startEdit)
+
+	addAddButton.Connect("clicked", categoryModal.addNewCategory)
+	addEditButton.Connect("clicked", categoryModal.editCategory)
+	addCancelButton.Connect("clicked", categoryModal.endAddOrEdit)
 
 	return &categoryModal
 }
 
+var KEYS = []uint{
+	gdk.KEY_A,
+	gdk.KEY_B,
+	gdk.KEY_C,
+	gdk.KEY_D,
+	gdk.KEY_E,
+	gdk.KEY_F,
+	gdk.KEY_G,
+	gdk.KEY_H,
+	gdk.KEY_I,
+	gdk.KEY_J,
+	gdk.KEY_K,
+	gdk.KEY_L,
+	gdk.KEY_M,
+	gdk.KEY_N,
+	gdk.KEY_O,
+	gdk.KEY_P,
+	gdk.KEY_Q,
+	gdk.KEY_R,
+	gdk.KEY_S,
+	gdk.KEY_T,
+	gdk.KEY_U,
+	gdk.KEY_V,
+	gdk.KEY_W,
+	gdk.KEY_X,
+	gdk.KEY_Y,
+	gdk.KEY_Z,
+}
+
+func (s *CategoryModal) startEdit() {
+	s.addAddButton.Hide()
+	s.addEditButton.Show()
+
+	selection, _ := s.list.GetSelection()
+	_, iter, ok := selection.GetSelected()
+	s.editedCategoryIter = iter
+
+	if ok {
+		name, path, key := extractValuesFromModel(s.model, s.editedCategoryIter)
+
+		s.initAddEditView(name, path, key)
+	}
+}
+
+func (s *CategoryModal) initAddEditView(name string, path string, key string) {
+	s.nameEntry.SetText(name)
+	if name != path {
+		s.pathEntry.SetText(path)
+	}
+	s.addKeySelections()
+
+	if key == "" {
+		s.shortcutComboBox.SetActive(0)
+	} else {
+		model, _ := s.shortcutComboBox.GetModel()
+		keyIndex := findKeyIndex(key, model)
+		s.shortcutComboBox.SetActive(keyIndex)
+	}
+
+	s.saveButton.Hide()
+	s.cancelButton.Hide()
+	s.saveMenuButton.Hide()
+	s.categoryListActions.Hide()
+	s.list.Hide()
+	s.addEntryView.Show()
+	s.addEntryView.Show()
+	s.addButton.SetSensitive(false)
+	s.removeButton.SetSensitive(false)
+	s.editButton.SetSensitive(false)
+}
+
+func findKeyIndex(key string, model *gtk.TreeModel) int {
+	upperKey := strings.ToUpper(key)
+
+	i := 0
+	iter, _ := model.GetIterFirst()
+	for {
+		value, _ := model.GetValue(iter, 0)
+
+		iterValueString, _ := value.GetString()
+		if strings.ToUpper(iterValueString) == upperKey {
+			return i
+		}
+		if model.IterNext(iter) {
+			i += 1
+		} else {
+			return 0
+		}
+	}
+}
+
+func (s *CategoryModal) startAdd() {
+	s.addAddButton.Show()
+	s.addEditButton.Hide()
+
+	s.initAddEditView("", "", "")
+}
+
+func (s *CategoryModal) addKeySelections() {
+	store, _ := gtk.ListStoreNew(glib.TYPE_STRING)
+	s.shortcutComboBox.SetModel(store)
+	for _, key := range KEYS {
+		isInUse := false
+		if !isInUse {
+			s.shortcutComboBox.AppendText(KeyvalName(key))
+		}
+	}
+}
+func (s *CategoryModal) addNewCategory() {
+	iter := s.model.Append()
+
+	s.applyToIter(iter)
+
+	s.endAddOrEdit()
+}
+
+func (s *CategoryModal) editCategory() {
+	s.applyToIter(s.editedCategoryIter)
+	s.endAddOrEdit()
+}
+
+func (s *CategoryModal) applyToIter(iter *gtk.TreeIter) {
+	name, _ := s.nameEntry.GetText()
+	path, _ := s.pathEntry.GetText()
+	if path == "" {
+		path = name
+	}
+	shortcut := s.shortcutComboBox.GetActiveText()
+
+	s.model.SetValue(iter, 0, name)
+	s.model.SetValue(iter, 1, path)
+	s.model.SetValue(iter, 2, shortcut)
+}
+
+func (s *CategoryModal) endAddOrEdit() {
+	s.saveButton.Show()
+	s.cancelButton.Show()
+	s.saveMenuButton.Show()
+	s.categoryListActions.Show()
+	s.list.Show()
+	s.addEntryView.Hide()
+
+	s.addButton.SetSensitive(true)
+	s.removeButton.SetSensitive(true)
+	s.editButton.SetSensitive(true)
+}
+
 func (s *CategoryModal) Show(parent gtk.IWindow, categories []*category.Entry) {
+	s.list.Show()
+	s.addEntryView.Hide()
+
 	s.model.Clear()
 	for _, entry := range categories {
 		iter := s.model.Append()
@@ -406,19 +602,23 @@ func (s *CategoryModal) remove() {
 func (s *CategoryModal) getCategoriesFromList() []*category.Entry {
 	var categories []*category.Entry
 	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
-		nameValue, _ := s.model.GetValue(iter, 0)
-		pathValue, _ := s.model.GetValue(iter, 1)
-		keyValue, _ := s.model.GetValue(iter, 2)
-
-		name, _ := nameValue.GetString()
-		path, _ := pathValue.GetString()
-		key, _ := keyValue.GetString()
+		name, path, key := extractValuesFromModel(s.model, iter)
 		entry := category.CategoryEntryNew(name, path, key)
 
 		categories = append(categories, entry)
 	}
 
 	return categories
+}
+
+func extractValuesFromModel(store *gtk.ListStore, iter *gtk.TreeIter) (string, string, string) {
+	nameValue, _ := store.GetValue(iter, 0)
+	pathValue, _ := store.GetValue(iter, 1)
+	keyValue, _ := store.GetValue(iter, 2)
+	name, _ := nameValue.GetString()
+	path, _ := pathValue.GetString()
+	shortcut, _ := keyValue.GetString()
+	return name, path, shortcut
 }
 
 func createCategoryList(modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
