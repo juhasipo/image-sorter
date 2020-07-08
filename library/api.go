@@ -18,7 +18,7 @@ type Library interface {
 	RequestGenerateHashes()
 	RequestStopHashes()
 	GetHandles() []*common.Handle
-
+	Close()
 }
 
 type ImageCommand struct {

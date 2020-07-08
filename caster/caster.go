@@ -186,9 +186,17 @@ func (s* Caster) CastImage(handle *common.Handle) {
 }
 
 func (s* Caster) StopCasting() {
-	device := s.devices[s.selectedDevice]
-	device.mediaController.Stop(time.Second * 5)
-	device.connection.Close()
-	device.heartbeat.Stop()
-	s.selectedDevice = ""
+	if s.selectedDevice != "" {
+		log.Printf("Stop casting to '%s'", s.selectedDevice)
+		device := s.devices[s.selectedDevice]
+		device.mediaController.Stop(time.Second * 5)
+		device.connection.Close()
+		device.heartbeat.Stop()
+		s.selectedDevice = ""
+	}
+}
+
+func (s *Caster) Close() {
+	log.Print("Shutdown caster")
+	s.StopCasting()
 }

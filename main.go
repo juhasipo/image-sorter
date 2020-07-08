@@ -54,6 +54,7 @@ func main() {
 	broker.Subscribe(event.CATEGORY_PERSIST_ALL, imageLibrary.PersistImageCategories)
 	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
+	broker.Subscribe(event.APPLICATION_CLOSE, imageLibrary.Close)
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
@@ -64,6 +65,7 @@ func main() {
 	broker.Subscribe(event.CAST_DEVICE_SEARCH, c.FindDevices)
 	broker.Subscribe(event.CAST_DEVICE_SELECT, c.SelectDevice)
 	broker.Subscribe(event.IMAGE_CHANGED, c.CastImage)
+	broker.Subscribe(event.APPLICATION_CLOSE, c.Close)
 
 	// Caster -> UI
 	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
@@ -73,6 +75,7 @@ func main() {
 	// UI -> Category
 	broker.Subscribe(event.CATEGORIES_SAVE, categoryManager.Save)
 	broker.Subscribe(event.CATEGORIES_SAVE_DEFAULT, categoryManager.SaveDefault)
+	broker.Subscribe(event.APPLICATION_CLOSE, categoryManager.Close)
 
 	// Category -> UI
 	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)

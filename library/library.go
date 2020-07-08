@@ -245,6 +245,10 @@ func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[*ca
 	}
 }
 
+func (s *Manager) Close() {
+	log.Print("Shutting down library")
+}
+
 // Private API
 
 func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedImage {

@@ -103,9 +103,9 @@ func (s* CategorizedImage) GetEntry() *Entry {
 }
 
 type Manager struct {
-	categories []*Entry
-	sender event.Sender
-	rootDir string
+	categories  []*Entry
+	sender      event.Sender
+	rootDir     string
 }
 
 func FromCategoriesStrings(categories []string) []*Entry {
@@ -219,6 +219,11 @@ func (s *Manager) Save(categories []*Entry) {
 	})
 }
 
+func (s *Manager) Close() {
+	log.Print("Shutting down category manager")
+	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, s.categories)
+}
+
 func (s *Manager) SaveDefault(categories []*Entry) {
 	s.categories = categories
 	// TODO: Find user's home dir
@@ -230,6 +235,8 @@ func (s *Manager) SaveDefault(categories []*Entry) {
 
 func saveCategoriesToFile(fileDir string, fileName string, categories []*Entry) {
 	filePath := path.Join(fileDir, fileName)
+
+	log.Printf("Saving categories to file '%s'", filePath)
 	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Panic("Can't write file ", filePath, err)
