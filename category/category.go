@@ -39,6 +39,14 @@ type Entry struct {
 	shortcuts []uint
 }
 
+func CategoryEntryNew(name string, subPath string, shortcut string) *Entry {
+	return &Entry{
+		name:      name,
+		subPath:   subPath,
+		shortcuts: KeyToUint(shortcut),
+	}
+}
+
 func (s *Entry) GetSubPath() string {
 	return s.subPath
 }
@@ -96,7 +104,7 @@ func FromCategories(categories []string) []*Entry {
 			name, keys := Parse(categoryName)
 			categoryEntries = append(categoryEntries, &Entry{
 				name:      name,
-				subPath:   categoryName,
+				subPath:   name,
 				shortcuts: keys,
 			})
 		}
@@ -142,4 +150,15 @@ func (s *Manager) RequestCategories() {
 	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
 		categories: s.categories,
 	})
+}
+
+func (s *Manager) Save(categories []*Entry) {
+	s.categories = categories
+	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
+		categories: categories,
+	})
+}
+
+func (s *Manager) SaveDefault(categories []*Entry) {
+	s.Save(categories)
 }

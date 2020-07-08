@@ -18,6 +18,7 @@ type Ui struct {
 	application *gtk.Application
 	pixbufCache *pixbuf.PixbufCache
 	sender      event.Sender
+	categories  []*category.Entry
 
 	// UI components
 	progressView *ProgressView
@@ -26,6 +27,7 @@ type Ui struct {
 	similarImagesView *SimilarImagesView
 	bottomActionView *BottomActionView
 	castModal *CastModal
+	editCategoriesModal *CategoryModal
 
 	Gui
 }
@@ -84,10 +86,12 @@ func (s *Ui) Init() {
 
 		s.similarImagesView = SimilarImagesViewNew(builder)
 		s.imageView = ImageViewNew(builder, s)
-		s.castModal = CastModalNew(builder, s, s.sender)
 		s.topActionView = TopActionsNew(builder, s.sender)
 		s.bottomActionView = BottomActionsNew(builder, s, s.sender)
 		s.progressView = ProgressViewNew(builder, s.sender)
+
+		s.castModal = CastModalNew(builder, s, s.sender)
+		s.editCategoriesModal = CategoryModalNew(builder, s, s.sender)
 
 		s.sender.SendToTopic(event.UI_READY)
 
@@ -131,6 +135,15 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 }
 
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
+	s.categories = make([]*category.Entry, len(categories.GetCategories()))
+	copy(s.categories, categories.GetCategories())
+
+	s.topActionView.categoryButtons = map[*category.Entry]*CategoryButton{}
+	children := s.topActionView.categoriesView.GetChildren()
+	children.Foreach(func(item interface{}) {
+		s.topActionView.categoriesView.Remove(item.(gtk.IWidget))
+	})
+
 	for _, entry := range categories.GetCategories() {
 		button, _ := gtk.ButtonNewWithLabel(entry.GetName())
 
@@ -268,4 +281,10 @@ func (s *Ui) CastFindDone() {
 		s.castModal.SetNoDevices()
 	}
 	s.castModal.SearchDone()
+}
+
+func (s *Ui) showEditCategoriesModal() {
+	categories := make([]*category.Entry, len(s.categories))
+	copy(categories, s.categories)
+	s.editCategoriesModal.Show(s.application.GetActiveWindow(), categories)
 }

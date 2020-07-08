@@ -23,6 +23,8 @@ const (
 	CATEGORY_PERSIST_ALL  Topic = "category-persist-all"
 	CATEGORIES_UPDATED    Topic = "categories-updated"
 	CATEGORY_IMAGE_UPDATE Topic = "category-image-update"
+	CATEGORIES_SAVE       Topic = "categories-save"
+	CATEGORIES_SAVE_DEFAULT       Topic = "categories-save-default"
 
 	// Similar image search
 	SIMILAR_REQUEST_SEARCH Topic = "similar-request-serach"

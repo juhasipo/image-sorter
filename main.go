@@ -56,7 +56,6 @@ func main() {
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
-	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
 	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)
 	broker.ConnectToGui(event.UPDATE_PROCESS_STATUS, gui.UpdateProgress)
 
@@ -69,6 +68,13 @@ func main() {
 	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
 	broker.ConnectToGui(event.CAST_READY, gui.CastReady)
 	broker.ConnectToGui(event.CAST_DEVICES_SEARCH_DONE, gui.CastFindDone)
+
+	// UI -> Category
+	broker.Subscribe(event.CATEGORIES_SAVE, categoryManager.Save)
+	broker.Subscribe(event.CATEGORIES_SAVE_DEFAULT, categoryManager.SaveDefault)
+
+	// Category -> UI
+	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
 
 	StartBackgroundGC()
 

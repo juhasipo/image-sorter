@@ -149,6 +149,7 @@ type BottomActionView struct {
 	persistButton     *gtk.Button
 	findSimilarButton *gtk.Button
 	findDevicesButton *gtk.Button
+	editCategoriesButton *gtk.Button
 }
 
 func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
@@ -157,6 +158,7 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		persistButton:     GetObjectOrPanic(builder, "persist-button").(*gtk.Button),
 		findSimilarButton: GetObjectOrPanic(builder, "find-similar-button").(*gtk.Button),
 		findDevicesButton: GetObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
+		editCategoriesButton: GetObjectOrPanic(builder, "edit-categories-button").(*gtk.Button),
 	}
 	bottomActionView.persistButton.Connect("clicked", func() {
 		sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
@@ -166,6 +168,8 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
 	})
 	bottomActionView.findDevicesButton.Connect("clicked", ui.findDevices)
+
+	bottomActionView.editCategoriesButton.Connect("clicked", ui.showEditCategoriesModal)
 
 	return bottomActionView
 }
@@ -312,5 +316,126 @@ func createDeviceList(modal *gtk.Dialog, view *gtk.TreeView, title string, sende
 	renderer, _ := gtk.CellRendererTextNew()
 	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 0)
 	view.AppendColumn(column)
+	return store
+}
+
+type CategoryModal struct {
+	modal *gtk.Dialog
+	list  *gtk.TreeView
+	model *gtk.ListStore
+
+	sender event.Sender
+
+	saveButton *gtk.Button
+	saveDefaultButton *gtk.Button
+	cancelButton *gtk.Button
+
+	addButton *gtk.Button
+	removeButton *gtk.Button
+	editButton *gtk.Button
+}
+
+func CategoryModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *CategoryModal {
+	modalDialog := GetObjectOrPanic(builder, "category-dialog").(*gtk.Dialog)
+	deviceList := GetObjectOrPanic(builder, "category-list").(*gtk.TreeView)
+	model := createCategoryList(modalDialog, deviceList, "Categories", sender)
+
+	saveButton := GetObjectOrPanic(builder, "category-save-button").(*gtk.Button)
+	saveDefaultButton := GetObjectOrPanic(builder, "category-save-default-button").(*gtk.Button)
+
+	cancelButton := GetObjectOrPanic(builder, "category-cancel-button").(*gtk.Button)
+	cancelButton.Connect("clicked", func() {
+		modalDialog.Hide()
+	})
+
+	addButton := GetObjectOrPanic(builder, "category-add-button").(*gtk.Button)
+	removeButton := GetObjectOrPanic(builder, "category-remove-button").(*gtk.Button)
+	editButton := GetObjectOrPanic(builder, "category-edit-button").(*gtk.Button)
+
+	categoryModal := CategoryModal{
+		modal:             modalDialog,
+		list:              deviceList,
+		model:             model,
+		sender:            sender,
+		saveButton:        saveButton,
+		saveDefaultButton: saveDefaultButton,
+		cancelButton:      cancelButton,
+		addButton:         addButton,
+		removeButton:      removeButton,
+		editButton:        editButton,
+	}
+
+	saveButton.Connect("clicked", categoryModal.save)
+	removeButton.Connect("clicked", categoryModal.remove)
+
+	return &categoryModal
+}
+
+func (s *CategoryModal) Show(parent gtk.IWindow, categories []*category.Entry) {
+	s.model.Clear()
+	for _, entry := range categories {
+		iter := s.model.Append()
+		s.model.SetValue(iter, 0, entry.GetName())
+		s.model.SetValue(iter, 1, entry.GetSubPath())
+		s.model.SetValue(iter, 2, KeyvalName(entry.GetShortcuts()[0]))
+	}
+
+	s.modal.SetTransientFor(parent)
+
+	s.modal.Show()
+}
+
+func (s *CategoryModal) save() {
+	s.sender.SendToTopicWithData(event.CATEGORIES_SAVE, s.getCategoriesFromList())
+	s.modal.Hide()
+}
+func (s *CategoryModal) saveDefault() {
+	s.sender.SendToTopicWithData(event.CATEGORIES_SAVE_DEFAULT, s.getCategoriesFromList())
+	s.modal.Hide()
+}
+
+func (s *CategoryModal) remove() {
+	selection, _ := s.list.GetSelection()
+	_, iter, ok := selection.GetSelected()
+
+	if ok {
+		s.model.Remove(iter)
+	}
+}
+
+func (s *CategoryModal) getCategoriesFromList() []*category.Entry {
+	var categories []*category.Entry
+	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
+		nameValue, _ := s.model.GetValue(iter, 0)
+		pathValue, _ := s.model.GetValue(iter, 1)
+		keyValue, _ := s.model.GetValue(iter, 2)
+
+		name, _ := nameValue.GetString()
+		path, _ := pathValue.GetString()
+		key, _ := keyValue.GetString()
+		entry := category.CategoryEntryNew(name, path, key)
+
+		categories = append(categories, entry)
+	}
+
+	return categories
+}
+
+func createCategoryList(modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
+	// Name, folder, shortcut key
+	store, _ := gtk.ListStoreNew(glib.TYPE_STRING, glib.TYPE_STRING, glib.TYPE_STRING)
+
+	view.SetModel(store)
+	renderer, _ := gtk.CellRendererTextNew()
+	nameColumn, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 0)
+	nameColumn.SetTitle("Name")
+	folderColumn, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 1)
+	folderColumn.SetTitle("Path")
+	shortcutColumn, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 2)
+	shortcutColumn.SetTitle("Shortcut")
+
+	view.AppendColumn(nameColumn)
+	view.AppendColumn(folderColumn)
+	view.AppendColumn(shortcutColumn)
 	return store
 }
