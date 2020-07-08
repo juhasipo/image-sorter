@@ -177,9 +177,19 @@ func (v *BottomActionView) SetVisible(visible bool) {
 }
 
 type CategoryButton struct {
-	button    *gtk.Button
-	entry     *category.Entry
-	operation category.Operation
+	button          *gtk.Button
+	entry           *category.Entry
+	operation       category.Operation
+	categorizedIcon *gtk.Image
+}
+
+func (s *CategoryButton) SetStatus(operation category.Operation) {
+	if operation == category.MOVE {
+		s.button.SetImage(s.categorizedIcon)
+	} else {
+		icon, _ := gtk.ImageNew()
+		s.button.SetImage(icon)
+	}
 }
 
 type ProgressView struct {

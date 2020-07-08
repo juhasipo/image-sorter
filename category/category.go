@@ -16,26 +16,14 @@ type Operation int
 const(
 	NONE Operation = 0
 	MOVE Operation = 1
-	COPY Operation = 2
 )
 
 func (s *CategorizeCommand) ToLabel() string {
-	entryName := s.GetEntry().GetName()
-	status := ""
-	switch s.GetOperation() {
-	case COPY: status = "C"
-	case MOVE: status = "M"
-	}
-
-	if status != "" {
-		return entryName + " (" + status + ")"
-	} else {
-		return entryName
-	}
+	return s.GetEntry().GetName()
 }
 
 func (s Operation) NextOperation() Operation {
-	return (s + 1) % 3
+	return (s + 1) % 2
 }
 
 type Entry struct {

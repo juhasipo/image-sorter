@@ -225,24 +225,16 @@ func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[*ca
 	log.Printf(" - Persisting '%s'", handle.GetPath())
 	dir, file := filepath.Split(handle.GetPath())
 
-	var hasMove = false
 	for _, image := range categories {
 		targetDirName := image.GetEntry().GetSubPath()
 		targetDir := filepath.Join(dir, targetDirName)
 
-		// Always copy
+		// Always copy first because picture may have multiple categories
 		if image.GetOperation() != category.NONE {
 			common.CopyFile(dir, file, targetDir, file)
 		}
-
-		// Check if any one is marked to be moved, in that case delete it later
-		if image.GetOperation() == category.MOVE {
-			hasMove = true
-		}
 	}
-	if hasMove {
-		common.RemoveFile(handle.GetPath())
-	}
+	common.RemoveFile(handle.GetPath())
 }
 
 func (s *Manager) Close() {

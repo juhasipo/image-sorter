@@ -21,12 +21,12 @@ type Ui struct {
 	categories  []*category.Entry
 
 	// UI components
-	progressView *ProgressView
-	topActionView  *TopActionView
-	imageView *ImageView
-	similarImagesView *SimilarImagesView
-	bottomActionView *BottomActionView
-	castModal *CastModal
+	progressView        *ProgressView
+	topActionView       *TopActionView
+	imageView           *ImageView
+	similarImagesView   *SimilarImagesView
+	bottomActionView    *BottomActionView
+	castModal           *CastModal
 	editCategoriesModal *CategoryModal
 
 	Gui
@@ -153,11 +153,14 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 
 	for _, entry := range categories.GetCategories() {
 		button, _ := gtk.ButtonNewWithLabel(entry.GetName())
+		button.SetAlwaysShowImage(true)
 
+		categorizedIcon, _ := gtk.ImageNewFromIconName("gtk-yes", gtk.ICON_SIZE_BUTTON)
 		categoryButton := &CategoryButton{
 			button:    button,
 			entry:     entry,
 			operation: category.NONE,
+			categorizedIcon: categorizedIcon,
 		}
 		s.topActionView.categoryButtons[entry] = categoryButton
 
@@ -250,6 +253,7 @@ func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 	for _, button := range s.topActionView.categoryButtons {
 		button.button.SetLabel(button.entry.GetName())
 		button.operation = category.NONE
+		button.SetStatus(button.operation)
 	}
 
 	for _, command := range commands {
@@ -257,6 +261,7 @@ func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 		button := s.topActionView.categoryButtons[command.GetEntry()]
 		button.operation = command.GetOperation()
 		button.button.SetLabel(command.ToLabel())
+		button.SetStatus(button.operation)
 	}
 }
 
