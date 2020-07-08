@@ -530,6 +530,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="xpad">30</property>
                     <property name="label" translatable="yes">Shortcut</property>
                   </object>
                   <packing>
