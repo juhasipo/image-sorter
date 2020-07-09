@@ -18,6 +18,7 @@ const (
 	IMAGE_REQUEST_SIMILAR     Topic = "image-request-similar"
 	IMAGE_CHANGED             Topic = "image-changed"
 	IMAGE_UPDATE              Topic = "image-update"
+	IMAGE_LIST_SIZE_CHANGED   Topic = "image-list-size-changed"
 
 	// Categorization
 	CATEGORIZE_IMAGE      Topic = "categorize-image"

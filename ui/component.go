@@ -114,7 +114,11 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 			model:     prevImageStore,
 		},
 	}
-	imageView.currentImage.viewport.Connect("size-allocate", ui.UpdateCurrentImage)
+	imageView.currentImage.viewport.Connect("size-allocate", func() {
+		ui.UpdateCurrentImage()
+		height := ui.imageView.nextImages.component.GetAllocatedHeight() / 80
+		ui.sender.SendToTopicWithData(event.IMAGE_LIST_SIZE_CHANGED, height)
+	})
 
 	return imageView
 }

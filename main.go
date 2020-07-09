@@ -54,6 +54,7 @@ func main() {
 	broker.Subscribe(event.IMAGE_REQUEST, imageLibrary.RequestImage)
 	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
+	broker.Subscribe(event.IMAGE_LIST_SIZE_CHANGED, imageLibrary.ChangeImageListSize)
 	broker.Subscribe(event.APPLICATION_CLOSE, imageLibrary.Close)
 
 	// Library -> UI

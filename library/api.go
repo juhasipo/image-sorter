@@ -16,6 +16,7 @@ type Library interface {
 	RequestStopHashes()
 	GetHandles() []*common.Handle
 	GetHandleById(handleId string) *common.Handle
+	ChangeImageListSize(imageListSize int)
 	Close()
 }
 

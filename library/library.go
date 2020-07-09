@@ -16,10 +16,6 @@ var (
 	EMPTY_HANDLES []*common.Handle
 )
 
-const (
-	IMAGE_LIST_SIZE = 5
-)
-
 type ImageList func(number int) []*common.Handle
 
 type Manager struct {
@@ -30,6 +26,7 @@ type Manager struct {
 	imageHash     *duplo.Store
 	sender        event.Sender
 	categoryManager *category.Manager
+	imageListSize int
 
 	Library
 
@@ -43,6 +40,7 @@ func ForHandles(rootDir string, sender event.Sender) Library {
 		index:         0,
 		sender:        sender,
 		imageHash:     duplo.New(),
+		imageListSize: 5,
 	}
 	manager.loadImagesFromRootDir()
 	return &manager
@@ -172,6 +170,13 @@ func (s *Manager) RequestImages() {
 	s.sendStatus()
 }
 
+func (s *Manager) ChangeImageListSize(imageListSize int) {
+	if s.imageListSize != imageListSize {
+		s.imageListSize = imageListSize
+		s.sendStatus()
+	}
+}
+
 func (s *Manager) Close() {
 	log.Print("Shutting down library")
 }
@@ -179,8 +184,8 @@ func (s *Manager) Close() {
 // Private API
 
 func (s *Manager) sendStatus() {
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(IMAGE_LIST_SIZE))
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(IMAGE_LIST_SIZE))
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize))
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize))
 	currentImage := s.getCurrentImage()
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.Handle{currentImage})
 	s.sendSimilarImages(currentImage)
