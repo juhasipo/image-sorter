@@ -249,7 +249,7 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 func (s *Manager) loadImagesFromRootDir() {
 	s.imageHandles = map[string]*common.Handle{}
 
-	s.imageList = common.LoadImages(s.rootDir)
+	s.imageList = LoadImages(s.rootDir)
 
 	for _, handle := range s.imageList {
 		s.imageHandles[handle.GetId()] = handle

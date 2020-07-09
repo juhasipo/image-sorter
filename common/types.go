@@ -20,6 +20,14 @@ var (
 	EMPTY_HANDLE = Handle {id: "", path: ""}
 )
 
+func HandleNew(path string) *Handle {
+	return &Handle{
+		id:   path,
+		path: path,
+		hash: nil,
+	}
+}
+
 func GetEmptyHandle() *Handle {
 	return &EMPTY_HANDLE
 }

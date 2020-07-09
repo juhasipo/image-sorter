@@ -3,42 +3,10 @@ package common
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 )
-
-var (
-	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
-)
-
-func LoadImages(dir string) []*Handle {
-	var handles []*Handle
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Scanning directory '%s'", dir)
-	for _, file := range files {
-		filePath := path.Join(dir, file.Name())
-		extension := filepath.Ext(filePath)
-		if IsSupported(extension) {
-			filePath := path.Join(dir, file.Name())
-			handles = append(handles, &Handle{id: filePath, path: filePath})
-		}
-	}
-	log.Printf("Found %d images", len(handles))
-
-	return handles
-}
-
-func IsSupported(extension string) bool {
-	return supportedFileEndings[strings.ToLower(extension)]
-}
 
 func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) error {
 	srcFilePath := filepath.Join(srcPath, srcFile)

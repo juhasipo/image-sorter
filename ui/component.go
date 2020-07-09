@@ -5,7 +5,6 @@ package ui
 import "C"
 import (
 	"fmt"
-	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
@@ -422,58 +421,6 @@ func CategoryModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Catego
 	addCancelButton.Connect("clicked", categoryModal.endAddOrEdit)
 
 	return &categoryModal
-}
-
-var KEYS = []uint{
-	// Numbers
-	gdk.KEY_0,
-	gdk.KEY_1,
-	gdk.KEY_2,
-	gdk.KEY_3,
-	gdk.KEY_4,
-	gdk.KEY_5,
-	gdk.KEY_6,
-	gdk.KEY_7,
-	gdk.KEY_8,
-	gdk.KEY_9,
-	// A-Z
-	gdk.KEY_A,
-	gdk.KEY_B,
-	gdk.KEY_C,
-	gdk.KEY_D,
-	gdk.KEY_E,
-	gdk.KEY_F,
-	gdk.KEY_G,
-	gdk.KEY_H,
-	gdk.KEY_I,
-	gdk.KEY_J,
-	gdk.KEY_K,
-	gdk.KEY_L,
-	gdk.KEY_M,
-	gdk.KEY_N,
-	gdk.KEY_O,
-	gdk.KEY_P,
-	gdk.KEY_Q,
-	gdk.KEY_R,
-	gdk.KEY_S,
-	gdk.KEY_T,
-	gdk.KEY_U,
-	gdk.KEY_V,
-	gdk.KEY_W,
-	gdk.KEY_X,
-	gdk.KEY_Y,
-	gdk.KEY_Z,
-	// Keypad
-	gdk.KEY_KP_0,
-	gdk.KEY_KP_1,
-	gdk.KEY_KP_2,
-	gdk.KEY_KP_3,
-	gdk.KEY_KP_4,
-	gdk.KEY_KP_5,
-	gdk.KEY_KP_6,
-	gdk.KEY_KP_7,
-	gdk.KEY_KP_8,
-	gdk.KEY_KP_9,
 }
 
 func (s *CategoryModal) startEdit() {
