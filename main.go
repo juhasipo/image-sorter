@@ -10,6 +10,7 @@ import (
 	"vincit.fi/image-sorter/caster"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/imagecategory"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/pixbuf"
 	"vincit.fi/image-sorter/ui"
@@ -26,7 +27,10 @@ func main() {
 
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr, rootPath)
-	imageLibrary := library.ForHandles(rootPath, broker, categoryManager)
+	categorizationManager := imagecategory.ManagerNew(rootPath, broker)
+	imageLibrary := library.ForHandles(rootPath, broker)
+
+	categorizationManager.LoadCategorization(imageLibrary, categoryManager)
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
@@ -42,22 +46,28 @@ func main() {
 	})
 
 	// UI -> Library
-	broker.Subscribe(event.CATEGORIZE_IMAGE, imageLibrary.SetCategory)
 	broker.Subscribe(event.IMAGE_REQUEST_NEXT, imageLibrary.RequestNextImage)
 	broker.Subscribe(event.IMAGE_REQUEST_NEXT_OFFSET, imageLibrary.RequestNextImageWithOffset)
 	broker.Subscribe(event.IMAGE_REQUEST_PREV, imageLibrary.RequestPrevImage)
 	broker.Subscribe(event.IMAGE_REQUEST_PREV_OFFSET, imageLibrary.RequestPrevImageWithOffset)
 	broker.Subscribe(event.IMAGE_REQUEST_CURRENT, imageLibrary.RequestImages)
 	broker.Subscribe(event.IMAGE_REQUEST, imageLibrary.RequestImage)
-	broker.Subscribe(event.CATEGORY_PERSIST_ALL, imageLibrary.PersistImageCategories)
 	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
 	broker.Subscribe(event.APPLICATION_CLOSE, imageLibrary.Close)
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
-	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)
 	broker.ConnectToGui(event.UPDATE_PROCESS_STATUS, gui.UpdateProgress)
+
+	// UI -> Image Categorization
+	broker.Subscribe(event.CATEGORIZE_IMAGE, categorizationManager.SetCategory)
+	broker.Subscribe(event.CATEGORY_PERSIST_ALL, categorizationManager.PersistImageCategories)
+	broker.Subscribe(event.IMAGE_CHANGED, categorizationManager.RequestCategory)
+	broker.Subscribe(event.APPLICATION_CLOSE, categorizationManager.Close)
+
+	// Image Categorization -> UI
+	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)
 
 	// UI -> Caster
 	broker.Subscribe(event.CAST_DEVICE_SEARCH, c.FindDevices)

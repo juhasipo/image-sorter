@@ -8,19 +8,19 @@ import (
 
 type CategorizeCommand struct {
 	handle     *common.Handle
-	entry      *Entry
-	operation  Operation
+	entry      *common.Category
+	operation  common.Operation
 
 	event.Command
 }
 
 type CategoriesCommand struct {
-	categories []*Entry
+	categories []*common.Category
 
 	event.Command
 }
 
-func (s *CategoriesCommand) GetCategories() []*Entry {
+func (s *CategoriesCommand) GetCategories() []*common.Category {
 	return s.categories
 }
 
@@ -32,14 +32,14 @@ func (s *CategoriesCommand) String() string {
 func (s *CategorizeCommand) GetHandle() *common.Handle {
 	return s.handle
 }
-func (s *CategorizeCommand) GetEntry() *Entry {
+func (s *CategorizeCommand) GetEntry() *common.Category {
 	return s.entry
 }
-func (s *CategorizeCommand) GetOperation() Operation {
+func (s *CategorizeCommand) GetOperation() common.Operation {
 	return s.operation
 }
 
-func CategorizeCommandNew(handle *common.Handle, entry *Entry, operation Operation) *CategorizeCommand {
+func CategorizeCommandNew(handle *common.Handle, entry *common.Category, operation common.Operation) *CategorizeCommand {
 	return &CategorizeCommand{
 		handle:    handle,
 		entry:     entry,

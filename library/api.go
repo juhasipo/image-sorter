@@ -1,23 +1,21 @@
 package library
 
 import (
-	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 )
 
 type Library interface {
 	RequestImages()
-	SetCategory(*category.CategorizeCommand)
 	RequestNextImage()
 	RequestNextImageWithOffset(int)
 	RequestPrevImage()
 	RequestPrevImageWithOffset(int)
 	RequestImage(*common.Handle)
-	PersistImageCategories()
 	RequestGenerateHashes()
 	RequestStopHashes()
 	GetHandles() []*common.Handle
+	GetHandleById(handleId string) *common.Handle
 	Close()
 }
 

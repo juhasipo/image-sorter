@@ -18,7 +18,7 @@ type Ui struct {
 	application *gtk.Application
 	pixbufCache *pixbuf.PixbufCache
 	sender      event.Sender
-	categories  []*category.Entry
+	categories  []*common.Category
 
 	// UI components
 	progressView        *ProgressView
@@ -142,7 +142,7 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 }
 
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
-	s.categories = make([]*category.Entry, len(categories.GetCategories()))
+	s.categories = make([]*common.Category, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
 	s.topActionView.categoryButtons = map[string]*CategoryButton{}
@@ -159,7 +159,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 		categoryButton := &CategoryButton{
 			button:    button,
 			entry:     entry,
-			operation: category.NONE,
+			operation: common.NONE,
 			categorizedIcon: categorizedIcon,
 		}
 		s.topActionView.categoryButtons[entry.GetId()] = categoryButton
@@ -254,7 +254,7 @@ func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 	log.Print("Start setting image category")
 	for _, button := range s.topActionView.categoryButtons {
 		button.button.SetLabel(button.entry.GetName())
-		button.operation = category.NONE
+		button.operation = common.NONE
 		button.SetStatus(button.operation)
 	}
 
@@ -301,7 +301,7 @@ func (s *Ui) CastFindDone() {
 }
 
 func (s *Ui) showEditCategoriesModal() {
-	categories := make([]*category.Entry, len(s.categories))
+	categories := make([]*common.Category, len(s.categories))
 	copy(categories, s.categories)
 	s.editCategoriesModal.Show(s.application.GetActiveWindow(), categories)
 }

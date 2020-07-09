@@ -179,13 +179,13 @@ func (v *BottomActionView) SetVisible(visible bool) {
 
 type CategoryButton struct {
 	button          *gtk.Button
-	entry           *category.Entry
-	operation       category.Operation
+	entry           *common.Category
+	operation       common.Operation
 	categorizedIcon *gtk.Image
 }
 
-func (s *CategoryButton) SetStatus(operation category.Operation) {
-	if operation == category.MOVE {
+func (s *CategoryButton) SetStatus(operation common.Operation) {
+	if operation == common.MOVE {
 		s.button.SetImage(s.categorizedIcon)
 	} else {
 		icon, _ := gtk.ImageNew()
@@ -594,7 +594,7 @@ func (s *CategoryModal) endAddOrEdit() {
 	s.editButton.SetSensitive(true)
 }
 
-func (s *CategoryModal) Show(parent gtk.IWindow, categories []*category.Entry) {
+func (s *CategoryModal) Show(parent gtk.IWindow, categories []*common.Category) {
 	s.list.Show()
 	s.addEntryView.Hide()
 
@@ -629,11 +629,11 @@ func (s *CategoryModal) remove() {
 	}
 }
 
-func (s *CategoryModal) getCategoriesFromList() []*category.Entry {
-	var categories []*category.Entry
+func (s *CategoryModal) getCategoriesFromList() []*common.Category {
+	var categories []*common.Category
 	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
 		name, path, key := extractValuesFromModel(s.model, iter)
-		entry := category.CategoryEntryNew(name, path, key)
+		entry := common.CategoryEntryNew(name, path, key)
 
 		categories = append(categories, entry)
 	}

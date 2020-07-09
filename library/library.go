@@ -1,14 +1,9 @@
 package library
 
 import (
-	"bufio"
 	"log"
-	"os"
-	"path"
-	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
 	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
@@ -32,7 +27,6 @@ type Manager struct {
 	imageList     []*common.Handle
 	imageHandles  map[string]*common.Handle
 	index         int
-	imageCategory map[*common.Handle]map[string]*category.CategorizedImage
 	imageHash     *duplo.Store
 	sender        event.Sender
 	categoryManager *category.Manager
@@ -43,17 +37,14 @@ type Manager struct {
 	outputChannel   chan *HashResult
 }
 
-func ForHandles(rootDir string, sender event.Sender, categoryManager *category.Manager) Library {
+func ForHandles(rootDir string, sender event.Sender) Library {
 	var manager = Manager{
 		rootDir:       rootDir,
 		index:         0,
-		imageCategory: map[*common.Handle]map[string]*category.CategorizedImage{},
 		sender:        sender,
 		imageHash:     duplo.New(),
-		categoryManager: categoryManager,
 	}
 	manager.loadImagesFromRootDir()
-	manager.loadCategorization()
 	return &manager
 }
 
@@ -144,43 +135,6 @@ func (s *Manager) RequestStopHashes() {
 	}
 }
 
-func (s *Manager) SetCategory(command *category.CategorizeCommand) {
-	defer s.sendCategories(command.GetHandle())
-
-	handle := command.GetHandle()
-	categoryEntry := command.GetEntry()
-	operation := command.GetOperation()
-
-	var image = s.imageCategory[handle]
-	var categorizedImage *category.CategorizedImage = nil
-	if image != nil {
-		categorizedImage = image[categoryEntry.GetId()]
-	}
-
-	if categorizedImage == nil && operation != category.NONE {
-		if image == nil {
-			log.Printf("Create category entry for '%s'", handle.GetPath())
-			image = map[string]*category.CategorizedImage{}
-			s.imageCategory[handle] = image
-		}
-		log.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
-		categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
-		image[categoryEntry.GetId()] = categorizedImage
-	}
-
-	if operation == category.NONE || categorizedImage == nil {
-		log.Printf("Remove entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
-		delete(s.imageCategory[handle], categoryEntry.GetId())
-		if len(s.imageCategory[handle]) == 0 {
-			log.Printf("Remove entry for '%s'", handle.GetPath())
-			delete(s.imageCategory, handle)
-		}
-	} else {
-		log.Printf("Update entry for '%s:%s' to %d", handle.GetPath(), categoryEntry.GetName(), operation)
-		categorizedImage.SetOperation(operation)
-	}
-}
-
 func (s *Manager) RequestNextImage() {
 	s.RequestNextImageWithOffset(1)
 }
@@ -218,68 +172,18 @@ func (s *Manager) RequestImages() {
 	s.sendStatus()
 }
 
-func (s* Manager) PersistImageCategories() {
-	log.Printf("Persisting files to categories")
-	for handle, categoryEntries := range s.imageCategory {
-		s.PersistImageCategory(handle, categoryEntries)
-	}
-
-	s.loadImagesFromRootDir()
-
-	s.sendStatus()
-}
-
-func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
-	log.Printf(" - Persisting '%s'", handle.GetPath())
-	dir, file := filepath.Split(handle.GetPath())
-
-	for _, image := range categories {
-		targetDirName := image.GetEntry().GetSubPath()
-		targetDir := filepath.Join(dir, targetDirName)
-
-		// Always copy first because picture may have multiple categories
-		if image.GetOperation() != category.NONE {
-			common.CopyFile(dir, file, targetDir, file)
-		}
-	}
-	common.RemoveFile(handle.GetPath())
-}
-
 func (s *Manager) Close() {
 	log.Print("Shutting down library")
-	s.persistCategorization()
 }
 
 // Private API
-
-func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedImage {
-	var categories []*category.CategorizedImage
-
-	if i, ok := s.imageCategory[image]; ok {
-		for _, categorizedImage := range i {
-			categories = append(categories, categorizedImage)
-		}
-	}
-
-	return categories
-}
 
 func (s *Manager) sendStatus() {
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(IMAGE_LIST_SIZE))
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(IMAGE_LIST_SIZE))
 	currentImage := s.getCurrentImage()
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.Handle{currentImage})
-	s.sendCategories(currentImage)
 	s.sendSimilarImages(currentImage)
-}
-
-func (s *Manager) sendCategories(currentImage *common.Handle) {
-	var categories = s.getCategories(currentImage)
-	var commands []*category.CategorizeCommand
-	for _, image := range categories {
-		commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
-	}
-	s.sender.SendToTopicWithData(event.CATEGORY_IMAGE_UPDATE, commands)
 }
 
 func (s *Manager) getCurrentImage() *common.Handle {
@@ -344,7 +248,6 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 
 func (s *Manager) loadImagesFromRootDir() {
 	s.imageHandles = map[string]*common.Handle{}
-	s.imageCategory = map[*common.Handle]map[string]*category.CategorizedImage{}
 
 	s.imageList = common.LoadImages(s.rootDir)
 
@@ -355,67 +258,6 @@ func (s *Manager) loadImagesFromRootDir() {
 	s.index = 0
 }
 
-
-func (s *Manager) loadCategorization() {
-	filePath := path.Join(s.rootDir, ".categorization")
-
-	log.Printf("Loading categozation from file '%s'", filePath)
-	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
-	if err != nil {
-		log.Print("Can't write file ", filePath, err)
-	}
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	// Read version even though it is not used yet
-	scanner.Scan()
-
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	for _, line := range lines {
-		parts := strings.Split(line, ":")
-		handle := s.imageHandles[parts[0]]
-		categories := strings.Split(parts[1], ";")
-
-		categoryMap := s.imageCategory[handle]
-		if categoryMap == nil {
-			s.imageCategory[handle] = map[string]*category.CategorizedImage{}
-			categoryMap = s.imageCategory[handle]
-		}
-
-		for _, c := range categories {
-			if c != "" {
-				entry := s.categoryManager.GetCategoryById(c)
-				categoryMap[entry.GetId()] = category.CategorizedImageNew(entry, category.MOVE)
-			}
-		}
-	}
-}
-
-func (s *Manager) persistCategorization() {
-	filePath := path.Join(s.rootDir, ".categorization")
-
-	log.Printf("Saving image categorization to file '%s'", filePath)
-	f, err := os.Create(filePath)
-	if err != nil {
-		log.Panic("Can't write file ", filePath, err)
-	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	w.WriteString("#version:1")
-	w.WriteString("\n")
-	for handle, categorization := range s.imageCategory {
-		w.WriteString(handle.GetId())
-			w.WriteString(":")
-		for entry, categorizedImage := range categorization {
-			if categorizedImage.GetOperation() == category.MOVE {
-				w.WriteString(entry)
-				w.WriteString(";")
-			}
-		}
-		w.WriteString("\n")
-	}
-	w.Flush()
+func (s *Manager) GetHandleById(handleId string) *common.Handle {
+	return s.imageHandles[handleId]
 }
