@@ -1,6 +1,7 @@
 package category
 
 import (
+	"fmt"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 )
@@ -23,6 +24,11 @@ func (s *CategoriesCommand) GetCategories() []*Entry {
 	return s.categories
 }
 
+func (s *CategoriesCommand) String() string {
+	return fmt.Sprintf("CategoriesCommand{%s}",
+		s.categories)
+}
+
 func (s *CategorizeCommand) GetHandle() *common.Handle {
 	return s.handle
 }
@@ -39,4 +45,9 @@ func CategorizeCommandNew(handle *common.Handle, entry *Entry, operation Operati
 		entry:     entry,
 		operation: operation,
 	}
+}
+
+func (s *CategorizeCommand) String() string {
+	return fmt.Sprintf("CategorizeCommand{%s:%s:%d}",
+		s.handle.GetId(), s.entry.GetName(), s.operation)
 }

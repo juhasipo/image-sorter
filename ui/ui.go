@@ -145,7 +145,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	s.categories = make([]*category.Entry, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
-	s.topActionView.categoryButtons = map[*category.Entry]*CategoryButton{}
+	s.topActionView.categoryButtons = map[string]*CategoryButton{}
 	children := s.topActionView.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
 		s.topActionView.categoriesView.Remove(item.(gtk.IWidget))
@@ -162,7 +162,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 			operation: category.NONE,
 			categorizedIcon: categorizedIcon,
 		}
-		s.topActionView.categoryButtons[entry] = categoryButton
+		s.topActionView.categoryButtons[entry.GetId()] = categoryButton
 
 		send := s.CreateSendFuncForEntry(categoryButton)
 		button.Connect("clicked", func(button *gtk.Button) {
@@ -171,6 +171,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 		s.topActionView.categoriesView.Add(button)
 	}
 	s.topActionView.categoriesView.ShowAll()
+	s.sender.SendToTopic(event.IMAGE_REQUEST_CURRENT)
 }
 
 func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
@@ -250,6 +251,7 @@ func (s *Ui) Run() {
 }
 
 func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
+	log.Print("Start setting image category")
 	for _, button := range s.topActionView.categoryButtons {
 		button.button.SetLabel(button.entry.GetName())
 		button.operation = category.NONE
@@ -258,11 +260,14 @@ func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 
 	for _, command := range commands {
 		log.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
-		button := s.topActionView.categoryButtons[command.GetEntry()]
-		button.operation = command.GetOperation()
-		button.button.SetLabel(command.ToLabel())
-		button.SetStatus(button.operation)
+		button := s.topActionView.categoryButtons[command.GetEntry().GetId()]
+		if button != nil {
+			button.operation = command.GetOperation()
+			button.button.SetLabel(command.ToLabel())
+			button.SetStatus(button.operation)
+		}
 	}
+	log.Print("End setting image category")
 }
 
 func (s *Ui) UpdateProgress(name string, status int, total int) {

@@ -172,16 +172,14 @@ func (s *Caster) getLocalHost() string {
 }
 
 func (s* Caster) CastImage(handle *common.Handle) {
-	log.Print("Cast image")
 	if device, ok := s.devices[s.selectedDevice]; ok {
+		log.Print("Cast image")
 	 	ip := device.localAddr.IP.String()
 		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, path.Base(handle.GetPath()))
 		log.Printf("Casting image '%s'", imageUrl)
 		device.mediaController.Load(imageUrl, "image/jpeg", time.Second * 5)
 		//device.device.PlayMedia(imageUrl, "image/jpeg")
 		log.Printf("Casted image")
-	} else {
-		log.Print("No device selected")
 	}
 }
 

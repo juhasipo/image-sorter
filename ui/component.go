@@ -42,7 +42,7 @@ type ImageList struct {
 
 type TopActionView struct {
 	categoriesView  *gtk.Box
-	categoryButtons map[*category.Entry]*CategoryButton
+	categoryButtons map[string]*CategoryButton
 	nextButton      *gtk.Button
 	prevButton      *gtk.Button
 }
@@ -50,7 +50,7 @@ type TopActionView struct {
 func TopActionsNew(builder *gtk.Builder, sender event.Sender) *TopActionView {
 	topActionView := &TopActionView{
 		categoriesView:  GetObjectOrPanic(builder, "categories").(*gtk.Box),
-		categoryButtons: map[*category.Entry]*CategoryButton{},
+		categoryButtons: map[string]*CategoryButton{},
 		nextButton:      GetObjectOrPanic(builder, "next-button").(*gtk.Button),
 		prevButton:      GetObjectOrPanic(builder, "prev-button").(*gtk.Button),
 	}
@@ -71,7 +71,8 @@ func (v *TopActionView) SetVisible(visible bool) {
 }
 
 func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
-	for entry, button := range v.categoryButtons {
+	for _, button := range v.categoryButtons {
+		entry := button.entry
 		if entry.HasShortcut(key) {
 			keyName := common.KeyvalName(key)
 			log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())

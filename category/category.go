@@ -27,6 +27,7 @@ func (s Operation) NextOperation() Operation {
 }
 
 type Entry struct {
+	id string
 	name string
 	subPath string
 	shortcuts []uint
@@ -34,10 +35,15 @@ type Entry struct {
 
 func CategoryEntryNew(name string, subPath string, shortcut string) *Entry {
 	return &Entry{
+		id:        name,
 		name:      name,
 		subPath:   subPath,
 		shortcuts: KeyToUint(shortcut),
 	}
+}
+
+func (s *Entry) GetId() string {
+	return s.id
 }
 
 func (s *Entry) GetSubPath() string {
@@ -45,6 +51,10 @@ func (s *Entry) GetSubPath() string {
 }
 
 func (s *Entry) GetName() string {
+	return s.name
+}
+
+func (s *Entry) String() string {
 	return s.name
 }
 
@@ -91,9 +101,10 @@ func (s* CategorizedImage) GetEntry() *Entry {
 }
 
 type Manager struct {
-	categories  []*Entry
-	sender      event.Sender
-	rootDir     string
+	categories     []*Entry
+	categoriesById map[string]*Entry
+	sender         event.Sender
+	rootDir        string
 }
 
 func FromCategoriesStrings(categories []string) []*Entry {
@@ -102,10 +113,12 @@ func FromCategoriesStrings(categories []string) []*Entry {
 		if len(categoryName) > 0 {
 			name, subPath, keys := Parse(categoryName)
 			categoryEntries = append(categoryEntries, &Entry{
+				id:        name,
 				name:      name,
 				subPath:   subPath,
 				shortcuts: keys,
 			})
+
 		}
 	}
 	log.Printf("Parsed %d categories:", len(categoryEntries))
@@ -124,15 +137,6 @@ func Parse(name string) (string, string, []uint) {
 		return parts[0], parts[1], KeyToUint(parts[2])
 	}
 }
-func ParseToEntry(name string) *Entry {
-	name, subPath, key := Parse(name)
-
-	return &Entry{
-		name:      name,
-		subPath:   subPath,
-		shortcuts: key,
-	}
-}
 
 func KeyToUint(key string) []uint {
 	return []uint {
@@ -143,6 +147,7 @@ func KeyToUint(key string) []uint {
 
 func New(sender event.Sender, categories []string, rootDir string) *Manager {
 	var loadedCategories []*Entry
+	var categoriesByName = map[string]*Entry{}
 
 	if len(categories) > 0 && categories[0] != "" {
 		log.Printf("Reading from command line parameters")
@@ -151,10 +156,15 @@ func New(sender event.Sender, categories []string, rootDir string) *Manager {
 		loadedCategories = FromFile(rootDir)
 	}
 
+	for _, category := range loadedCategories {
+		categoriesByName[category.GetName()] = category
+	}
+
 	return &Manager {
-		categories: loadedCategories,
-		sender: sender,
-		rootDir: rootDir,
+		categories:     loadedCategories,
+		sender:         sender,
+		rootDir:        rootDir,
+		categoriesById: categoriesByName,
 	}
 }
 
@@ -183,12 +193,6 @@ func FromFile(fileDir string) []*Entry {
 	}
 }
 
-func (s *Manager) AddCategory(name string, subPath string) *Entry {
-	category := Entry {name: name, subPath: subPath}
-	s.categories = append(s.categories, &category)
-	return &category
-}
-
 func (s *Manager) GetCategories() []*Entry {
 	return s.categories
 }
@@ -200,20 +204,16 @@ func (s *Manager) RequestCategories() {
 }
 
 func (s *Manager) Save(categories []*Entry) {
-	s.categories = categories
+	s.resetCategories(categories)
+
 	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, categories)
 	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
 		categories: categories,
 	})
 }
-
-func (s *Manager) Close() {
-	log.Print("Shutting down category manager")
-	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, s.categories)
-}
-
 func (s *Manager) SaveDefault(categories []*Entry) {
-	s.categories = categories
+	s.resetCategories(categories)
+
 	// TODO: Find user's home dir
 	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, categories)
 	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
@@ -221,11 +221,28 @@ func (s *Manager) SaveDefault(categories []*Entry) {
 	})
 }
 
+func (s *Manager) resetCategories(categories []*Entry) {
+	s.categories = categories
+	for _, category := range categories {
+		s.categoriesById[category.GetId()] = category
+	}
+}
+
+
+func (s *Manager) Close() {
+	log.Print("Shutting down category manager")
+	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, s.categories)
+}
+
+func (s *Manager) GetCategoryById(id string) *Entry {
+	return s.categoriesById[id]
+}
+
 func saveCategoriesToFile(fileDir string, fileName string, categories []*Entry) {
 	filePath := path.Join(fileDir, fileName)
 
 	log.Printf("Saving categories to file '%s'", filePath)
-	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.Create(filePath)
 	if err != nil {
 		log.Panic("Can't write file ", filePath, err)
 	}

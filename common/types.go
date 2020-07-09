@@ -22,6 +22,14 @@ func GetEmptyHandle() *Handle {
 	return &EMPTY_HANDLE
 }
 
+func (s* Handle) GetId() string {
+	return s.id
+}
+
+func (s* Handle) String() string {
+	return s.id
+}
+
 func (s* Handle) GetPath() string {
 	return s.path
 }

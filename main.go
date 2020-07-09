@@ -26,21 +26,19 @@ func main() {
 
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr, rootPath)
-
-
-	imageLibrary := library.ForHandles(rootPath, broker)
-	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
-	gui := ui.Init(broker, pixbufCache)
+	imageLibrary := library.ForHandles(rootPath, broker, categoryManager)
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
 	c, _ := caster.InitCaster(secretString, broker)
 	c.StartServer(*httpPort, rootPath)
 
+	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
+	gui := ui.Init(broker, pixbufCache)
+
 	// Startup
 	broker.Subscribe(event.UI_READY, func() {
 		categoryManager.RequestCategories()
-		imageLibrary.RequestImages()
 	})
 
 	// UI -> Library
