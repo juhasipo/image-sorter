@@ -21,7 +21,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 		case handle := <-input:
 			{
 				startTime := time.Now()
-				decodedImage, err := loadImage(handle)
+				decodedImage, err := LoadImage(handle)
 				endTime := time.Now()
 				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 

@@ -18,6 +18,14 @@ type ExifData struct {
 	flipped  bool
 }
 
+func (s *ExifData) GetRotation() gdk.PixbufRotation {
+	return s.rotation
+}
+
+func (s *ExifData) IsFlipped() bool {
+	return s.flipped
+}
+
 type Instance struct {
 	handle *common.Handle
 	full *gdk.Pixbuf

@@ -5,6 +5,7 @@ go 1.14
 require (
 	fyne.io/fyne v1.3.0 // indirect
 	github.com/AndreasAbdi/gochromecast v0.0.0-20181018034447-700dddc0dea7
+	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/google/uuid v1.1.1 // indirect
@@ -19,4 +20,5 @@ require (
 	//github.com/rivo/duplo v0.0.0-20180323201418-c4ec823d58cd
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/vardius/message-bus v1.1.4
+	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
 )

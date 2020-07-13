@@ -1,12 +1,15 @@
 package caster
 
 import (
+	"bytes"
 	"fmt"
 	cast "github.com/AndreasAbdi/gochromecast"
 	"github.com/AndreasAbdi/gochromecast/configs"
 	"github.com/AndreasAbdi/gochromecast/controllers"
 	"github.com/AndreasAbdi/gochromecast/primitives"
 	"github.com/hashicorp/mdns"
+	"image"
+	"image/jpeg"
 	"log"
 	"net"
 	"net/http"
@@ -18,6 +21,8 @@ import (
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/library"
+	"vincit.fi/image-sorter/pixbuf"
 )
 
 const CAST_SERVICE = "_googlecast._tcp"
@@ -25,11 +30,13 @@ const DEVICE_SEARCH_TIMEOUT = time.Second * 30
 
 
 type Caster struct {
-	secret  string
-	port    int
-	devices map[string]*DeviceEntry
-	sender  event.Sender
+	secret         string
+	port           int
+	devices        map[string]*DeviceEntry
+	sender         event.Sender
 	selectedDevice string
+	path           string
+	currentImage   *common.Handle
 }
 
 type DeviceEntry struct {
@@ -62,12 +69,33 @@ func (s *Caster) startServerAsync(port int, path string) {
 		" * Port: %d\n" +
 		" * Secret: %s", path, port, s.secret)
 	s.port = port
-	server := http.FileServer(http.Dir(path))
-	prefix := http.StripPrefix("/" + s.secret, server)
-	http.Handle("/", prefix)
+	s.path = path
+
+	handler := "/" + s.secret + "/"
+	http.HandleFunc(handler, s.imageHandler)
 	address := ":" + strconv.Itoa(port)
 	if err := http.ListenAndServe(address, nil); err != nil {
 		log.Panic(err)
+	}
+}
+
+func (s* Caster) imageHandler(w http.ResponseWriter, r *http.Request) {
+	exifInfo, _ := pixbuf.LoadExifData(s.currentImage)
+	img, _ := library.LoadImageWithExifCorrection(s.currentImage, exifInfo)
+
+	writeImage(w, img)
+}
+
+func writeImage(w http.ResponseWriter, img *image.Image) {
+	buffer := new(bytes.Buffer)
+	if err := jpeg.Encode(buffer, *img, nil); err != nil {
+		log.Println("unable to encode image.")
+	}
+
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+	if _, err := w.Write(buffer.Bytes()); err != nil {
+		log.Println("unable to write image.")
 	}
 }
 
@@ -174,6 +202,8 @@ func (s *Caster) getLocalHost() string {
 func (s* Caster) CastImage(handle *common.Handle) {
 	if device, ok := s.devices[s.selectedDevice]; ok {
 		log.Print("Cast image")
+		s.currentImage = handle
+
 	 	ip := device.localAddr.IP.String()
 		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, path.Base(handle.GetPath()))
 		log.Printf("Casting image '%s'", imageUrl)
