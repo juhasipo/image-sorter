@@ -5,6 +5,7 @@ package ui
 import "C"
 import (
 	"fmt"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
@@ -75,7 +76,9 @@ func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *
 		if entry.HasShortcut(key) {
 			keyName := common.KeyvalName(key)
 			log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			return category.CategorizeCommandNew(handle, button.entry, button.operation.NextOperation())
+			stayOnSameImage := gdk.KeyvalIsUpper(key)
+			return category.CategorizeCommandNewWithStayAttr(
+				handle, button.entry, button.operation.NextOperation(), stayOnSameImage)
 		}
 	}
 	return nil

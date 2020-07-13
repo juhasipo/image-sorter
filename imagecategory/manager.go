@@ -37,8 +37,6 @@ func (s *Manager) RequestCategory(handle *common.Handle) {
 }
 
 func (s *Manager) SetCategory(command *category.CategorizeCommand) {
-	defer s.sendCategories(command.GetHandle())
-
 	handle := command.GetHandle()
 	categoryEntry := command.GetEntry()
 	operation := command.GetOperation()
@@ -67,9 +65,15 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 			log.Printf("Remove entry for '%s'", handle.GetPath())
 			delete(s.imageCategory, handle)
 		}
+		s.sendCategories(command.GetHandle())
 	} else {
 		log.Printf("Update entry for '%s:%s' to %d", handle.GetPath(), categoryEntry.GetName(), operation)
 		categorizedImage.SetOperation(operation)
+		if command.ShouldStayOnSameImage() {
+			s.sendCategories(command.GetHandle())
+		} else {
+			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
+		}
 	}
 }
 

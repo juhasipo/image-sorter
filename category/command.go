@@ -10,6 +10,7 @@ type CategorizeCommand struct {
 	handle     *common.Handle
 	entry      *common.Category
 	operation  common.Operation
+	stayOnSameImage bool
 
 	event.Command
 }
@@ -38,12 +39,24 @@ func (s *CategorizeCommand) GetEntry() *common.Category {
 func (s *CategorizeCommand) GetOperation() common.Operation {
 	return s.operation
 }
+func (s *CategorizeCommand) ShouldStayOnSameImage() bool {
+	return s.stayOnSameImage
+}
 
 func CategorizeCommandNew(handle *common.Handle, entry *common.Category, operation common.Operation) *CategorizeCommand {
 	return &CategorizeCommand{
 		handle:    handle,
 		entry:     entry,
 		operation: operation,
+	}
+}
+
+func CategorizeCommandNewWithStayAttr(handle *common.Handle, entry *common.Category, operation common.Operation, stayOnSameImage bool) *CategorizeCommand {
+	return &CategorizeCommand{
+		handle:    handle,
+		entry:     entry,
+		operation: operation,
+		stayOnSameImage: stayOnSameImage,
 	}
 }
 
