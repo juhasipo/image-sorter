@@ -2,6 +2,7 @@ package pixbuf
 
 import (
 	"github.com/gotk3/gotk3/gdk"
+	"log"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/imagetools"
 )
@@ -38,11 +39,22 @@ func (s *Instance) loadFull() (*gdk.Pixbuf, error) {
 func loadFullWithExifCorrection(handle *common.Handle, exifData *imagetools.ExifData) (*gdk.Pixbuf, error) {
 	pixbuf, err := gdk.PixbufNewFromFile(handle.GetPath())
 
-	pixbuf, err = pixbuf.RotateSimple(exifData.GetRotation())
-	if exifData.IsFlipped() {
-		pixbuf, err = pixbuf.Flip(true)
+	if err != nil {
+		log.Print(err)
+		return nil, err
 	}
-	return pixbuf, err
+
+	pixbuf, err = pixbuf.RotateSimple(exifData.GetRotation())
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	if exifData.IsFlipped() {
+		return pixbuf.Flip(true)
+	} else {
+		return pixbuf, nil
+	}
 }
 
 func (s *Instance) IsValid() bool {

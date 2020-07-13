@@ -3,7 +3,6 @@ package library
 import (
 	"io/ioutil"
 	"log"
-	"path"
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/common"
@@ -22,10 +21,10 @@ func LoadImages(dir string) []*common.Handle {
 
 	log.Printf("Scanning directory '%s'", dir)
 	for _, file := range files {
-		filePath := path.Join(dir, file.Name())
+		filePath := filepath.Join(dir, file.Name())
 		extension := filepath.Ext(filePath)
 		if IsSupported(extension) {
-			filePath := path.Join(dir, file.Name())
+			filePath := filepath.Join(dir, file.Name())
 			handles = append(handles, common.HandleNew(filePath))
 		}
 	}

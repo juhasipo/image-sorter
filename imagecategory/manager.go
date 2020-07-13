@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/category"
@@ -106,7 +105,7 @@ func (s *Manager) Close() {
 }
 
 func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
-	filePath := path.Join(s.rootDir, CATEGORIZATION_FILE_NAME)
+	filePath := filepath.Join(s.rootDir, CATEGORIZATION_FILE_NAME)
 
 	log.Printf("Loading categozation from file '%s'", filePath)
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
@@ -124,9 +123,9 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 	}
 
 	for _, line := range lines {
-		parts := strings.Split(line, ":")
+		parts := strings.Split(line, ";")
 		handle := handleManager.GetHandleById(parts[0])
-		categories := strings.Split(parts[1], ";")
+		categories := parts[1:]
 
 		categoryMap := s.imageCategory[handle]
 		if categoryMap == nil {
@@ -137,14 +136,16 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 		for _, c := range categories {
 			if c != "" {
 				entry := categoryManager.GetCategoryById(c)
-				categoryMap[entry.GetId()] = category.CategorizedImageNew(entry, common.MOVE)
+				if entry != nil {
+					categoryMap[entry.GetId()] = category.CategorizedImageNew(entry, common.MOVE)
+				}
 			}
 		}
 	}
 }
 
 func (s *Manager) PersistCategorization() {
-	filePath := path.Join(s.rootDir, CATEGORIZATION_FILE_NAME)
+	filePath := filepath.Join(s.rootDir, CATEGORIZATION_FILE_NAME)
 
 	log.Printf("Saving image categorization to file '%s'", filePath)
 	f, err := os.Create(filePath)
@@ -156,15 +157,17 @@ func (s *Manager) PersistCategorization() {
 	w.WriteString("#version:1")
 	w.WriteString("\n")
 	for handle, categorization := range s.imageCategory {
-		w.WriteString(handle.GetId())
+		if handle != nil {
+			w.WriteString(handle.GetId())
 			w.WriteString(":")
-		for entry, categorizedImage := range categorization {
-			if categorizedImage.GetOperation() == common.MOVE {
-				w.WriteString(entry)
-				w.WriteString(";")
+			for entry, categorizedImage := range categorization {
+				if categorizedImage.GetOperation() == common.MOVE {
+					w.WriteString(entry)
+					w.WriteString(";")
+				}
 			}
+			w.WriteString("\n")
 		}
-		w.WriteString("\n")
 	}
 	w.Flush()
 }

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -100,7 +100,7 @@ func (s *Manager) GetCategoryById(id string) *common.Category {
 }
 
 func saveCategoriesToFile(fileDir string, fileName string, categories []*common.Category) {
-	filePath := path.Join(fileDir, fileName)
+	filePath := filepath.Join(fileDir, fileName)
 
 	log.Printf("Saving categories to file '%s'", filePath)
 	f, err := os.Create(filePath)
@@ -135,7 +135,7 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 
 
 func loadCategoriesToFile(fileDir string) []*common.Category {
-	filePath := path.Join(fileDir, CATEGORIES_FILE_NAME)
+	filePath := filepath.Join(fileDir, CATEGORIES_FILE_NAME)
 	log.Printf("Reading categories from file '%s'", filePath)
 
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
