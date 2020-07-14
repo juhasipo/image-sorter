@@ -2,10 +2,8 @@ package pixbuf
 
 import (
 	"github.com/gotk3/gotk3/gdk"
-	"github.com/rwcarlsen/goexif/exif"
-	"log"
-	"os"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/imagetools"
 )
 
 const (
@@ -13,29 +11,16 @@ const (
 	THUMBNAIL_SIZE = 100
 )
 
-type ExifData struct {
-	rotation gdk.PixbufRotation
-	flipped  bool
-}
-
-func (s *ExifData) GetRotation() gdk.PixbufRotation {
-	return s.rotation
-}
-
-func (s *ExifData) IsFlipped() bool {
-	return s.flipped
-}
-
 type Instance struct {
 	handle *common.Handle
 	full *gdk.Pixbuf
 	thumbnail *gdk.Pixbuf
 	scaled *gdk.Pixbuf
-	exifData *ExifData
+	exifData *imagetools.ExifData
 }
 
 func NewInstance(handle *common.Handle) *Instance {
-	exifData, _ := LoadExifData(handle)
+	exifData, _ := imagetools.LoadExifData(handle)
 	instance := &Instance{
 		handle:      handle,
 		exifData: exifData,
@@ -45,58 +30,16 @@ func NewInstance(handle *common.Handle) *Instance {
 	return instance
 }
 
-func LoadExifData(handle *common.Handle) (*ExifData, error) {
-	fileForExif, err := os.Open(handle.GetPath())
-	if fileForExif != nil && err == nil {
-		defer fileForExif.Close()
-		decodedExif, err := exif.Decode(fileForExif)
-		if err != nil {
-			log.Fatal(err)
-		}
-		orientationTag, _ := decodedExif.Get(exif.Orientation)
-		orientation, _ := orientationTag.Int(0)
-		angle, flip := ExifOrientationToAngleAndFlip(orientation)
-		return &ExifData{
-			rotation: angle,
-			flipped: flip,
-		}, nil
-	} else {
-		return &ExifData{0, false}, err
-	}
+
+func (s *Instance) loadFull() (*gdk.Pixbuf, error) {
+	return loadFullWithExifCorrection(s.handle, s.exifData)
 }
 
-const (
-	NO_ROTATE = 0
-	ROTATE_180 = 180
-	LEFT_90 = 90
-	RIGHT_90 = 270
-
-	NO_HORIZONTAL_FLIP = false
-	HORIZONTAL_FLIP = true
-)
-func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
-	switch orientation {
-		case 1: return NO_ROTATE, NO_HORIZONTAL_FLIP
-		case 2: return NO_ROTATE, HORIZONTAL_FLIP
-		case 3: return ROTATE_180, NO_HORIZONTAL_FLIP
-		case 4: return ROTATE_180, HORIZONTAL_FLIP
-		case 5: return RIGHT_90, HORIZONTAL_FLIP
-		case 6: return RIGHT_90, NO_HORIZONTAL_FLIP
-		case 7: return LEFT_90, HORIZONTAL_FLIP
-		case 8: return LEFT_90, NO_HORIZONTAL_FLIP
-		default: return NO_ROTATE, NO_HORIZONTAL_FLIP
-	}
-}
-
-func (s *Instance) LoadFull() (*gdk.Pixbuf, error) {
-	return LoadFullWithExifCorrection(s.handle, s.exifData)
-}
-
-func LoadFullWithExifCorrection(handle *common.Handle, exifData *ExifData) (*gdk.Pixbuf, error) {
+func loadFullWithExifCorrection(handle *common.Handle, exifData *imagetools.ExifData) (*gdk.Pixbuf, error) {
 	pixbuf, err := gdk.PixbufNewFromFile(handle.GetPath())
 
-	pixbuf, err = pixbuf.RotateSimple(exifData.rotation)
-	if exifData.flipped {
+	pixbuf, err = pixbuf.RotateSimple(exifData.GetRotation())
+	if exifData.IsFlipped() {
 		pixbuf, err = pixbuf.Flip(true)
 	}
 	return pixbuf, err
@@ -117,7 +60,7 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 
 	full := s.LoadFullFromCache()
 
-	newWidth, newHeight := ScaleToFit(full.GetWidth(), full.GetHeight(), size.width, size.height)
+	newWidth, newHeight := imagetools.ScaleToFit(full.GetWidth(), full.GetHeight(), size.width, size.height)
 
 	if s.scaled == nil {
 		//log.Print(" * Loading new scaled ", s.handle, " (", newWidth, " x ", newHeight, ")...")
@@ -138,19 +81,6 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 	return s.scaled
 }
 
-// TODO: Move to common
-func ScaleToFit(sourceWidth int, sourceHeight int, targetWidth int, targetHeight int) (int, int) {
-	ratio := float32(sourceWidth) / float32(sourceHeight)
-	newWidth := int(float32(targetHeight) * ratio)
-	newHeight := targetHeight
-
-	if newWidth > targetWidth {
-		newWidth = targetWidth
-		newHeight = int(float32(targetWidth) / ratio)
-	}
-	return newWidth, newHeight
-}
-
 func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 	if s.handle == nil {
 		return nil
@@ -159,7 +89,7 @@ func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 	if s.thumbnail == nil {
 		full := s.LoadFullFromCache()
 
-		newWidth, newHeight := ScaleToFit(full.GetWidth(), full.GetHeight(), THUMBNAIL_SIZE, THUMBNAIL_SIZE)
+		newWidth, newHeight := imagetools.ScaleToFit(full.GetWidth(), full.GetHeight(), THUMBNAIL_SIZE, THUMBNAIL_SIZE)
 
 		s.thumbnail, _ = full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
 	}
@@ -180,7 +110,7 @@ func (s *Instance) GetByteLength() int {
 
 func (s *Instance) LoadFullFromCache() *gdk.Pixbuf {
 	if s.full == nil {
-		s.full, _ = s.LoadFull()
+		s.full, _ = s.loadFull()
 		return s.full
 	} else {
 		return s.full
