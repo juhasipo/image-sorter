@@ -8,7 +8,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/google/uuid v1.1.1 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/gotk3/gotk3 v0.4.0
 	github.com/hashicorp/mdns v1.0.3
 	github.com/imdario/mergo v0.3.9 // indirect

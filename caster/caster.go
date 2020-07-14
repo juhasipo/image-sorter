@@ -2,20 +2,24 @@ package caster
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	cast "github.com/AndreasAbdi/gochromecast"
 	"github.com/AndreasAbdi/gochromecast/configs"
 	"github.com/AndreasAbdi/gochromecast/controllers"
 	"github.com/AndreasAbdi/gochromecast/primitives"
+	"github.com/disintegration/imaging"
+	"github.com/google/uuid"
 	"github.com/hashicorp/mdns"
 	"image"
+	"image/color"
+	"image/draw"
 	"image/jpeg"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +41,7 @@ type Caster struct {
 	selectedDevice string
 	path           string
 	currentImage   *common.Handle
+	server         *http.Server
 }
 
 type DeviceEntry struct {
@@ -50,53 +55,97 @@ type DeviceEntry struct {
 	localAddr       *net.TCPAddr
 }
 
-func InitCaster(secret string, sender event.Sender) (*Caster, error) {
+func InitCaster(port int, secret string, sender event.Sender) (*Caster, error) {
 	c := &Caster{
+		port: port,
 		secret: secret,
 		sender: sender,
 	}
+	c.secret = "foo"
 
 	return c, nil
 }
 
-func (s* Caster) StartServer(port int, path string) {
-	go s.startServerAsync(port, path)
+func (s* Caster) StartServer(port int) {
+	log.Printf("Starting HTTP server at port %d")
+	go s.startServerAsync(port)
 }
 
-func (s *Caster) startServerAsync(port int, path string) {
+func (s* Caster) StopServer() {
+	if s.server != nil {
+		log.Print("Shutting down HTTP server")
+		err := s.server.Shutdown(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
+		s.server = nil
+	}
+}
+
+
+func (s *Caster) startServerAsync(port int) {
 	log.Printf("Starting HTTP server:\n" +
-		" * Path: %s\n" +
 		" * Port: %d\n" +
-		" * Secret: %s", path, port, s.secret)
+		" * Secret: %s", port, s.secret)
 	s.port = port
-	s.path = path
 
 	handler := "/" + s.secret + "/"
 	http.HandleFunc(handler, s.imageHandler)
 	address := ":" + strconv.Itoa(port)
-	if err := http.ListenAndServe(address, nil); err != nil {
+	s.server = &http.Server{Addr: address}
+	if err := s.server.ListenAndServe(); err != nil {
 		log.Panic(err)
 	}
 }
 
-func (s* Caster) imageHandler(w http.ResponseWriter, r *http.Request) {
+func (s* Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Request) {
 	exifInfo, _ := pixbuf.LoadExifData(s.currentImage)
 	img, _ := library.LoadImageWithExifCorrection(s.currentImage, exifInfo)
 
-	writeImage(w, img)
+	writeImageToResponse(responseWriter, img)
 }
 
-func writeImage(w http.ResponseWriter, img *image.Image) {
+func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image) {
+	img = resizedImage(img)
+
 	buffer := new(bytes.Buffer)
-	if err := jpeg.Encode(buffer, *img, nil); err != nil {
+	if err := jpeg.Encode(buffer, img, nil); err != nil {
 		log.Println("unable to encode image.")
 	}
 
-	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-	if _, err := w.Write(buffer.Bytes()); err != nil {
+	responseWriter.Header().Set("Content-Type", "image/jpeg")
+	responseWriter.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+	if _, err := responseWriter.Write(buffer.Bytes()); err != nil {
 		log.Println("unable to write image.")
 	}
+}
+
+const (
+	CANVAS_WIDTH = 1920
+	CANVAS_HEIGHT = 1080
+	ENABLE_BLURRED_BACKGROUNG = true
+)
+func resizedImage(srcImage image.Image) image.Image {
+	fullHdCanvas := image.NewRGBA(image.Rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT))
+	black := color.RGBA{0, 0, 0, 255}
+	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
+
+	srcBounds := srcImage.Bounds().Size()
+	w, h := pixbuf.ScaleToFit(srcBounds.X, srcBounds.Y, CANVAS_WIDTH, CANVAS_HEIGHT)
+
+	if ENABLE_BLURRED_BACKGROUNG {
+		background := imaging.Resize(srcImage, 2*CANVAS_WIDTH, 2*CANVAS_HEIGHT, imaging.Linear)
+		background = imaging.Fill(srcImage, CANVAS_WIDTH, CANVAS_HEIGHT, imaging.Center, imaging.Linear)
+		background = imaging.Blur(background, 10)
+		background = imaging.Grayscale(background)
+		draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), background, image.Point{}, draw.Src)
+	}
+
+	srcImage = imaging.Resize(srcImage, w, h, imaging.Linear)
+	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (w-CANVAS_WIDTH)/2}, draw.Src)
+
+	var img image.Image = fullHdCanvas
+	return img
 }
 
 func (s* Caster) FindDevices() {
@@ -154,7 +203,6 @@ func (s* Caster) FindDevices() {
 		close(c)
 	}()
 
-
 	signal.Notify(c, os.Interrupt, os.Kill)
 
 	// Block until a signal is received.
@@ -191,6 +239,9 @@ func (s* Caster) SelectDevice(name string) {
 	device.device = &d
 	appId := configs.MediaReceiverAppID
 	device.receiver.LaunchApplication(&appId, time.Second * 5, false)
+
+	s.StartServer(s.port)
+
 	s.sender.SendToTopic(event.CAST_READY)
 }
 
@@ -200,15 +251,19 @@ func (s *Caster) getLocalHost() string {
 }
 
 func (s* Caster) CastImage(handle *common.Handle) {
+	s.currentImage = handle
 	if device, ok := s.devices[s.selectedDevice]; ok {
-		log.Print("Cast image")
-		s.currentImage = handle
+		log.Println("Cast image")
 
+		// Send a random string as part of path so that Chromecast
+		// triggers image change. The server will decide which image to show
+		// This way the outside world can't decide what is served which makes
+		// this slightly more secure (no need to validate/sanitize file paths)
+		cacheBuster, _ := uuid.NewRandom()
 	 	ip := device.localAddr.IP.String()
-		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, path.Base(handle.GetPath()))
+		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, cacheBuster.String())
 		log.Printf("Casting image '%s'", imageUrl)
 		device.mediaController.Load(imageUrl, "image/jpeg", time.Second * 5)
-		//device.device.PlayMedia(imageUrl, "image/jpeg")
 		log.Printf("Casted image")
 	}
 }
@@ -221,10 +276,12 @@ func (s* Caster) StopCasting() {
 		device.connection.Close()
 		device.heartbeat.Stop()
 		s.selectedDevice = ""
+
+		s.StopServer()
 	}
 }
 
 func (s *Caster) Close() {
-	log.Print("Shutdown caster")
+	log.Println("Shutdown caster")
 	s.StopCasting()
 }

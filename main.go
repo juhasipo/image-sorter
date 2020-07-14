@@ -34,8 +34,7 @@ func main() {
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
-	c, _ := caster.InitCaster(secretString, broker)
-	c.StartServer(*httpPort, rootPath)
+	c, _ := caster.InitCaster(*httpPort, secretString, broker)
 
 	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
 	gui := ui.Init(broker, pixbufCache)

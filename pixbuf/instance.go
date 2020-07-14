@@ -117,14 +117,7 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 
 	full := s.LoadFullFromCache()
 
-	ratio := float32(full.GetWidth()) / float32(full.GetHeight())
-	newWidth := int(float32(size.height) * ratio)
-	newHeight := size.height
-
-	if newWidth > size.width {
-		newWidth = size.width
-		newHeight = int(float32(size.width) / ratio)
-	}
+	newWidth, newHeight := ScaleToFit(full.GetWidth(), full.GetHeight(), size.width, size.height)
 
 	if s.scaled == nil {
 		//log.Print(" * Loading new scaled ", s.handle, " (", newWidth, " x ", newHeight, ")...")
@@ -132,10 +125,10 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 	} else {
 		if newWidth != s.scaled.GetWidth() && newHeight != s.scaled.GetHeight() {
 			/*
-			log.Print(" * Loading re-scaled ", s.handle,
-				" (", s.scaled.GetWidth(), " x ", s.scaled.GetHeight(), ") -> ",
-				" (", newWidth, " x ", newHeight, ")...")
-			 */
+				log.Print(" * Loading re-scaled ", s.handle,
+					" (", s.scaled.GetWidth(), " x ", s.scaled.GetHeight(), ") -> ",
+					" (", newWidth, " x ", newHeight, ")...")
+			*/
 			s.scaled, _ = full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
 		} else {
 			//log.Print(" * Use cached")
@@ -143,6 +136,19 @@ func (s* Instance) GetScaled(size Size) *gdk.Pixbuf {
 	}
 
 	return s.scaled
+}
+
+// TODO: Move to common
+func ScaleToFit(sourceWidth int, sourceHeight int, targetWidth int, targetHeight int) (int, int) {
+	ratio := float32(sourceWidth) / float32(sourceHeight)
+	newWidth := int(float32(targetHeight) * ratio)
+	newHeight := targetHeight
+
+	if newWidth > targetWidth {
+		newWidth = targetWidth
+		newHeight = int(float32(targetWidth) / ratio)
+	}
+	return newWidth, newHeight
 }
 
 func (s* Instance) GetThumbnail() *gdk.Pixbuf {
@@ -153,15 +159,7 @@ func (s* Instance) GetThumbnail() *gdk.Pixbuf {
 	if s.thumbnail == nil {
 		full := s.LoadFullFromCache()
 
-		width, height := THUMBNAIL_SIZE, THUMBNAIL_SIZE
-		ratio := float32(full.GetWidth()) / float32(full.GetHeight())
-		newWidth := int(float32(height) * ratio)
-		newHeight := height
-
-		if newWidth > width {
-			newWidth = width
-			newHeight = int(float32(width) / ratio)
-		}
+		newWidth, newHeight := ScaleToFit(full.GetWidth(), full.GetHeight(), THUMBNAIL_SIZE, THUMBNAIL_SIZE)
 
 		s.thumbnail, _ = full.ScaleSimple(newWidth, newHeight, gdk.INTERP_TILES)
 	}

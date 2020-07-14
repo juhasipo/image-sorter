@@ -42,12 +42,12 @@ func IsSupported(extension string) bool {
 	return supportedFileEndings[strings.ToLower(extension)]
 }
 
-func LoadImageWithExifCorrection(handle *common.Handle, exifData *pixbuf.ExifData) (*image.Image, error) {
+func LoadImageWithExifCorrection(handle *common.Handle, exifData *pixbuf.ExifData) (image.Image, error) {
 	img, err := LoadImage(handle)
 
 	img = imaging.Rotate(img, float64(exifData.GetRotation()), color.Gray{})
 	if exifData.IsFlipped() {
 		img = imaging.FlipH(img)
 	}
-	return &img, err
+	return img, err
 }
