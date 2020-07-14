@@ -110,7 +110,8 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 	log.Printf("Loading categozation from file '%s'", filePath)
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Print("Can't write file ", filePath, err)
+		log.Print("Can't read file ", filePath, err)
+		return
 	}
 
 	var lines []string

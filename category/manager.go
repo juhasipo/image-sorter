@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/common"
@@ -11,6 +12,7 @@ import (
 )
 
 const CATEGORIES_FILE_NAME = ".categories"
+const IMAGE_SORTER_DIR = ".image-sorter"
 
 type Manager struct {
 	categories     []*common.Category
@@ -39,7 +41,7 @@ func New(sender event.Sender, categories []string, rootDir string) CategoryManag
 		log.Printf("Reading from command line parameters")
 		loadedCategories = fromCategoriesStrings(categories)
 	} else {
-		loadedCategories = loadCategoriesToFile(rootDir)
+		loadedCategories = loadCategoriesFromFile(rootDir)
 	}
 
 	for _, category := range loadedCategories {
@@ -75,8 +77,10 @@ func (s *Manager) Save(categories []*common.Category) {
 func (s *Manager) SaveDefault(categories []*common.Category) {
 	s.resetCategories(categories)
 
-	// TODO: Find user's home dir
-	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, categories)
+	currentUser, _ := user.Current()
+	categoryFile := filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR)
+
+	saveCategoriesToFile(categoryFile, CATEGORIES_FILE_NAME, categories)
 	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
 		categories: categories,
 	})
@@ -100,6 +104,10 @@ func (s *Manager) GetCategoryById(id string) *common.Category {
 }
 
 func saveCategoriesToFile(fileDir string, fileName string, categories []*common.Category) {
+	if _, err := os.Stat(fileDir); os.IsNotExist(err) {
+		os.Mkdir(fileDir, 0666)
+	}
+
 	filePath := filepath.Join(fileDir, fileName)
 
 	log.Printf("Saving categories to file '%s'", filePath)
@@ -133,9 +141,15 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 	return categoryEntries
 }
 
+func loadCategoriesFromFile(fileDir string) []*common.Category {
+	currentUser, _ := user.Current()
+	filePaths := []string {
+		filepath.Join(fileDir, CATEGORIES_FILE_NAME),
+		filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR, CATEGORIES_FILE_NAME),
+	}
 
-func loadCategoriesToFile(fileDir string) []*common.Category {
-	filePath := filepath.Join(fileDir, CATEGORIES_FILE_NAME)
+	filePath := common.GetFirstExistingFilePath(filePaths)
+
 	log.Printf("Reading categories from file '%s'", filePath)
 
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
