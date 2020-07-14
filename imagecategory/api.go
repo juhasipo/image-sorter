@@ -7,6 +7,8 @@ import (
 )
 
 type ImageCategoryManager interface {
+	InitializeForDirectory(directory string)
+
 	RequestCategory(handle *common.Handle)
 	SetCategory(command *category.CategorizeCommand)
 

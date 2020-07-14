@@ -26,21 +26,32 @@ func main() {
 	broker := event.InitBus(1000)
 
 	categoryArr := strings.Split(*categories, ",")
-	categoryManager := category.New(broker, categoryArr, rootPath)
-	categorizationManager := imagecategory.ManagerNew(rootPath, broker)
-	imageLibrary := library.ForHandles(rootPath, broker)
-
-	categorizationManager.LoadCategorization(imageLibrary, categoryManager)
+	categoryManager := category.New(broker, categoryArr)
+	categorizationManager := imagecategory.ManagerNew(broker)
+	imageLibrary := library.ForHandles(broker)
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
-	caster, _ := caster.InitCaster(*httpPort, secretString, broker)
+	castManager, _ := caster.InitCaster(*httpPort, secretString, broker)
 
-	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
-	gui := ui.Init(broker, pixbufCache)
+	pixbufCache := pixbuf.NewPixbufCache()
+	gui := ui.Init(rootPath, broker, pixbufCache)
 
 	// Startup
 	broker.Subscribe(event.UI_READY, func() {
+		categoryManager.RequestCategories()
+	})
+	broker.Subscribe(event.DIRECTORY_CHANGED, func(directory string) {
+		categoryManager.InitializeFromDirectory([]string{}, directory)
+		imageLibrary.InitializeFromDirectory(directory)
+		if len(imageLibrary.GetHandles()) > 0 {
+			pixbufCache.Initialize(imageLibrary.GetHandles()[:5])
+		}
+
+		categorizationManager.InitializeForDirectory(directory)
+		categorizationManager.LoadCategorization(imageLibrary, categoryManager)
+
+
 		categoryManager.RequestCategories()
 	})
 
@@ -68,9 +79,9 @@ func main() {
 	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)
 
 	// UI -> Caster
-	broker.Subscribe(event.CAST_DEVICE_SEARCH, caster.FindDevices)
-	broker.Subscribe(event.CAST_DEVICE_SELECT, caster.SelectDevice)
-	broker.Subscribe(event.IMAGE_CHANGED, caster.CastImage)
+	broker.Subscribe(event.CAST_DEVICE_SEARCH, castManager.FindDevices)
+	broker.Subscribe(event.CAST_DEVICE_SELECT, castManager.SelectDevice)
+	broker.Subscribe(event.IMAGE_CHANGED, castManager.CastImage)
 
 	// Caster -> UI
 	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
@@ -88,7 +99,7 @@ func main() {
 
 	gui.Run()
 
-	caster.Close()
+	castManager.Close()
 	categoryManager.Close()
 	categorizationManager.Close()
 	imageLibrary.Close()

@@ -15,6 +15,7 @@ const CATEGORIES_FILE_NAME = ".categories"
 const IMAGE_SORTER_DIR = ".image-sorter"
 
 type Manager struct {
+	commandLineCategories []string
 	categories     []*common.Category
 	categoriesById map[string]*common.Category
 	sender         event.Sender
@@ -33,7 +34,15 @@ func Parse(name string) (string, string, string) {
 	}
 }
 
-func New(sender event.Sender, categories []string, rootDir string) CategoryManager {
+func New(sender event.Sender, categories []string) CategoryManager {
+	manager := Manager {
+		sender: sender,
+		commandLineCategories: categories,
+	}
+	return &manager
+}
+
+func (s *Manager) InitializeFromDirectory(categories []string, rootDir string) {
 	var loadedCategories []*common.Category
 	var categoriesByName = map[string]*common.Category{}
 
@@ -48,12 +57,9 @@ func New(sender event.Sender, categories []string, rootDir string) CategoryManag
 		categoriesByName[category.GetName()] = category
 	}
 
-	return &Manager {
-		categories:     loadedCategories,
-		sender:         sender,
-		rootDir:        rootDir,
-		categoriesById: categoriesByName,
-	}
+	s.categories = loadedCategories
+	s.rootDir = rootDir
+	s.categoriesById = categoriesByName
 }
 
 func (s *Manager) GetCategories() []*common.Category {

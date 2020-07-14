@@ -20,6 +20,7 @@ type Ui struct {
 	pixbufCache *pixbuf.PixbufCache
 	sender      event.Sender
 	categories  []*common.Category
+	rootPath     string
 
 	// UI components
 	progressView        *ProgressView
@@ -33,7 +34,7 @@ type Ui struct {
 	Gui
 }
 
-func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
+func Init(rootPath string, broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -48,15 +49,16 @@ func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
 		application: application,
 		pixbufCache: pixbufCache,
 		sender:      broker,
+		rootPath:    rootPath,
 	}
 
-	ui.Init()
+	ui.Init(rootPath)
 	return &ui
 }
 
 const USE_CUSTOM_STYLE = false
 
-func (s *Ui) Init() {
+func (s *Ui) Init(directory string) {
 	os.Setenv("GTK_THEME", "Adwaita:dark")
 
 	cssProvider, _ := gtk.CssProviderNew()
@@ -99,7 +101,10 @@ func (s *Ui) Init() {
 		s.castModal = CastModalNew(builder, s, s.sender)
 		s.editCategoriesModal = CategoryModalNew(builder, s, s.sender)
 
-		s.sender.SendToTopic(event.UI_READY)
+		if directory == "" {
+			// TODO: Open directory selector modal
+		}
+		s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, directory)
 
 		// Show the Window and all of its components.
 		s.win.Show()

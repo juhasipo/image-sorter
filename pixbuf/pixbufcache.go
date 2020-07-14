@@ -15,16 +15,18 @@ type PixbufCache struct {
 	mux sync.Mutex
 }
 
-func NewPixbufCache(initialThumbnails []*common.Handle) *PixbufCache {
-	cache := map[*common.Handle]*Instance{}
+func NewPixbufCache() *PixbufCache {
+	return &PixbufCache {
+		imageCache: map[*common.Handle]*Instance{},
+	}
+}
+
+func (s *PixbufCache) Initialize(initialThumbnails []*common.Handle) {
+	s.imageCache = map[*common.Handle]*Instance{}
 	for _, handle := range initialThumbnails {
-		cache[handle] = NewInstance(handle)
+		s.imageCache[handle] = NewInstance(handle)
 	}
 	runtime.GC()
-
-	return &PixbufCache {
-		imageCache: cache,
-	}
 }
 
 func (s *PixbufCache) GetInstance(handle *common.Handle) *Instance {

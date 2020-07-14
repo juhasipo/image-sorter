@@ -22,13 +22,17 @@ type Manager struct {
 	ImageCategoryManager
 }
 
-func ManagerNew(rootDir string, sender event.Sender) ImageCategoryManager {
+func ManagerNew(sender event.Sender) ImageCategoryManager {
 	var manager = Manager{
-		rootDir:       rootDir,
 		imageCategory: map[*common.Handle]map[string]*category.CategorizedImage{},
 		sender:        sender,
 	}
 	return &manager
+}
+
+func (s *Manager) InitializeForDirectory(directory string) {
+	s.rootDir = directory
+	s.imageCategory = map[*common.Handle]map[string]*category.CategorizedImage{}
 }
 
 func (s *Manager) RequestCategory(handle *common.Handle) {

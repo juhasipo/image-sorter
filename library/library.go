@@ -34,23 +34,29 @@ type Manager struct {
 	outputChannel   chan *HashResult
 }
 
-func ForHandles(rootDir string, sender event.Sender) Library {
+func ForHandles(sender event.Sender) Library {
 	var manager = Manager{
-		rootDir:       rootDir,
 		index:         0,
 		sender:        sender,
 		imageHash:     duplo.New(),
-		imageListSize: 5,
+		imageListSize: 0,
 	}
-	manager.loadImagesFromRootDir()
 	return &manager
 }
+
 
 func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
 	channel <-&HashResult{
 		handle: handle,
 		hash:   hash,
 	}
+}
+
+func (s *Manager) InitializeFromDirectory(directory string) {
+	s.rootDir = directory
+	s.index = 0
+	s.imageHash = duplo.New()
+	s.loadImagesFromRootDir()
 }
 
 func (s *Manager) GetHandles() []*common.Handle {

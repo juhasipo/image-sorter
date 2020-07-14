@@ -6,6 +6,7 @@ const (
 	// General
 	UPDATE_PROCESS_STATUS Topic = "update-process-status"
 	UI_READY Topic = "ui-ready"
+	DIRECTORY_CHANGED Topic = "directory-changed"
 
 	// Image related
 	IMAGE_REQUEST             Topic = "image-request"

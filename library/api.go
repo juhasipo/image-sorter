@@ -6,6 +6,7 @@ import (
 )
 
 type Library interface {
+	InitializeFromDirectory(directory string)
 	RequestImages()
 	RequestNextImage()
 	RequestNextImageWithOffset(int)
