@@ -34,7 +34,7 @@ func main() {
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
-	c, _ := caster.InitCaster(*httpPort, secretString, broker)
+	caster, _ := caster.InitCaster(*httpPort, secretString, broker)
 
 	pixbufCache := pixbuf.NewPixbufCache(imageLibrary.GetHandles()[:5])
 	gui := ui.Init(broker, pixbufCache)
@@ -54,7 +54,6 @@ func main() {
 	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
 	broker.Subscribe(event.IMAGE_LIST_SIZE_CHANGED, imageLibrary.ChangeImageListSize)
-	broker.Subscribe(event.APPLICATION_CLOSE, imageLibrary.Close)
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
@@ -64,16 +63,14 @@ func main() {
 	broker.Subscribe(event.CATEGORIZE_IMAGE, categorizationManager.SetCategory)
 	broker.Subscribe(event.CATEGORY_PERSIST_ALL, categorizationManager.PersistImageCategories)
 	broker.Subscribe(event.IMAGE_CHANGED, categorizationManager.RequestCategory)
-	broker.Subscribe(event.APPLICATION_CLOSE, categorizationManager.Close)
 
 	// Image Categorization -> UI
 	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)
 
 	// UI -> Caster
-	broker.Subscribe(event.CAST_DEVICE_SEARCH, c.FindDevices)
-	broker.Subscribe(event.CAST_DEVICE_SELECT, c.SelectDevice)
-	broker.Subscribe(event.IMAGE_CHANGED, c.CastImage)
-	broker.Subscribe(event.APPLICATION_CLOSE, c.Close)
+	broker.Subscribe(event.CAST_DEVICE_SEARCH, caster.FindDevices)
+	broker.Subscribe(event.CAST_DEVICE_SELECT, caster.SelectDevice)
+	broker.Subscribe(event.IMAGE_CHANGED, caster.CastImage)
 
 	// Caster -> UI
 	broker.ConnectToGui(event.CAST_DEVICE_FOUND, gui.DeviceFound)
@@ -83,7 +80,6 @@ func main() {
 	// UI -> Category
 	broker.Subscribe(event.CATEGORIES_SAVE, categoryManager.Save)
 	broker.Subscribe(event.CATEGORIES_SAVE_DEFAULT, categoryManager.SaveDefault)
-	broker.Subscribe(event.APPLICATION_CLOSE, categoryManager.Close)
 
 	// Category -> UI
 	broker.ConnectToGui(event.CATEGORIES_UPDATED, gui.UpdateCategories)
@@ -91,6 +87,11 @@ func main() {
 	StartBackgroundGC()
 
 	gui.Run()
+
+	caster.Close()
+	categoryManager.Close()
+	categorizationManager.Close()
+	imageLibrary.Close()
 }
 
 func StartBackgroundGC() {

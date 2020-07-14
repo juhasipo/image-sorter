@@ -6,7 +6,6 @@ const (
 	// General
 	UPDATE_PROCESS_STATUS Topic = "update-process-status"
 	UI_READY Topic = "ui-ready"
-	APPLICATION_CLOSE Topic = "application-close"
 
 	// Image related
 	IMAGE_REQUEST             Topic = "image-request"

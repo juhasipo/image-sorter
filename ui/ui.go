@@ -98,10 +98,6 @@ func (s *Ui) Init() {
 
 		s.sender.SendToTopic(event.UI_READY)
 
-		s.win.Connect("destroy", func() {
-			s.sender.SendToTopic(event.APPLICATION_CLOSE)
-		})
-
 		// Show the Window and all of its components.
 		s.win.Show()
 		s.application.AddWindow(s.win)
