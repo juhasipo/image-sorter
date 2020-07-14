@@ -5,6 +5,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"os"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -56,6 +57,8 @@ func Init(broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
 const USE_CUSTOM_STYLE = false
 
 func (s *Ui) Init() {
+	os.Setenv("GTK_THEME", "Adwaita:dark")
+
 	cssProvider, _ := gtk.CssProviderNew()
 	if err := cssProvider.LoadFromPath("ui/default.css"); err != nil {
 		log.Panic("Error while loading CSS ", err)
