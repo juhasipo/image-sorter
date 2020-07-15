@@ -159,27 +159,30 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 
 		send := s.CreateSendFuncForEntry(categoryButton)
 		// Catches mouse click and can also check for keyboard for Shift key status
-		button.Connect("button-press-event", func(button *gtk.Button, e* gdk.Event) {
-			keyEvent := gdk.EventKeyNewFromEvent(e)
+		button.Connect("button-release-event", func(button *gtk.Button, e* gdk.Event) bool {
+			keyEvent := gdk.EventButtonNewFromEvent(e)
 
-			modifiers:=gtk.AcceleratorGetDefaultModMask()
+			modifiers := gtk.AcceleratorGetDefaultModMask()
 			state := gdk.ModifierType(keyEvent.State())
 
 			stayOnSameImage := state & modifiers == gdk.GDK_SHIFT_MASK
 			send(stayOnSameImage)
+			return true
 		})
 		// Since clicked handler is not used, Enter and Space need to be checked manually
 		// also check Shift status
-		button.Connect("key-press-event", func(button *gtk.Button, e* gdk.Event) {
+		button.Connect("key-press-event", func(button *gtk.Button, e* gdk.Event) bool {
 			keyEvent := gdk.EventKeyNewFromEvent(e)
 			key := keyEvent.KeyVal()
 
 			if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
-				modifiers:=gtk.AcceleratorGetDefaultModMask()
+				modifiers := gtk.AcceleratorGetDefaultModMask()
 				state := gdk.ModifierType(keyEvent.State())
 				stayOnSameImage := state & modifiers == gdk.GDK_SHIFT_MASK
 				send(stayOnSameImage)
+				return true
 			}
+			return false
 		})
 		s.topActionView.categoriesView.Add(button)
 	}
