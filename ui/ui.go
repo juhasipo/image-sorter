@@ -58,15 +58,8 @@ func Init(rootPath string, broker event.Sender, pixbufCache *pixbuf.PixbufCache)
 	return &ui
 }
 
-const USE_CUSTOM_STYLE = false
-
 func (s *Ui) Init(directory string) {
 	os.Setenv("GTK_THEME", "Adwaita:dark")
-
-	cssProvider, _ := gtk.CssProviderNew()
-	if err := cssProvider.LoadFromPath("ui/default.css"); err != nil {
-		log.Panic("Error while loading CSS ", err)
-	}
 
 	// Application signals available
 	// startup -> sets up the application when it first starts
@@ -77,13 +70,6 @@ func (s *Ui) Init(directory string) {
 	s.application.Connect("activate", func() {
 		log.Println("Application activate")
 
-		if USE_CUSTOM_STYLE {
-			screen, err := gdk.ScreenGetDefault()
-			if err != nil {
-				log.Panic("Error while loading screen ", err)
-			}
-			gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-		}
 		builder, err := gtk.BuilderNewFromFile("ui/main-view.glade")
 		if err != nil {
 			log.Fatal("Could not load Glade file.", err)
