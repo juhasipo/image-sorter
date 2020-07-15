@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -102,9 +104,10 @@ func (s *Ui) Init(directory string) {
 		s.editCategoriesModal = CategoryModalNew(builder, s, s.sender)
 
 		if directory == "" {
-			// TODO: Open directory selector modal
+			s.openFolderChooser(1)
+		} else {
+			s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, directory)
 		}
-		s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, directory)
 
 		// Show the Window and all of its components.
 		s.win.Show()
@@ -308,4 +311,43 @@ func (s *Ui) showEditCategoriesModal() {
 	categories := make([]*common.Category, len(s.categories))
 	copy(categories, s.categories)
 	s.editCategoriesModal.Show(s.application.GetActiveWindow(), categories)
+}
+
+func (s *Ui) openFolderChooser(numOfButtons int) {
+	folderChooser, err := createFileChooser(numOfButtons, s.application.GetActiveWindow())
+	if err != nil {
+		log.Panic("Can't open file chooser")
+	}
+	defer folderChooser.Destroy()
+
+	runAndProcessFolderChooser(folderChooser, s.sender)
+}
+
+func runAndProcessFolderChooser(folderChooser *gtk.FileChooserDialog, sender event.Sender) {
+	response := folderChooser.Run()
+	if response == gtk.RESPONSE_ACCEPT {
+		folder := folderChooser.GetFilename()
+		sender.SendToTopicWithData(event.DIRECTORY_CHANGED, folder)
+	}
+}
+
+func createFileChooser(numOfButtons int, parent gtk.IWindow) (*gtk.FileChooserDialog, error) {
+	var folderChooser *gtk.FileChooserDialog
+	var err error
+
+	if numOfButtons == 1 {
+		folderChooser, err = gtk.FileChooserDialogNewWith1Button(
+		"Select folder", parent,
+		gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+		"Select", gtk.RESPONSE_ACCEPT)
+	} else if numOfButtons == 2 {
+		folderChooser, err = gtk.FileChooserDialogNewWith2Buttons(
+		"Select folder", parent,
+		gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+		"Select", gtk.RESPONSE_ACCEPT,
+		"Cancel", gtk.RESPONSE_CANCEL)
+	} else {
+		err = errors.New(fmt.Sprintf("Invalid number of buttons: %d", numOfButtons))
+	}
+	return folderChooser, err
 }

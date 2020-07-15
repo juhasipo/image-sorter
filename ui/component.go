@@ -155,6 +155,7 @@ type BottomActionView struct {
 	findSimilarButton    *gtk.Button
 	findDevicesButton    *gtk.Button
 	editCategoriesButton *gtk.Button
+	openFolderButton     *gtk.Button
 }
 
 func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
@@ -164,6 +165,7 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		findSimilarButton:    GetObjectOrPanic(builder, "find-similar-button").(*gtk.Button),
 		findDevicesButton:    GetObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
 		editCategoriesButton: GetObjectOrPanic(builder, "edit-categories-button").(*gtk.Button),
+		openFolderButton: GetObjectOrPanic(builder, "open-folder-button").(*gtk.Button),
 	}
 	bottomActionView.persistButton.Connect("clicked", func() {
 		sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
@@ -175,6 +177,10 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 	bottomActionView.findDevicesButton.Connect("clicked", ui.findDevices)
 
 	bottomActionView.editCategoriesButton.Connect("clicked", ui.showEditCategoriesModal)
+
+	bottomActionView.openFolderButton.Connect("clicked", func() {
+		ui.openFolderChooser(2)
+	})
 
 	return bottomActionView
 }
