@@ -3,6 +3,7 @@ package pixbuf
 import (
 	"github.com/gotk3/gotk3/gdk"
 	"log"
+	"os"
 	"sync"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/imagetools"
@@ -46,6 +47,10 @@ func loadFullWithExifCorrection(handle *common.Handle, exifData *imagetools.Exif
 		log.Print(err)
 		return nil, err
 	}
+
+	handle.SetSize(pixbuf.GetWidth(), pixbuf.GetHeight())
+	fileStat, _ := os.Stat(handle.GetPath())
+	handle.SetByteSize(fileStat.Size())
 
 	if exifData != nil {
 		pixbuf, err = pixbuf.RotateSimple(exifData.GetRotation())

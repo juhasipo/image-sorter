@@ -25,7 +25,7 @@ func LoadImages(dir string) []*common.Handle {
 		extension := filepath.Ext(filePath)
 		if IsSupported(extension) {
 			filePath := filepath.Join(dir, file.Name())
-			handles = append(handles, common.HandleNew(filePath))
+			handles = append(handles, common.HandleNew(filePath, extension, 0, 0))
 		}
 	}
 	log.Printf("Found %d images", len(handles))

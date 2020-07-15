@@ -223,6 +223,9 @@ func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
 
 func (s *Ui) SetCurrentImage(handle *common.Handle) {
 	s.imageView.currentImage.image = handle
+	buffer, _ := s.imageView.currentImage.details.GetBuffer()
+	details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), handle.GetWidth(), handle.GetHeight())
+	buffer.SetText(details)
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
 }

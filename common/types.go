@@ -7,9 +7,13 @@ import (
 )
 
 type Handle struct {
-	id string
-	path string
-	hash *duplo.Hash
+	id        string
+	path      string
+	hash      *duplo.Hash
+	imageType string
+	width     int
+	height    int
+	byteSize  int64
 }
 
 func (s *Handle) IsValid() bool {
@@ -20,11 +24,14 @@ var (
 	EMPTY_HANDLE = Handle {id: "", path: ""}
 )
 
-func HandleNew(path string) *Handle {
+func HandleNew(path string, imageType string, width int, height int) *Handle {
 	return &Handle{
 		id:   path,
 		path: path,
 		hash: nil,
+		imageType: imageType,
+		width: width,
+		height: height,
 	}
 }
 
@@ -44,11 +51,40 @@ func (s* Handle) GetPath() string {
 	return s.path
 }
 
+func (s* Handle) GetImageType() string {
+	return s.imageType
+}
+
+func (s* Handle) GetWidth() int {
+	return s.width
+}
+
+func (s* Handle) GetHeight() int {
+	return s.height
+}
+
 func (s *Handle) SetHash(hash *duplo.Hash) {
 	s.hash = hash
 }
 func (s *Handle) GetHash() *duplo.Hash {
 	return s.hash
+}
+
+func (s *Handle) SetSize(width int, height int) {
+	s.width = width
+	s.height = height
+}
+
+func (s *Handle) SetByteSize(length int64) {
+	s.byteSize = length
+}
+
+func (s *Handle) GetByteSize() int64 {
+	return s.byteSize
+}
+
+func (s *Handle) GetByteSizeMB() float64 {
+	return float64(s.byteSize)/(1024.0*1024.0)
 }
 
 

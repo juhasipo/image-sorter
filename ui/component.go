@@ -89,6 +89,7 @@ type CurrentImageView struct {
 	viewport     *gtk.Viewport
 	view         *gtk.Image
 	image        *common.Handle
+	details      *gtk.TextView
 }
 
 type ImageView struct {
@@ -107,6 +108,7 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 			scrolledView: GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
 			viewport:     GetObjectOrPanic(builder, "current-image-view").(*gtk.Viewport),
 			view:         GetObjectOrPanic(builder, "current-image").(*gtk.Image),
+			details:      GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
 		},
 		nextImages: &ImageList{
 			component: nextImagesList,
@@ -117,6 +119,9 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 			model:     prevImageStore,
 		},
 	}
+	tableNew, _ := gtk.TextTagTableNew()
+	bufferNew, _ := gtk.TextBufferNew(tableNew)
+	imageView.currentImage.details.SetBuffer(bufferNew)
 	imageView.currentImage.viewport.Connect("size-allocate", func() {
 		ui.UpdateCurrentImage()
 		height := ui.imageView.nextImages.component.GetAllocatedHeight() / 80
