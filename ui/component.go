@@ -168,7 +168,13 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		openFolderButton: GetObjectOrPanic(builder, "open-folder-button").(*gtk.Button),
 	}
 	bottomActionView.persistButton.Connect("clicked", func() {
-		sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
+		confirm := gtk.MessageDialogNew(ui.application.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, "Do you really want to move images to cateogry folders?")
+		defer confirm.Destroy()
+		response := confirm.Run()
+
+		if response == gtk.RESPONSE_YES {
+			sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
+		}
 	})
 
 	bottomActionView.findSimilarButton.Connect("clicked", func() {
