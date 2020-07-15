@@ -5,7 +5,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/duplo"
-	"vincit.fi/image-sorter/imagetools"
+	"vincit.fi/image-sorter/imagetools/goimage"
 )
 
 type HashResult struct {
@@ -22,7 +22,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 		case handle := <-input:
 			{
 				startTime := time.Now()
-				decodedImage, err := imagetools.LoadImage(handle)
+				decodedImage, err := goimage.LoadImage(handle)
 				endTime := time.Now()
 				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 

@@ -11,7 +11,7 @@ import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/pixbuf"
+	"vincit.fi/image-sorter/imagetools/pixbuf"
 )
 
 type Ui struct {

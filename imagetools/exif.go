@@ -21,7 +21,6 @@ func (s *ExifData) IsFlipped() bool {
 	return s.flipped
 }
 
-
 func LoadExifData(handle *common.Handle) (*ExifData, error) {
 	fileForExif, err := os.Open(handle.GetPath())
 	if fileForExif != nil && err == nil {

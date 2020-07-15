@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	PLACEHOLDER_SIZE = 4
 	THUMBNAIL_SIZE = 100
 )
 
@@ -33,13 +32,12 @@ func NewInstance(handle *common.Handle) *Instance {
 	return instance
 }
 
-
 func (s *Instance) loadFull() (*gdk.Pixbuf, error) {
-	return loadFullWithExifCorrection(s.handle, s.exifData)
+	return loadPixbufWithExifCorrection(s.handle, s.exifData)
 }
 
 var mux = sync.Mutex{}
-func loadFullWithExifCorrection(handle *common.Handle, exifData *imagetools.ExifData) (*gdk.Pixbuf, error) {
+func loadPixbufWithExifCorrection(handle *common.Handle, exifData *imagetools.ExifData) (*gdk.Pixbuf, error) {
 	mux.Lock(); defer mux.Unlock()
 	pixbuf, err := gdk.PixbufNewFromFile(handle.GetPath())
 

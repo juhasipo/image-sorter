@@ -11,8 +11,8 @@ import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imagecategory"
+	"vincit.fi/image-sorter/imagetools/pixbuf"
 	"vincit.fi/image-sorter/library"
-	"vincit.fi/image-sorter/pixbuf"
 	"vincit.fi/image-sorter/ui"
 )
 

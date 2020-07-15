@@ -1,13 +1,14 @@
-package imagetools
+package goimage
 
 import (
 	"github.com/disintegration/imaging"
 	"image"
 	"image/color"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/imagetools"
 )
 
-func LoadImageWithExifCorrection(handle *common.Handle, exifData *ExifData) (image.Image, error) {
+func LoadGoImageWithExifCorrection(handle *common.Handle, exifData *imagetools.ExifData) (image.Image, error) {
 	img, err := LoadImage(handle)
 
 	img = imaging.Rotate(img, float64(exifData.GetRotation()), color.Gray{})
@@ -16,4 +17,3 @@ func LoadImageWithExifCorrection(handle *common.Handle, exifData *ExifData) (ima
 	}
 	return img, err
 }
-

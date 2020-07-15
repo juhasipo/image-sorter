@@ -26,6 +26,7 @@ import (
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imagetools"
+	"vincit.fi/image-sorter/imagetools/goimage"
 )
 
 const (
@@ -107,7 +108,7 @@ func (s *Caster) startServerAsync(port int) {
 
 func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Request) {
 	exifInfo, _ := imagetools.LoadExifData(s.currentImage)
-	img, _ := imagetools.LoadImageWithExifCorrection(s.currentImage, exifInfo)
+	img, _ := goimage.LoadGoImageWithExifCorrection(s.currentImage, exifInfo)
 
 	writeImageToResponse(responseWriter, img)
 }
