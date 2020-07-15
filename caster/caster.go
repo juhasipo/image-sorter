@@ -34,7 +34,6 @@ const (
 	CAST_SERVICE              = "_googlecast._tcp"
 	CANVAS_WIDTH              = 1920
 	CANVAS_HEIGHT             = 1080
-	ENABLE_BLURRED_BACKGROUND = true
 )
 
 type Caster struct {
@@ -46,6 +45,7 @@ type Caster struct {
 	path           string
 	currentImage   *common.Handle
 	server         *http.Server
+	showBackground bool
 }
 
 type DeviceEntry struct {
@@ -110,11 +110,11 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	exifInfo, _ := imagetools.LoadExifData(s.currentImage)
 	img, _ := goimage.LoadGoImageWithExifCorrection(s.currentImage, exifInfo)
 
-	writeImageToResponse(responseWriter, img)
+	writeImageToResponse(responseWriter, img, s.showBackground)
 }
 
-func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image) {
-	img = resizedAndBlurImage(img, ENABLE_BLURRED_BACKGROUND)
+func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, showBackground bool) {
+	img = resizedAndBlurImage(img, showBackground)
 
 	buffer := new(bytes.Buffer)
 	if err := jpeg.Encode(buffer, img, nil); err != nil {
@@ -236,9 +236,10 @@ func (s *Caster) resolveLocalAddress(host string, port int) (*net.TCPAddr, error
 	return conn.LocalAddr().(*net.TCPAddr), nil
 }
 
-func (s *Caster) SelectDevice(name string) {
+func (s *Caster) SelectDevice(name string, showBackground bool) {
 	log.Printf("Selected device '%s'", name)
 	s.selectedDevice = name
+	s.showBackground = showBackground
 	device := s.devices[s.selectedDevice]
 	device.heartbeat.Start()
 	device.connection.Connect()

@@ -7,13 +7,14 @@ import (
 )
 
 type CastModal struct {
-	modal          *gtk.Dialog
-	deviceListView *gtk.TreeView
-	model          *gtk.ListStore
-	devices        []string
-	cancelButton   *gtk.Button
-	refreshButton  *gtk.Button
-	statusLabel    *gtk.Label
+	modal            *gtk.Dialog
+	deviceListView   *gtk.TreeView
+	model            *gtk.ListStore
+	devices          []string
+	cancelButton     *gtk.Button
+	refreshButton    *gtk.Button
+	statusLabel      *gtk.Label
+	showBackgroundCB *gtk.CheckButton
 }
 
 func CastModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *CastModal {
@@ -28,14 +29,17 @@ func CastModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *CastModal 
 	refreshButton := GetObjectOrPanic(builder, "cast-dialog-refresh-button").(*gtk.Button)
 	refreshButton.Connect("clicked", ui.findDevices)
 
-	return &CastModal{
-		modal:          modalDialog,
-		deviceListView: deviceList,
-		model:          createDeviceList(modalDialog, deviceList, "Devices", sender),
-		cancelButton:   cancelButton,
-		refreshButton:  refreshButton,
-		statusLabel:    GetObjectOrPanic(builder, "cast-find-status-label").(*gtk.Label),
+	castModal := &CastModal{
+		modal:            modalDialog,
+		deviceListView:   deviceList,
+		cancelButton:     cancelButton,
+		refreshButton:    refreshButton,
+		statusLabel:      GetObjectOrPanic(builder, "cast-find-status-label").(*gtk.Label),
+		showBackgroundCB: GetObjectOrPanic(builder, "caster-show-background-checkbox").(*gtk.CheckButton),
 	}
+	castModal.model = createDeviceList(castModal, modalDialog, deviceList, "Devices", sender)
+
+	return castModal
 }
 
 func (s *CastModal) AddDevice(device string) {
@@ -73,15 +77,14 @@ func (s *CastModal) SearchDone() {
 	s.refreshButton.SetSensitive(true)
 }
 
-
-func createDeviceList(modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
+func createDeviceList(castModal *CastModal, modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
 	store, _ := gtk.ListStoreNew(glib.TYPE_STRING)
 	view.SetSizeRequest(100, -1)
 	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
 		iter, _ := store.GetIter(path)
 		value, _ := store.GetValue(iter, 0)
 		stringValue, _ := value.GetString()
-		sender.SendToTopicWithData(event.CAST_DEVICE_SELECT, stringValue)
+		sender.SendToTopicWithData(event.CAST_DEVICE_SELECT, stringValue, castModal.showBackgroundCB.GetActive())
 		modal.Hide()
 	})
 	view.SetModel(store)
