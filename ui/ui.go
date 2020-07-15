@@ -199,69 +199,31 @@ func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func(bool) {
 }
 
 func (s *Ui) UpdateCurrentImage() {
-	size := pixbuf.SizeFromWindow(s.imageView.currentImage.scrolledView)
-	scaled := s.pixbufCache.GetScaled(
-		s.imageView.currentImage.image,
-		size,
-	)
-	s.imageView.currentImage.view.SetFromPixbuf(scaled)
-	// Hack to prevent image from being center of the scrolled
-	// window after minimize
-	s.imageView.currentImage.scrolledView.Remove(s.imageView.currentImage.viewport)
-	s.imageView.currentImage.scrolledView.Add(s.imageView.currentImage.viewport)
+	s.imageView.UpdateCurrentImage(s.pixbufCache)
 }
 
 func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
 	if imageTarget == event.IMAGE_REQUEST_NEXT {
-		s.AddImagesToStore(s.imageView.nextImages, handles)
+		s.imageView.AddImagesToNextStore(handles, s.pixbufCache)
 	} else if imageTarget == event.IMAGE_REQUEST_PREV {
-		s.AddImagesToStore(s.imageView.prevImages, handles)
+		s.imageView.AddImagesToPrevStore(handles, s.pixbufCache)
 	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
-		children := s.similarImagesView.layout.GetChildren()
-		children.Foreach(func(item interface{}) {
-			s.similarImagesView.layout.Remove(item.(gtk.IWidget))
-		})
-		for _, handle := range handles {
-			widget := s.createSimilarImage(handle)
-			s.similarImagesView.layout.Add(widget)
-		}
-		s.similarImagesView.scrollLayout.SetVisible(true)
-		s.similarImagesView.scrollLayout.ShowAll()
+		s.similarImagesView.SetImages(handles, s.pixbufCache, s.sender)
 	} else {
 		s.SetCurrentImage(handles[0])
 		s.pixbufCache.Purge(s.imageView.currentImage.image)
 	}
 }
 
-func (s *Ui) createSimilarImage(handle *common.Handle) *gtk.EventBox {
-	eventBox, _ := gtk.EventBoxNew()
-	imageWidget, _ := gtk.ImageNewFromPixbuf(s.pixbufCache.GetThumbnail(handle))
-	eventBox.Add(imageWidget)
-	eventBox.Connect("button-press-event", func() {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST, handle)
-	})
-	return eventBox
-}
-
 func (s *Ui) SetCurrentImage(handle *common.Handle) {
-	s.imageView.currentImage.image = handle
-	buffer, _ := s.imageView.currentImage.details.GetBuffer()
-	details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), handle.GetWidth(), handle.GetHeight())
-	buffer.SetText(details)
+	s.imageView.SetCurrentImage(handle)
+
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendToTopicWithData(event.IMAGE_CHANGED, s.imageView.currentImage.image)
-}
-
-func (s *Ui) AddImagesToStore(list *ImageList, images []*common.Handle) {
-	list.model.Clear()
-	for _, img := range images {
-		iter := list.model.Append()
-		list.model.SetValue(iter, 0, s.pixbufCache.GetThumbnail(img))
-	}
 }
 
 func (s *Ui) Run() {
