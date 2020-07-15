@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	duplo "vincit.fi/image-sorter/duplo"
 )
@@ -24,10 +25,10 @@ var (
 	EMPTY_HANDLE = Handle {id: "", path: ""}
 )
 
-func HandleNew(path string, imageType string, width int, height int) *Handle {
+func HandleNew(fileDir string, fileName string, imageType string, width int, height int) *Handle {
 	return &Handle{
-		id:   path,
-		path: path,
+		id:   fileName,
+		path: filepath.Join(fileDir, fileName),
 		hash: nil,
 		imageType: imageType,
 		width: width,

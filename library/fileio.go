@@ -21,11 +21,9 @@ func LoadImages(dir string) []*common.Handle {
 
 	log.Printf("Scanning directory '%s'", dir)
 	for _, file := range files {
-		filePath := filepath.Join(dir, file.Name())
-		extension := filepath.Ext(filePath)
+		extension := filepath.Ext(file.Name())
 		if IsSupported(extension) {
-			filePath := filepath.Join(dir, file.Name())
-			handles = append(handles, common.HandleNew(filePath, extension, 0, 0))
+			handles = append(handles, common.HandleNew(dir, file.Name(), extension, 0, 0))
 		}
 	}
 	log.Printf("Found %d images", len(handles))
