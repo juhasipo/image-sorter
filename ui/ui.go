@@ -158,8 +158,28 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 		s.topActionView.categoryButtons[entry.GetId()] = categoryButton
 
 		send := s.CreateSendFuncForEntry(categoryButton)
-		button.Connect("clicked", func(button *gtk.Button) {
-			send()
+		// Catches mouse click and can also check for keyboard for Shift key status
+		button.Connect("button-press-event", func(button *gtk.Button, e* gdk.Event) {
+			keyEvent := gdk.EventKeyNewFromEvent(e)
+
+			modifiers:=gtk.AcceleratorGetDefaultModMask()
+			state := gdk.ModifierType(keyEvent.State())
+
+			stayOnSameImage := state & modifiers == gdk.GDK_SHIFT_MASK
+			send(stayOnSameImage)
+		})
+		// Since clicked handler is not used, Enter and Space need to be checked manually
+		// also check Shift status
+		button.Connect("key-press-event", func(button *gtk.Button, e* gdk.Event) {
+			keyEvent := gdk.EventKeyNewFromEvent(e)
+			key := keyEvent.KeyVal()
+
+			if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
+				modifiers:=gtk.AcceleratorGetDefaultModMask()
+				state := gdk.ModifierType(keyEvent.State())
+				stayOnSameImage := state & modifiers == gdk.GDK_SHIFT_MASK
+				send(stayOnSameImage)
+			}
 		})
 		s.topActionView.categoriesView.Add(button)
 	}
@@ -167,12 +187,14 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	s.sender.SendToTopic(event.IMAGE_REQUEST_CURRENT)
 }
 
-func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func() {
-	return func() {
+func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func(bool) {
+	return func(stayOnSameImage bool) {
 		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
 		s.sender.SendToTopicWithData(
 			event.CATEGORIZE_IMAGE,
-			category.CategorizeCommandNew(s.imageView.currentImage.image, categoryButton.entry, categoryButton.operation.NextOperation()))
+			category.CategorizeCommandNewWithStayAttr(
+				s.imageView.currentImage.image, categoryButton.entry, categoryButton.operation.NextOperation(),
+				stayOnSameImage))
 	}
 }
 
