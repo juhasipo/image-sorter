@@ -1,13 +1,15 @@
 package goimage
 
 import (
-	"github.com/pixiv/go-libjpeg/jpeg"
 	"image"
+	"image/jpeg"
+	"log"
 	"os"
 	"vincit.fi/image-sorter/common"
 )
 
 func LoadImage(handle *common.Handle) (image.Image, error) {
+	log.Printf("Loading image %s", handle.GetId())
 	imageFile, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -16,5 +18,7 @@ func LoadImage(handle *common.Handle) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	return jpeg.Decode(imageFile, &jpeg.DecoderOptions{})
+
+	// TODO: Convert to RGB if necessary
+	return jpeg.Decode(imageFile)
 }

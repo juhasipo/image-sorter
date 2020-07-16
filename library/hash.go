@@ -5,7 +5,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/duplo"
-	"vincit.fi/image-sorter/imagetools/goimage"
+	"vincit.fi/image-sorter/imageloader/goimage"
 )
 
 type HashResult struct {

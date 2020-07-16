@@ -5,7 +5,7 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imagetools/pixbuf"
+	"vincit.fi/image-sorter/imageloader"
 )
 
 type CurrentImageView struct {
@@ -60,9 +60,9 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 	return imageView
 }
 
-func (s *ImageView) UpdateCurrentImage(pixbufCache *pixbuf.PixbufCache) {
-	size := pixbuf.SizeFromWindow(s.currentImage.scrolledView)
-	scaled := pixbufCache.GetScaled(
+func (s *ImageView) UpdateCurrentImage(pixbufCache *imageloader.ImageCache) {
+	size := common.SizeFromWindow(s.currentImage.scrolledView)
+	scaled := pixbufCache.GetScaledAsPixbuf(
 		s.currentImage.image,
 		size,
 	)
@@ -81,19 +81,19 @@ func (s *ImageView) SetCurrentImage(handle *common.Handle) {
 	buffer.SetText(details)
 }
 
-func (s *ImageView) AddImagesToNextStore(images []*common.Handle, pixbufCache *pixbuf.PixbufCache) {
-	s.addImagesToStore(s.nextImages, images, pixbufCache)
+func (s *ImageView) AddImagesToNextStore(images []*common.Handle, imageCache *imageloader.ImageCache) {
+	s.addImagesToStore(s.nextImages, images, imageCache)
 }
 
-func (s *ImageView) AddImagesToPrevStore(images []*common.Handle, pixbufCache *pixbuf.PixbufCache) {
-	s.addImagesToStore(s.prevImages, images, pixbufCache)
+func (s *ImageView) AddImagesToPrevStore(images []*common.Handle, imageCache *imageloader.ImageCache) {
+	s.addImagesToStore(s.prevImages, images, imageCache)
 }
 
-func (s *ImageView) addImagesToStore(list *ImageList, images []*common.Handle, pixbufCache *pixbuf.PixbufCache) {
+func (s *ImageView) addImagesToStore(list *ImageList, images []*common.Handle, imageCache *imageloader.ImageCache) {
 	list.model.Clear()
 	for _, img := range images {
 		iter := list.model.Append()
-		list.model.SetValue(iter, 0, pixbufCache.GetThumbnail(img))
+		list.model.SetValue(iter, 0, imageCache.GetThumbnailAsPixbuf(img))
 	}
 }
 

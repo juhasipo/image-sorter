@@ -1,11 +1,10 @@
-package imagetools
+package common
 
 import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/rwcarlsen/goexif/exif"
 	"log"
 	"os"
-	"vincit.fi/image-sorter/common"
 )
 
 type ExifData struct {
@@ -21,7 +20,7 @@ func (s *ExifData) IsFlipped() bool {
 	return s.flipped
 }
 
-func LoadExifData(handle *common.Handle) (*ExifData, error) {
+func LoadExifData(handle *Handle) (*ExifData, error) {
 	fileForExif, err := os.Open(handle.GetPath())
 	if fileForExif != nil && err == nil {
 		defer fileForExif.Close()

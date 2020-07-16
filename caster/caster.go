@@ -25,8 +25,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imagetools"
-	"vincit.fi/image-sorter/imagetools/goimage"
+	"vincit.fi/image-sorter/imageloader"
 )
 
 const (
@@ -46,6 +45,7 @@ type Caster struct {
 	currentImage   *common.Handle
 	server         *http.Server
 	showBackground bool
+	imageCache     *imageloader.ImageCache
 }
 
 type DeviceEntry struct {
@@ -59,11 +59,12 @@ type DeviceEntry struct {
 	localAddr       *net.TCPAddr
 }
 
-func InitCaster(port int, secret string, sender event.Sender) (*Caster, error) {
+func InitCaster(port int, secret string, sender event.Sender, imageCache *imageloader.ImageCache) (*Caster, error) {
 	c := &Caster{
 		port:   port,
 		secret: secret,
 		sender: sender,
+		imageCache: imageCache,
 	}
 
 	return c, nil
@@ -107,10 +108,11 @@ func (s *Caster) startServerAsync(port int) {
 }
 
 func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Request) {
-	exifInfo, _ := imagetools.LoadExifData(s.currentImage)
-	img, _ := goimage.LoadGoImageWithExifCorrection(s.currentImage, exifInfo)
+	img := s.imageCache.GetScaled(s.currentImage, common.SizeOf(CANVAS_WIDTH, CANVAS_HEIGHT))
 
-	writeImageToResponse(responseWriter, img, s.showBackground)
+	if img != nil {
+		writeImageToResponse(responseWriter, img, s.showBackground)
+	}
 }
 
 func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, showBackground bool) {
@@ -134,7 +136,7 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), &image.Uniform{C: black}, image.Point{}, draw.Src)
 
 	srcBounds := srcImage.Bounds().Size()
-	w, h := imagetools.ScaleToFit(srcBounds.X, srcBounds.Y, CANVAS_WIDTH, CANVAS_HEIGHT)
+	w, h := common.ScaleToFit(srcBounds.X, srcBounds.Y, CANVAS_WIDTH, CANVAS_HEIGHT)
 
 	if blurBackground {
 		// Resize to bigger so that the background surely fills the canvas

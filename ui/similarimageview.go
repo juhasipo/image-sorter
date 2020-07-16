@@ -4,7 +4,7 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imagetools/pixbuf"
+	"vincit.fi/image-sorter/imageloader"
 )
 
 type SimilarImagesView struct {
@@ -12,7 +12,7 @@ type SimilarImagesView struct {
 	layout       *gtk.FlowBox
 }
 
-func (s *SimilarImagesView) SetImages(handles []*common.Handle, pixbufCache *pixbuf.PixbufCache, sender event.Sender) {
+func (s *SimilarImagesView) SetImages(handles []*common.Handle, pixbufCache *imageloader.ImageCache, sender event.Sender) {
 	children := s.layout.GetChildren()
 	children.Foreach(func(item interface{}) {
 		s.layout.Remove(item.(gtk.IWidget))
@@ -25,9 +25,9 @@ func (s *SimilarImagesView) SetImages(handles []*common.Handle, pixbufCache *pix
 	s.scrollLayout.ShowAll()
 }
 
-func (s *SimilarImagesView) createSimilarImage(handle *common.Handle, pixbufCache *pixbuf.PixbufCache, sender event.Sender) *gtk.EventBox {
+func (s *SimilarImagesView) createSimilarImage(handle *common.Handle, pixbufCache *imageloader.ImageCache, sender event.Sender) *gtk.EventBox {
 	eventBox, _ := gtk.EventBoxNew()
-	imageWidget, _ := gtk.ImageNewFromPixbuf(pixbufCache.GetThumbnail(handle))
+	imageWidget, _ := gtk.ImageNewFromPixbuf(pixbufCache.GetThumbnailAsPixbuf(handle))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
 		sender.SendToTopicWithData(event.IMAGE_REQUEST, handle)

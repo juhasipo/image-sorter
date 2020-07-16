@@ -11,7 +11,7 @@ import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imagetools/pixbuf"
+	"vincit.fi/image-sorter/imageloader"
 )
 
 type Ui struct {
@@ -19,10 +19,10 @@ type Ui struct {
 	win         *gtk.ApplicationWindow
 	fullscreen  bool
 	application *gtk.Application
-	pixbufCache *pixbuf.PixbufCache
+	imageCache  *imageloader.ImageCache
 	sender      event.Sender
 	categories  []*common.Category
-	rootPath     string
+	rootPath    string
 
 	// UI components
 	progressView        *ProgressView
@@ -36,7 +36,7 @@ type Ui struct {
 	Gui
 }
 
-func Init(rootPath string, broker event.Sender, pixbufCache *pixbuf.PixbufCache) Gui {
+func Init(rootPath string, broker event.Sender, imageCache *imageloader.ImageCache) Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
@@ -49,7 +49,7 @@ func Init(rootPath string, broker event.Sender, pixbufCache *pixbuf.PixbufCache)
 
 	ui := Ui{
 		application: application,
-		pixbufCache: pixbufCache,
+		imageCache:  imageCache,
 		sender:      broker,
 		rootPath:    rootPath,
 	}
@@ -202,19 +202,19 @@ func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func(bool) {
 }
 
 func (s *Ui) UpdateCurrentImage() {
-	s.imageView.UpdateCurrentImage(s.pixbufCache)
+	s.imageView.UpdateCurrentImage(s.imageCache)
 }
 
 func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
 	if imageTarget == event.IMAGE_REQUEST_NEXT {
-		s.imageView.AddImagesToNextStore(handles, s.pixbufCache)
+		s.imageView.AddImagesToNextStore(handles, s.imageCache)
 	} else if imageTarget == event.IMAGE_REQUEST_PREV {
-		s.imageView.AddImagesToPrevStore(handles, s.pixbufCache)
+		s.imageView.AddImagesToPrevStore(handles, s.imageCache)
 	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
-		s.similarImagesView.SetImages(handles, s.pixbufCache, s.sender)
+		s.similarImagesView.SetImages(handles, s.imageCache, s.sender)
 	} else {
 		s.SetCurrentImage(handles[0])
-		s.pixbufCache.Purge(s.imageView.currentImage.image)
+		s.imageCache.Purge(s.imageView.currentImage.image)
 	}
 }
 

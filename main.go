@@ -11,7 +11,7 @@ import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imagecategory"
-	"vincit.fi/image-sorter/imagetools/pixbuf"
+	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/ui"
 )
@@ -34,8 +34,8 @@ func main() {
 	secretString := secret.String()
 	castManager, _ := caster.InitCaster(*httpPort, secretString, broker)
 
-	pixbufCache := pixbuf.NewPixbufCache()
-	gui := ui.Init(rootPath, broker, pixbufCache)
+	imageCache := imageloader.ImageCacheNew()
+	gui := ui.Init(rootPath, broker, imageCache)
 
 	// Startup
 	broker.Subscribe(event.UI_READY, func() {
@@ -45,7 +45,7 @@ func main() {
 		categoryManager.InitializeFromDirectory([]string{}, directory)
 		imageLibrary.InitializeFromDirectory(directory)
 		if len(imageLibrary.GetHandles()) > 0 {
-			pixbufCache.Initialize(imageLibrary.GetHandles()[:5])
+			imageCache.Initialize(imageLibrary.GetHandles()[:5])
 		}
 
 		categorizationManager.InitializeForDirectory(directory)
