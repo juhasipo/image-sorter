@@ -13,6 +13,8 @@ type HashResult struct {
 	hash *duplo.Hash
 }
 
+var hashImageSize = common.SizeOf(duplo.ImageScale, duplo.ImageScale)
+
 func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool) {
 	for {
 		select {
@@ -22,7 +24,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 		case handle := <-input:
 			{
 				startTime := time.Now()
-				decodedImage, err := goimage.LoadImage(handle)
+				decodedImage, err := goimage.LoadImageScaled(handle, hashImageSize)
 				endTime := time.Now()
 				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 

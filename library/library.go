@@ -252,19 +252,19 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 
 		const maxImages = 10
 		images := make([]*common.ImageContainer, maxImages)
-		found := 0
-		for i, match := range matches {
+		i := 0
+		for _, match := range matches {
 			similar := match.ID.(*common.Handle)
-			if handle != similar {
-				images[i] = common.ImageContainerNew(handle, s.imageCache.GetThumbnail(handle))
-				found++
+			if handle.GetId() != similar.GetId() {
+				images[i] = common.ImageContainerNew(similar, s.imageCache.GetThumbnail(similar))
+				i++
 			}
-			if found == maxImages {
+			if i == maxImages {
 				break
 			}
 		}
 
-		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_SIMILAR, found)
+		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_SIMILAR, images)
 	}
 }
 

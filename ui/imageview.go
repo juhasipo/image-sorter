@@ -83,16 +83,14 @@ func (s *ImageView) UpdateCurrentImage() {
 func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
 	handle := imageContainer.GetHandle()
 	img := imageContainer.GetImage()
-	if s.currentImage.image != handle {
-		full := img
-		s.currentImage.pixbuf = asPixbuf(full)
+	full := img
+	s.currentImage.pixbuf = asPixbuf(full)
 
-		size := img.Bounds()
-		buffer, _ := s.currentImage.details.GetBuffer()
-		details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy())
-		buffer.SetText(details)
-		s.currentImage.image = handle
-	}
+	size := img.Bounds()
+	buffer, _ := s.currentImage.details.GetBuffer()
+	details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy())
+	buffer.SetText(details)
+	s.currentImage.image = handle
 }
 
 func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer, imageCache *imageloader.ImageCache) {

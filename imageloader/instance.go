@@ -163,7 +163,7 @@ func (s *Instance) LoadThumbnailFromCache() image.Image {
 	if s.thumbnail == nil {
 		startTime := time.Now()
 
-		size := common.SizeOf(100, 100)
+		size := common.SizeOf(THUMBNAIL_SIZE, THUMBNAIL_SIZE)
 		s.thumbnail, _ = s.loadFull(&size)
 
 		endTime := time.Now()

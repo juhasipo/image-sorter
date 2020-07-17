@@ -32,7 +32,7 @@ func (s *SimilarImagesView) createSimilarImage(handle *common.ImageContainer, se
 	imageWidget, _ := gtk.ImageNewFromPixbuf(asPixbuf(thumbnail))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
-		sender.SendToTopicWithData(event.IMAGE_REQUEST, handle)
+		sender.SendToTopicWithData(event.IMAGE_REQUEST, handle.GetHandle())
 	})
 	return eventBox
 }
