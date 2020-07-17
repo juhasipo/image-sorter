@@ -7,7 +7,7 @@ import (
 )
 
 type Gui interface {
-	SetImages(topic event.Topic, handles []*common.Handle)
+	SetImages(topic event.Topic, handles []*common.ImageContainer)
 	UpdateCategories(categories *category.CategoriesCommand)
 	SetImageCategory(command []*category.CategorizeCommand)
 	Run()

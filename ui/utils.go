@@ -1,30 +1,15 @@
-package imageloader
+package ui
 
 // #cgo pkg-config: gdk-3.0 glib-2.0 gobject-2.0
 // #include <gdk/gdk.h>
 import "C"
 import (
 	"errors"
-	"github.com/disintegration/imaging"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
-	"image"
-	"image/color"
 	"runtime"
 	"unsafe"
-	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/imageloader/goimage"
 )
-
-func LoadGoImageWithExifCorrection(handle *common.Handle, exifData *common.ExifData) (image.Image, error) {
-	img, err := goimage.LoadImage(handle)
-
-	img = imaging.Rotate(img, float64(exifData.GetRotation()), color.Gray{})
-	if exifData.IsFlipped() {
-		img = imaging.FlipH(img)
-	}
-	return img, err
-}
 
 func gbool(b bool) C.gboolean {
 	if b {

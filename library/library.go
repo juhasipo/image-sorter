@@ -9,11 +9,12 @@ import (
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/duplo"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/util"
 )
 
 var (
-	EMPTY_HANDLES []*common.Handle
+	EMPTY_HANDLES []*common.ImageContainer
 )
 
 type ImageList func(number int) []*common.Handle
@@ -27,6 +28,7 @@ type Manager struct {
 	sender        event.Sender
 	categoryManager *category.Manager
 	imageListSize int
+	imageCache    *imageloader.ImageCache
 
 	Library
 
@@ -34,12 +36,13 @@ type Manager struct {
 	outputChannel   chan *HashResult
 }
 
-func ForHandles(sender event.Sender) Library {
+func ForHandles(sender event.Sender, imageCache *imageloader.ImageCache) Library {
 	var manager = Manager{
 		index:         0,
 		sender:        sender,
 		imageHash:     duplo.New(),
 		imageListSize: 0,
+		imageCache:    imageCache,
 	}
 	return &manager
 }
@@ -119,7 +122,7 @@ func (s *Manager) RequestGenerateHashes() {
 	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", hashExpected, hashExpected)
 	// Only send if not cancelled
 	if i == hashExpected {
-		s.sendSimilarImages(s.getCurrentImage())
+		s.sendSimilarImages(s.getCurrentImage().GetHandle())
 	}
 }
 
@@ -190,24 +193,25 @@ func (s *Manager) Close() {
 // Private API
 
 func (s *Manager) sendStatus() {
+	currentImage := s.getCurrentImage()
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage})
+
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize))
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize))
-	currentImage := s.getCurrentImage()
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.Handle{currentImage})
-	s.sendSimilarImages(currentImage)
+
+	s.sendSimilarImages(currentImage.GetHandle())
 }
 
-func (s *Manager) getCurrentImage() *common.Handle {
-	var currentImage *common.Handle
+func (s *Manager) getCurrentImage() *common.ImageContainer {
 	if s.index < len(s.imageList) {
-		currentImage = s.imageList[s.index]
+		handle := s.imageList[s.index]
+		return common.ImageContainerNew(handle, s.imageCache.GetFull(handle))
 	} else {
-		currentImage = common.GetEmptyHandle()
+		return common.ImageContainerNew(common.GetEmptyHandle(), nil)
 	}
-	return currentImage
 }
 
-func (s* Manager) getNextImages(number int) []*common.Handle {
+func (s* Manager) getNextImages(number int) []*common.ImageContainer {
 	startIndex := s.index + 1
 	endIndex := startIndex + number
 	if endIndex > len(s.imageList) {
@@ -219,21 +223,25 @@ func (s* Manager) getNextImages(number int) []*common.Handle {
 	}
 
 	slice := s.imageList[startIndex:endIndex]
-	arr := make([]*common.Handle, len(slice))
-	copy(arr[:], slice)
-	return arr
+	images := make([]*common.ImageContainer, len(slice))
+	for i, handle := range slice {
+		images[i] = common.ImageContainerNew(handle, s.imageCache.GetThumbnail(handle))
+	}
+	return images
 }
 
-func (s* Manager) getPrevImages(number int) []*common.Handle {
+func (s* Manager) getPrevImages(number int) []*common.ImageContainer {
 	prevIndex := s.index-number
 	if prevIndex < 0 {
 		prevIndex = 0
 	}
 	slice := s.imageList[prevIndex:s.index]
-	arr := make([]*common.Handle, len(slice))
-	copy(arr[:], slice)
-	util.Reverse(arr)
-	return arr
+	images := make([]*common.ImageContainer, len(slice))
+	for i, handle := range slice {
+		images[i] = common.ImageContainerNew(handle, s.imageCache.GetThumbnail(handle))
+	}
+	util.Reverse(images)
+	return images
 }
 
 
@@ -242,13 +250,16 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 		matches := s.imageHash.Query(*handle.GetHash())
 		sort.Sort(matches)
 
-		var found []*common.Handle
-		for _, match := range matches {
+		const maxImages = 10
+		images := make([]*common.ImageContainer, maxImages)
+		found := 0
+		for i, match := range matches {
 			similar := match.ID.(*common.Handle)
 			if handle != similar {
-				found = append(found, similar)
+				images[i] = common.ImageContainerNew(handle, s.imageCache.GetThumbnail(handle))
+				found++
 			}
-			if len(found) == 10 {
+			if found == maxImages {
 				break
 			}
 		}

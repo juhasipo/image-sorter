@@ -1,6 +1,7 @@
 package common
 
 import (
+	"image"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -8,13 +9,34 @@ import (
 	"vincit.fi/image-sorter/duplo"
 )
 
+type ImageContainer struct {
+	handle *Handle
+	img    image.Image
+}
+
+func (s *ImageContainer) String() string {
+	return "ImageContainer{" + s.handle.GetId() + "}"
+}
+
+func (s *ImageContainer) GetHandle() *Handle {
+	return s.handle
+}
+
+func (s *ImageContainer) GetImage() image.Image {
+	return s.img
+}
+
+func ImageContainerNew(handle *Handle, img image.Image) *ImageContainer {
+	return &ImageContainer{
+		handle: handle,
+		img:    img,
+	}
+}
+
 type Handle struct {
 	id        string
 	path      string
 	hash      *duplo.Hash
-	imageType string
-	width     int
-	height    int
 	byteSize  int64
 }
 
@@ -27,14 +49,11 @@ var (
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func HandleNew(fileDir string, fileName string, imageType string, width int, height int) *Handle {
+func HandleNew(fileDir string, fileName string) *Handle {
 	return &Handle{
 		id:   fileName,
 		path: filepath.Join(fileDir, fileName),
 		hash: nil,
-		imageType: imageType,
-		width: width,
-		height: height,
 	}
 }
 
@@ -54,28 +73,11 @@ func (s* Handle) GetPath() string {
 	return s.path
 }
 
-func (s* Handle) GetImageType() string {
-	return s.imageType
-}
-
-func (s* Handle) GetWidth() int {
-	return s.width
-}
-
-func (s* Handle) GetHeight() int {
-	return s.height
-}
-
 func (s *Handle) SetHash(hash *duplo.Hash) {
 	s.hash = hash
 }
 func (s *Handle) GetHash() *duplo.Hash {
 	return s.hash
-}
-
-func (s *Handle) SetSize(width int, height int) {
-	s.width = width
-	s.height = height
 }
 
 func (s *Handle) SetByteSize(length int64) {
@@ -101,7 +103,7 @@ func LoadImageHandles(dir string) []*Handle {
 	for _, file := range files {
 		extension := filepath.Ext(file.Name())
 		if isSupported(extension) {
-			handles = append(handles, HandleNew(dir, file.Name(), extension, 0, 0))
+			handles = append(handles, HandleNew(dir, file.Name()))
 		}
 	}
 	log.Printf("Found %d images", len(handles))

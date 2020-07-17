@@ -80,7 +80,7 @@ func (s *Ui) Init(directory string) {
 		s.win.SetSizeRequest(800, 600)
 		s.win.Connect("key_press_event", s.handleKeyPress)
 
-		s.similarImagesView = SimilarImagesViewNew(builder)
+		s.similarImagesView = SimilarImagesViewNew(builder, s.imageCache)
 		s.imageView = ImageViewNew(builder, s)
 		s.topActionView = TopActionsNew(builder, s.sender)
 		s.bottomActionView = BottomActionsNew(builder, s, s.sender)
@@ -202,23 +202,23 @@ func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func(bool) {
 }
 
 func (s *Ui) UpdateCurrentImage() {
-	s.imageView.UpdateCurrentImage(s.imageCache)
+	s.imageView.UpdateCurrentImage()
 }
 
-func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.Handle) {
+func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer) {
 	if imageTarget == event.IMAGE_REQUEST_NEXT {
 		s.imageView.AddImagesToNextStore(handles, s.imageCache)
 	} else if imageTarget == event.IMAGE_REQUEST_PREV {
 		s.imageView.AddImagesToPrevStore(handles, s.imageCache)
 	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
-		s.similarImagesView.SetImages(handles, s.imageCache, s.sender)
+		s.similarImagesView.SetImages(handles, s.sender)
 	} else {
 		s.SetCurrentImage(handles[0])
 		s.imageCache.Purge(s.imageView.currentImage.image)
 	}
 }
 
-func (s *Ui) SetCurrentImage(handle *common.Handle) {
+func (s *Ui) SetCurrentImage(handle *common.ImageContainer) {
 	s.imageView.SetCurrentImage(handle)
 
 	s.UpdateCurrentImage()

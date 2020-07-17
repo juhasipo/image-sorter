@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/imageloader/goimage"
 )
@@ -21,6 +22,7 @@ type Instance struct {
 	thumbnail image.Image
 	scaled image.Image
 	exifData *common.ExifData
+	mux sync.Mutex
 }
 
 func NewInstance(handle *common.Handle) *Instance {
@@ -34,23 +36,27 @@ func NewInstance(handle *common.Handle) *Instance {
 	return instance
 }
 
-func (s *Instance) loadFull() (image.Image, error) {
-	return loadImageWithExifCorrection(s.handle, s.exifData)
+func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
+	return loadImageWithExifCorrection(s.handle, s.exifData, size)
 }
 
 var mux = sync.Mutex{}
-func loadImageWithExifCorrection(handle *common.Handle, exifData *common.ExifData) (image.Image, error) {
-	mux.Lock(); defer mux.Unlock()
+func loadImageWithExifCorrection(handle *common.Handle, exifData *common.ExifData, size *common.Size) (image.Image, error) {
+	//mux.Lock(); defer mux.Unlock()
 
-	loadedImage, err := goimage.LoadImage(handle)
+	var loadedImage image.Image
+	var err error
+	if size != nil {
+		loadedImage, err = goimage.LoadImageScaled(handle, *size)
+	} else {
+		loadedImage, err = goimage.LoadImage(handle)
+	}
 
 	if err != nil {
 		log.Print(err)
 		return nil, err
 	}
 
-	size := loadedImage.Bounds()
-	handle.SetSize(size.Dx(), size.Dy())
 	fileStat, _ := os.Stat(handle.GetPath())
 	handle.SetByteSize(fileStat.Size())
 
@@ -79,6 +85,7 @@ func (s* Instance) GetScaled(size common.Size) image.Image{
 		return nil
 	}
 
+	startTime := time.Now()
 	full := s.LoadFullFromCache()
 
 	fullSize := full.Bounds()
@@ -95,6 +102,8 @@ func (s* Instance) GetScaled(size common.Size) image.Image{
 			// Use cached
 		}
 	}
+	endTime := time.Now()
+	log.Printf("'%s': Scaled loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 
 	return s.scaled
 }
@@ -104,8 +113,10 @@ func (s* Instance) GetThumbnail() image.Image {
 		return nil
 	}
 
+	startTime := time.Now()
 	if s.thumbnail == nil {
-		full := s.LoadFullFromCache()
+
+		full := s.LoadThumbnailFromCache()
 
 		fullSize := full.Bounds()
 		newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), THUMBNAIL_SIZE, THUMBNAIL_SIZE)
@@ -114,6 +125,8 @@ func (s* Instance) GetThumbnail() image.Image {
 	} else {
 		log.Print("Use cached thumbnail")
 	}
+	endTime := time.Now()
+	log.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 	return s.thumbnail
 }
 
@@ -130,8 +143,14 @@ func (s *Instance) GetByteLength() int {
 }
 
 func (s *Instance) LoadFullFromCache() image.Image {
+	s.mux.Lock(); defer s.mux.Unlock()
 	if s.full == nil {
-		s.full, _ = s.loadFull()
+		startTime := time.Now()
+
+		s.full, _ = s.loadFull(nil)
+
+		endTime := time.Now()
+		log.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 		return s.full
 	} else {
 		log.Print("Use cached full image")
@@ -139,9 +158,29 @@ func (s *Instance) LoadFullFromCache() image.Image {
 	}
 }
 
+func (s *Instance) LoadThumbnailFromCache() image.Image {
+	s.mux.Lock(); defer s.mux.Unlock()
+	if s.thumbnail == nil {
+		startTime := time.Now()
+
+		size := common.SizeOf(100, 100)
+		s.thumbnail, _ = s.loadFull(&size)
+
+		endTime := time.Now()
+		log.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+		return s.thumbnail
+	} else {
+		log.Print("Use cached thumbnail image")
+		return s.thumbnail
+	}
+}
+
 func GetByteLength(pixbuf image.Image) int {
 	if pixbuf != nil {
-		return 0
+		// Approximation using the image size
+		const bytesPerPixel = 4
+		bounds := pixbuf.Bounds()
+		return bounds.Dx() * bounds.Dy() * bytesPerPixel
 	} else {
 		return 0
 	}

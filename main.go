@@ -28,13 +28,13 @@ func main() {
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr)
 	categorizationManager := imagecategory.ManagerNew(broker)
-	imageLibrary := library.ForHandles(broker)
+	imageCache := imageloader.ImageCacheNew()
+	imageLibrary := library.ForHandles(broker, imageCache)
 
 	secret, _ := uuid.NewRandom()
 	secretString := secret.String()
-	castManager, _ := caster.InitCaster(*httpPort, secretString, broker)
+	castManager, _ := caster.InitCaster(*httpPort, secretString, broker, imageCache)
 
-	imageCache := imageloader.ImageCacheNew()
 	gui := ui.Init(rootPath, broker, imageCache)
 
 	// Startup

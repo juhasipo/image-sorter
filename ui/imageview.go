@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"image"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
@@ -14,6 +16,7 @@ type CurrentImageView struct {
 	view         *gtk.Image
 	image        *common.Handle
 	details      *gtk.TextView
+	pixbuf       *gdk.Pixbuf
 }
 
 type ImageList struct {
@@ -25,6 +28,7 @@ type ImageView struct {
 	currentImage *CurrentImageView
 	nextImages   *ImageList
 	prevImages   *ImageList
+	imageCache   *imageloader.ImageCache
 }
 
 func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
@@ -47,6 +51,7 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 			component: prevImagesList,
 			model:     prevImageStore,
 		},
+		imageCache: ui.imageCache,
 	}
 	tableNew, _ := gtk.TextTagTableNew()
 	bufferNew, _ := gtk.TextBufferNew(tableNew)
@@ -60,40 +65,50 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 	return imageView
 }
 
-func (s *ImageView) UpdateCurrentImage(pixbufCache *imageloader.ImageCache) {
-	size := common.SizeFromWindow(s.currentImage.scrolledView)
-	scaled := pixbufCache.GetScaledAsPixbuf(
-		s.currentImage.image,
-		size,
-	)
-	s.currentImage.view.SetFromPixbuf(scaled)
-	// Hack to prevent image from being center of the scrolled
-	// window after minimize
-	s.currentImage.scrolledView.Remove(s.currentImage.viewport)
-	s.currentImage.scrolledView.Add(s.currentImage.viewport)
+func (s *ImageView) UpdateCurrentImage() {
+	if s.currentImage.pixbuf != nil {
+		s.currentImage.scrolledView.Remove(s.currentImage.viewport)
+		size := common.SizeFromWindow(s.currentImage.scrolledView)
+		w, h := common.ScaleToFit(s.currentImage.pixbuf.GetWidth(), s.currentImage.pixbuf.GetHeight(),
+			size.GetWidth(), size.GetHeight())
+		scaled, _ := s.currentImage.pixbuf.ScaleSimple(w, h, gdk.INTERP_BILINEAR)
+		s.currentImage.view.SetFromPixbuf(scaled)
+
+		// Hack to prevent image from being center of the scrolled
+		// window after minimize. First remove and then add again
+		s.currentImage.scrolledView.Add(s.currentImage.viewport)
+	}
 }
 
-func (s *ImageView) SetCurrentImage(handle *common.Handle) {
-	s.currentImage.image = handle
+func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
+	handle := imageContainer.GetHandle()
+	img := imageContainer.GetImage()
+	if s.currentImage.image != handle {
+		full := img
+		s.currentImage.pixbuf = asPixbuf(full)
 
-	buffer, _ := s.currentImage.details.GetBuffer()
-	details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), handle.GetWidth(), handle.GetHeight())
-	buffer.SetText(details)
+		size := img.Bounds()
+		buffer, _ := s.currentImage.details.GetBuffer()
+		details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy())
+		buffer.SetText(details)
+		s.currentImage.image = handle
+	}
 }
 
-func (s *ImageView) AddImagesToNextStore(images []*common.Handle, imageCache *imageloader.ImageCache) {
-	s.addImagesToStore(s.nextImages, images, imageCache)
+func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer, imageCache *imageloader.ImageCache) {
+	s.addImagesToStore(s.nextImages, images)
 }
 
-func (s *ImageView) AddImagesToPrevStore(images []*common.Handle, imageCache *imageloader.ImageCache) {
-	s.addImagesToStore(s.prevImages, images, imageCache)
+func (s *ImageView) AddImagesToPrevStore(images []*common.ImageContainer, imageCache *imageloader.ImageCache) {
+	s.addImagesToStore(s.prevImages, images)
 }
 
-func (s *ImageView) addImagesToStore(list *ImageList, images []*common.Handle, imageCache *imageloader.ImageCache) {
+func (s *ImageView) addImagesToStore(list *ImageList, images []*common.ImageContainer) {
 	list.model.Clear()
 	for _, img := range images {
 		iter := list.model.Append()
-		list.model.SetValue(iter, 0, imageCache.GetThumbnailAsPixbuf(img))
+		thumbnail := img.GetImage()
+		list.model.SetValue(iter, 0, asPixbuf(thumbnail))
 	}
 }
 
@@ -113,4 +128,24 @@ func createImageList(view *gtk.TreeView, title string, direction Direction, send
 	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "pixbuf", 0)
 	view.AppendColumn(column)
 	return store
+}
+
+func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {
+	if img, ok := cachedImage.(*image.NRGBA); ok {
+
+		size := img.Bounds()
+		const bitsPerSample = 8
+		const hasAlpha = true
+		pb, err := PixbufNewFromData(
+			img.Pix,
+			gdk.COLORSPACE_RGB, hasAlpha,
+			bitsPerSample,
+			size.Dx(), size.Dy(),
+			img.Stride)
+		if err != nil {
+			return nil
+		}
+		return pb
+	}
+	return nil
 }
