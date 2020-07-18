@@ -82,7 +82,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	}
 }
 
-func (s* Manager) PersistImageCategories() {
+func (s *Manager) PersistImageCategories() {
 	log.Printf("Persisting files to categories")
 	for handleId, categoryEntries := range s.imageCategory {
 		handle := s.library.GetHandleById(handleId)
@@ -90,7 +90,7 @@ func (s* Manager) PersistImageCategories() {
 	}
 }
 
-func (s* Manager) persistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
+func (s *Manager) persistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
 	log.Printf(" - Persisting '%s'", handle.GetPath())
 	dir, file := filepath.Split(handle.GetPath())
 

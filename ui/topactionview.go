@@ -25,7 +25,6 @@ func (s *CategoryButton) SetStatus(operation common.Operation) {
 	}
 }
 
-
 type TopActionView struct {
 	categoriesView  *gtk.Box
 	categoryButtons map[string]*CategoryButton

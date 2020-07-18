@@ -8,7 +8,6 @@ import (
 	"vincit.fi/image-sorter/event"
 )
 
-
 type CategoryModal struct {
 	modal *gtk.Dialog
 	list  *gtk.TreeView
@@ -170,8 +169,6 @@ func findKeyIndex(key string, model *gtk.TreeModel) int {
 		}
 	}
 }
-
-
 
 func (s *CategoryModal) startAdd() {
 	s.addAddButton.Show()

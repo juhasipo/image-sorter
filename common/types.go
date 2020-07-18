@@ -1,7 +1,8 @@
 package common
 
 type Operation int
-const(
+
+const (
 	NONE Operation = 0
 	MOVE Operation = 1
 )

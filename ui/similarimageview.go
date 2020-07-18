@@ -8,7 +8,7 @@ import (
 )
 
 type SimilarImagesView struct {
-	view *gtk.Box
+	view         *gtk.Box
 	scrollLayout *gtk.ScrolledWindow
 	list         *ImageList
 	imageCache   *imageloader.ImageCache
@@ -21,9 +21,9 @@ func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache 
 	initializeStore(imageList, HORIZONTAL, sender)
 
 	similarImagesView := &SimilarImagesView{
-		view: GetObjectOrPanic(builder, "similar-images-view").(*gtk.Box),
+		view:         GetObjectOrPanic(builder, "similar-images-view").(*gtk.Box),
 		scrollLayout: GetObjectOrPanic(builder, "similar-images-scrolled-view").(*gtk.ScrolledWindow),
-		list: imageList,
+		list:         imageList,
 		closeButton:  GetObjectOrPanic(builder, "similar-images-close-button").(*gtk.Button),
 		imageCache:   imageCache,
 		sender:       sender,

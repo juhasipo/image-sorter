@@ -17,6 +17,7 @@ func gbool(b bool) C.gboolean {
 	}
 	return C.gboolean(0)
 }
+
 var nilPtrErr = errors.New("cgo returned unexpected nil pointer")
 
 func PixbufNewFromData(pixbufData []byte, cs gdk.Colorspace, hasAlpha bool, bitsPerSample, width, height, rowStride int) (*gdk.Pixbuf, error) {

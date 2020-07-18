@@ -5,8 +5,8 @@ type Topic string
 const (
 	// General
 	UPDATE_PROCESS_STATUS Topic = "update-process-status"
-	UI_READY Topic = "ui-ready"
-	DIRECTORY_CHANGED Topic = "directory-changed"
+	UI_READY              Topic = "ui-ready"
+	DIRECTORY_CHANGED     Topic = "directory-changed"
 
 	// Image related
 	IMAGE_REQUEST             Topic = "image-request"
@@ -21,12 +21,12 @@ const (
 	IMAGE_LIST_SIZE_CHANGED   Topic = "image-list-size-changed"
 
 	// Categorization
-	CATEGORIZE_IMAGE      Topic = "categorize-image"
-	CATEGORY_PERSIST_ALL  Topic = "category-persist-all"
-	CATEGORIES_UPDATED    Topic = "categories-updated"
-	CATEGORY_IMAGE_UPDATE Topic = "category-image-update"
-	CATEGORIES_SAVE       Topic = "categories-save"
-	CATEGORIES_SAVE_DEFAULT       Topic = "categories-save-default"
+	CATEGORIZE_IMAGE        Topic = "categorize-image"
+	CATEGORY_PERSIST_ALL    Topic = "category-persist-all"
+	CATEGORIES_UPDATED      Topic = "categories-updated"
+	CATEGORY_IMAGE_UPDATE   Topic = "category-image-update"
+	CATEGORIES_SAVE         Topic = "categories-save"
+	CATEGORIES_SAVE_DEFAULT Topic = "categories-save-default"
 
 	// Similar image search
 	SIMILAR_REQUEST_SEARCH Topic = "similar-request-serach"

@@ -150,35 +150,35 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 
 		categorizedIcon, _ := gtk.ImageNewFromIconName("gtk-yes", gtk.ICON_SIZE_BUTTON)
 		categoryButton := &CategoryButton{
-			button:    button,
-			entry:     entry,
-			operation: common.NONE,
+			button:          button,
+			entry:           entry,
+			operation:       common.NONE,
 			categorizedIcon: categorizedIcon,
 		}
 		s.topActionView.categoryButtons[entry.GetId()] = categoryButton
 
 		send := s.CreateSendFuncForEntry(categoryButton)
 		// Catches mouse click and can also check for keyboard for Shift key status
-		button.Connect("button-release-event", func(button *gtk.Button, e* gdk.Event) bool {
+		button.Connect("button-release-event", func(button *gtk.Button, e *gdk.Event) bool {
 			keyEvent := gdk.EventButtonNewFromEvent(e)
 
 			modifiers := gtk.AcceleratorGetDefaultModMask()
 			state := gdk.ModifierType(keyEvent.State())
 
-			stayOnSameImage := state & modifiers == gdk.GDK_SHIFT_MASK
+			stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
 			send(stayOnSameImage)
 			return true
 		})
 		// Since clicked handler is not used, Enter and Space need to be checked manually
 		// also check Shift status
-		button.Connect("key-press-event", func(button *gtk.Button, e* gdk.Event) bool {
+		button.Connect("key-press-event", func(button *gtk.Button, e *gdk.Event) bool {
 			keyEvent := gdk.EventKeyNewFromEvent(e)
 			key := keyEvent.KeyVal()
 
 			if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
 				modifiers := gtk.AcceleratorGetDefaultModMask()
 				state := gdk.ModifierType(keyEvent.State())
-				stayOnSameImage := state & modifiers == gdk.GDK_SHIFT_MASK
+				stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
 				send(stayOnSameImage)
 				return true
 			}
@@ -313,15 +313,15 @@ func createFileChooser(numOfButtons int, parent gtk.IWindow) (*gtk.FileChooserDi
 
 	if numOfButtons == 1 {
 		folderChooser, err = gtk.FileChooserDialogNewWith1Button(
-		"Select folder", parent,
-		gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
-		"Select", gtk.RESPONSE_ACCEPT)
+			"Select folder", parent,
+			gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+			"Select", gtk.RESPONSE_ACCEPT)
 	} else if numOfButtons == 2 {
 		folderChooser, err = gtk.FileChooserDialogNewWith2Buttons(
-		"Select folder", parent,
-		gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
-		"Select", gtk.RESPONSE_ACCEPT,
-		"Cancel", gtk.RESPONSE_CANCEL)
+			"Select folder", parent,
+			gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+			"Select", gtk.RESPONSE_ACCEPT,
+			"Cancel", gtk.RESPONSE_CANCEL)
 	} else {
 		err = errors.New(fmt.Sprintf("Invalid number of buttons: %d", numOfButtons))
 	}

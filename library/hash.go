@@ -10,7 +10,7 @@ import (
 
 type HashResult struct {
 	handle *common.Handle
-	hash *duplo.Hash
+	hash   *duplo.Hash
 }
 
 var hashImageSize = common.SizeOf(duplo.ImageScale, duplo.ImageScale)

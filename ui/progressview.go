@@ -34,4 +34,3 @@ func (v *ProgressView) SetStatus(status int, total int) {
 	v.progressbar.SetText(statusText)
 	v.progressbar.SetFraction(float64(status) / float64(total))
 }
-

@@ -7,9 +7,9 @@ import (
 )
 
 type CategorizeCommand struct {
-	handle     *common.Handle
-	entry      *common.Category
-	operation  common.Operation
+	handle          *common.Handle
+	entry           *common.Category
+	operation       common.Operation
 	stayOnSameImage bool
 
 	event.Command
@@ -53,9 +53,9 @@ func CategorizeCommandNew(handle *common.Handle, entry *common.Category, operati
 
 func CategorizeCommandNewWithStayAttr(handle *common.Handle, entry *common.Category, operation common.Operation, stayOnSameImage bool) *CategorizeCommand {
 	return &CategorizeCommand{
-		handle:    handle,
-		entry:     entry,
-		operation: operation,
+		handle:          handle,
+		entry:           entry,
+		operation:       operation,
 		stayOnSameImage: stayOnSameImage,
 	}
 }

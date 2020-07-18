@@ -110,7 +110,7 @@ func (store *Store) Add(id interface{}, hash Hash) {
 	store.candidates = append(store.candidates, candidate{
 		id,
 		hash.Coefs[0],
-		hash.Ratio,})
+		hash.Ratio})
 	store.ids[id] = uint32(index)
 
 	// Distribute candidate index into the buckets.

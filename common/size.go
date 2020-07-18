@@ -5,7 +5,7 @@ import (
 )
 
 type Size struct {
-	width int
+	width  int
 	height int
 }
 
@@ -22,8 +22,8 @@ func SizeOf(width int, height int) Size {
 }
 
 func SizeFromWindow(widget *gtk.ScrolledWindow) Size {
-	return Size {
-		width: widget.GetAllocatedWidth(),
+	return Size{
+		width:  widget.GetAllocatedWidth(),
 		height: widget.GetAllocatedHeight(),
 	}
 }

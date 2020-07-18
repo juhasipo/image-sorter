@@ -17,18 +17,18 @@ const (
 )
 
 type Instance struct {
-	handle *common.Handle
-	full image.Image
+	handle    *common.Handle
+	full      image.Image
 	thumbnail image.Image
-	scaled image.Image
-	exifData *common.ExifData
-	mux sync.Mutex
+	scaled    image.Image
+	exifData  *common.ExifData
+	mux       sync.Mutex
 }
 
 func NewInstance(handle *common.Handle) *Instance {
 	exifData, _ := common.LoadExifData(handle)
 	instance := &Instance{
-		handle:      handle,
+		handle:   handle,
 		exifData: exifData,
 	}
 	instance.thumbnail = instance.GetThumbnail()
@@ -41,6 +41,7 @@ func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
 }
 
 var mux = sync.Mutex{}
+
 func loadImageWithExifCorrection(handle *common.Handle, exifData *common.ExifData, size *common.Size) (image.Image, error) {
 	//mux.Lock(); defer mux.Unlock()
 
@@ -77,10 +78,10 @@ func (s *Instance) IsValid() bool {
 }
 
 var (
-	EMPTY_INSTANCE = Instance {}
+	EMPTY_INSTANCE = Instance{}
 )
 
-func (s* Instance) GetScaled(size common.Size) image.Image{
+func (s *Instance) GetScaled(size common.Size) image.Image {
 	if !s.IsValid() {
 		return nil
 	}
@@ -108,7 +109,7 @@ func (s* Instance) GetScaled(size common.Size) image.Image{
 	return s.scaled
 }
 
-func (s* Instance) GetThumbnail() image.Image {
+func (s *Instance) GetThumbnail() image.Image {
 	if s.handle == nil {
 		return nil
 	}
@@ -143,7 +144,8 @@ func (s *Instance) GetByteLength() int {
 }
 
 func (s *Instance) LoadFullFromCache() image.Image {
-	s.mux.Lock(); defer s.mux.Unlock()
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	if s.full == nil {
 		startTime := time.Now()
 
@@ -159,7 +161,8 @@ func (s *Instance) LoadFullFromCache() image.Image {
 }
 
 func (s *Instance) LoadThumbnailFromCache() image.Image {
-	s.mux.Lock(); defer s.mux.Unlock()
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	if s.thumbnail == nil {
 		startTime := time.Now()
 

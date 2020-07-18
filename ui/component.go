@@ -28,4 +28,3 @@ func GetObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 	}
 	return obj
 }
-

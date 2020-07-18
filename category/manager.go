@@ -16,10 +16,10 @@ const IMAGE_SORTER_DIR = ".image-sorter"
 
 type Manager struct {
 	commandLineCategories []string
-	categories     []*common.Category
-	categoriesById map[string]*common.Category
-	sender         event.Sender
-	rootDir        string
+	categories            []*common.Category
+	categoriesById        map[string]*common.Category
+	sender                event.Sender
+	rootDir               string
 
 	CategoryManager
 }
@@ -35,8 +35,8 @@ func Parse(name string) (string, string, string) {
 }
 
 func New(sender event.Sender, categories []string) CategoryManager {
-	manager := Manager {
-		sender: sender,
+	manager := Manager{
+		sender:                sender,
 		commandLineCategories: categories,
 	}
 	return &manager
@@ -99,7 +99,6 @@ func (s *Manager) resetCategories(categories []*common.Category) {
 	}
 }
 
-
 func (s *Manager) Close() {
 	log.Print("Shutting down category manager")
 	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, s.categories)
@@ -132,7 +131,6 @@ func saveCategoriesToFile(fileDir string, fileName string, categories []*common.
 	w.Flush()
 }
 
-
 func fromCategoriesStrings(categories []string) []*common.Category {
 	var categoryEntries []*common.Category
 	for _, categoryName := range categories {
@@ -149,7 +147,7 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 
 func loadCategoriesFromFile(fileDir string) []*common.Category {
 	currentUser, _ := user.Current()
-	filePaths := []string {
+	filePaths := []string{
 		filepath.Join(fileDir, CATEGORIES_FILE_NAME),
 		filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR, CATEGORIES_FILE_NAME),
 	}

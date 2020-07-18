@@ -20,17 +20,17 @@ var (
 type ImageList func(number int) []*common.Handle
 
 type Manager struct {
-	rootDir           string
-	imageList         []*common.Handle
-	imageHandles      map[string]*common.Handle
-	index             int
-	imageHash         *duplo.Store
-	shouldSendSimilar bool
+	rootDir                     string
+	imageList                   []*common.Handle
+	imageHandles                map[string]*common.Handle
+	index                       int
+	imageHash                   *duplo.Store
+	shouldSendSimilar           bool
 	shouldGenerateSimilarHashed bool
-	sender            event.Sender
-	categoryManager   *category.Manager
-	imageListSize     int
-	imageCache        *imageloader.ImageCache
+	sender                      event.Sender
+	categoryManager             *category.Manager
+	imageListSize               int
+	imageCache                  *imageloader.ImageCache
 
 	Library
 
@@ -40,12 +40,12 @@ type Manager struct {
 
 func LibraryNew(sender event.Sender, imageCache *imageloader.ImageCache) Library {
 	var manager = Manager{
-		index:         0,
-		sender:        sender,
-		imageHash:     duplo.New(),
+		index:                       0,
+		sender:                      sender,
+		imageHash:                   duplo.New(),
 		shouldGenerateSimilarHashed: true,
-		imageListSize: 0,
-		imageCache:    imageCache,
+		imageListSize:               0,
+		imageCache:                  imageCache,
 	}
 	return &manager
 }

@@ -51,7 +51,6 @@ func main() {
 		categorizationManager.InitializeForDirectory(directory)
 		categorizationManager.LoadCategorization(imageLibrary, categoryManager)
 
-
 		categoryManager.RequestCategories()
 	})
 

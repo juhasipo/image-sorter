@@ -13,7 +13,7 @@ func KeyvalName(keyval uint) string {
 }
 
 func KeyToUint(key string) []uint {
-	return []uint {
+	return []uint{
 		gdk.KeyvalFromName(strings.ToLower(key)),
 		gdk.KeyvalFromName(strings.ToUpper(key)),
 	}

@@ -13,20 +13,20 @@ type Broker struct {
 	Sender
 }
 
-func InitBus(queueSize int) *Broker{
-	return &Broker {
+func InitBus(queueSize int) *Broker {
+	return &Broker{
 		bus: messagebus.New(queueSize),
 	}
 }
 
-func (s* Broker) Subscribe(topic Topic, fn interface{}) {
+func (s *Broker) Subscribe(topic Topic, fn interface{}) {
 	err := s.bus.Subscribe(string(topic), fn)
 	if err != nil {
 		log.Panic("Could not subscribe")
 	}
 }
 
-type GuiCallback func (data ...interface{})
+type GuiCallback func(data ...interface{})
 
 func (s *Broker) ConnectToGui(topic Topic, callback interface{}) {
 	cb := func(params ...interface{}) {

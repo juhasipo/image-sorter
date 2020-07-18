@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	DEVICE_SEARCH_TIMEOUT     = time.Second * 30
-	CAST_SERVICE              = "_googlecast._tcp"
-	CANVAS_WIDTH              = 1920
-	CANVAS_HEIGHT             = 1080
+	DEVICE_SEARCH_TIMEOUT = time.Second * 30
+	CAST_SERVICE          = "_googlecast._tcp"
+	CANVAS_WIDTH          = 1920
+	CANVAS_HEIGHT         = 1080
 )
 
 type Caster struct {
@@ -61,9 +61,9 @@ type DeviceEntry struct {
 
 func InitCaster(port int, secret string, sender event.Sender, imageCache *imageloader.ImageCache) (*Caster, error) {
 	c := &Caster{
-		port:   port,
-		secret: secret,
-		sender: sender,
+		port:       port,
+		secret:     secret,
+		sender:     sender,
 		imageCache: imageCache,
 	}
 

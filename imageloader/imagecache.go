@@ -13,11 +13,12 @@ type CacheContainer struct {
 
 type ImageCache struct {
 	imageCache map[string]*Instance
-	mux sync.Mutex
+	mux        sync.Mutex
 }
 
 func (s *ImageCache) Initialize(handles []*common.Handle) {
-	s.mux.Lock(); defer s.mux.Unlock()
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	s.imageCache = map[string]*Instance{}
 	for _, handle := range handles {
 		s.imageCache[handle.GetId()] = NewInstance(handle)
@@ -25,10 +26,10 @@ func (s *ImageCache) Initialize(handles []*common.Handle) {
 	runtime.GC()
 }
 
-func ImageCacheNew() *ImageCache{
+func ImageCacheNew() *ImageCache {
 	return &ImageCache{
 		imageCache: map[string]*Instance{},
-		mux: sync.Mutex{},
+		mux:        sync.Mutex{},
 	}
 }
 
@@ -43,7 +44,8 @@ func (s *ImageCache) GetThumbnail(handle *common.Handle) image.Image {
 }
 
 func (s *ImageCache) getImage(handle *common.Handle) *Instance {
-	s.mux.Lock(); defer s.mux.Unlock()
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	if handle.IsValid() {
 		if existingInstance, ok := s.imageCache[handle.GetId()]; !ok {
 			instance := NewInstance(handle)

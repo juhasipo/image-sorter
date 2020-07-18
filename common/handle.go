@@ -34,10 +34,10 @@ func ImageContainerNew(handle *Handle, img image.Image) *ImageContainer {
 }
 
 type Handle struct {
-	id        string
-	path      string
-	hash      *duplo.Hash
-	byteSize  int64
+	id       string
+	path     string
+	hash     *duplo.Hash
+	byteSize int64
 }
 
 func (s *Handle) IsValid() bool {
@@ -45,7 +45,7 @@ func (s *Handle) IsValid() bool {
 }
 
 var (
-	EMPTY_HANDLE = Handle {id: "", path: ""}
+	EMPTY_HANDLE         = Handle{id: "", path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
@@ -61,15 +61,15 @@ func GetEmptyHandle() *Handle {
 	return &EMPTY_HANDLE
 }
 
-func (s* Handle) GetId() string {
+func (s *Handle) GetId() string {
 	return s.id
 }
 
-func (s* Handle) String() string {
+func (s *Handle) String() string {
 	return s.id
 }
 
-func (s* Handle) GetPath() string {
+func (s *Handle) GetPath() string {
 	return s.path
 }
 
@@ -89,7 +89,7 @@ func (s *Handle) GetByteSize() int64 {
 }
 
 func (s *Handle) GetByteSizeMB() float64 {
-	return float64(s.byteSize)/(1024.0*1024.0)
+	return float64(s.byteSize) / (1024.0 * 1024.0)
 }
 
 func LoadImageHandles(dir string) []*Handle {
@@ -114,4 +114,3 @@ func LoadImageHandles(dir string) []*Handle {
 func isSupported(extension string) bool {
 	return supportedFileEndings[strings.ToLower(extension)]
 }
-
