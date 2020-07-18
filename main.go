@@ -28,7 +28,7 @@ func main() {
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr)
 	imageCache := imageloader.ImageCacheNew()
-	imageLibrary := library.ForHandles(broker, imageCache)
+	imageLibrary := library.LibraryNew(broker, imageCache)
 	categorizationManager := imagecategory.ManagerNew(broker, imageLibrary)
 
 	secret, _ := uuid.NewRandom()

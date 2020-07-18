@@ -38,7 +38,7 @@ type Manager struct {
 	outputChannel chan *HashResult
 }
 
-func ForHandles(sender event.Sender, imageCache *imageloader.ImageCache) Library {
+func LibraryNew(sender event.Sender, imageCache *imageloader.ImageCache) Library {
 	var manager = Manager{
 		index:         0,
 		sender:        sender,

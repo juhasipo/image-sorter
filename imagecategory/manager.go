@@ -167,7 +167,7 @@ func (s *Manager) PersistCategorization() {
 	for handleId, categorization := range s.imageCategory {
 		if handleId != "" {
 			w.WriteString(handleId)
-			w.WriteString(":")
+			w.WriteString(";")
 			for entry, categorizedImage := range categorization {
 				if categorizedImage.GetOperation() == common.MOVE {
 					w.WriteString(entry)
