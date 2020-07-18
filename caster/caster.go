@@ -36,16 +36,17 @@ const (
 )
 
 type Caster struct {
-	secret         string
-	port           int
-	devices        map[string]*DeviceEntry
-	sender         event.Sender
-	selectedDevice string
-	path           string
-	currentImage   *common.Handle
-	server         *http.Server
-	showBackground bool
-	imageCache     *imageloader.ImageCache
+	secret                string
+	port                  int
+	devices               map[string]*DeviceEntry
+	sender                event.Sender
+	selectedDevice        string
+	path                  string
+	currentImage          *common.Handle
+	server                *http.Server
+	showBackground        bool
+	imageCache            *imageloader.ImageCache
+	alwaysStartHttpServer bool
 }
 
 type DeviceEntry struct {
@@ -59,12 +60,18 @@ type DeviceEntry struct {
 	localAddr       *net.TCPAddr
 }
 
-func InitCaster(port int, secret string, sender event.Sender, imageCache *imageloader.ImageCache) (*Caster, error) {
+func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache *imageloader.ImageCache) (*Caster, error) {
 	c := &Caster{
-		port:       port,
-		secret:     secret,
-		sender:     sender,
-		imageCache: imageCache,
+		port:                  port,
+		alwaysStartHttpServer: alwaysStartHttpServer,
+		secret:                secret,
+		sender:                sender,
+		imageCache:            imageCache,
+		showBackground:        true,
+	}
+
+	if alwaysStartHttpServer {
+		c.StartServer(port)
 	}
 
 	return c, nil
@@ -291,7 +298,9 @@ func (s *Caster) StopCasting() {
 			s.selectedDevice = ""
 		}
 
-		s.StopServer()
+		if !s.alwaysStartHttpServer {
+			s.StopServer()
+		}
 	}
 }
 

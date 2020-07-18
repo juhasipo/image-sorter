@@ -19,6 +19,8 @@ import (
 func main() {
 	categories := flag.String("categories", "", "Comma separated categories. Each category in format <name>:<shortcut> e.g. Good:G")
 	httpPort := flag.Int("httpPort", 8080, "HTTP Server port for Chrome Cast")
+	secret := flag.String("secret", "", "Override default random secret for casting")
+	alwaysStartHttpServer := flag.Bool("alwaysStartHttpServer", false, "Always start HTTP server. Not only when casting.")
 
 	flag.Parse()
 	rootPath := flag.Arg(0)
@@ -31,9 +33,8 @@ func main() {
 	imageLibrary := library.LibraryNew(broker, imageCache)
 	categorizationManager := imagecategory.ManagerNew(broker, imageLibrary)
 
-	secret, _ := uuid.NewRandom()
-	secretString := secret.String()
-	castManager, _ := caster.InitCaster(*httpPort, secretString, broker, imageCache)
+	secretValue := resolveSecret(*secret)
+	castManager, _ := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)
 
 	gui := ui.Init(rootPath, broker, imageCache)
 
@@ -104,6 +105,15 @@ func main() {
 	categoryManager.Close()
 	categorizationManager.Close()
 	imageLibrary.Close()
+}
+
+func resolveSecret(secret string) string {
+	if secret == "" {
+		randomSecret, _ := uuid.NewRandom()
+		return randomSecret.String()
+	} else {
+		return secret
+	}
 }
 
 func StartBackgroundGC() {
