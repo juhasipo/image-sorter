@@ -109,17 +109,17 @@
       </object>
     </child>
   </object>
+  <object class="GtkImage" id="cast-image">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-connect</property>
+  </object>
   <object class="GtkImage" id="categories-edit-icon">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="stock">gtk-edit</property>
   </object>
   <object class="GtkImage" id="generate-hashes-image">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-find</property>
-  </object>
-  <object class="GtkImage" id="generate-hashes-image1">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="stock">gtk-find</property>
@@ -192,7 +192,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="image">generate-hashes-image1</property>
+                <property name="image">cast-image</property>
               </object>
               <packing>
                 <property name="expand">False</property>
