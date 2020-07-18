@@ -19,6 +19,7 @@ require (
 	// credit goes to correct person
 	//github.com/rivo/duplo v0.0.0-20180323201418-c4ec823d58cd
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
+	github.com/stretchr/testify v1.6.1
 	github.com/vardius/message-bus v1.1.4
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
 )
