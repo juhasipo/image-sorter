@@ -232,7 +232,7 @@ func (s *Manager) getNextImages(number int) []*common.ImageContainer {
 		endIndex = len(s.imageList)
 	}
 
-	if startIndex >= len(s.imageList)-1 {
+	if startIndex >= len(s.imageList) {
 		return EMPTY_HANDLES
 	}
 
