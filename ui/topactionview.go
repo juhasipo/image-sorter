@@ -10,18 +10,18 @@ import (
 )
 
 type CategoryButton struct {
-	button          *gtk.Button
-	entry           *common.Category
-	operation       common.Operation
-	categorizedIcon *gtk.Image
+	layout    *gtk.Box
+	toggle    *gtk.LevelBar
+	button    *gtk.Button
+	entry     *common.Category
+	operation common.Operation
 }
 
 func (s *CategoryButton) SetStatus(operation common.Operation) {
 	if operation == common.MOVE {
-		s.button.SetImage(s.categorizedIcon)
+		s.toggle.SetValue(1.0)
 	} else {
-		icon, _ := gtk.ImageNew()
-		s.button.SetImage(icon)
+		s.toggle.SetValue(0.0)
 	}
 }
 
@@ -30,6 +30,7 @@ type TopActionView struct {
 	categoryButtons map[string]*CategoryButton
 	nextButton      *gtk.Button
 	prevButton      *gtk.Button
+	sender          event.Sender
 }
 
 func TopActionsNew(builder *gtk.Builder, sender event.Sender) *TopActionView {
@@ -38,6 +39,7 @@ func TopActionsNew(builder *gtk.Builder, sender event.Sender) *TopActionView {
 		categoryButtons: map[string]*CategoryButton{},
 		nextButton:      GetObjectOrPanic(builder, "next-button").(*gtk.Button),
 		prevButton:      GetObjectOrPanic(builder, "prev-button").(*gtk.Button),
+		sender:          sender,
 	}
 	topActionView.nextButton.Connect("clicked", func() {
 		sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
@@ -67,4 +69,63 @@ func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *
 		}
 	}
 	return nil
+}
+
+func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCallback CategorizeCallback) {
+	layout, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
+	toggle, _ := gtk.LevelBarNew()
+	toggle.SetSensitive(false)
+	toggle.SetSizeRequest(-1, 5)
+	button, _ := gtk.ButtonNewWithLabel(entry.GetName())
+	button.SetHExpand(true)
+	layout.Add(button)
+	layout.Add(toggle)
+	layout.SetHExpand(true)
+
+	categoryButton := &CategoryButton{
+		layout:    layout,
+		button:    button,
+		toggle:    toggle,
+		entry:     entry,
+		operation: common.NONE,
+	}
+	s.categoryButtons[entry.GetId()] = categoryButton
+
+	send := s.createSendFuncForEntry(categoryButton, categorizeCallback)
+	// Catches mouse click and can also check for keyboard for Shift key status
+	button.Connect("button-release-event", func(button *gtk.Button, e *gdk.Event) bool {
+		keyEvent := gdk.EventButtonNewFromEvent(e)
+
+		modifiers := gtk.AcceleratorGetDefaultModMask()
+		state := gdk.ModifierType(keyEvent.State())
+
+		stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
+		send(stayOnSameImage)
+		return true
+	})
+	// Since clicked handler is not used, Enter and Space need to be checked manually
+	// also check Shift status
+	button.Connect("key-press-event", func(button *gtk.Button, e *gdk.Event) bool {
+		keyEvent := gdk.EventKeyNewFromEvent(e)
+		key := keyEvent.KeyVal()
+
+		if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
+			modifiers := gtk.AcceleratorGetDefaultModMask()
+			state := gdk.ModifierType(keyEvent.State())
+			stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
+			send(stayOnSameImage)
+			return true
+		}
+		return false
+	})
+	s.categoriesView.Add(layout)
+}
+
+type CategorizeCallback func(*common.Category, common.Operation, bool)
+
+func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, categoizeCB CategorizeCallback) func(bool) {
+	return func(stayOnSameImage bool) {
+		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
+		categoizeCB(categoryButton.entry, categoryButton.operation.NextOperation(), stayOnSameImage)
+	}
 }

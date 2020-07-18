@@ -145,60 +145,15 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	})
 
 	for _, entry := range categories.GetCategories() {
-		button, _ := gtk.ButtonNewWithLabel(entry.GetName())
-		button.SetAlwaysShowImage(true)
-
-		categorizedIcon, _ := gtk.ImageNewFromIconName("gtk-yes", gtk.ICON_SIZE_BUTTON)
-		categoryButton := &CategoryButton{
-			button:          button,
-			entry:           entry,
-			operation:       common.NONE,
-			categorizedIcon: categorizedIcon,
-		}
-		s.topActionView.categoryButtons[entry.GetId()] = categoryButton
-
-		send := s.CreateSendFuncForEntry(categoryButton)
-		// Catches mouse click and can also check for keyboard for Shift key status
-		button.Connect("button-release-event", func(button *gtk.Button, e *gdk.Event) bool {
-			keyEvent := gdk.EventButtonNewFromEvent(e)
-
-			modifiers := gtk.AcceleratorGetDefaultModMask()
-			state := gdk.ModifierType(keyEvent.State())
-
-			stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
-			send(stayOnSameImage)
-			return true
+		s.topActionView.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool) {
+			s.sender.SendToTopicWithData(
+				event.CATEGORIZE_IMAGE,
+				category.CategorizeCommandNewWithStayAttr(s.imageView.currentImage.image, entry, operation, stayOnSameImage))
 		})
-		// Since clicked handler is not used, Enter and Space need to be checked manually
-		// also check Shift status
-		button.Connect("key-press-event", func(button *gtk.Button, e *gdk.Event) bool {
-			keyEvent := gdk.EventKeyNewFromEvent(e)
-			key := keyEvent.KeyVal()
-
-			if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
-				modifiers := gtk.AcceleratorGetDefaultModMask()
-				state := gdk.ModifierType(keyEvent.State())
-				stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
-				send(stayOnSameImage)
-				return true
-			}
-			return false
-		})
-		s.topActionView.categoriesView.Add(button)
 	}
+
 	s.topActionView.categoriesView.ShowAll()
 	s.sender.SendToTopic(event.IMAGE_REQUEST_CURRENT)
-}
-
-func (s *Ui) CreateSendFuncForEntry(categoryButton *CategoryButton) func(bool) {
-	return func(stayOnSameImage bool) {
-		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
-		s.sender.SendToTopicWithData(
-			event.CATEGORIZE_IMAGE,
-			category.CategorizeCommandNewWithStayAttr(
-				s.imageView.currentImage.image, categoryButton.entry, categoryButton.operation.NextOperation(),
-				stayOnSameImage))
-	}
 }
 
 func (s *Ui) UpdateCurrentImage() {
