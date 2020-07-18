@@ -16,23 +16,25 @@ const CATEGORIZATION_FILE_NAME = ".categorization"
 
 type Manager struct {
 	rootDir       string
-	imageCategory map[*common.Handle]map[string]*category.CategorizedImage
+	imageCategory map[string]map[string]*category.CategorizedImage
 	sender        event.Sender
+	library       library.Library
 
 	ImageCategoryManager
 }
 
-func ManagerNew(sender event.Sender) ImageCategoryManager {
+func ManagerNew(sender event.Sender, lib library.Library) ImageCategoryManager {
 	var manager = Manager{
-		imageCategory: map[*common.Handle]map[string]*category.CategorizedImage{},
+		imageCategory: map[string]map[string]*category.CategorizedImage{},
 		sender:        sender,
+		library:       lib,
 	}
 	return &manager
 }
 
 func (s *Manager) InitializeForDirectory(directory string) {
 	s.rootDir = directory
-	s.imageCategory = map[*common.Handle]map[string]*category.CategorizedImage{}
+	s.imageCategory = map[string]map[string]*category.CategorizedImage{}
 }
 
 func (s *Manager) RequestCategory(handle *common.Handle) {
@@ -44,7 +46,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	categoryEntry := command.GetEntry()
 	operation := command.GetOperation()
 
-	var image = s.imageCategory[handle]
+	var image = s.imageCategory[handle.GetId()]
 	var categorizedImage *category.CategorizedImage = nil
 	if image != nil {
 		categorizedImage = image[categoryEntry.GetId()]
@@ -54,7 +56,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		if image == nil {
 			log.Printf("Create category entry for '%s'", handle.GetPath())
 			image = map[string]*category.CategorizedImage{}
-			s.imageCategory[handle] = image
+			s.imageCategory[handle.GetId()] = image
 		}
 		log.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
 		categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
@@ -63,10 +65,10 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 
 	if operation == common.NONE || categorizedImage == nil {
 		log.Printf("Remove entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
-		delete(s.imageCategory[handle], categoryEntry.GetId())
-		if len(s.imageCategory[handle]) == 0 {
+		delete(s.imageCategory[handle.GetId()], categoryEntry.GetId())
+		if len(s.imageCategory[handle.GetId()]) == 0 {
 			log.Printf("Remove entry for '%s'", handle.GetPath())
-			delete(s.imageCategory, handle)
+			delete(s.imageCategory, handle.GetId())
 		}
 		s.sendCategories(command.GetHandle())
 	} else {
@@ -82,12 +84,13 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 
 func (s* Manager) PersistImageCategories() {
 	log.Printf("Persisting files to categories")
-	for handle, categoryEntries := range s.imageCategory {
-		s.PersistImageCategory(handle, categoryEntries)
+	for handleId, categoryEntries := range s.imageCategory {
+		handle := s.library.GetHandleById(handleId)
+		s.persistImageCategory(handle, categoryEntries)
 	}
 }
 
-func (s* Manager) PersistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
+func (s* Manager) persistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
 	log.Printf(" - Persisting '%s'", handle.GetPath())
 	dir, file := filepath.Split(handle.GetPath())
 
@@ -132,10 +135,10 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 		handle := handleManager.GetHandleById(parts[0])
 		categories := parts[1:]
 
-		categoryMap := s.imageCategory[handle]
+		categoryMap := s.imageCategory[handle.GetId()]
 		if categoryMap == nil {
-			s.imageCategory[handle] = map[string]*category.CategorizedImage{}
-			categoryMap = s.imageCategory[handle]
+			s.imageCategory[handle.GetId()] = map[string]*category.CategorizedImage{}
+			categoryMap = s.imageCategory[handle.GetId()]
 		}
 
 		for _, c := range categories {
@@ -161,9 +164,9 @@ func (s *Manager) PersistCategorization() {
 	w := bufio.NewWriter(f)
 	w.WriteString("#version:1")
 	w.WriteString("\n")
-	for handle, categorization := range s.imageCategory {
-		if handle != nil {
-			w.WriteString(handle.GetId())
+	for handleId, categorization := range s.imageCategory {
+		if handleId != "" {
+			w.WriteString(handleId)
 			w.WriteString(":")
 			for entry, categorizedImage := range categorization {
 				if categorizedImage.GetOperation() == common.MOVE {
@@ -180,7 +183,7 @@ func (s *Manager) PersistCategorization() {
 func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedImage {
 	var categories []*category.CategorizedImage
 
-	if i, ok := s.imageCategory[image]; ok {
+	if i, ok := s.imageCategory[image.GetId()]; ok {
 		for _, categorizedImage := range i {
 			categories = append(categories, categorizedImage)
 		}
