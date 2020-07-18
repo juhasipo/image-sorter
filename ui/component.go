@@ -9,11 +9,11 @@ import (
 	"log"
 )
 
-type Direction int
+type Layout int
 
 const (
-	FORWARD Direction = iota
-	BACKWARD
+	VERTICAL Layout = iota
+	HORIZONTAL
 )
 
 // PixbufGetType is a wrapper around gdk_pixbuf_get_type().

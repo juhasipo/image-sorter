@@ -10,30 +10,27 @@ import (
 type SimilarImagesView struct {
 	view *gtk.Box
 	scrollLayout *gtk.ScrolledWindow
-	layout       *gtk.FlowBox
+	list         *ImageList
 	imageCache   *imageloader.ImageCache
 	closeButton  *gtk.Button
 	sender       event.Sender
 }
 
 func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache *imageloader.ImageCache) *SimilarImagesView {
-	layout, _ := gtk.FlowBoxNew()
+	imageList := &ImageList{component: GetObjectOrPanic(builder, "similar-images-list").(*gtk.IconView)}
+	initializeStore(imageList, HORIZONTAL, sender)
+
 	similarImagesView := &SimilarImagesView{
 		view: GetObjectOrPanic(builder, "similar-images-view").(*gtk.Box),
 		scrollLayout: GetObjectOrPanic(builder, "similar-images-scrolled-view").(*gtk.ScrolledWindow),
+		list: imageList,
 		closeButton:  GetObjectOrPanic(builder, "similar-images-close-button").(*gtk.Button),
-		layout:       layout,
 		imageCache:   imageCache,
 		sender:       sender,
 	}
 
-	similarImagesView.layout.SetMaxChildrenPerLine(10)
-	similarImagesView.layout.SetRowSpacing(0)
-	similarImagesView.layout.SetColumnSpacing(0)
-	similarImagesView.layout.SetSizeRequest(-1, 100)
 	similarImagesView.scrollLayout.SetVisible(false)
-	similarImagesView.scrollLayout.SetSizeRequest(-1, 100)
-	similarImagesView.scrollLayout.Add(layout)
+	similarImagesView.scrollLayout.SetSizeRequest(-1, 110)
 
 	similarImagesView.closeButton.Connect("clicked", func() {
 		similarImagesView.view.SetVisible(false)
@@ -44,14 +41,7 @@ func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache 
 }
 
 func (s *SimilarImagesView) SetImages(handles []*common.ImageContainer, sender event.Sender) {
-	children := s.layout.GetChildren()
-	children.Foreach(func(item interface{}) {
-		s.layout.Remove(item.(gtk.IWidget))
-	})
-	for _, handle := range handles {
-		widget := s.createSimilarImage(handle, sender)
-		s.layout.Add(widget)
-	}
+	s.list.addImagesToStore(handles)
 	s.view.SetVisible(true)
 	s.view.ShowAll()
 }

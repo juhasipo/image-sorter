@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"image"
 	"vincit.fi/image-sorter/common"
@@ -20,8 +21,9 @@ type CurrentImageView struct {
 }
 
 type ImageList struct {
-	component *gtk.TreeView
+	component *gtk.IconView
 	model     *gtk.ListStore
+	images    []*common.ImageContainer
 }
 
 type ImageView struct {
@@ -32,10 +34,11 @@ type ImageView struct {
 }
 
 func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
-	nextImagesList := GetObjectOrPanic(builder, "next-images").(*gtk.TreeView)
-	nextImageStore := createImageList(nextImagesList, "Next images", FORWARD, ui.sender)
-	prevImagesList := GetObjectOrPanic(builder, "prev-images").(*gtk.TreeView)
-	prevImageStore := createImageList(prevImagesList, "Prev images", BACKWARD, ui.sender)
+	nextImagesList := &ImageList{component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView)}
+	initializeStore(nextImagesList, VERTICAL, ui.sender)
+	prevImagesList := &ImageList{component: GetObjectOrPanic(builder, "prev-images").(*gtk.IconView)}
+	initializeStore(prevImagesList, VERTICAL, ui.sender)
+
 	imageView := &ImageView{
 		currentImage: &CurrentImageView{
 			scrolledView: GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
@@ -43,14 +46,8 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 			view:         GetObjectOrPanic(builder, "current-image").(*gtk.Image),
 			details:      GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
 		},
-		nextImages: &ImageList{
-			component: nextImagesList,
-			model:     nextImageStore,
-		},
-		prevImages: &ImageList{
-			component: prevImagesList,
-			model:     prevImageStore,
-		},
+		nextImages: nextImagesList,
+		prevImages: prevImagesList,
 		imageCache: ui.imageCache,
 	}
 	tableNew, _ := gtk.TextTagTableNew()
@@ -93,39 +90,41 @@ func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
 	s.currentImage.image = handle
 }
 
-func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer, imageCache *imageloader.ImageCache) {
-	s.addImagesToStore(s.nextImages, images)
+func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer) {
+	s.nextImages.addImagesToStore(images)
 }
 
-func (s *ImageView) AddImagesToPrevStore(images []*common.ImageContainer, imageCache *imageloader.ImageCache) {
-	s.addImagesToStore(s.prevImages, images)
+func (s *ImageView) AddImagesToPrevStore(images []*common.ImageContainer) {
+	s.prevImages.addImagesToStore(images)
 }
 
-func (s *ImageView) addImagesToStore(list *ImageList, images []*common.ImageContainer) {
-	list.model.Clear()
+func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {
+	s.model.Clear()
 	for _, img := range images {
-		iter := list.model.Append()
+		iter := s.model.Append()
 		thumbnail := img.GetImage()
-		list.model.SetValue(iter, 0, asPixbuf(thumbnail))
+		s.model.SetValue(iter, 0, asPixbuf(thumbnail))
+		s.model.SetValue(iter, 1, img.GetHandle().GetId())
 	}
+	s.images = images
 }
 
-func createImageList(view *gtk.TreeView, title string, direction Direction, sender event.Sender) *gtk.ListStore {
-	view.SetSizeRequest(100, -1)
-	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
-		index := path.GetIndices()[0] + 1
-		if direction == FORWARD {
-			sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, index)
-		} else {
-			sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, index)
-		}
+func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
+	const requestedSize = 100
+	if layout == HORIZONTAL {
+		imageList.component.SetSizeRequest(-1, requestedSize)
+	} else {
+		imageList.component.SetSizeRequest(requestedSize, -1)
+	}
+
+	imageList.component.Connect("item-activated", func(view *gtk.IconView, path *gtk.TreePath) {
+		index := path.GetIndices()[0]
+		handle := imageList.images[index].GetHandle()
+		sender.SendToTopicWithData(event.IMAGE_REQUEST, handle)
 	})
-	store, _ := gtk.ListStoreNew(PixbufGetType())
-	view.SetModel(store)
-	renderer, _ := gtk.CellRendererPixbufNew()
-	column, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "pixbuf", 0)
-	view.AppendColumn(column)
-	return store
+	imageList.model, _ = gtk.ListStoreNew(PixbufGetType(), glib.TYPE_STRING)
+	imageList.component.SetModel(imageList.model)
+	imageList.component.SetPixbufColumn(0)
 }
 
 func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {

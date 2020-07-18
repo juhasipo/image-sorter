@@ -207,9 +207,9 @@ func (s *Ui) UpdateCurrentImage() {
 
 func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer) {
 	if imageTarget == event.IMAGE_REQUEST_NEXT {
-		s.imageView.AddImagesToNextStore(handles, s.imageCache)
+		s.imageView.AddImagesToNextStore(handles)
 	} else if imageTarget == event.IMAGE_REQUEST_PREV {
-		s.imageView.AddImagesToPrevStore(handles, s.imageCache)
+		s.imageView.AddImagesToPrevStore(handles)
 	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
 		s.similarImagesView.SetImages(handles, s.sender)
 	} else {
