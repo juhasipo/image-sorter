@@ -20,20 +20,22 @@ var (
 type ImageList func(number int) []*common.Handle
 
 type Manager struct {
-	rootDir       string
-	imageList     []*common.Handle
-	imageHandles  map[string]*common.Handle
-	index         int
-	imageHash     *duplo.Store
-	sender        event.Sender
-	categoryManager *category.Manager
-	imageListSize int
-	imageCache    *imageloader.ImageCache
+	rootDir           string
+	imageList         []*common.Handle
+	imageHandles      map[string]*common.Handle
+	index             int
+	imageHash         *duplo.Store
+	shouldSendSimilar bool
+	shouldGenerateSimilarHashed bool
+	sender            event.Sender
+	categoryManager   *category.Manager
+	imageListSize     int
+	imageCache        *imageloader.ImageCache
 
 	Library
 
-	stopChannel     chan bool
-	outputChannel   chan *HashResult
+	stopChannel   chan bool
+	outputChannel chan *HashResult
 }
 
 func ForHandles(sender event.Sender, imageCache *imageloader.ImageCache) Library {
@@ -41,15 +43,15 @@ func ForHandles(sender event.Sender, imageCache *imageloader.ImageCache) Library
 		index:         0,
 		sender:        sender,
 		imageHash:     duplo.New(),
+		shouldGenerateSimilarHashed: true,
 		imageListSize: 0,
 		imageCache:    imageCache,
 	}
 	return &manager
 }
 
-
 func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
-	channel <-&HashResult{
+	channel <- &HashResult{
 		handle: handle,
 		hash:   hash,
 	}
@@ -67,63 +69,73 @@ func (s *Manager) GetHandles() []*common.Handle {
 }
 
 func (s *Manager) RequestGenerateHashes() {
-	startTime := time.Now()
-	hashExpected := len(s.imageList)
-	log.Printf("Generate hashes for %d images...", hashExpected)
-	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", 0, hashExpected)
+	s.shouldSendSimilar = true
+	if s.shouldGenerateSimilarHashed {
+		startTime := time.Now()
+		hashExpected := len(s.imageList)
+		log.Printf("Generate hashes for %d images...", hashExpected)
+		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", 0, hashExpected)
 
-	// Just to make things consistent in case Go decides to change the default
-	cpuCores := s.getTreadCount()
-	log.Printf(" * Using %d threads", cpuCores)
-	runtime.GOMAXPROCS(cpuCores)
+		// Just to make things consistent in case Go decides to change the default
+		cpuCores := s.getTreadCount()
+		log.Printf(" * Using %d threads", cpuCores)
+		runtime.GOMAXPROCS(cpuCores)
 
-	s.stopChannel = make(chan bool)
-	inputChannel := make(chan *common.Handle, hashExpected)
-	s.outputChannel = make(chan *HashResult)
+		s.stopChannel = make(chan bool)
+		inputChannel := make(chan *common.Handle, hashExpected)
+		s.outputChannel = make(chan *HashResult)
 
-	// Add images to input queue for goroutines
-	for _, handle := range s.imageList {
-		inputChannel <- handle
-	}
-
-	// Spin up goroutines which will process the data
-	// only same number as CPU cores so that we will only max X hashes are
-	// processed at once. Otherwise the goroutines might start processing
-	// all images at once which would use all available RAM
-	for i := 0; i < cpuCores; i++ {
-		go hashImage(inputChannel, s.outputChannel, s.stopChannel)
-	}
-
-	var i = 0
-	for result := range s.outputChannel {
-		i++
-		result.handle.SetHash(result.hash)
-
-		//log.Printf(" * Got hash %d/%d", i, hashExpected)
-		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", i, hashExpected)
-		s.imageHash.Add(result.handle, *result.hash)
-
-		if i == hashExpected {
-			s.RequestStopHashes()
+		// Add images to input queue for goroutines
+		for _, handle := range s.imageList {
+			inputChannel <- handle
 		}
-	}
-	close(inputChannel)
 
-	endTime := time.Now()
-	d := endTime.Sub(startTime)
-	log.Printf("%d hashes created in %s", hashExpected, d.String())
+		// Spin up goroutines which will process the data
+		// only same number as CPU cores so that we will only max X hashes are
+		// processed at once. Otherwise the goroutines might start processing
+		// all images at once which would use all available RAM
+		for i := 0; i < cpuCores; i++ {
+			go hashImage(inputChannel, s.outputChannel, s.stopChannel)
+		}
 
-	avg := d.Milliseconds() / int64(hashExpected)
-	// Remember to take thread count otherwise the avg time is too small
-	f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
-	log.Printf("  On average: %s/image", f.String())
+		var i = 0
+		for result := range s.outputChannel {
+			i++
+			result.handle.SetHash(result.hash)
 
-	// Always send 100% status even if cancelled so that the progress bar is hidden
-	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", hashExpected, hashExpected)
-	// Only send if not cancelled
-	if i == hashExpected {
+			//log.Printf(" * Got hash %d/%d", i, hashExpected)
+			s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", i, hashExpected)
+			s.imageHash.Add(result.handle, *result.hash)
+
+			if i == hashExpected {
+				s.RequestStopHashes()
+			}
+		}
+		close(inputChannel)
+
+		endTime := time.Now()
+		d := endTime.Sub(startTime)
+		log.Printf("%d hashes created in %s", hashExpected, d.String())
+
+		avg := d.Milliseconds() / int64(hashExpected)
+		// Remember to take thread count otherwise the avg time is too small
+		f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
+		log.Printf("  On average: %s/image", f.String())
+
+		// Always send 100% status even if cancelled so that the progress bar is hidden
+		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", hashExpected, hashExpected)
+		// Only send if not cancelled
+		if i == hashExpected {
+			s.sendSimilarImages(s.getCurrentImage().GetHandle())
+		}
+		s.shouldGenerateSimilarHashed = false
+	} else {
 		s.sendSimilarImages(s.getCurrentImage().GetHandle())
 	}
+}
+
+func (s *Manager) SetSimilarStatus(sendSimilarImages bool) {
+	s.shouldSendSimilar = sendSimilarImages
 }
 
 func (s *Manager) getTreadCount() int {
@@ -199,7 +211,9 @@ func (s *Manager) sendStatus() {
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize))
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize))
 
-	s.sendSimilarImages(currentImage.GetHandle())
+	if s.shouldSendSimilar {
+		s.sendSimilarImages(currentImage.GetHandle())
+	}
 }
 
 func (s *Manager) getCurrentImage() *common.ImageContainer {
@@ -211,14 +225,14 @@ func (s *Manager) getCurrentImage() *common.ImageContainer {
 	}
 }
 
-func (s* Manager) getNextImages(number int) []*common.ImageContainer {
+func (s *Manager) getNextImages(number int) []*common.ImageContainer {
 	startIndex := s.index + 1
 	endIndex := startIndex + number
 	if endIndex > len(s.imageList) {
 		endIndex = len(s.imageList)
 	}
 
-	if startIndex >= len(s.imageList) - 1 {
+	if startIndex >= len(s.imageList)-1 {
 		return EMPTY_HANDLES
 	}
 
@@ -230,8 +244,8 @@ func (s* Manager) getNextImages(number int) []*common.ImageContainer {
 	return images
 }
 
-func (s* Manager) getPrevImages(number int) []*common.ImageContainer {
-	prevIndex := s.index-number
+func (s *Manager) getPrevImages(number int) []*common.ImageContainer {
+	prevIndex := s.index - number
 	if prevIndex < 0 {
 		prevIndex = 0
 	}
@@ -243,7 +257,6 @@ func (s* Manager) getPrevImages(number int) []*common.ImageContainer {
 	util.Reverse(images)
 	return images
 }
-
 
 func (s *Manager) sendSimilarImages(handle *common.Handle) {
 	if s.imageHash.Size() > 0 {

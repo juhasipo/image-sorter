@@ -8,9 +8,39 @@ import (
 )
 
 type SimilarImagesView struct {
+	view *gtk.Box
 	scrollLayout *gtk.ScrolledWindow
 	layout       *gtk.FlowBox
 	imageCache   *imageloader.ImageCache
+	closeButton  *gtk.Button
+	sender       event.Sender
+}
+
+func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache *imageloader.ImageCache) *SimilarImagesView {
+	layout, _ := gtk.FlowBoxNew()
+	similarImagesView := &SimilarImagesView{
+		view: GetObjectOrPanic(builder, "similar-images-view").(*gtk.Box),
+		scrollLayout: GetObjectOrPanic(builder, "similar-images-scrolled-view").(*gtk.ScrolledWindow),
+		closeButton:  GetObjectOrPanic(builder, "similar-images-close-button").(*gtk.Button),
+		layout:       layout,
+		imageCache:   imageCache,
+		sender:       sender,
+	}
+
+	similarImagesView.layout.SetMaxChildrenPerLine(10)
+	similarImagesView.layout.SetRowSpacing(0)
+	similarImagesView.layout.SetColumnSpacing(0)
+	similarImagesView.layout.SetSizeRequest(-1, 100)
+	similarImagesView.scrollLayout.SetVisible(false)
+	similarImagesView.scrollLayout.SetSizeRequest(-1, 100)
+	similarImagesView.scrollLayout.Add(layout)
+
+	similarImagesView.closeButton.Connect("clicked", func() {
+		similarImagesView.view.SetVisible(false)
+		sender.SendToTopicWithData(event.SIMILAR_SET_STATUS, false)
+	})
+
+	return similarImagesView
 }
 
 func (s *SimilarImagesView) SetImages(handles []*common.ImageContainer, sender event.Sender) {
@@ -22,8 +52,8 @@ func (s *SimilarImagesView) SetImages(handles []*common.ImageContainer, sender e
 		widget := s.createSimilarImage(handle, sender)
 		s.layout.Add(widget)
 	}
-	s.scrollLayout.SetVisible(true)
-	s.scrollLayout.ShowAll()
+	s.view.SetVisible(true)
+	s.view.ShowAll()
 }
 
 func (s *SimilarImagesView) createSimilarImage(handle *common.ImageContainer, sender event.Sender) *gtk.EventBox {
@@ -36,23 +66,3 @@ func (s *SimilarImagesView) createSimilarImage(handle *common.ImageContainer, se
 	})
 	return eventBox
 }
-
-func SimilarImagesViewNew(builder *gtk.Builder, imageCache   *imageloader.ImageCache) *SimilarImagesView {
-	layout, _ := gtk.FlowBoxNew()
-	similarImagesView := &SimilarImagesView{
-		scrollLayout: GetObjectOrPanic(builder, "similar-images-view").(*gtk.ScrolledWindow),
-		layout:       layout,
-		imageCache:   imageCache,
-	}
-
-	similarImagesView.layout.SetMaxChildrenPerLine(10)
-	similarImagesView.layout.SetRowSpacing(0)
-	similarImagesView.layout.SetColumnSpacing(0)
-	similarImagesView.layout.SetSizeRequest(-1, 100)
-	similarImagesView.scrollLayout.SetVisible(false)
-	similarImagesView.scrollLayout.SetSizeRequest(-1, 100)
-	similarImagesView.scrollLayout.Add(layout)
-
-	return similarImagesView
-}
-

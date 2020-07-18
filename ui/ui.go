@@ -80,7 +80,7 @@ func (s *Ui) Init(directory string) {
 		s.win.SetSizeRequest(800, 600)
 		s.win.Connect("key_press_event", s.handleKeyPress)
 
-		s.similarImagesView = SimilarImagesViewNew(builder, s.imageCache)
+		s.similarImagesView = SimilarImagesViewNew(builder, s.sender, s.imageCache)
 		s.imageView = ImageViewNew(builder, s)
 		s.topActionView = TopActionsNew(builder, s.sender)
 		s.bottomActionView = BottomActionsNew(builder, s, s.sender)

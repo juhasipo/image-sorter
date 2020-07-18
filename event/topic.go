@@ -31,6 +31,7 @@ const (
 	// Similar image search
 	SIMILAR_REQUEST_SEARCH Topic = "similar-request-serach"
 	SIMILAR_REQUEST_STOP   Topic = "similar-request-stop"
+	SIMILAR_SET_STATUS     Topic = "similar-set-status"
 
 	// Chrome Cast
 	CAST_DEVICE_SEARCH       Topic = "cast-device-search"

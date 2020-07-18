@@ -18,6 +18,7 @@ type Library interface {
 	GetHandles() []*common.Handle
 	GetHandleById(handleId string) *common.Handle
 	ChangeImageListSize(imageListSize int)
+	SetSimilarStatus(sendSimilarImages bool)
 	Close()
 }
 

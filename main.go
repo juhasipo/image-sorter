@@ -62,9 +62,11 @@ func main() {
 	broker.Subscribe(event.IMAGE_REQUEST_PREV_OFFSET, imageLibrary.RequestPrevImageWithOffset)
 	broker.Subscribe(event.IMAGE_REQUEST_CURRENT, imageLibrary.RequestImages)
 	broker.Subscribe(event.IMAGE_REQUEST, imageLibrary.RequestImage)
+	broker.Subscribe(event.IMAGE_LIST_SIZE_CHANGED, imageLibrary.ChangeImageListSize)
+
 	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
-	broker.Subscribe(event.IMAGE_LIST_SIZE_CHANGED, imageLibrary.ChangeImageListSize)
+	broker.Subscribe(event.SIMILAR_SET_STATUS, imageLibrary.SetSimilarStatus)
 
 	// Library -> UI
 	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
