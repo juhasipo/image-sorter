@@ -19,6 +19,10 @@ type Library interface {
 	GetHandleById(handleId string) *common.Handle
 	ChangeImageListSize(imageListSize int)
 	SetSimilarStatus(sendSimilarImages bool)
+
+	ShowAllImages()
+	ShowOnlyImages([]*common.Handle)
+
 	Close()
 }
 

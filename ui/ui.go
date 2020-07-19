@@ -109,6 +109,9 @@ func (s *Ui) findDevices() {
 func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 	keyEvent := gdk.EventKeyNewFromEvent(e)
 	key := keyEvent.KeyVal()
+	if key == gdk.KEY_F10 {
+		s.sender.SendToTopic(event.IMAGE_SHOW_ALL)
+	}
 	if key == gdk.KEY_F11 {
 		if s.fullscreen {
 			s.win.Unfullscreen()
@@ -133,8 +136,16 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		modifiers := gtk.AcceleratorGetDefaultModMask()
 		state := gdk.ModifierType(keyEvent.State())
 
-		command := s.topActionView.FindActionForShortcut(key, state&modifiers, s.imageView.currentImage.image)
-		if command != nil {
+		command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image)
+
+		switchToCategory := state&modifiers&gdk.GDK_MOD1_MASK > 0
+		if switchToCategory {
+			s.sender.SendToTopicWithData(event.CATEGORIES_SHOW_ONLY, command.GetEntry())
+		} else if command != nil {
+			stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
+			forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+			command.SetStayOfSameImage(stayOnSameImage)
+			command.SetForceToCategory(forceToCategory)
 			s.sender.SendToTopicWithData(event.CATEGORIZE_IMAGE, command)
 		}
 	}

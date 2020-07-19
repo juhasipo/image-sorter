@@ -19,5 +19,7 @@ type ImageCategoryManager interface {
 	PersistCategorization()
 	LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager)
 
+	ShowOnlyCategoryImages(*common.Category)
+
 	Close()
 }

@@ -63,6 +63,8 @@ func main() {
 	broker.Subscribe(event.IMAGE_REQUEST_CURRENT, imageLibrary.RequestImages)
 	broker.Subscribe(event.IMAGE_REQUEST, imageLibrary.RequestImage)
 	broker.Subscribe(event.IMAGE_LIST_SIZE_CHANGED, imageLibrary.ChangeImageListSize)
+	broker.Subscribe(event.IMAGE_SHOW_ALL, imageLibrary.ShowAllImages)
+	broker.Subscribe(event.IMAGE_SHOW_ONLY, imageLibrary.ShowOnlyImages)
 
 	broker.Subscribe(event.SIMILAR_REQUEST_SEARCH, imageLibrary.RequestGenerateHashes)
 	broker.Subscribe(event.SIMILAR_REQUEST_STOP, imageLibrary.RequestStopHashes)
@@ -76,6 +78,7 @@ func main() {
 	broker.Subscribe(event.CATEGORIZE_IMAGE, categorizationManager.SetCategory)
 	broker.Subscribe(event.CATEGORY_PERSIST_ALL, categorizationManager.PersistImageCategories)
 	broker.Subscribe(event.IMAGE_CHANGED, categorizationManager.RequestCategory)
+	broker.Subscribe(event.CATEGORIES_SHOW_ONLY, categorizationManager.ShowOnlyCategoryImages)
 
 	// Image Categorization -> UI
 	broker.ConnectToGui(event.CATEGORY_IMAGE_UPDATE, gui.SetImageCategory)

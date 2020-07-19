@@ -69,3 +69,11 @@ func (s *CategorizeCommand) String() string {
 	return fmt.Sprintf("CategorizeCommand{%s:%s:%d}",
 		s.handle.GetId(), s.entry.GetName(), s.operation)
 }
+
+func (s *CategorizeCommand) SetStayOfSameImage(stayOnSameImage bool) {
+	s.stayOnSameImage = stayOnSameImage
+}
+
+func (s *CategorizeCommand) SetForceToCategory(forceToCategory bool) {
+	s.forceToCategory = forceToCategory
+}

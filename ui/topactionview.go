@@ -57,22 +57,15 @@ func (v *TopActionView) SetVisible(visible bool) {
 	v.prevButton.SetVisible(visible)
 }
 
-func (v *TopActionView) FindActionForShortcut(key uint, modifiers gdk.ModifierType, handle *common.Handle) *category.CategorizeCommand {
+func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
 	for _, button := range v.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			stayOnSameImage := modifiers&gdk.GDK_SHIFT_MASK > 0
-			forceToCategory := modifiers&gdk.GDK_CONTROL_MASK > 0
-			if forceToCategory {
-				return category.CategorizeCommandNewWithStayAttr(
-					handle, button.entry, common.MOVE, stayOnSameImage, forceToCategory)
-			} else {
-				return category.CategorizeCommandNewWithStayAttr(
-					handle, button.entry, button.operation.NextOperation(), stayOnSameImage, forceToCategory)
-			}
+			return category.CategorizeCommandNew(
+				handle, button.entry, button.operation.NextOperation())
 		}
 	}
 	return nil

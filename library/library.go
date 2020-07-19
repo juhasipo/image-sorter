@@ -22,6 +22,7 @@ type ImageList func(number int) []*common.Handle
 type Manager struct {
 	rootDir                     string
 	imageList                   []*common.Handle
+	fullImageList               []*common.Handle
 	imageHandles                map[string]*common.Handle
 	index                       int
 	imageHash                   *duplo.Store
@@ -66,6 +67,17 @@ func (s *Manager) InitializeFromDirectory(directory string) {
 
 func (s *Manager) GetHandles() []*common.Handle {
 	return s.imageList
+}
+
+func (s *Manager) ShowOnlyImages(handles []*common.Handle) {
+	s.imageList = handles
+	s.sendStatus()
+}
+
+func (s *Manager) ShowAllImages() {
+	s.imageList = make([]*common.Handle, len(s.fullImageList))
+	copy(s.imageList, s.fullImageList)
+	s.sendStatus()
 }
 
 func (s *Manager) RequestGenerateHashes() {
@@ -285,6 +297,8 @@ func (s *Manager) loadImagesFromRootDir() {
 	s.imageHandles = map[string]*common.Handle{}
 
 	s.imageList = common.LoadImageHandles(s.rootDir)
+	s.fullImageList = make([]*common.Handle, len(s.imageList))
+	copy(s.fullImageList, s.imageList)
 
 	for _, handle := range s.imageList {
 		s.imageHandles[handle.GetId()] = handle

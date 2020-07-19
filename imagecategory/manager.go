@@ -135,6 +135,17 @@ func (s *Manager) Close() {
 	s.PersistCategorization()
 }
 
+func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
+	handles := []*common.Handle{}
+	for key, img := range s.imageCategory {
+		if _, ok := img[cat.GetId()]; ok {
+			handle := s.library.GetHandleById(key)
+			handles = append(handles, handle)
+		}
+	}
+	s.sender.SendToTopicWithData(event.IMAGE_SHOW_ONLY, handles)
+}
+
 func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
 	filePath := filepath.Join(s.rootDir, CATEGORIZATION_FILE_NAME)
 

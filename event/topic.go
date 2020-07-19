@@ -19,6 +19,8 @@ const (
 	IMAGE_CHANGED             Topic = "image-changed"
 	IMAGE_UPDATE              Topic = "image-update"
 	IMAGE_LIST_SIZE_CHANGED   Topic = "image-list-size-changed"
+	IMAGE_SHOW_ONLY           Topic = "image-show-only"
+	IMAGE_SHOW_ALL            Topic = "image-show-all"
 
 	// Categorization
 	CATEGORIZE_IMAGE        Topic = "categorize-image"
@@ -27,6 +29,7 @@ const (
 	CATEGORY_IMAGE_UPDATE   Topic = "category-image-update"
 	CATEGORIES_SAVE         Topic = "categories-save"
 	CATEGORIES_SAVE_DEFAULT Topic = "categories-save-default"
+	CATEGORIES_SHOW_ONLY    Topic = "categories-show-only"
 
 	// Similar image search
 	SIMILAR_REQUEST_SEARCH Topic = "similar-request-serach"
