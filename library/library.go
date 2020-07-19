@@ -299,7 +299,7 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 			}
 		}
 
-		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_SIMILAR, images)
+		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_SIMILAR, images, 0, 0, "")
 	}
 }
 
