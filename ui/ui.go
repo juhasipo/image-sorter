@@ -119,6 +119,10 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		}
 		return true
 	}
+	if key == gdk.KEY_F12 {
+		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
+		return true
+	}
 	if key == gdk.KEY_Left {
 		s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
 		return true
