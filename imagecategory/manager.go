@@ -41,17 +41,39 @@ func (s *Manager) RequestCategory(handle *common.Handle) {
 	s.sendCategories(handle)
 }
 
+func (s *Manager) GetCategories(handle *common.Handle) map[string]*category.CategorizedImage {
+	if categories, ok := s.imageCategory[handle.GetId()]; ok {
+		categorizedEntries := map[string]*category.CategorizedImage{}
+		for _, categorizedImage := range categories {
+			categorizedEntries[categorizedImage.GetEntry().GetId()] = categorizedImage
+		}
+		return categorizedEntries
+	} else {
+		return map[string]*category.CategorizedImage{}
+	}
+}
+
 func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	handle := command.GetHandle()
 	categoryEntry := command.GetEntry()
 	operation := command.GetOperation()
 
+	// Find existing entry for the image
 	var image = s.imageCategory[handle.GetId()]
 	var categorizedImage *category.CategorizedImage = nil
-	if image != nil {
+	if command.ShouldForceToCategory() {
+		log.Printf("Force to category for '%s'", handle.GetPath())
+		image = map[string]*category.CategorizedImage{}
+		s.imageCategory[handle.GetId()] = image
+		if operation != common.NONE {
+			categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
+			image[categoryEntry.GetId()] = categorizedImage
+		}
+	} else if image != nil {
 		categorizedImage = image[categoryEntry.GetId()]
 	}
 
+	// Case entry was not found or should force to use only the new category
 	if categorizedImage == nil && operation != common.NONE {
 		if image == nil {
 			log.Printf("Create category entry for '%s'", handle.GetPath())
@@ -64,6 +86,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	}
 
 	if operation == common.NONE || categorizedImage == nil {
+		// Case entry is removed
 		log.Printf("Remove entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
 		delete(s.imageCategory[handle.GetId()], categoryEntry.GetId())
 		if len(s.imageCategory[handle.GetId()]) == 0 {
@@ -72,6 +95,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		}
 		s.sendCategories(command.GetHandle())
 	} else {
+		// Case entry found and not removed
 		log.Printf("Update entry for '%s:%s' to %d", handle.GetPath(), categoryEntry.GetName(), operation)
 		categorizedImage.SetOperation(operation)
 		if command.ShouldStayOnSameImage() {

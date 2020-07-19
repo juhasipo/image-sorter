@@ -130,7 +130,10 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		return true
 	} else {
-		command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image)
+		modifiers := gtk.AcceleratorGetDefaultModMask()
+		state := gdk.ModifierType(keyEvent.State())
+
+		command := s.topActionView.FindActionForShortcut(key, state&modifiers, s.imageView.currentImage.image)
 		if command != nil {
 			s.sender.SendToTopicWithData(event.CATEGORIZE_IMAGE, command)
 		}
@@ -149,10 +152,10 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	})
 
 	for _, entry := range categories.GetCategories() {
-		s.topActionView.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool) {
+		s.topActionView.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
 			s.sender.SendToTopicWithData(
 				event.CATEGORIZE_IMAGE,
-				category.CategorizeCommandNewWithStayAttr(s.imageView.currentImage.image, entry, operation, stayOnSameImage))
+				category.CategorizeCommandNewWithStayAttr(s.imageView.currentImage.image, entry, operation, stayOnSameImage, forceToCategory))
 		})
 	}
 

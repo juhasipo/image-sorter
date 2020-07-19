@@ -57,15 +57,22 @@ func (v *TopActionView) SetVisible(visible bool) {
 	v.prevButton.SetVisible(visible)
 }
 
-func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
+func (v *TopActionView) FindActionForShortcut(key uint, modifiers gdk.ModifierType, handle *common.Handle) *category.CategorizeCommand {
 	for _, button := range v.categoryButtons {
 		entry := button.entry
-		if entry.HasShortcut(key) {
+		keyUpper := gdk.KeyvalToUpper(key)
+		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			stayOnSameImage := gdk.KeyvalIsUpper(key)
-			return category.CategorizeCommandNewWithStayAttr(
-				handle, button.entry, button.operation.NextOperation(), stayOnSameImage)
+			stayOnSameImage := modifiers&gdk.GDK_SHIFT_MASK > 0
+			forceToCategory := modifiers&gdk.GDK_CONTROL_MASK > 0
+			if forceToCategory {
+				return category.CategorizeCommandNewWithStayAttr(
+					handle, button.entry, common.MOVE, stayOnSameImage, forceToCategory)
+			} else {
+				return category.CategorizeCommandNewWithStayAttr(
+					handle, button.entry, button.operation.NextOperation(), stayOnSameImage, forceToCategory)
+			}
 		}
 	}
 	return nil
@@ -99,8 +106,9 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 		modifiers := gtk.AcceleratorGetDefaultModMask()
 		state := gdk.ModifierType(keyEvent.State())
 
-		stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
-		send(stayOnSameImage)
+		stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
+		forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+		send(stayOnSameImage, forceToCategory)
 		return true
 	})
 	// Since clicked handler is not used, Enter and Space need to be checked manually
@@ -112,8 +120,9 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 		if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
 			modifiers := gtk.AcceleratorGetDefaultModMask()
 			state := gdk.ModifierType(keyEvent.State())
-			stayOnSameImage := state&modifiers == gdk.GDK_SHIFT_MASK
-			send(stayOnSameImage)
+			stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
+			forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+			send(stayOnSameImage, forceToCategory)
 			return true
 		}
 		return false
@@ -121,11 +130,15 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 	s.categoriesView.Add(layout)
 }
 
-type CategorizeCallback func(*common.Category, common.Operation, bool)
+type CategorizeCallback func(*common.Category, common.Operation, bool, bool)
 
-func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, categoizeCB CategorizeCallback) func(bool) {
-	return func(stayOnSameImage bool) {
+func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, categoizeCB CategorizeCallback) func(bool, bool) {
+	return func(stayOnSameImage bool, forceToCategory bool) {
 		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
-		categoizeCB(categoryButton.entry, categoryButton.operation.NextOperation(), stayOnSameImage)
+		if forceToCategory {
+			categoizeCB(categoryButton.entry, common.MOVE, stayOnSameImage, forceToCategory)
+		} else {
+			categoizeCB(categoryButton.entry, categoryButton.operation.NextOperation(), stayOnSameImage, forceToCategory)
+		}
 	}
 }

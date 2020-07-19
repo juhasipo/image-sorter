@@ -10,6 +10,7 @@ type ImageCategoryManager interface {
 	InitializeForDirectory(directory string)
 
 	RequestCategory(handle *common.Handle)
+	GetCategories(handle *common.Handle) map[string]*category.CategorizedImage
 	SetCategory(command *category.CategorizeCommand)
 
 	PersistImageCategories()
