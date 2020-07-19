@@ -179,6 +179,9 @@ func (s *Manager) RequestNextImageWithOffset(offset int) {
 	if s.index >= len(s.imageList) {
 		s.index = len(s.imageList) - 1
 	}
+	if s.index < 0 {
+		s.index = 0
+	}
 	s.sendStatus()
 }
 

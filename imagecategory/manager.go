@@ -228,10 +228,13 @@ func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedIma
 }
 
 func (s *Manager) sendCategories(currentImage *common.Handle) {
-	var categories = s.getCategories(currentImage)
 	var commands []*category.CategorizeCommand
-	for _, image := range categories {
-		commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
+	if currentImage != nil {
+		var categories = s.getCategories(currentImage)
+
+		for _, image := range categories {
+			commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
+		}
 	}
 	s.sender.SendToTopicWithData(event.CATEGORY_IMAGE_UPDATE, commands)
 }

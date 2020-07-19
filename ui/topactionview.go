@@ -142,8 +142,8 @@ func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, c
 
 func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	if title != "" {
-		s.currentImagesStatusLabel.SetText(fmt.Sprintf("Showing pictures from category '%s': %d/%d", title, index, total))
+		s.currentImagesStatusLabel.SetText(fmt.Sprintf("%s pictures (%d/%d)", title, index, total))
 	} else {
-		s.currentImagesStatusLabel.SetText(fmt.Sprintf("Picture: %d/%d", index, total))
+		s.currentImagesStatusLabel.SetText(fmt.Sprintf("All pictures (%d/%d)", index, total))
 	}
 }

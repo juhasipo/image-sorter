@@ -7,7 +7,6 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
-	"os"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -59,7 +58,7 @@ func Init(rootPath string, broker event.Sender, imageCache *imageloader.ImageCac
 }
 
 func (s *Ui) Init(directory string) {
-	os.Setenv("GTK_THEME", "Adwaita:dark")
+	//os.Setenv("GTK_THEME", "Adwaita:dark")
 
 	// Application signals available
 	// startup -> sets up the application when it first starts
