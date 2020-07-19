@@ -24,6 +24,7 @@ type Manager struct {
 	imageList                   []*common.Handle
 	fullImageList               []*common.Handle
 	imageHandles                map[string]*common.Handle
+	imagesTitle                 string
 	index                       int
 	imageHash                   *duplo.Store
 	shouldSendSimilar           bool
@@ -69,14 +70,17 @@ func (s *Manager) GetHandles() []*common.Handle {
 	return s.imageList
 }
 
-func (s *Manager) ShowOnlyImages(handles []*common.Handle) {
+func (s *Manager) ShowOnlyImages(title string, handles []*common.Handle) {
 	s.imageList = handles
+	s.imagesTitle = title
+	s.index = 0
 	s.sendStatus()
 }
 
 func (s *Manager) ShowAllImages() {
 	s.imageList = make([]*common.Handle, len(s.fullImageList))
 	copy(s.imageList, s.fullImageList)
+	s.imagesTitle = ""
 	s.sendStatus()
 }
 
@@ -218,10 +222,13 @@ func (s *Manager) Close() {
 
 func (s *Manager) sendStatus() {
 	currentImage := s.getCurrentImage()
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage})
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage},
+		s.index+1, len(s.imageList), s.imagesTitle)
 
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize))
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize))
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize),
+		0, len(s.imageList), "Next")
+	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize),
+		0, len(s.imageList), "Previous")
 
 	if s.shouldSendSimilar {
 		s.sendSimilarImages(currentImage.GetHandle())

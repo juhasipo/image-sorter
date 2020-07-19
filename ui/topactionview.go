@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
@@ -26,20 +27,22 @@ func (s *CategoryButton) SetStatus(operation common.Operation) {
 }
 
 type TopActionView struct {
-	categoriesView  *gtk.Box
-	categoryButtons map[string]*CategoryButton
-	nextButton      *gtk.Button
-	prevButton      *gtk.Button
-	sender          event.Sender
+	categoriesView           *gtk.Box
+	categoryButtons          map[string]*CategoryButton
+	nextButton               *gtk.Button
+	prevButton               *gtk.Button
+	currentImagesStatusLabel *gtk.Label
+	sender                   event.Sender
 }
 
 func TopActionsNew(builder *gtk.Builder, sender event.Sender) *TopActionView {
 	topActionView := &TopActionView{
-		categoriesView:  GetObjectOrPanic(builder, "categories").(*gtk.Box),
-		categoryButtons: map[string]*CategoryButton{},
-		nextButton:      GetObjectOrPanic(builder, "next-button").(*gtk.Button),
-		prevButton:      GetObjectOrPanic(builder, "prev-button").(*gtk.Button),
-		sender:          sender,
+		categoriesView:           GetObjectOrPanic(builder, "categories").(*gtk.Box),
+		categoryButtons:          map[string]*CategoryButton{},
+		nextButton:               GetObjectOrPanic(builder, "next-button").(*gtk.Button),
+		prevButton:               GetObjectOrPanic(builder, "prev-button").(*gtk.Button),
+		currentImagesStatusLabel: GetObjectOrPanic(builder, "current-images-status-label").(*gtk.Label),
+		sender:                   sender,
 	}
 	topActionView.nextButton.Connect("clicked", func() {
 		sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
@@ -55,6 +58,7 @@ func (v *TopActionView) SetVisible(visible bool) {
 	v.categoriesView.SetVisible(visible)
 	v.nextButton.SetVisible(visible)
 	v.prevButton.SetVisible(visible)
+	v.currentImagesStatusLabel.SetVisible(visible)
 }
 
 func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
@@ -133,5 +137,13 @@ func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, c
 		} else {
 			categoizeCB(categoryButton.entry, categoryButton.operation.NextOperation(), stayOnSameImage, forceToCategory)
 		}
+	}
+}
+
+func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
+	if title != "" {
+		s.currentImagesStatusLabel.SetText(fmt.Sprintf("Showing pictures from category '%s': %d/%d", title, index, total))
+	} else {
+		s.currentImagesStatusLabel.SetText(fmt.Sprintf("Picture: %d/%d", index, total))
 	}
 }

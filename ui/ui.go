@@ -178,7 +178,7 @@ func (s *Ui) UpdateCurrentImage() {
 	s.imageView.UpdateCurrentImage()
 }
 
-func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer) {
+func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer, index int, total int, title string) {
 	if imageTarget == event.IMAGE_REQUEST_NEXT {
 		s.imageView.AddImagesToNextStore(handles)
 	} else if imageTarget == event.IMAGE_REQUEST_PREV {
@@ -186,6 +186,7 @@ func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer
 	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
 		s.similarImagesView.SetImages(handles, s.sender)
 	} else {
+		s.topActionView.SetCurrentStatus(index, total, title)
 		s.SetCurrentImage(handles[0])
 		s.imageCache.Purge(s.imageView.currentImage.image)
 	}

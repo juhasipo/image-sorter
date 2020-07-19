@@ -21,7 +21,7 @@ type Library interface {
 	SetSimilarStatus(sendSimilarImages bool)
 
 	ShowAllImages()
-	ShowOnlyImages([]*common.Handle)
+	ShowOnlyImages(string, []*common.Handle)
 
 	Close()
 }

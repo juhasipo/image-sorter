@@ -143,7 +143,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
 			handles = append(handles, handle)
 		}
 	}
-	s.sender.SendToTopicWithData(event.IMAGE_SHOW_ONLY, handles)
+	s.sender.SendToTopicWithData(event.IMAGE_SHOW_ONLY, cat.GetName(), handles)
 }
 
 func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
