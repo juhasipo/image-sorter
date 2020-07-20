@@ -71,7 +71,11 @@ func (s *Manager) GetHandles() []*common.Handle {
 }
 
 func (s *Manager) ShowOnlyImages(title string, handles []*common.Handle) {
-	s.imageList = handles
+	s.imageList = make([]*common.Handle, len(handles))
+	copy(s.imageList, handles)
+	sort.Slice(s.imageList, func(i, j int) bool {
+		return s.imageList[i].GetId() < s.imageList[j].GetId()
+	})
 	s.imagesTitle = title
 	s.index = 0
 	s.sendStatus()
