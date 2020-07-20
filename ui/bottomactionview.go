@@ -50,3 +50,8 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 func (v *BottomActionView) SetVisible(visible bool) {
 	v.layout.SetVisible(visible)
 }
+
+func (v *BottomActionView) SetNoDistractionMode(value bool) {
+	value = !value
+	v.layout.SetVisible(value)
+}

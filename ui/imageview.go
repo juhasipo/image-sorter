@@ -21,6 +21,7 @@ type CurrentImageView struct {
 }
 
 type ImageList struct {
+	layout    *gtk.ScrolledWindow
 	component *gtk.IconView
 	model     *gtk.ListStore
 	images    []*common.ImageContainer
@@ -34,9 +35,15 @@ type ImageView struct {
 }
 
 func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
-	nextImagesList := &ImageList{component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView)}
+	nextImagesList := &ImageList{
+		layout:    GetObjectOrPanic(builder, "next-images-scrolled-view").(*gtk.ScrolledWindow),
+		component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView),
+	}
 	initializeStore(nextImagesList, VERTICAL, ui.sender)
-	prevImagesList := &ImageList{component: GetObjectOrPanic(builder, "prev-images").(*gtk.IconView)}
+	prevImagesList := &ImageList{
+		layout:    GetObjectOrPanic(builder, "prev-images-scrolled-view").(*gtk.ScrolledWindow),
+		component: GetObjectOrPanic(builder, "prev-images").(*gtk.IconView),
+	}
 	initializeStore(prevImagesList, VERTICAL, ui.sender)
 
 	imageView := &ImageView{
@@ -100,6 +107,13 @@ func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer) {
 
 func (s *ImageView) AddImagesToPrevStore(images []*common.ImageContainer) {
 	s.prevImages.addImagesToStore(images)
+}
+
+func (s *ImageView) SetNoDistractionMode(value bool) {
+	value = !value
+	s.nextImages.layout.SetVisible(value)
+	s.prevImages.layout.SetVisible(value)
+	s.currentImage.details.SetVisible(value)
 }
 
 func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {

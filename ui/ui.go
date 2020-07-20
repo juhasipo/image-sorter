@@ -120,13 +120,19 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 	if key == gdk.KEY_F10 {
 		s.sender.SendToTopic(event.IMAGE_SHOW_ALL)
 	}
+	if key == gdk.KEY_Escape {
+		s.exitFullScreen()
+	}
 	if key == gdk.KEY_F11 {
-		if s.fullscreen {
-			s.win.Unfullscreen()
-			s.fullscreen = false
+		modifiers := gtk.AcceleratorGetDefaultModMask()
+		state := gdk.ModifierType(keyEvent.State())
+		noDistractionMode := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+		if noDistractionMode {
+			s.enterFullScreenNoDistraction()
+		} else if s.fullscreen {
+			s.exitFullScreen()
 		} else {
-			s.win.Fullscreen()
-			s.fullscreen = true
+			s.enterFullScreen()
 		}
 		return true
 	}
@@ -158,6 +164,30 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		}
 	}
 	return false
+}
+
+func (s *Ui) enterFullScreenNoDistraction() {
+	s.win.Fullscreen()
+	s.fullscreen = true
+	s.imageView.SetNoDistractionMode(true)
+	s.topActionView.SetNoDistractionMode(true)
+	s.bottomActionView.SetNoDistractionMode(true)
+}
+
+func (s *Ui) enterFullScreen() {
+	s.win.Fullscreen()
+	s.fullscreen = true
+	s.imageView.SetNoDistractionMode(false)
+	s.topActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetNoDistractionMode(false)
+}
+
+func (s *Ui) exitFullScreen() {
+	s.win.Unfullscreen()
+	s.fullscreen = false
+	s.imageView.SetNoDistractionMode(false)
+	s.topActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetNoDistractionMode(false)
 }
 
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {

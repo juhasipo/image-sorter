@@ -61,6 +61,12 @@ func (v *TopActionView) SetVisible(visible bool) {
 	v.currentImagesStatusLabel.SetVisible(visible)
 }
 
+func (v *TopActionView) SetNoDistractionMode(value bool) {
+	value = !value
+	v.nextButton.SetVisible(value)
+	v.prevButton.SetVisible(value)
+}
+
 func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
 	for _, button := range v.categoryButtons {
 		entry := button.entry
