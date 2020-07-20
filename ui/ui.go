@@ -58,11 +58,6 @@ func Init(rootPath string, broker event.Sender, imageCache *imageloader.ImageCac
 }
 
 func (s *Ui) Init(directory string) {
-	cssProvider, _ := gtk.CssProviderNew()
-	if err := cssProvider.LoadFromPath("style.css"); err != nil {
-		log.Panic("Error while loading CSS ", err)
-	}
-
 	// Application signals available
 	// startup -> sets up the application when it first starts
 	// activate -> shows the default first window of the application (like a new document). This corresponds to the application being launched by the desktop environment.
@@ -71,6 +66,11 @@ func (s *Ui) Init(directory string) {
 	// Setup activate signal with a closure function.
 	s.application.Connect("activate", func() {
 		log.Println("Application activate")
+
+		cssProvider, _ := gtk.CssProviderNew()
+		if err := cssProvider.LoadFromPath("style.css"); err != nil {
+			log.Panic("Error while loading CSS ", err)
+		}
 
 		screen, err := gdk.ScreenGetDefault()
 		if err != nil {
