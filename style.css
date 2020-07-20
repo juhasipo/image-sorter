@@ -4625,6 +4625,7 @@ progressbar.vertical trough, progressbar.vertical progress {
 
 progressbar.horizontal progress {
     margin: 0 -1px;
+    background-color: #15539e;
 }
 
 progressbar.vertical progress {
@@ -5736,7 +5737,7 @@ button.titlebutton:backdrop {
     -gtk-icon-shadow: none;
 }
 
-.view:selected:focus, .view:selected, iconview:selected, .view text:selected, iconview text:selected, textview text:selected, .view text selection:focus, iconview text selection:focus, .view text selection, iconview text selection, textview text selection:focus, textview text selection, flowbox flowboxchild:selected, spinbutton:not(.vertical) selection, entry selection, modelbutton.flat:selected, .menuitem.button.flat:selected, treeview.view:selected:focus, treeview.view:selected, row:selected, calendar:selected {
+.view:selected:focus, .view:selected, iconview:selectedm, iconview:hover, .view text:selected, iconview text:selected, textview text:selected, .view text selection:focus, iconview text selection:focus, .view text selection, iconview text selection, textview text selection:focus, textview text selection, flowbox flowboxchild:selected, spinbutton:not(.vertical) selection, entry selection, modelbutton.flat:selected, .menuitem.button.flat:selected, treeview.view:selected:focus, treeview.view:selected, row:selected, calendar:selected {
     background-color: #15539e;
 }
 
