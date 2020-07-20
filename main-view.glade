@@ -292,7 +292,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="shadow_type">in</property>
-            <property name="min_content_width">100</property>
+            <property name="min_content_width">102</property>
             <child>
               <object class="GtkIconView" id="next-images">
                 <property name="visible">True</property>
@@ -302,7 +302,7 @@
                 <property name="row_spacing">0</property>
                 <property name="column_spacing">0</property>
                 <property name="tooltip_column">1</property>
-                <property name="item_padding">0</property>
+                <property name="item_padding">1</property>
                 <property name="activate_on_single_click">True</property>
               </object>
             </child>
@@ -317,7 +317,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="shadow_type">in</property>
-            <property name="min_content_width">100</property>
+            <property name="min_content_width">102</property>
             <child>
               <object class="GtkIconView" id="prev-images">
                 <property name="visible">True</property>
@@ -327,7 +327,7 @@
                 <property name="row_spacing">0</property>
                 <property name="column_spacing">0</property>
                 <property name="tooltip_column">1</property>
-                <property name="item_padding">0</property>
+                <property name="item_padding">1</property>
                 <property name="activate_on_single_click">True</property>
               </object>
             </child>
@@ -436,6 +436,7 @@
             </child>
             <child>
               <object class="GtkScrolledWindow" id="similar-images-scrolled-view">
+                <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="shadow_type">in</property>
                 <child>
@@ -447,7 +448,7 @@
                     <property name="row_spacing">0</property>
                     <property name="column_spacing">0</property>
                     <property name="tooltip_column">1</property>
-                    <property name="item_padding">0</property>
+                    <property name="item_padding">1</property>
                     <property name="activate_on_single_click">True</property>
                   </object>
                 </child>

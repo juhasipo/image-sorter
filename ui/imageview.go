@@ -114,7 +114,7 @@ func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {
 }
 
 func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
-	const requestedSize = 100
+	const requestedSize = 102
 	if layout == HORIZONTAL {
 		imageList.component.SetSizeRequest(-1, requestedSize)
 	} else {
