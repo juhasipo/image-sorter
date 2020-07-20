@@ -229,8 +229,13 @@ func (s *Manager) Close() {
 
 func (s *Manager) sendStatus() {
 	currentImage := s.getCurrentImage()
+	currentIndex := s.index + 1
+	totalImages := len(s.imageList)
+	if totalImages == 0 {
+		currentIndex = 0
+	}
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage},
-		s.index+1, len(s.imageList), s.imagesTitle)
+		currentIndex, len(s.imageList), s.imagesTitle)
 
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize),
 		0, len(s.imageList), "Next")

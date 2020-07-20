@@ -81,6 +81,8 @@ func (s *ImageView) UpdateCurrentImage() {
 		// Hack to prevent image from being center of the scrolled
 		// window after minimize. First remove and then add again
 		s.currentImage.scrolledView.Add(s.currentImage.viewport)
+	} else {
+		s.currentImage.view.SetFromPixbuf(nil)
 	}
 }
 
@@ -98,6 +100,8 @@ func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
 		s.currentImage.image = handle
 	} else {
 		s.currentImage.image = nil
+		buffer, _ := s.currentImage.details.GetBuffer()
+		buffer.SetText("No image")
 	}
 }
 
