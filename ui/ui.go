@@ -115,18 +115,27 @@ func (s *Ui) findDevices() {
 }
 
 func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
+	const BIG_JUMP_SIZE = 10
+	const HUGE_JUMP_SIZE = 100
+
 	keyEvent := gdk.EventKeyNewFromEvent(e)
 	key := keyEvent.KeyVal()
-	if key == gdk.KEY_F10 {
+
+	modifiers := gtk.AcceleratorGetDefaultModMask()
+	state := gdk.ModifierType(keyEvent.State())
+	controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+
+	if key == gdk.KEY_F8 {
+		s.findDevices()
+		return true
+	} else if key == gdk.KEY_F10 {
 		s.sender.SendToTopic(event.IMAGE_SHOW_ALL)
-	}
-	if key == gdk.KEY_Escape {
+		return true
+	} else if key == gdk.KEY_Escape {
 		s.exitFullScreen()
-	}
-	if key == gdk.KEY_F11 {
-		modifiers := gtk.AcceleratorGetDefaultModMask()
-		state := gdk.ModifierType(keyEvent.State())
-		noDistractionMode := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+		return true
+	} else if key == gdk.KEY_F11 {
+		noDistractionMode := controlDown
 		if noDistractionMode {
 			s.enterFullScreenNoDistraction()
 		} else if s.fullscreen {
@@ -135,32 +144,40 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			s.enterFullScreen()
 		}
 		return true
-	}
-	if key == gdk.KEY_F12 {
+	} else if key == gdk.KEY_F12 {
 		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
 		return true
 	}
 
 	if key == gdk.KEY_Page_Up {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, 10)
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, HUGE_JUMP_SIZE)
+		return true
 	} else if key == gdk.KEY_Page_Down {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, 10)
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, HUGE_JUMP_SIZE)
+		return true
 	} else if key == gdk.KEY_Home {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, 0)
+		return true
 	} else if key == gdk.KEY_End {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, -1)
+		return true
 	}
 
 	if key == gdk.KEY_Left {
-		s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
+		if controlDown {
+			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, BIG_JUMP_SIZE)
+		} else {
+			s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
+		}
 		return true
 	} else if key == gdk.KEY_Right {
-		s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
+		if controlDown {
+			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, BIG_JUMP_SIZE)
+		} else {
+			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
+		}
 		return true
 	} else {
-		modifiers := gtk.AcceleratorGetDefaultModMask()
-		state := gdk.ModifierType(keyEvent.State())
-
 		command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image)
 
 		switchToCategory := state&modifiers&gdk.GDK_MOD1_MASK > 0
@@ -173,6 +190,7 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			command.SetForceToCategory(forceToCategory)
 			s.sender.SendToTopicWithData(event.CATEGORIZE_IMAGE, command)
 		}
+		return true
 	}
 	return false
 }
