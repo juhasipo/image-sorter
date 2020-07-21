@@ -180,7 +180,7 @@ func (s *Caster) FindDevices() {
 			// This needs to be done before connecting to Chromecast otherwise the TCP
 			// connection can't be established. Also this can't be figured out later
 			// because all the information is private in the connection objects
-			localAddr, err := s.resolveLocalAddress(entry.Host, entry.Port)
+			localAddr, err := s.resolveLocalAddress(entry)
 			if err != nil {
 				log.Println("Could not resolve local address", err)
 				break
@@ -238,8 +238,28 @@ func (s *Caster) resolveDeviceName(entry *mdns.ServiceEntry) string {
 	return name
 }
 
-func (s *Caster) resolveLocalAddress(host string, port int) (*net.TCPAddr, error) {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+func (s *Caster) resolveLocalAddress(entry *mdns.ServiceEntry) (*net.TCPAddr, error) {
+	log.Printf("Resolving local address when connecting to")
+	log.Printf("  - Host:port: %s:%d", entry.Host, entry.Port)
+	log.Printf("  - Address: %s", entry.Addr)
+	log.Printf("  - Address v4: %s", entry.AddrV4)
+	log.Printf("  - Address v6: %s", entry.AddrV6)
+	var conn net.Conn
+	var err error
+	if entry.AddrV4 != nil {
+		log.Printf("Connecting (IPv4)...")
+		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", entry.AddrV4, entry.Port))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		log.Printf("Connecting (IPv6)...")
+		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", entry.AddrV6, entry.Port))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
