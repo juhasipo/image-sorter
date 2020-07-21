@@ -193,7 +193,8 @@ func (s *Manager) PersistCategorization() {
 	log.Printf("Saving image categorization to file '%s'", filePath)
 	f, err := os.Create(filePath)
 	if err != nil {
-		log.Panic("Can't write file ", filePath, err)
+		log.Println("Can't write file ", filePath, err)
+		return
 	}
 	defer f.Close()
 	w := bufio.NewWriter(f)
