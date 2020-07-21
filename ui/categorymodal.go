@@ -127,6 +127,8 @@ func (s *CategoryModal) initAddEditView(name string, path string, key string) {
 	s.nameEntry.SetText(name)
 	if name != path {
 		s.pathEntry.SetText(path)
+	} else {
+		s.pathEntry.SetText("")
 	}
 	s.addKeySelections()
 
