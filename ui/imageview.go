@@ -6,6 +6,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"image"
+	"log"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
@@ -17,7 +18,7 @@ type CurrentImageView struct {
 	view         *gtk.Image
 	image        *common.Handle
 	details      *gtk.TextView
-	pixbuf       *gdk.Pixbuf
+	img          image.Image
 }
 
 type ImageList struct {
@@ -70,12 +71,17 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 }
 
 func (s *ImageView) UpdateCurrentImage() {
-	if s.currentImage.pixbuf != nil {
+	if s.currentImage.img != nil {
+		fullSize := s.currentImage.img.Bounds()
 		s.currentImage.scrolledView.Remove(s.currentImage.viewport)
-		size := common.SizeFromWindow(s.currentImage.scrolledView)
-		w, h := common.ScaleToFit(s.currentImage.pixbuf.GetWidth(), s.currentImage.pixbuf.GetHeight(),
-			size.GetWidth(), size.GetHeight())
-		scaled, _ := s.currentImage.pixbuf.ScaleSimple(w, h, gdk.INTERP_BILINEAR)
+		targetSize := common.SizeFromWindow(s.currentImage.scrolledView)
+		targetWidth, targetHeight := common.ScaleToFit(
+			fullSize.Dx(), fullSize.Dy(),
+			targetSize.GetWidth(), targetSize.GetHeight())
+		scaled, err := asPixbuf(s.currentImage.img).ScaleSimple(targetWidth, targetHeight, gdk.INTERP_BILINEAR)
+		if err != nil {
+			log.Print(err)
+		}
 		s.currentImage.view.SetFromPixbuf(scaled)
 
 		// Hack to prevent image from being center of the scrolled
@@ -89,8 +95,7 @@ func (s *ImageView) UpdateCurrentImage() {
 func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
 	handle := imageContainer.GetHandle()
 	img := imageContainer.GetImage()
-	full := img
-	s.currentImage.pixbuf = asPixbuf(full)
+	s.currentImage.img = img
 
 	if img != nil {
 		size := img.Bounds()
@@ -124,9 +129,14 @@ func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {
 	s.model.Clear()
 	for _, img := range images {
 		iter := s.model.Append()
-		thumbnail := img.GetImage()
-		s.model.SetValue(iter, 0, asPixbuf(thumbnail))
-		s.model.SetValue(iter, 1, img.GetHandle().GetId())
+		if img != nil {
+			thumbnail := img.GetImage()
+			s.model.SetValue(iter, 0, asPixbuf(thumbnail))
+			s.model.SetValue(iter, 1, img.GetHandle().GetId())
+		} else {
+			s.model.SetValue(iter, 0, nil)
+			s.model.SetValue(iter, 1, "")
+		}
 	}
 	s.images = images
 }
