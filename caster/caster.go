@@ -88,7 +88,7 @@ func (s *Caster) StartServer(port int) {
 
 func (s *Caster) StopServer() {
 	if s.server != nil {
-		log.Print("Shutting down HTTP server")
+		log.Println("Shutting down HTTP server")
 		err := s.server.Shutdown(context.Background())
 		if err != nil {
 			log.Println(err)
@@ -110,7 +110,7 @@ func (s *Caster) startServerAsync(port int) {
 	address := ":" + strconv.Itoa(port)
 	s.server = &http.Server{Addr: address}
 	if err := s.server.ListenAndServe(); err != nil {
-		log.Panic(err)
+		log.Println("Could not initialize server", err)
 	}
 }
 
@@ -128,6 +128,7 @@ func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, s
 	buffer := new(bytes.Buffer)
 	if err := jpeg.Encode(buffer, img, nil); err != nil {
 		log.Println("Failed to encode image: ", err)
+		return
 	}
 
 	responseWriter.Header().Set("Content-Type", "image/jpeg")
@@ -181,12 +182,14 @@ func (s *Caster) FindDevices() {
 			// because all the information is private in the connection objects
 			localAddr, err := s.resolveLocalAddress(entry.Host, entry.Port)
 			if err != nil {
-				log.Panic(err)
+				log.Println("Could not resolve local address", err)
+				break
 			}
 
 			client, err := primitives.NewClient(entry.Addr, entry.Port)
 			if err != nil {
-				log.Panic(err)
+				log.Println("Could not create new client", err)
+				break
 			}
 
 			receiver := controllers.NewReceiverController(client, "sender-0", "receiver-0")
@@ -200,7 +203,7 @@ func (s *Caster) FindDevices() {
 			}
 			response, err := deviceEntry.receiver.GetStatus(time.Second * 5)
 
-			log.Print("Status response: ", response, err)
+			log.Println("Status response: ", response, err)
 
 			s.devices[deviceName] = deviceEntry
 			s.sender.SendToTopicWithData(event.CAST_DEVICE_FOUND, deviceName)
@@ -254,7 +257,7 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 	device.connection.Connect()
 	d, err := cast.NewDevice(device.serviceEntry.Addr, device.serviceEntry.Port)
 	if err != nil {
-		log.Panic(err)
+		log.Println("Could no select device: '"+name+"'", err)
 	}
 	device.device = &d
 	appId := configs.MediaReceiverAppID
