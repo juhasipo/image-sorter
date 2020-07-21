@@ -63,6 +63,7 @@ func (s *Manager) InitializeFromDirectory(directory string) {
 	s.rootDir = directory
 	s.index = 0
 	s.imageHash = duplo.New()
+	s.shouldGenerateSimilarHashed = true
 	s.loadImagesFromRootDir()
 }
 
