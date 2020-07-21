@@ -83,13 +83,16 @@ func (s *Manager) Save(categories []*common.Category) {
 func (s *Manager) SaveDefault(categories []*common.Category) {
 	s.resetCategories(categories)
 
-	currentUser, _ := user.Current()
-	categoryFile := filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR)
+	if currentUser, err := user.Current(); err != nil {
+		log.Println("Could not find current user", err)
+	} else {
+		categoryFile := filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR)
 
-	saveCategoriesToFile(categoryFile, CATEGORIES_FILE_NAME, categories)
-	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
-		categories: categories,
-	})
+		saveCategoriesToFile(categoryFile, CATEGORIES_FILE_NAME, categories)
+		s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
+			categories: categories,
+		})
+	}
 }
 
 func (s *Manager) resetCategories(categories []*common.Category) {
@@ -146,31 +149,35 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 }
 
 func loadCategoriesFromFile(fileDir string) []*common.Category {
-	currentUser, _ := user.Current()
-	filePaths := []string{
-		filepath.Join(fileDir, CATEGORIES_FILE_NAME),
-		filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR, CATEGORIES_FILE_NAME),
-	}
+	if currentUser, err := user.Current(); err == nil {
+		filePaths := []string{
+			filepath.Join(fileDir, CATEGORIES_FILE_NAME),
+			filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR, CATEGORIES_FILE_NAME),
+		}
 
-	filePath := common.GetFirstExistingFilePath(filePaths)
+		filePath := common.GetFirstExistingFilePath(filePaths)
 
-	log.Printf("Reading categories from file '%s'", filePath)
+		log.Printf("Reading categories from file '%s'", filePath)
 
-	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
-	if err != nil {
-		return []*common.Category{}
-	}
-	defer f.Close()
+		if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
+			defer f.Close()
+			var lines []string
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				lines = append(lines, scanner.Text())
+			}
 
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if lines != nil {
-		return fromCategoriesStrings(lines[1:])
+			if lines != nil {
+				return fromCategoriesStrings(lines[1:])
+			} else {
+				return []*common.Category{}
+			}
+		} else {
+			log.Println("Could not open file: "+filePath, err)
+			return []*common.Category{}
+		}
 	} else {
+		log.Println("Could not find current user", err)
 		return []*common.Category{}
 	}
 }

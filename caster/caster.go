@@ -16,6 +16,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -60,7 +61,7 @@ type DeviceEntry struct {
 	localAddr       *net.TCPAddr
 }
 
-func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache *imageloader.ImageCache) (*Caster, error) {
+func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache *imageloader.ImageCache) *Caster {
 	c := &Caster{
 		port:                  port,
 		alwaysStartHttpServer: alwaysStartHttpServer,
@@ -74,7 +75,7 @@ func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender even
 		c.StartServer(port)
 	}
 
-	return c, nil
+	return c
 }
 
 func (s *Caster) StartServer(port int) {
@@ -289,8 +290,12 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 }
 
 func (s *Caster) getLocalHost() string {
-	hostname, _ := os.Hostname()
-	return hostname
+	if hostname, err := os.Hostname(); err != nil {
+		log.Panic("Could not get hostname", err)
+		return ""
+	} else {
+		return hostname
+	}
 }
 
 func (s *Caster) CastImage(handle *common.Handle) {
@@ -302,9 +307,15 @@ func (s *Caster) CastImage(handle *common.Handle) {
 		// triggers image change. The server will decide which image to show
 		// This way the outside world can't decide what is served which makes
 		// this slightly more secure (no need to validate/sanitize file paths)
-		cacheBuster, _ := uuid.NewRandom()
+		var cacheBusterStr string
+		if cacheBuster, err := uuid.NewRandom(); err != nil {
+			cacheBusterStr = strconv.Itoa(rand.Int())
+		} else {
+			cacheBusterStr = cacheBuster.String()
+		}
+
 		ip := device.localAddr.IP.String()
-		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, cacheBuster.String())
+		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, cacheBusterStr)
 		log.Printf("Casting image '%s'", imageUrl)
 		device.mediaController.Load(imageUrl, "image/jpeg", time.Second*5)
 		log.Printf("Casted image")

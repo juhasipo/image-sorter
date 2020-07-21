@@ -28,8 +28,17 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		orientationTag, _ := decodedExif.Get(exif.Orientation)
-		orientation, _ := orientationTag.Int(0)
+
+		orientation := 0
+		if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
+			log.Print("Could not resolve orientation flag", err)
+			return nil, err
+		} else if orientation, err = orientationTag.Int(0); err != nil {
+			log.Print("Could not resolve orientation value", err)
+			orientation = 0
+			return nil, err
+		}
+
 		angle, flip := ExifOrientationToAngleAndFlip(orientation)
 		return &ExifData{
 			rotation: angle,

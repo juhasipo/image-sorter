@@ -67,16 +67,15 @@ func (s *Ui) Init(directory string) {
 	s.application.Connect("activate", func() {
 		log.Println("Application activate")
 
-		cssProvider, _ := gtk.CssProviderNew()
-		if err := cssProvider.LoadFromPath("style.css"); err != nil {
+		if cssProvider, err := gtk.CssProviderNew(); err != nil {
+			log.Panic("Error while loading CSS provider", err)
+		} else if err = cssProvider.LoadFromPath("style.css"); err != nil {
 			log.Panic("Error while loading CSS ", err)
-		}
-
-		screen, err := gdk.ScreenGetDefault()
-		if err != nil {
+		} else if screen, err := gdk.ScreenGetDefault(); err != nil {
 			log.Panic("Error while loading screen ", err)
+		} else {
+			gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 		}
-		gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 		builder, err := gtk.BuilderNewFromFile("main-view.glade")
 		if err != nil {

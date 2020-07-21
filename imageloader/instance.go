@@ -26,13 +26,20 @@ type Instance struct {
 }
 
 func NewInstance(handle *common.Handle) *Instance {
-	exifData, _ := common.LoadExifData(handle)
-	instance := &Instance{
-		handle:   handle,
-		exifData: exifData,
+	var instance *Instance
+	if exifData, err := common.LoadExifData(handle); err == nil {
+		instance = &Instance{
+			handle:   handle,
+			exifData: exifData,
+		}
+	} else {
+		instance = &Instance{
+			handle:   handle,
+			exifData: nil,
+		}
 	}
-	instance.thumbnail = instance.GetThumbnail()
 
+	instance.thumbnail = instance.GetThumbnail()
 	return instance
 }
 
@@ -58,8 +65,11 @@ func loadImageWithExifCorrection(handle *common.Handle, exifData *common.ExifDat
 		return nil, err
 	}
 
-	fileStat, _ := os.Stat(handle.GetPath())
-	handle.SetByteSize(fileStat.Size())
+	if fileStat, err := os.Stat(handle.GetPath()); err == nil {
+		handle.SetByteSize(fileStat.Size())
+	} else {
+		log.Println("Could not load statistic for " + handle.GetPath())
+	}
 
 	if exifData != nil {
 		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
@@ -149,7 +159,10 @@ func (s *Instance) LoadFullFromCache() image.Image {
 	if s.full == nil {
 		startTime := time.Now()
 
-		s.full, _ = s.loadFull(nil)
+		var err error
+		if s.full, err = s.loadFull(nil); err != nil {
+			log.Println("Could not load image: "+s.handle.GetPath(), err)
+		}
 
 		endTime := time.Now()
 		log.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
@@ -167,7 +180,10 @@ func (s *Instance) LoadThumbnailFromCache() image.Image {
 		startTime := time.Now()
 
 		size := common.SizeOf(THUMBNAIL_SIZE, THUMBNAIL_SIZE)
-		s.thumbnail, _ = s.loadFull(&size)
+		var err error
+		if s.thumbnail, err = s.loadFull(&size); err != nil {
+			log.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
+		}
 
 		endTime := time.Now()
 		log.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())

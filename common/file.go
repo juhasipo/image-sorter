@@ -14,8 +14,13 @@ func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) er
 	log.Printf("   - Copying '%s' to '%s'", srcFilePath, dstFilePath)
 
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		info, _ := os.Stat(srcPath)
-		os.MkdirAll(dstPath, info.Mode())
+		if info, err := os.Stat(srcPath); err == nil {
+			os.MkdirAll(dstPath, info.Mode())
+		} else {
+			log.Println("Could not resolve srdPath: " + srcPath)
+		}
+	} else {
+		log.Println("Could not resolve dstPath: " + dstPath)
 	}
 
 	return CopyInternal(srcFilePath, dstFilePath)

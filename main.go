@@ -34,7 +34,7 @@ func main() {
 	categorizationManager := imagecategory.ManagerNew(broker, imageLibrary)
 
 	secretValue := resolveSecret(*secret)
-	castManager, _ := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)
+	castManager := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)
 
 	gui := ui.Init(rootPath, broker, imageCache)
 
@@ -113,8 +113,12 @@ func main() {
 
 func resolveSecret(secret string) string {
 	if secret == "" {
-		randomSecret, _ := uuid.NewRandom()
-		return randomSecret.String()
+		if randomSecret, err := uuid.NewRandom(); err != nil {
+			log.Panic("Could not initialize secret for casting", err)
+			return ""
+		} else {
+			return randomSecret.String()
+		}
 	} else {
 		return secret
 	}
