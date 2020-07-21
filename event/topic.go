@@ -10,6 +10,7 @@ const (
 
 	// Image related
 	IMAGE_REQUEST             Topic = "image-request"
+	IMAGE_REQUEST_AT_INDEX    Topic = "image-request-at-index"
 	IMAGE_REQUEST_NEXT        Topic = "image-request-next"
 	IMAGE_REQUEST_PREV        Topic = "image-request-prev"
 	IMAGE_REQUEST_NEXT_OFFSET Topic = "image-request-next-offset"

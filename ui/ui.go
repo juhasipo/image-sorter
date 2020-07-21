@@ -140,6 +140,17 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
 		return true
 	}
+
+	if key == gdk.KEY_Page_Up {
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, 10)
+	} else if key == gdk.KEY_Page_Down {
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, 10)
+	} else if key == gdk.KEY_Home {
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, 0)
+	} else if key == gdk.KEY_End {
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, -1)
+	}
+
 	if key == gdk.KEY_Left {
 		s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
 		return true

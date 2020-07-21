@@ -62,6 +62,7 @@ func main() {
 	broker.Subscribe(event.IMAGE_REQUEST_PREV_OFFSET, imageLibrary.RequestPrevImageWithOffset)
 	broker.Subscribe(event.IMAGE_REQUEST_CURRENT, imageLibrary.RequestImages)
 	broker.Subscribe(event.IMAGE_REQUEST, imageLibrary.RequestImage)
+	broker.Subscribe(event.IMAGE_REQUEST_AT_INDEX, imageLibrary.RequestImageAt)
 	broker.Subscribe(event.IMAGE_LIST_SIZE_CHANGED, imageLibrary.ChangeImageListSize)
 	broker.Subscribe(event.IMAGE_SHOW_ALL, imageLibrary.ShowAllImages)
 	broker.Subscribe(event.IMAGE_SHOW_ONLY, imageLibrary.ShowOnlyImages)

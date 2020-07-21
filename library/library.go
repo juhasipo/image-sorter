@@ -198,6 +198,22 @@ func (s *Manager) RequestImage(handle *common.Handle) {
 	s.RequestImages()
 }
 
+func (s *Manager) RequestImageAt(index int) {
+	if index >= 0 {
+		s.index = index
+	} else {
+		s.index = len(s.imageList) - index
+	}
+
+	if s.index >= len(s.imageList) {
+		s.index = len(s.imageList) - 1
+	}
+	if s.index < 0 {
+		s.index = 0
+	}
+	s.RequestImages()
+}
+
 func (s *Manager) RequestPrevImage() {
 	s.RequestPrevImageWithOffset(1)
 }

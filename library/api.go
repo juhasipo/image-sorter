@@ -13,6 +13,7 @@ type Library interface {
 	RequestPrevImage()
 	RequestPrevImageWithOffset(int)
 	RequestImage(*common.Handle)
+	RequestImageAt(int)
 	RequestGenerateHashes()
 	RequestStopHashes()
 	GetHandles() []*common.Handle
