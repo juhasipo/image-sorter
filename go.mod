@@ -3,7 +3,6 @@ module vincit.fi/image-sorter
 go 1.14
 
 require (
-	fyne.io/fyne v1.3.0 // indirect
 	github.com/AndreasAbdi/gochromecast v0.0.0-20181018034447-700dddc0dea7
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
