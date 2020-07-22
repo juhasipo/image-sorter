@@ -34,10 +34,12 @@ func ImageContainerNew(handle *Handle, img image.Image) *ImageContainer {
 }
 
 type Handle struct {
-	id       string
-	path     string
-	hash     *duplo.Hash
-	byteSize int64
+	id        string
+	directory string
+	filename  string
+	path      string
+	hash      *duplo.Hash
+	byteSize  int64
 }
 
 func (s *Handle) IsValid() bool {
@@ -51,9 +53,11 @@ var (
 
 func HandleNew(fileDir string, fileName string) *Handle {
 	return &Handle{
-		id:   fileName,
-		path: filepath.Join(fileDir, fileName),
-		hash: nil,
+		id:        fileName,
+		directory: fileDir,
+		filename:  fileName,
+		path:      filepath.Join(fileDir, fileName),
+		hash:      nil,
 	}
 }
 
@@ -71,6 +75,14 @@ func (s *Handle) String() string {
 
 func (s *Handle) GetPath() string {
 	return s.path
+}
+
+func (s *Handle) GetDir() string {
+	return s.directory
+}
+
+func (s *Handle) GetFile() string {
+	return s.filename
 }
 
 func (s *Handle) SetHash(hash *duplo.Hash) {

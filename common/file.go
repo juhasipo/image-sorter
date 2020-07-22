@@ -11,28 +11,23 @@ import (
 func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) error {
 	srcFilePath := filepath.Join(srcPath, srcFile)
 	dstFilePath := filepath.Join(dstPath, dstFile)
-	log.Printf("   - Copying '%s' to '%s'", srcFilePath, dstFilePath)
 
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		if info, err := os.Stat(srcPath); err == nil {
-			os.MkdirAll(dstPath, info.Mode())
-		} else {
+		if info, err := os.Stat(srcPath); err != nil {
 			log.Println("Could not resolve srdPath: " + srcPath)
+		} else if err := os.MkdirAll(dstPath, info.Mode()); err != nil {
+			return err
 		}
-	} else {
-		log.Println("Could not resolve dstPath: " + dstPath)
 	}
 
-	return CopyInternal(srcFilePath, dstFilePath)
+	return copyInternal(srcFilePath, dstFilePath)
 }
 
-func CopyInternal(src string, dst string) error {
-	sourceFileStat, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
+func copyInternal(src string, dst string) error {
 
-	if !sourceFileStat.Mode().IsRegular() {
+	if sourceFileStat, err := os.Stat(src); err != nil {
+		return err
+	} else if !sourceFileStat.Mode().IsRegular() {
 		return fmt.Errorf("%s is not a regular file", src)
 	}
 
@@ -52,7 +47,6 @@ func CopyInternal(src string, dst string) error {
 }
 
 func RemoveFile(src string) error {
-	log.Printf("   - Deleting '%s'", src)
 	return os.Remove(src)
 }
 

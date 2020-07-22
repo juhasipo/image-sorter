@@ -108,27 +108,40 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 
 func (s *Manager) PersistImageCategories() {
 	log.Printf("Persisting files to categories")
-	for handleId, categoryEntries := range s.imageCategory {
-		handle := s.library.GetHandleById(handleId)
-		s.persistImageCategory(handle, categoryEntries)
+	operationsByImage, err := s.resolveFileOperations(s.imageCategory)
+	if err != nil {
+		log.Println("Could not resolve operations", err)
+		return
+	}
+
+	for _, operationGroup := range operationsByImage {
+		err := operationGroup.Apply()
+		if err != nil {
+			log.Println("Error", err)
+		}
 	}
 	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
 }
 
-func (s *Manager) persistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
-	log.Printf(" - Persisting '%s'", handle.GetPath())
-	dir, file := filepath.Split(handle.GetPath())
+func (s *Manager) resolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage) ([]*common.ImageOperationGroup, error) {
+	var operationGroups []*common.ImageOperationGroup
 
-	for _, image := range categories {
-		targetDirName := image.GetEntry().GetSubPath()
-		targetDir := filepath.Join(dir, targetDirName)
+	for handleId, categoryEntries := range imageCategory {
+		handle := s.library.GetHandleById(handleId)
+		dir, file := filepath.Split(handle.GetPath())
 
-		// Always copy first because picture may have multiple categories
-		if image.GetOperation() != common.NONE {
-			common.CopyFile(dir, file, targetDir, file)
+		var imageOperations []common.ImageOperation
+		for _, image := range categoryEntries {
+			targetDirName := image.GetEntry().GetSubPath()
+			targetDir := filepath.Join(dir, targetDirName)
+			imageOperations = append(imageOperations, common.ImageCopyNew(targetDir, file))
 		}
+		imageOperations = append(imageOperations, common.ImageRemoveNew())
+
+		operationGroups = append(operationGroups, common.ImageOperationGroupNew(handle, imageOperations))
 	}
-	common.RemoveFile(handle.GetPath())
+
+	return operationGroups, nil
 }
 
 func (s *Manager) Close() {
@@ -137,7 +150,7 @@ func (s *Manager) Close() {
 }
 
 func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
-	handles := []*common.Handle{}
+	var handles []*common.Handle
 	for key, img := range s.imageCategory {
 		if _, ok := img[cat.GetId()]; ok {
 			handle := s.library.GetHandleById(key)
