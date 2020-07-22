@@ -112,6 +112,7 @@ func (s *Manager) PersistImageCategories() {
 		handle := s.library.GetHandleById(handleId)
 		s.persistImageCategory(handle, categoryEntries)
 	}
+	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
 }
 
 func (s *Manager) persistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage) {
@@ -169,6 +170,10 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 		parts := strings.Split(line, ";")
 		handle := handleManager.GetHandleById(parts[0])
 		categories := parts[1:]
+
+		if !handle.IsValid() {
+			continue
+		}
 
 		categoryMap := s.imageCategory[handle.GetId()]
 		if categoryMap == nil {
