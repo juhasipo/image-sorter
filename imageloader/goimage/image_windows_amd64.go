@@ -13,6 +13,7 @@ func LoadImage(handle *common.Handle) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	imageFile, err := jpeg.Decode(file, options)
 	if err != nil {
@@ -26,6 +27,7 @@ func LoadImageScaled(handle *common.Handle, size common.Size) (image.Image, erro
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	imageFile, err := jpeg.Decode(file, &jpeg.DecoderOptions{ScaleTarget: image.Rect(0, 0, size.GetWidth(), size.GetHeight())})
 	if err != nil {
