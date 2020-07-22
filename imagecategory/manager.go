@@ -106,9 +106,9 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	}
 }
 
-func (s *Manager) PersistImageCategories() {
+func (s *Manager) PersistImageCategories(keepOriginal bool) {
 	log.Printf("Persisting files to categories")
-	operationsByImage, err := s.resolveFileOperations(s.imageCategory)
+	operationsByImage, err := s.resolveFileOperations(s.imageCategory, keepOriginal)
 	if err != nil {
 		log.Println("Could not resolve operations", err)
 		return
@@ -126,7 +126,7 @@ func (s *Manager) PersistImageCategories() {
 	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
 }
 
-func (s *Manager) resolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage) ([]*common.ImageOperationGroup, error) {
+func (s *Manager) resolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, keepOriginal bool) ([]*common.ImageOperationGroup, error) {
 	var operationGroups []*common.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
@@ -139,7 +139,9 @@ func (s *Manager) resolveFileOperations(imageCategory map[string]map[string]*cat
 			targetDir := filepath.Join(dir, targetDirName)
 			imageOperations = append(imageOperations, common.ImageCopyNew(targetDir, file))
 		}
-		imageOperations = append(imageOperations, common.ImageRemoveNew())
+		if !keepOriginal {
+			imageOperations = append(imageOperations, common.ImageRemoveNew())
+		}
 
 		operationGroups = append(operationGroups, common.ImageOperationGroupNew(handle, imageOperations))
 	}

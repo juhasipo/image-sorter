@@ -24,12 +24,15 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		openFolderButton:     GetObjectOrPanic(builder, "open-folder-button").(*gtk.Button),
 	}
 	bottomActionView.persistButton.Connect("clicked", func() {
-		confirm := gtk.MessageDialogNew(ui.application.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, "Do you really want to move images to cateogry folders?")
+		confirm := gtk.MessageDialogNew(ui.application.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO,
+			"Do you really want to move images to category folders?")
+		confirm.SetTitle("Apply categories?")
+
 		defer confirm.Destroy()
 		response := confirm.Run()
 
 		if response == gtk.RESPONSE_YES {
-			sender.SendToTopic(event.CATEGORY_PERSIST_ALL)
+			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, false)
 		}
 	})
 

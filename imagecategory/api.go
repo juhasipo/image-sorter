@@ -13,7 +13,7 @@ type ImageCategoryManager interface {
 	GetCategories(handle *common.Handle) map[string]*category.CategorizedImage
 	SetCategory(command *category.CategorizeCommand)
 
-	PersistImageCategories()
+	PersistImageCategories(bool)
 	PersistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage)
 
 	PersistCategorization()
