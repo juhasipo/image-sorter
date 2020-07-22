@@ -24,19 +24,14 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 	fileForExif, err := os.Open(handle.GetPath())
 	if fileForExif != nil && err == nil {
 		defer fileForExif.Close()
-		decodedExif, err := exif.Decode(fileForExif)
-		if err != nil {
-			log.Fatal(err)
-		}
 
 		orientation := 0
-		if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
+		if decodedExif, err := exif.Decode(fileForExif); err != nil {
+			log.Print("Could not decode Exif data", err)
+		} else if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
 			log.Print("Could not resolve orientation flag", err)
-			return nil, err
 		} else if orientation, err = orientationTag.Int(0); err != nil {
 			log.Print("Could not resolve orientation value", err)
-			orientation = 0
-			return nil, err
 		}
 
 		angle, flip := ExifOrientationToAngleAndFlip(orientation)
