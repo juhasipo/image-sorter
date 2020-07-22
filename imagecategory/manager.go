@@ -114,11 +114,14 @@ func (s *Manager) PersistImageCategories() {
 		return
 	}
 
-	for _, operationGroup := range operationsByImage {
+	total := len(operationsByImage)
+	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", 0, total)
+	for i, operationGroup := range operationsByImage {
 		err := operationGroup.Apply()
 		if err != nil {
 			log.Println("Error", err)
 		}
+		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", i+1, total)
 	}
 	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
 }
