@@ -274,18 +274,14 @@ func (s *Ui) Run() {
 func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
 	log.Print("Start setting image category")
 	for _, button := range s.topActionView.categoryButtons {
-		button.button.SetLabel(button.entry.GetName())
-		button.operation = common.NONE
-		button.SetStatus(button.operation)
+		button.SetStatus(common.NONE)
 	}
 
 	for _, command := range commands {
 		log.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
-		button := s.topActionView.categoryButtons[command.GetEntry().GetId()]
-		if button != nil {
-			button.operation = command.GetOperation()
-			button.button.SetLabel(command.ToLabel())
-			button.SetStatus(button.operation)
+
+		if button, ok := s.topActionView.categoryButtons[command.GetEntry().GetId()]; ok {
+			button.SetStatus(command.GetOperation())
 		}
 	}
 	log.Print("End setting image category")

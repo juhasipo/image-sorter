@@ -6,18 +6,18 @@ import (
 )
 
 type Category struct {
-	id        string
-	name      string
-	subPath   string
-	shortcuts []uint
+	id       string
+	name     string
+	subPath  string
+	shortcut uint
 }
 
 func CategoryEntryNew(name string, subPath string, shortcut string) *Category {
 	return &Category{
-		id:        name,
-		name:      name,
-		subPath:   subPath,
-		shortcuts: KeyToUint(shortcut),
+		id:       name,
+		name:     name,
+		subPath:  subPath,
+		shortcut: KeyToUint(shortcut),
 	}
 }
 
@@ -37,20 +37,19 @@ func (s *Category) String() string {
 	return s.name
 }
 
-func (s *Category) GetShortcuts() []uint {
-	return s.shortcuts
+func (s *Category) GetShortcut() uint {
+	return s.shortcut
+}
+
+func (s *Category) GetShortcutAsString() string {
+	return KeyvalName(s.shortcut)
 }
 
 func (s *Category) HasShortcut(val uint) bool {
-	for _, shortcut := range s.shortcuts {
-		if shortcut == val {
-			return true
-		}
-	}
-	return false
+	return s.shortcut == val
 }
 
 func (s *Category) Serialize() string {
-	shortcut := strings.ToUpper(KeyvalName(s.shortcuts[0]))
+	shortcut := strings.ToUpper(KeyvalName(s.shortcut))
 	return fmt.Sprintf("%s:%s:%s", s.name, s.subPath, shortcut)
 }

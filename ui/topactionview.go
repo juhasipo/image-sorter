@@ -19,6 +19,7 @@ type CategoryButton struct {
 }
 
 func (s *CategoryButton) SetStatus(operation common.Operation) {
+	s.operation = operation
 	if operation == common.MOVE {
 		s.toggle.SetValue(1.0)
 	} else {
@@ -86,7 +87,7 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 	toggle, _ := gtk.LevelBarNew()
 	toggle.SetSensitive(false)
 	toggle.SetSizeRequest(-1, 5)
-	button, _ := gtk.ButtonNewWithLabel(entry.GetName())
+	button, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("%s (%s)", entry.GetName(), entry.GetShortcutAsString()))
 	button.SetHExpand(true)
 	layout.Add(button)
 	layout.Add(toggle)

@@ -237,7 +237,7 @@ func (s *CategoryModal) Show(parent gtk.IWindow, categories []*common.Category) 
 		iter := s.model.Append()
 		s.model.SetValue(iter, 0, entry.GetName())
 		s.model.SetValue(iter, 1, entry.GetSubPath())
-		s.model.SetValue(iter, 2, common.KeyvalName(entry.GetShortcuts()[0]))
+		s.model.SetValue(iter, 2, entry.GetShortcutAsString())
 	}
 
 	s.modal.SetTransientFor(parent)

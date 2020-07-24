@@ -174,7 +174,7 @@
             </child>
             <child>
               <object class="GtkButton" id="find-similar-button">
-                <property name="label" translatable="yes">Find Similar</property>
+                <property name="label" translatable="yes">Find Similar (F12)</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -188,7 +188,7 @@
             </child>
             <child>
               <object class="GtkButton" id="find-devices-button">
-                <property name="label" translatable="yes">Cast</property>
+                <property name="label" translatable="yes">Cast (F8)</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
