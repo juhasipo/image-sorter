@@ -176,13 +176,11 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		}
 		return true
-	} else {
-		command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image)
-
+	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image); command != nil {
 		switchToCategory := state&modifiers&gdk.GDK_MOD1_MASK > 0
 		if switchToCategory {
 			s.sender.SendToTopicWithData(event.CATEGORIES_SHOW_ONLY, command.GetEntry())
-		} else if command != nil {
+		} else {
 			stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
 			forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
 			command.SetStayOfSameImage(stayOnSameImage)
