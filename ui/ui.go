@@ -122,18 +122,18 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 
 	modifiers := gtk.AcceleratorGetDefaultModMask()
 	state := gdk.ModifierType(keyEvent.State())
-	controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+	modifierType := state & modifiers
+	shiftDown := modifierType&gdk.GDK_CONTROL_MASK > 0
+	controlDown := modifierType&gdk.GDK_CONTROL_MASK > 0
+	altDown := modifierType&gdk.GDK_MOD1_MASK > 0
 
 	if key == gdk.KEY_F8 {
 		s.findDevices()
-		return true
 	} else if key == gdk.KEY_F10 {
 		s.sender.SendToTopic(event.IMAGE_SHOW_ALL)
-		return true
 	} else if key == gdk.KEY_Escape {
 		s.exitFullScreen()
-		return true
-	} else if key == gdk.KEY_F11 {
+	} else if key == gdk.KEY_F11 || (altDown && key == gdk.KEY_Return) {
 		noDistractionMode := controlDown
 		if noDistractionMode {
 			s.enterFullScreenNoDistraction()
@@ -142,54 +142,43 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.enterFullScreen()
 		}
-		return true
 	} else if key == gdk.KEY_F12 {
 		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
-		return true
-	}
-
-	if key == gdk.KEY_Page_Up {
+	} else if key == gdk.KEY_Page_Up {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, HUGE_JUMP_SIZE)
-		return true
 	} else if key == gdk.KEY_Page_Down {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, HUGE_JUMP_SIZE)
-		return true
 	} else if key == gdk.KEY_Home {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, 0)
-		return true
 	} else if key == gdk.KEY_End {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, -1)
-		return true
-	}
-
-	if key == gdk.KEY_Left {
+	} else if key == gdk.KEY_Left {
 		if controlDown {
 			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, BIG_JUMP_SIZE)
 		} else {
 			s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
 		}
-		return true
 	} else if key == gdk.KEY_Right {
 		if controlDown {
 			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, BIG_JUMP_SIZE)
 		} else {
 			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		}
-		return true
 	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image); command != nil {
-		switchToCategory := state&modifiers&gdk.GDK_MOD1_MASK > 0
+		switchToCategory := altDown
 		if switchToCategory {
 			s.sender.SendToTopicWithData(event.CATEGORIES_SHOW_ONLY, command.GetEntry())
 		} else {
-			stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
-			forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+			stayOnSameImage := shiftDown
+			forceToCategory := controlDown
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetForceToCategory(forceToCategory)
 			s.sender.SendToTopicWithData(event.CATEGORIZE_IMAGE, command)
 		}
-		return true
+	} else {
+		return false
 	}
-	return false
+	return true
 }
 
 func (s *Ui) enterFullScreenNoDistraction() {
