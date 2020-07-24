@@ -24,7 +24,6 @@ func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) er
 }
 
 func copyInternal(src string, dst string) error {
-
 	if sourceFileStat, err := os.Stat(src); err != nil {
 		return err
 	} else if !sourceFileStat.Mode().IsRegular() {

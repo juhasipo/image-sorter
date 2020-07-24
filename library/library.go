@@ -10,6 +10,7 @@ import (
 	"vincit.fi/image-sorter/duplo"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/util"
 )
 
@@ -32,7 +33,8 @@ type Manager struct {
 	sender                      event.Sender
 	categoryManager             *category.Manager
 	imageListSize               int
-	imageCache                  *imageloader.ImageCache
+	imageCache                  imageloader.ImageCache
+	imageLoader                 goimage.ImageLoader
 
 	Library
 
@@ -40,7 +42,7 @@ type Manager struct {
 	outputChannel chan *HashResult
 }
 
-func LibraryNew(sender event.Sender, imageCache *imageloader.ImageCache) Library {
+func LibraryNew(sender event.Sender, imageCache imageloader.ImageCache, imageLoader goimage.ImageLoader) Library {
 	var manager = Manager{
 		index:                       0,
 		sender:                      sender,
@@ -48,6 +50,7 @@ func LibraryNew(sender event.Sender, imageCache *imageloader.ImageCache) Library
 		shouldGenerateSimilarHashed: true,
 		imageListSize:               0,
 		imageCache:                  imageCache,
+		imageLoader:                 imageLoader,
 	}
 	return &manager
 }
@@ -116,7 +119,7 @@ func (s *Manager) RequestGenerateHashes() {
 		// processed at once. Otherwise the goroutines might start processing
 		// all images at once which would use all available RAM
 		for i := 0; i < cpuCores; i++ {
-			go hashImage(inputChannel, s.outputChannel, s.stopChannel)
+			go hashImage(inputChannel, s.outputChannel, s.stopChannel, s.imageLoader)
 		}
 
 		var i = 0
@@ -330,9 +333,12 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 }
 
 func (s *Manager) loadImagesFromRootDir() {
-	s.imageHandles = map[string]*common.Handle{}
+	s.AddHandles(common.LoadImageHandles(s.rootDir))
+}
 
-	s.imageList = common.LoadImageHandles(s.rootDir)
+func (s *Manager) AddHandles(imageList []*common.Handle) {
+	s.imageList = imageList
+	s.imageHandles = map[string]*common.Handle{}
 	s.fullImageList = make([]*common.Handle, len(s.imageList))
 	copy(s.fullImageList, s.imageList)
 

@@ -3,6 +3,7 @@ package imagecategory
 import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/filter"
 	"vincit.fi/image-sorter/library"
 )
 
@@ -20,6 +21,9 @@ type ImageCategoryManager interface {
 	LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager)
 
 	ShowOnlyCategoryImages(*common.Category)
+
+	ResolveFileOperations(map[string]map[string]*category.CategorizedImage, bool) []*filter.ImageOperationGroup
+	ResolveOperationsForGroup(*common.Handle, map[string]*category.CategorizedImage, bool) (*filter.ImageOperationGroup, error)
 
 	Close()
 }

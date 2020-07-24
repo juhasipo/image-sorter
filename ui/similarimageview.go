@@ -11,12 +11,12 @@ type SimilarImagesView struct {
 	view         *gtk.Box
 	scrollLayout *gtk.ScrolledWindow
 	list         *ImageList
-	imageCache   *imageloader.ImageCache
+	imageCache   imageloader.ImageCache
 	closeButton  *gtk.Button
 	sender       event.Sender
 }
 
-func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache *imageloader.ImageCache) *SimilarImagesView {
+func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageCache) *SimilarImagesView {
 	imageList := &ImageList{component: GetObjectOrPanic(builder, "similar-images-list").(*gtk.IconView)}
 	initializeStore(imageList, HORIZONTAL, sender)
 

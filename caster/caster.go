@@ -46,7 +46,7 @@ type Caster struct {
 	currentImage          *common.Handle
 	server                *http.Server
 	showBackground        bool
-	imageCache            *imageloader.ImageCache
+	imageCache            imageloader.ImageCache
 	alwaysStartHttpServer bool
 }
 
@@ -61,7 +61,7 @@ type DeviceEntry struct {
 	localAddr       *net.TCPAddr
 }
 
-func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache *imageloader.ImageCache) *Caster {
+func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache imageloader.ImageCache) *Caster {
 	c := &Caster{
 		port:                  port,
 		alwaysStartHttpServer: alwaysStartHttpServer,

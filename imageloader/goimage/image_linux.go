@@ -9,7 +9,15 @@ import (
 
 var options = &jpeg.DecoderOptions{}
 
-func LoadImage(handle *common.Handle) (image.Image, error) {
+func ImageLoaderNew() ImageLoader {
+	return &ImageLoaderLinux{}
+}
+
+type ImageLoaderLinux struct {
+	ImageLoader
+}
+
+func (s *ImageLoaderLinux) LoadImage(handle *common.Handle) (image.Image, error) {
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -23,7 +31,7 @@ func LoadImage(handle *common.Handle) (image.Image, error) {
 	return imageFile, err
 }
 
-func LoadImageScaled(handle *common.Handle, size common.Size) (image.Image, error) {
+func (s *ImageLoaderLinux) LoadImageScaled(handle *common.Handle, size common.Size) (image.Image, error) {
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -35,4 +43,8 @@ func LoadImageScaled(handle *common.Handle, size common.Size) (image.Image, erro
 		return nil, err
 	}
 	return imageFile, err
+}
+
+func (s *ImageLoaderLinux) LoadExifData(handle *common.Handle) (*common.ExifData, error) {
+	return common.LoadExifData(handle)
 }

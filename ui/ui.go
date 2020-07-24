@@ -18,7 +18,7 @@ type Ui struct {
 	win         *gtk.ApplicationWindow
 	fullscreen  bool
 	application *gtk.Application
-	imageCache  *imageloader.ImageCache
+	imageCache  imageloader.ImageCache
 	sender      event.Sender
 	categories  []*common.Category
 	rootPath    string
@@ -35,7 +35,7 @@ type Ui struct {
 	Gui
 }
 
-func Init(rootPath string, broker event.Sender, imageCache *imageloader.ImageCache) Gui {
+func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageCache) Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"

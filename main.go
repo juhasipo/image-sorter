@@ -10,8 +10,10 @@ import (
 	"vincit.fi/image-sorter/caster"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/filter"
 	"vincit.fi/image-sorter/imagecategory"
 	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/ui"
 )
@@ -29,9 +31,11 @@ func main() {
 
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr)
-	imageCache := imageloader.ImageCacheNew()
-	imageLibrary := library.LibraryNew(broker, imageCache)
-	categorizationManager := imagecategory.ManagerNew(broker, imageLibrary)
+	imageLoader := goimage.ImageLoaderNew()
+	imageCache := imageloader.ImageCacheNew(imageLoader)
+	imageLibrary := library.LibraryNew(broker, imageCache, imageLoader)
+	filterManager := filter.FilterManagerNew()
+	categorizationManager := imagecategory.ManagerNew(broker, imageLibrary, filterManager, imageLoader)
 
 	secretValue := resolveSecret(*secret)
 	castManager := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)

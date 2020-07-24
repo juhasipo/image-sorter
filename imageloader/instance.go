@@ -17,25 +17,28 @@ const (
 )
 
 type Instance struct {
-	handle    *common.Handle
-	full      image.Image
-	thumbnail image.Image
-	scaled    image.Image
-	exifData  *common.ExifData
-	mux       sync.Mutex
+	handle      *common.Handle
+	full        image.Image
+	thumbnail   image.Image
+	scaled      image.Image
+	exifData    *common.ExifData
+	imageLoader goimage.ImageLoader
+	mux         sync.Mutex
 }
 
-func NewInstance(handle *common.Handle) *Instance {
+func NewInstance(handle *common.Handle, imageLoader goimage.ImageLoader) *Instance {
 	var instance *Instance
 	if exifData, err := common.LoadExifData(handle); err == nil {
 		instance = &Instance{
-			handle:   handle,
-			exifData: exifData,
+			handle:      handle,
+			exifData:    exifData,
+			imageLoader: imageLoader,
 		}
 	} else {
 		instance = &Instance{
-			handle:   handle,
-			exifData: nil,
+			handle:      handle,
+			exifData:    nil,
+			imageLoader: imageLoader,
 		}
 	}
 
@@ -44,20 +47,20 @@ func NewInstance(handle *common.Handle) *Instance {
 }
 
 func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
-	return loadImageWithExifCorrection(s.handle, s.exifData, size)
+	return s.loadImageWithExifCorrection(size)
 }
 
 var mux = sync.Mutex{}
 
-func loadImageWithExifCorrection(handle *common.Handle, exifData *common.ExifData, size *common.Size) (image.Image, error) {
+func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, error) {
 	//mux.Lock(); defer mux.Unlock()
 
 	var loadedImage image.Image
 	var err error
 	if size != nil {
-		loadedImage, err = goimage.LoadImageScaled(handle, *size)
+		loadedImage, err = s.imageLoader.LoadImageScaled(s.handle, *size)
 	} else {
-		loadedImage, err = goimage.LoadImage(handle)
+		loadedImage, err = s.imageLoader.LoadImage(s.handle)
 	}
 
 	if err != nil {
@@ -65,15 +68,15 @@ func loadImageWithExifCorrection(handle *common.Handle, exifData *common.ExifDat
 		return nil, err
 	}
 
-	if fileStat, err := os.Stat(handle.GetPath()); err == nil {
-		handle.SetByteSize(fileStat.Size())
+	if fileStat, err := os.Stat(s.handle.GetPath()); err == nil {
+		s.handle.SetByteSize(fileStat.Size())
 	} else {
-		log.Println("Could not load statistic for " + handle.GetPath())
+		log.Println("Could not load statistic for " + s.handle.GetPath())
 	}
 
-	if exifData != nil {
-		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
-		if exifData.IsFlipped() {
+	if s.exifData != nil {
+		loadedImage = imaging.Rotate(loadedImage, float64(s.exifData.GetRotation()), color.Black)
+		if s.exifData.IsFlipped() {
 			return imaging.FlipH(loadedImage), nil
 		} else {
 			return loadedImage, nil

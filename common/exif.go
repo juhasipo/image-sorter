@@ -10,6 +10,7 @@ import (
 type ExifData struct {
 	rotation gdk.PixbufRotation
 	flipped  bool
+	raw      *exif.Exif
 }
 
 func (s *ExifData) GetRotation() gdk.PixbufRotation {
@@ -28,19 +29,23 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 		orientation := 0
 		if decodedExif, err := exif.Decode(fileForExif); err != nil {
 			log.Print("Could not decode Exif data", err)
+			return nil, err
 		} else if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
 			log.Print("Could not resolve orientation flag", err)
+			return nil, err
 		} else if orientation, err = orientationTag.Int(0); err != nil {
 			log.Print("Could not resolve orientation value", err)
+			return nil, err
+		} else {
+			angle, flip := ExifOrientationToAngleAndFlip(orientation)
+			return &ExifData{
+				rotation: angle,
+				flipped:  flip,
+				raw:      decodedExif,
+			}, nil
 		}
-
-		angle, flip := ExifOrientationToAngleAndFlip(orientation)
-		return &ExifData{
-			rotation: angle,
-			flipped:  flip,
-		}, nil
 	} else {
-		return &ExifData{0, false}, err
+		return &ExifData{0, false, nil}, err
 	}
 }
 

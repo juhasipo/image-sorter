@@ -9,13 +9,14 @@ import (
 )
 
 type HashResult struct {
-	handle *common.Handle
-	hash   *duplo.Hash
+	handle      *common.Handle
+	hash        *duplo.Hash
+	imageLoader goimage.ImageLoader
 }
 
 var hashImageSize = common.SizeOf(duplo.ImageScale, duplo.ImageScale)
 
-func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool) {
+func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool, imageLoader goimage.ImageLoader) {
 	for {
 		select {
 		case <-quitChannel:
@@ -24,7 +25,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 		case handle := <-input:
 			{
 				startTime := time.Now()
-				decodedImage, err := goimage.LoadImageScaled(handle, hashImageSize)
+				decodedImage, err := imageLoader.LoadImageScaled(handle, hashImageSize)
 				endTime := time.Now()
 				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 

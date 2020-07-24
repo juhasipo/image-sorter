@@ -9,6 +9,8 @@ import (
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/filter"
+	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/library"
 )
 
@@ -19,15 +21,19 @@ type Manager struct {
 	imageCategory map[string]map[string]*category.CategorizedImage
 	sender        event.Sender
 	library       library.Library
+	filterManager *filter.Manager
+	imageLoader   goimage.ImageLoader
 
 	ImageCategoryManager
 }
 
-func ManagerNew(sender event.Sender, lib library.Library) ImageCategoryManager {
+func ManagerNew(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader goimage.ImageLoader) ImageCategoryManager {
 	var manager = Manager{
 		imageCategory: map[string]map[string]*category.CategorizedImage{},
 		sender:        sender,
 		library:       lib,
+		filterManager: filterManager,
+		imageLoader:   imageLoader,
 	}
 	return &manager
 }
@@ -108,11 +114,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 
 func (s *Manager) PersistImageCategories(keepOriginal bool) {
 	log.Printf("Persisting files to categories")
-	operationsByImage, err := s.resolveFileOperations(s.imageCategory, keepOriginal)
-	if err != nil {
-		log.Println("Could not resolve operations", err)
-		return
-	}
+	operationsByImage := s.ResolveFileOperations(s.imageCategory, keepOriginal)
 
 	total := len(operationsByImage)
 	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", 0, total)
@@ -126,27 +128,51 @@ func (s *Manager) PersistImageCategories(keepOriginal bool) {
 	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
 }
 
-func (s *Manager) resolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, keepOriginal bool) ([]*common.ImageOperationGroup, error) {
-	var operationGroups []*common.ImageOperationGroup
+func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, keepOriginal bool) []*filter.ImageOperationGroup {
+	var operationGroups []*filter.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
 		handle := s.library.GetHandleById(handleId)
-		dir, file := filepath.Split(handle.GetPath())
-
-		var imageOperations []common.ImageOperation
-		for _, image := range categoryEntries {
-			targetDirName := image.GetEntry().GetSubPath()
-			targetDir := filepath.Join(dir, targetDirName)
-			imageOperations = append(imageOperations, common.ImageCopyNew(targetDir, file))
+		if newOperationGroup, err := s.ResolveOperationsForGroup(handle, categoryEntries, keepOriginal); err == nil {
+			operationGroups = append(operationGroups, newOperationGroup)
 		}
-		if !keepOriginal {
-			imageOperations = append(imageOperations, common.ImageRemoveNew())
-		}
-
-		operationGroups = append(operationGroups, common.ImageOperationGroupNew(handle, imageOperations))
 	}
 
-	return operationGroups, nil
+	return operationGroups
+}
+
+func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
+	categoryEntries map[string]*category.CategorizedImage,
+	keepOriginal bool) (*filter.ImageOperationGroup, error) {
+	dir, file := filepath.Split(handle.GetPath())
+
+	filters := s.filterManager.GetFilters(handle)
+
+	var imageOperations []filter.ImageOperation
+	for _, categorizedImage := range categoryEntries {
+		targetDirName := categorizedImage.GetEntry().GetSubPath()
+		targetDir := filepath.Join(dir, targetDirName)
+
+		if len(filters) > 0 {
+			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false))
+		} else {
+			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, true))
+		}
+	}
+	if !keepOriginal {
+		// TODO: Re-enable. Possibly not as default operation
+		//imageOperations = append(imageOperations, common.ImageRemoveNew())
+	}
+
+	if fullImage, err := s.imageLoader.LoadImage(handle); err != nil {
+		log.Println("Could not load image", err)
+		return nil, err
+	} else if exifData, err := s.imageLoader.LoadExifData(handle); err != nil {
+		log.Println("Could not load exif data")
+		return nil, err
+	} else {
+		return filter.ImageOperationGroupNew(handle, fullImage, exifData, imageOperations), nil
+	}
 }
 
 func (s *Manager) Close() {

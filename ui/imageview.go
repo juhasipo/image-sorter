@@ -32,7 +32,7 @@ type ImageView struct {
 	currentImage *CurrentImageView
 	nextImages   *ImageList
 	prevImages   *ImageList
-	imageCache   *imageloader.ImageCache
+	imageCache   imageloader.ImageCache
 }
 
 func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {

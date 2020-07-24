@@ -17,6 +17,7 @@ type Library interface {
 	RequestGenerateHashes()
 	RequestStopHashes()
 	GetHandles() []*common.Handle
+	AddHandles(imageList []*common.Handle)
 	GetHandleById(handleId string) *common.Handle
 	ChangeImageListSize(imageListSize int)
 	SetSimilarStatus(sendSimilarImages bool)
