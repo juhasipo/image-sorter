@@ -37,10 +37,25 @@ func (s *Manager) AddFilter(filter *Filter) {
 	s.filters[filter.id] = filter
 }
 
-func (s *Manager) GetFilters(handle *common.Handle) []*Filter {
-	if filters, ok := s.filtersToApply[handle.GetId()]; ok {
-		return filters
-	} else {
-		return []*Filter{}
+func (s *Manager) GetFilters(handle *common.Handle, options common.PersistCategorizationCommand) []*Filter {
+	filtersToApply := s.getFiltersForHandle(handle)
+
+	if options.ShouldFixOrientation() {
+		filtersToApply = append(filtersToApply, &Filter{
+			id:        "exifRotate",
+			operation: ImageExifRotateNew(),
+		})
 	}
+	return filtersToApply
+}
+
+func (s *Manager) getFiltersForHandle(handle *common.Handle) []*Filter {
+	var filtersToApply []*Filter
+	if f, ok := s.filtersToApply[handle.GetId()]; ok {
+		filtersToApply = make([]*Filter, len(f)+1)
+		copy(filtersToApply, f)
+	} else {
+		filtersToApply = []*Filter{}
+	}
+	return filtersToApply
 }

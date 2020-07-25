@@ -112,9 +112,9 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	}
 }
 
-func (s *Manager) PersistImageCategories(keepOriginal bool) {
+func (s *Manager) PersistImageCategories(options common.PersistCategorizationCommand) {
 	log.Printf("Persisting files to categories")
-	operationsByImage := s.ResolveFileOperations(s.imageCategory, keepOriginal)
+	operationsByImage := s.ResolveFileOperations(s.imageCategory, options)
 
 	total := len(operationsByImage)
 	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", 0, total)
@@ -128,12 +128,12 @@ func (s *Manager) PersistImageCategories(keepOriginal bool) {
 	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, keepOriginal bool) []*filter.ImageOperationGroup {
+func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, options common.PersistCategorizationCommand) []*filter.ImageOperationGroup {
 	var operationGroups []*filter.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
 		handle := s.library.GetHandleById(handleId)
-		if newOperationGroup, err := s.ResolveOperationsForGroup(handle, categoryEntries, keepOriginal); err == nil {
+		if newOperationGroup, err := s.ResolveOperationsForGroup(handle, categoryEntries, options); err == nil {
 			operationGroups = append(operationGroups, newOperationGroup)
 		}
 	}
@@ -143,10 +143,10 @@ func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*cat
 
 func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 	categoryEntries map[string]*category.CategorizedImage,
-	keepOriginal bool) (*filter.ImageOperationGroup, error) {
+	options common.PersistCategorizationCommand) (*filter.ImageOperationGroup, error) {
 	dir, file := filepath.Split(handle.GetPath())
 
-	filters := s.filterManager.GetFilters(handle)
+	filters := s.filterManager.GetFilters(handle, options)
 	potentiallyModifiesImage := len(filters) > 0
 
 	var imageOperations []filter.ImageOperation
@@ -163,9 +163,8 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false))
 		}
 	}
-	if !keepOriginal {
-		// TODO: Re-enable. Possibly not as default operation
-		//imageOperations = append(imageOperations, common.ImageRemoveNew())
+	if !options.ShouldKeepOriginals() {
+		imageOperations = append(imageOperations, filter.ImageRemoveNew())
 	}
 
 	if fullImage, err := s.imageLoader.LoadImage(handle); err != nil {

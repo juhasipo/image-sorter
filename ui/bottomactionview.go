@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/gotk3/gotk3/gtk"
+	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 )
 
@@ -24,15 +25,27 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		openFolderButton:     GetObjectOrPanic(builder, "open-folder-button").(*gtk.Button),
 	}
 	bottomActionView.persistButton.Connect("clicked", func() {
-		confirm := gtk.MessageDialogNew(ui.application.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO,
-			"Do you really want to move images to category folders?")
+		confirm := GetObjectOrPanic(builder, "confirm-categorization-dialog").(*gtk.MessageDialog)
+		confirm.SetTransientFor(ui.application.GetActiveWindow())
 		confirm.SetTitle("Apply categories?")
 
-		defer confirm.Destroy()
+		confirmChild := GetObjectOrPanic(builder, "confirm-categorization-dialog-content").(*gtk.Box)
+		keepOriginalsCB, _ := gtk.CheckButtonNewWithLabel("Keep old images?")
+		keepOriginalsCB.SetActive(true)
+		exifCorrect, _ := gtk.CheckButtonNewWithLabel("Rotate image to correct orientation?")
+
+		confirmChild.Add(keepOriginalsCB)
+		confirmChild.Add(exifCorrect)
+		confirm.ShowAll()
+
+		defer confirm.Hide()
 		response := confirm.Run()
+		defer keepOriginalsCB.Destroy()
+		defer exifCorrect.Destroy()
 
 		if response == gtk.RESPONSE_YES {
-			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, false)
+			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, common.PersistCategorizationCommandNew(
+				keepOriginalsCB.GetActive(), exifCorrect.GetActive()))
 		}
 	})
 

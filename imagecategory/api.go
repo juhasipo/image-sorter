@@ -14,7 +14,7 @@ type ImageCategoryManager interface {
 	GetCategories(handle *common.Handle) map[string]*category.CategorizedImage
 	SetCategory(command *category.CategorizeCommand)
 
-	PersistImageCategories(bool)
+	PersistImageCategories(common.PersistCategorizationCommand)
 	PersistImageCategory(handle *common.Handle, categories map[string]*category.CategorizedImage)
 
 	PersistCategorization()
@@ -22,8 +22,8 @@ type ImageCategoryManager interface {
 
 	ShowOnlyCategoryImages(*common.Category)
 
-	ResolveFileOperations(map[string]map[string]*category.CategorizedImage, bool) []*filter.ImageOperationGroup
-	ResolveOperationsForGroup(*common.Handle, map[string]*category.CategorizedImage, bool) (*filter.ImageOperationGroup, error)
+	ResolveFileOperations(map[string]map[string]*category.CategorizedImage, common.PersistCategorizationCommand) []*filter.ImageOperationGroup
+	ResolveOperationsForGroup(*common.Handle, map[string]*category.CategorizedImage, common.PersistCategorizationCommand) (*filter.ImageOperationGroup, error)
 
 	Close()
 }

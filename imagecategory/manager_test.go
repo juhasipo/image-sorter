@@ -249,7 +249,8 @@ func TestResolveFileOperations(t *testing.T) {
 			"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 		},
 	}
-	operations := sut.ResolveFileOperations(imageCategories, false)
+	command := common.PersistCategorizationCommandNew(true, false)
+	operations := sut.ResolveFileOperations(imageCategories, command)
 
 	a.Equal(1, len(operations))
 
@@ -257,7 +258,7 @@ func TestResolveFileOperations(t *testing.T) {
 	a.Equal(1, len(ops.GetOperations()))
 }
 
-func TestResolveOperationsForGroup(t *testing.T) {
+func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	a := require.New(t)
 
 	sender := new(MockSender)
@@ -273,10 +274,90 @@ func TestResolveOperationsForGroup(t *testing.T) {
 		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 	}
 	handle := common.HandleNew("filepath", "filename")
-	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, false)
+	command := common.PersistCategorizationCommandNew(true, false)
+	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(1, len(ops))
-	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[0].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: false", ops[0].String())
+}
+
+func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
+	a := require.New(t)
+
+	sender := new(MockSender)
+	imageCache := new(MockImageCache)
+	imageLoader := new(MockImageLoader)
+	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	lib := library.LibraryNew(sender, imageCache, imageLoader)
+	filterManager := filter.FilterManagerNew()
+
+	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+
+	var imageCategories = map[string]*category.CategorizedImage{
+		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+	}
+	handle := common.HandleNew("filepath", "filename")
+	command := common.PersistCategorizationCommandNew(false, false)
+	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
+
+	a.Nil(err)
+	ops := operations.GetOperations()
+	a.Equal(2, len(ops))
+	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: false", ops[0].String())
+	a.Equal("Remove", ops[1].String())
+}
+
+func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
+	a := require.New(t)
+
+	sender := new(MockSender)
+	imageCache := new(MockImageCache)
+	imageLoader := new(MockImageLoader)
+	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	lib := library.LibraryNew(sender, imageCache, imageLoader)
+	filterManager := filter.FilterManagerNew()
+
+	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+
+	var imageCategories = map[string]*category.CategorizedImage{
+		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+	}
+	handle := common.HandleNew("filepath", "filename")
+	command := common.PersistCategorizationCommandNew(true, true)
+	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
+
+	a.Nil(err)
+	ops := operations.GetOperations()
+	a.Equal(2, len(ops))
+	a.Equal("Exif Rotate", ops[0].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: true", ops[1].String())
+}
+
+func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
+	a := require.New(t)
+
+	sender := new(MockSender)
+	imageCache := new(MockImageCache)
+	imageLoader := new(MockImageLoader)
+	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	lib := library.LibraryNew(sender, imageCache, imageLoader)
+	filterManager := filter.FilterManagerNew()
+
+	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+
+	var imageCategories = map[string]*category.CategorizedImage{
+		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+	}
+	handle := common.HandleNew("filepath", "filename")
+	command := common.PersistCategorizationCommandNew(false, true)
+	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
+
+	a.Nil(err)
+	ops := operations.GetOperations()
+	a.Equal(3, len(ops))
+	a.Equal("Exif Rotate", ops[0].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: true", ops[1].String())
+	a.Equal("Remove", ops[2].String())
 }

@@ -85,12 +85,12 @@ func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *comm
 		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	} else {
 		encodingOptions := &jpeg.Options{
-			Quality: 100,
+			Quality: defaultQuality,
 		}
 
-		jpegbuffer := bytes.NewBuffer([]byte{})
+		jpegBuffer := bytes.NewBuffer([]byte{})
 		dstFilePath := filepath.Join(s.dstPath, s.dstFile)
-		if err := jpeg.Encode(jpegbuffer, img, encodingOptions); err != nil {
+		if err := jpeg.Encode(jpegBuffer, img, encodingOptions); err != nil {
 			log.Println("Could not encode image", err)
 			return img, exifData, err
 		} else if err := common.MakeDirectoriesIfNotExist(handle.GetDir(), s.dstPath); err != nil {
@@ -100,7 +100,7 @@ func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *comm
 			return img, exifData, err
 		} else {
 			defer destination.Close()
-			s.writeJpegWithExifData(destination, jpegbuffer, exifData)
+			s.writeJpegWithExifData(destination, jpegBuffer, exifData)
 			return img, exifData, nil
 		}
 	}
@@ -144,7 +144,7 @@ func (s *ImageCopy) writeJfifBlock(writer *bufio.Writer, bw *bytes.Buffer) {
 	writer.Write(bw.Next(e0Length))
 }
 func (s *ImageCopy) String() string {
-	return fmt.Sprintf("Copy file '%s' to '%s'", s.dstFile, s.dstPath)
+	return fmt.Sprintf("Copy file '%s' to '%s', re-encode: %t", s.dstFile, s.dstPath, s.reEncode)
 }
 
 // Move
