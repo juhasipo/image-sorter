@@ -21,6 +21,14 @@ func (s *ExifData) IsFlipped() bool {
 	return s.flipped
 }
 
+func (s *ExifData) GetRaw() []byte {
+	return s.raw.Raw
+}
+
+func (s *ExifData) GetRawLength() uint16 {
+	return uint16(len(s.raw.Raw))
+}
+
 func LoadExifData(handle *Handle) (*ExifData, error) {
 	fileForExif, err := os.Open(handle.GetPath())
 	if fileForExif != nil && err == nil {

@@ -1,12 +1,16 @@
 package filter
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"github.com/pixiv/go-libjpeg/jpeg"
 	"image"
-	"image/jpeg"
 	"log"
 	"os"
 	"path/filepath"
+	"unsafe"
 	"vincit.fi/image-sorter/common"
 )
 
@@ -57,43 +61,87 @@ func (s *ImageOperationGroup) Apply() error {
 
 type ImageCopy struct {
 	fileOperation
-	quick bool
+	reEncode bool
 
 	ImageOperation
 }
 
-func ImageCopyNew(targetDir string, targetFile string, quick bool) ImageOperation {
+func ImageCopyNew(targetDir string, targetFile string, reEncode bool) ImageOperation {
 	return &ImageCopy{
-		quick: quick,
+		reEncode: reEncode,
 		fileOperation: fileOperation{
 			dstPath: targetDir,
 			dstFile: targetFile,
 		},
 	}
 }
-func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, data *common.ExifData) (image.Image, *common.ExifData, error) {
+func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *common.ExifData) (image.Image, *common.ExifData, error) {
 	log.Printf("Copy %s", handle.GetPath())
 
-	if s.quick {
+	if s.reEncode {
 		log.Printf("Copy '%s' as is", handle.GetPath())
-		return img, data, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
+		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	} else {
-		encodingOptions := &jpeg.Options{
-			Quality: defaultQuality,
+		encodingOptions := &jpeg.EncoderOptions{
+			Quality:         100,
+			OptimizeCoding:  false,
+			ProgressiveMode: false,
 		}
 
+		jpegbuffer := bytes.NewBuffer([]byte{})
 		dstFilePath := filepath.Join(s.dstPath, s.dstFile)
-		if destination, err := os.Create(dstFilePath); err != nil {
-			log.Println("Could not open file for writing", err)
-			return img, data, err
-		} else if err := jpeg.Encode(destination, img, encodingOptions); err != nil {
+		if err := jpeg.Encode(jpegbuffer, img, encodingOptions); err != nil {
 			log.Println("Could not encode image", err)
-			return img, data, err
-			// TODO: Write Exif data
+			return img, exifData, err
+		} else if err := common.MakeDirectoriesIfNotExist(handle.GetDir(), s.dstPath); err != nil {
+			return img, exifData, err
+		} else if destination, err := os.Create(dstFilePath); err != nil {
+			log.Println("Could not open file for writing", err)
+			return img, exifData, err
 		} else {
-			return img, data, nil
+			defer destination.Close()
+			s.writeJpegWithExifData(destination, jpegbuffer, exifData)
+			return img, exifData, nil
 		}
 	}
+}
+
+func (s *ImageCopy) writeJpegWithExifData(destination *os.File, buffer *bytes.Buffer, exifData *common.ExifData) {
+	writer := bufio.NewWriter(destination)
+	// 0xFF 0xD8: Start of JPEG
+	writer.Write(buffer.Next(2))
+
+	s.writeJfifBlock(writer, buffer)
+	s.writeExifBlock(exifData, writer)
+
+	// Write rest of file
+	writer.Write(buffer.Bytes())
+	writer.Flush()
+}
+
+func (s *ImageCopy) writeExifBlock(data *common.ExifData, writer *bufio.Writer) {
+	const lengthBytes = 2
+	const exifHeader = "Exif\x00\x00"
+	headerLength := len(exifHeader)
+	// Length includes the length bytes, so we need to add them when writing
+	dataLength := data.GetRawLength() + uint16(headerLength) + lengthBytes
+	dataLengthBytes := (*[2]byte)(unsafe.Pointer(&dataLength))[:]
+	writer.Write([]byte{0xFF, 0xE1})
+	writer.WriteByte(dataLengthBytes[1])
+	writer.WriteByte(dataLengthBytes[0])
+	writer.WriteString(exifHeader)
+	writer.Write(data.GetRaw())
+}
+
+func (s *ImageCopy) writeJfifBlock(writer *bufio.Writer, bw *bytes.Buffer) {
+	// 0xFF 0xE0 length (2 bytes): APP0 block of 0 length
+	const lengthBytes = 2
+	writer.Write(bw.Next(2))
+	e0LengthBytes := bw.Next(2)
+	// Length includes the length bytes, so we need to subtract when reading
+	e0Length := int(binary.BigEndian.Uint16(e0LengthBytes)) - lengthBytes
+	writer.Write(e0LengthBytes)
+	writer.Write(bw.Next(e0Length))
 }
 func (s *ImageCopy) String() string {
 	return fmt.Sprintf("Copy file '%s' to '%s'", s.dstFile, s.dstPath)

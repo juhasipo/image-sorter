@@ -12,6 +12,14 @@ func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) er
 	srcFilePath := filepath.Join(srcPath, srcFile)
 	dstFilePath := filepath.Join(dstPath, dstFile)
 
+	if err := MakeDirectoriesIfNotExist(srcPath, dstPath); err != nil {
+		return err
+	}
+
+	return copyInternal(srcFilePath, dstFilePath)
+}
+
+func MakeDirectoriesIfNotExist(srcPath string, dstPath string) error {
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
 		if info, err := os.Stat(srcPath); err != nil {
 			log.Println("Could not resolve srdPath: " + srcPath)
@@ -19,8 +27,7 @@ func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) er
 			return err
 		}
 	}
-
-	return copyInternal(srcFilePath, dstFilePath)
+	return nil
 }
 
 func copyInternal(src string, dst string) error {
