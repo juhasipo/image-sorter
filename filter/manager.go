@@ -6,7 +6,12 @@ import (
 )
 
 type Filter struct {
-	id string
+	id        string
+	operation ImageOperation
+}
+
+func (s *Filter) GetOperation() ImageOperation {
+	return s.operation
 }
 
 type Manager struct {

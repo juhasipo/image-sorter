@@ -147,16 +147,20 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 	dir, file := filepath.Split(handle.GetPath())
 
 	filters := s.filterManager.GetFilters(handle)
+	potentiallyModifiesImage := len(filters) > 0
 
 	var imageOperations []filter.ImageOperation
 	for _, categorizedImage := range categoryEntries {
 		targetDirName := categorizedImage.GetEntry().GetSubPath()
 		targetDir := filepath.Join(dir, targetDirName)
 
-		if len(filters) > 0 {
-			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false))
-		} else {
+		if potentiallyModifiesImage {
+			for _, f := range filters {
+				imageOperations = append(imageOperations, f.GetOperation())
+			}
 			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, true))
+		} else {
+			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false))
 		}
 	}
 	if !keepOriginal {

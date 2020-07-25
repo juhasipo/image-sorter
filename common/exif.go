@@ -1,6 +1,8 @@
 package common
 
 import (
+	"bytes"
+	"errors"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/rwcarlsen/goexif/exif"
 	"log"
@@ -8,9 +10,65 @@ import (
 )
 
 type ExifData struct {
-	rotation gdk.PixbufRotation
-	flipped  bool
-	raw      *exif.Exif
+	orientation uint8
+	rotation    gdk.PixbufRotation
+	flipped     bool
+	raw         *exif.Exif
+}
+
+const exifUnchangedOrientation = 1
+const exifValueMarker = 0xFF
+
+// Tag (2 bytes), type (2 bytes), count (4 bytes), value (2 bytes): 0xFF is the marker for value
+// Intel byte order
+var orientationIntelPattern = []byte{0x12, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, exifValueMarker, 0x00}
+
+const orientationIntelOffset = 8 // Offset for the value from the tag
+
+// Motorola byte order
+var orientationMotorolaPattern = []byte{0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, exifValueMarker}
+
+const orientationMotorolaOffset = 9 // Offset for the value from the tag
+
+func (s *ExifData) ResetExifRotate() {
+	orientationByteIndex, err := findOrientationByteIndex(s.raw.Raw, s.orientation)
+	if err != nil {
+		return
+	}
+	s.orientation = exifUnchangedOrientation
+	s.rotation = 0
+	s.flipped = false
+	s.raw.Raw[orientationByteIndex] = exifUnchangedOrientation
+}
+
+// Finds the index for orientation with the given value
+func findOrientationByteIndex(exifData []byte, value uint8) (int, error) {
+	buffer := copyAndSetValue(orientationIntelPattern, value)
+	if result, err := find(exifData, buffer); err == nil {
+		return result + orientationIntelOffset, nil
+	} else {
+		buffer = copyAndSetValue(orientationMotorolaPattern, value)
+		if result, err := find(exifData, buffer); err == nil {
+			return result + orientationMotorolaOffset, nil
+		}
+	}
+	return 0, errors.New("not found")
+}
+
+func copyAndSetValue(buf []byte, value uint8) []byte {
+	byteArray := make([]byte, len(buf))
+	copy(byteArray, buf)
+	byteArray[bytes.IndexByte(byteArray, exifValueMarker)] = value
+	return byteArray
+}
+
+func find(exifData []byte, s []byte) (int, error) {
+	index := bytes.Index(exifData, s)
+	if index < 0 {
+		return 0, errors.New("not found")
+	} else {
+		return index, nil
+	}
 }
 
 func (s *ExifData) GetRotation() gdk.PixbufRotation {
@@ -47,13 +105,14 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 		} else {
 			angle, flip := ExifOrientationToAngleAndFlip(orientation)
 			return &ExifData{
-				rotation: angle,
-				flipped:  flip,
-				raw:      decodedExif,
+				orientation: uint8(orientation),
+				rotation:    angle,
+				flipped:     flip,
+				raw:         decodedExif,
 			}, nil
 		}
 	} else {
-		return &ExifData{0, false, nil}, err
+		return &ExifData{1, 0, false, nil}, err
 	}
 }
 

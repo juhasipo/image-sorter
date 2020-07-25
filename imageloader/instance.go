@@ -74,9 +74,13 @@ func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, 
 		log.Println("Could not load statistic for " + s.handle.GetPath())
 	}
 
-	if s.exifData != nil {
-		loadedImage = imaging.Rotate(loadedImage, float64(s.exifData.GetRotation()), color.Black)
-		if s.exifData.IsFlipped() {
+	return ExifRotateImage(loadedImage, s.exifData)
+}
+
+func ExifRotateImage(loadedImage image.Image, exifData *common.ExifData) (image.Image, error) {
+	if exifData != nil {
+		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
+		if exifData.IsFlipped() {
 			return imaging.FlipH(loadedImage), nil
 		} else {
 			return loadedImage, nil

@@ -5,13 +5,15 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/pixiv/go-libjpeg/jpeg"
+	"github.com/disintegration/imaging"
 	"image"
+	"image/jpeg"
 	"log"
 	"os"
 	"path/filepath"
 	"unsafe"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/imageloader"
 )
 
 const defaultQuality = 100
@@ -78,14 +80,12 @@ func ImageCopyNew(targetDir string, targetFile string, reEncode bool) ImageOpera
 func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *common.ExifData) (image.Image, *common.ExifData, error) {
 	log.Printf("Copy %s", handle.GetPath())
 
-	if s.reEncode {
+	if !s.reEncode {
 		log.Printf("Copy '%s' as is", handle.GetPath())
 		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	} else {
-		encodingOptions := &jpeg.EncoderOptions{
-			Quality:         100,
-			OptimizeCoding:  false,
-			ProgressiveMode: false,
+		encodingOptions := &jpeg.Options{
+			Quality: 100,
 		}
 
 		jpegbuffer := bytes.NewBuffer([]byte{})
@@ -178,4 +178,48 @@ func (s *ImageRemove) Apply(handle *common.Handle, img image.Image, data *common
 }
 func (s *ImageRemove) String() string {
 	return "Remove"
+}
+
+// Exif Rotate
+
+type ImageExifRotate struct {
+	ImageOperation
+}
+
+func ImageExifRotateNew() ImageOperation {
+	return &ImageExifRotate{}
+}
+func (s *ImageExifRotate) Apply(handle *common.Handle, img image.Image, data *common.ExifData) (image.Image, *common.ExifData, error) {
+	log.Printf("Exif rotate %s", handle.GetPath())
+	rotatedImage, err := imageloader.ExifRotateImage(img, data)
+	if err != nil {
+		return img, data, err
+	}
+	data.ResetExifRotate()
+	return rotatedImage, data, err
+}
+func (s *ImageExifRotate) String() string {
+	return "Exif Rotate"
+}
+
+// Rotate to angle
+
+type ImageRotateToAngle struct {
+	rotation float64
+	ImageOperation
+}
+
+func ImageRotateToAngleNew(angle int) ImageOperation {
+	return &ImageRotateToAngle{
+		rotation: float64(angle),
+	}
+}
+func (s *ImageRotateToAngle) Apply(handle *common.Handle, img image.Image, data *common.ExifData) (image.Image, *common.ExifData, error) {
+	log.Printf("Exif rotate %s", handle.GetPath())
+	rotatedImage := imaging.Rotate(img, s.rotation, image.Black)
+	data.ResetExifRotate()
+	return rotatedImage, data, nil
+}
+func (s *ImageRotateToAngle) String() string {
+	return fmt.Sprintf("Rotate to %.2f", s.rotation)
 }
