@@ -19,13 +19,15 @@ const defaultQuality = 100
 type ImageCopy struct {
 	fileOperation
 	reEncode bool
+	quality  int
 
 	ImageOperation
 }
 
-func ImageCopyNew(targetDir string, targetFile string, reEncode bool) ImageOperation {
+func ImageCopyNew(targetDir string, targetFile string, reEncode bool, quality int) ImageOperation {
 	return &ImageCopy{
 		reEncode: reEncode,
+		quality:  quality,
 		fileOperation: fileOperation{
 			dstPath: targetDir,
 			dstFile: targetFile,
@@ -40,7 +42,7 @@ func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *comm
 		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	} else {
 		encodingOptions := &jpeg.Options{
-			Quality: defaultQuality,
+			Quality: s.quality,
 		}
 
 		jpegBuffer := bytes.NewBuffer([]byte{})

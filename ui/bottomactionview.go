@@ -34,18 +34,33 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		keepOriginalsCB.SetActive(true)
 		exifCorrect, _ := gtk.CheckButtonNewWithLabel("Rotate image to correct orientation?")
 
+		qualityLayout, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 0)
+		qualityLayout.SetHExpand(true)
+		adjustment, _ := gtk.AdjustmentNew(90, 0, 100, 0, 0, 0)
+		qualityScale, _ := gtk.ScaleNew(gtk.ORIENTATION_HORIZONTAL, adjustment)
+		qualityScale.SetProperty("value-pos", gtk.POS_LEFT)
+		qualityScale.SetProperty("digits", 0)
+		qualityScale.SetHExpand(true)
+
+		qualityLabel, _ := gtk.LabelNew("Quality")
+		qualityLayout.Add(qualityLabel)
+		qualityLayout.Add(qualityScale)
+
 		confirmChild.Add(keepOriginalsCB)
 		confirmChild.Add(exifCorrect)
+		confirmChild.Add(qualityLayout)
 		confirm.ShowAll()
 
 		defer confirm.Hide()
 		response := confirm.Run()
 		defer keepOriginalsCB.Destroy()
 		defer exifCorrect.Destroy()
+		defer qualityLayout.Destroy()
 
 		if response == gtk.RESPONSE_YES {
+			value := qualityScale.GetValue()
 			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, common.PersistCategorizationCommandNew(
-				keepOriginalsCB.GetActive(), exifCorrect.GetActive()))
+				keepOriginalsCB.GetActive(), exifCorrect.GetActive(), int(value)))
 		}
 	})
 

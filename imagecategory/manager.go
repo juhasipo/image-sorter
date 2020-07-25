@@ -149,6 +149,7 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 	filters := s.filterManager.GetFilters(handle, options)
 	potentiallyModifiesImage := len(filters) > 0
 
+	// TODO: Apply quality properly. Now it doesn't affect if no other filters present
 	var imageOperations []filter.ImageOperation
 	for _, categorizedImage := range categoryEntries {
 		targetDirName := categorizedImage.GetEntry().GetSubPath()
@@ -158,9 +159,9 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 			for _, f := range filters {
 				imageOperations = append(imageOperations, f.GetOperation())
 			}
-			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, true))
+			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, true, options.GetQuality()))
 		} else {
-			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false))
+			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false, options.GetQuality()))
 		}
 	}
 	if !options.ShouldKeepOriginals() {

@@ -14,12 +14,14 @@ func (s Operation) NextOperation() Operation {
 type PersistCategorizationCommand struct {
 	keepOriginals  bool
 	fixOrientation bool
+	quality        int
 }
 
-func PersistCategorizationCommandNew(keepOriginals bool, fixOrientation bool) PersistCategorizationCommand {
+func PersistCategorizationCommandNew(keepOriginals bool, fixOrientation bool, quality int) PersistCategorizationCommand {
 	return PersistCategorizationCommand{
 		keepOriginals:  keepOriginals,
 		fixOrientation: fixOrientation,
+		quality:        quality,
 	}
 }
 
@@ -28,4 +30,8 @@ func (s *PersistCategorizationCommand) ShouldKeepOriginals() bool {
 }
 func (s *PersistCategorizationCommand) ShouldFixOrientation() bool {
 	return s.fixOrientation
+}
+
+func (s *PersistCategorizationCommand) GetQuality() int {
+	return s.quality
 }
