@@ -29,10 +29,11 @@ type ImageList struct {
 }
 
 type ImageView struct {
-	currentImage *CurrentImageView
-	nextImages   *ImageList
-	prevImages   *ImageList
-	imageCache   imageloader.ImageCache
+	currentImage         *CurrentImageView
+	nextImages           *ImageList
+	prevImages           *ImageList
+	imageCache           imageloader.ImageCache
+	imagesListImageCount int
 }
 
 func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
@@ -54,9 +55,10 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 			view:         GetObjectOrPanic(builder, "current-image").(*gtk.Image),
 			details:      GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
 		},
-		nextImages: nextImagesList,
-		prevImages: prevImagesList,
-		imageCache: ui.imageCache,
+		nextImages:           nextImagesList,
+		prevImages:           prevImagesList,
+		imageCache:           ui.imageCache,
+		imagesListImageCount: 5,
 	}
 	tableNew, _ := gtk.TextTagTableNew()
 	bufferNew, _ := gtk.TextBufferNew(tableNew)
@@ -64,7 +66,11 @@ func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
 	imageView.currentImage.viewport.Connect("size-allocate", func() {
 		ui.UpdateCurrentImage()
 		height := ui.imageView.nextImages.component.GetAllocatedHeight() / 80
-		ui.sender.SendToTopicWithData(event.IMAGE_LIST_SIZE_CHANGED, height)
+		if imageView.imagesListImageCount != height {
+			imageView.imagesListImageCount = height
+			ui.sender.SendToTopicWithData(event.IMAGE_LIST_SIZE_CHANGED, height)
+		}
+
 	})
 
 	return imageView
