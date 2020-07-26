@@ -12,24 +12,30 @@ type fileOperation struct {
 }
 
 type ImageOperation interface {
-	Apply(handle *common.Handle, img image.Image, data *common.ExifData) (image.Image, *common.ExifData, error)
+	Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error)
 	String() string
 }
 
 type ImageOperationGroup struct {
-	handle     *common.Handle
-	exifData   *common.ExifData
-	img        image.Image
-	operations []ImageOperation
+	handle          *common.Handle
+	exifData        *common.ExifData
+	img             image.Image
+	hasBeenModified bool
+	operations      []ImageOperation
 }
 
 func ImageOperationGroupNew(handle *common.Handle, img image.Image, exifData *common.ExifData, operations []ImageOperation) *ImageOperationGroup {
 	return &ImageOperationGroup{
-		handle:     handle,
-		img:        img,
-		exifData:   exifData,
-		operations: operations,
+		handle:          handle,
+		img:             img,
+		exifData:        exifData,
+		hasBeenModified: false,
+		operations:      operations,
 	}
+}
+
+func (s *ImageOperationGroup) SetModified() {
+	s.hasBeenModified = true
 }
 
 func (s *ImageOperationGroup) GetOperations() []ImageOperation {
@@ -40,7 +46,7 @@ func (s *ImageOperationGroup) Apply() error {
 	for _, operation := range s.operations {
 		log.Printf("Applying: '%s'", operation)
 		var err error
-		if s.img, s.exifData, err = operation.Apply(s.handle, s.img, s.exifData); err != nil {
+		if s.img, s.exifData, err = operation.Apply(s); err != nil {
 			return err
 		}
 	}

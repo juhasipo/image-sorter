@@ -147,22 +147,16 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 	dir, file := filepath.Split(handle.GetPath())
 
 	filters := s.filterManager.GetFilters(handle, options)
-	potentiallyModifiesImage := len(filters) > 0
 
-	// TODO: Apply quality properly. Now it doesn't affect if no other filters present
 	var imageOperations []filter.ImageOperation
 	for _, categorizedImage := range categoryEntries {
 		targetDirName := categorizedImage.GetEntry().GetSubPath()
 		targetDir := filepath.Join(dir, targetDirName)
 
-		if potentiallyModifiesImage {
-			for _, f := range filters {
-				imageOperations = append(imageOperations, f.GetOperation())
-			}
-			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, true, options.GetQuality()))
-		} else {
-			imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, false, options.GetQuality()))
+		for _, f := range filters {
+			imageOperations = append(imageOperations, f.GetOperation())
 		}
+		imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, options.GetQuality()))
 	}
 	if !options.ShouldKeepOriginals() {
 		imageOperations = append(imageOperations, filter.ImageRemoveNew())

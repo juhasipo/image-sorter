@@ -13,7 +13,10 @@ type ImageRemove struct {
 func ImageRemoveNew() ImageOperation {
 	return &ImageRemove{}
 }
-func (s *ImageRemove) Apply(handle *common.Handle, img image.Image, data *common.ExifData) (image.Image, *common.ExifData, error) {
+func (s *ImageRemove) Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error) {
+	handle := operationGroup.handle
+	img := operationGroup.img
+	data := operationGroup.exifData
 	log.Printf("Remove %s", handle.GetPath())
 	return img, data, common.RemoveFile(handle.GetPath())
 }

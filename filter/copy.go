@@ -24,23 +24,22 @@ type ImageCopy struct {
 	ImageOperation
 }
 
-func ImageCopyNew(targetDir string, targetFile string, reEncode bool, quality int) ImageOperation {
+func ImageCopyNew(targetDir string, targetFile string, quality int) ImageOperation {
 	return &ImageCopy{
-		reEncode: reEncode,
-		quality:  quality,
+		quality: quality,
 		fileOperation: fileOperation{
 			dstPath: targetDir,
 			dstFile: targetFile,
 		},
 	}
 }
-func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *common.ExifData) (image.Image, *common.ExifData, error) {
+func (s *ImageCopy) Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error) {
+	handle := operationGroup.handle
+	img := operationGroup.img
+	exifData := operationGroup.exifData
 	log.Printf("Copy %s", handle.GetPath())
 
-	if !s.reEncode {
-		log.Printf("Copy '%s' as is", handle.GetPath())
-		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
-	} else {
+	if operationGroup.hasBeenModified {
 		encodingOptions := &jpeg.Options{
 			Quality: s.quality,
 		}
@@ -60,6 +59,9 @@ func (s *ImageCopy) Apply(handle *common.Handle, img image.Image, exifData *comm
 			s.writeJpegWithExifData(destination, jpegBuffer, exifData)
 			return img, exifData, nil
 		}
+	} else {
+		log.Printf("Copy '%s' as is", handle.GetPath())
+		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	}
 }
 

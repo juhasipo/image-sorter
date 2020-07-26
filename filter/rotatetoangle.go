@@ -18,11 +18,20 @@ func ImageRotateToAngleNew(angle int) ImageOperation {
 		rotation: float64(angle),
 	}
 }
-func (s *ImageRotateToAngle) Apply(handle *common.Handle, img image.Image, data *common.ExifData) (image.Image, *common.ExifData, error) {
-	log.Printf("Exif rotate %s", handle.GetPath())
-	rotatedImage := imaging.Rotate(img, s.rotation, image.Black)
-	data.ResetExifRotate()
-	return rotatedImage, data, nil
+func (s *ImageRotateToAngle) Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error) {
+	handle := operationGroup.handle
+	img := operationGroup.img
+	data := operationGroup.exifData
+	if s.rotation != 0.0 {
+		log.Printf("Rotate %s to andle %.0f", handle.GetPath(), s.rotation)
+		rotatedImage := imaging.Rotate(img, s.rotation, image.Black)
+		data.ResetExifRotate()
+		operationGroup.SetModified()
+		return rotatedImage, data, nil
+	} else {
+		return img, data, nil
+	}
+
 }
 func (s *ImageRotateToAngle) String() string {
 	return fmt.Sprintf("Rotate to %.2f", s.rotation)
