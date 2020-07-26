@@ -50,7 +50,7 @@ type Caster struct {
 	alwaysStartHttpServer bool
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
-	imageQueue            []*common.Handle
+	imageQueue            *common.Handle
 	imageQueueBroker      event.Broker
 }
 
@@ -84,7 +84,7 @@ func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender even
 func (s *Caster) StartServer(port int) {
 	if s.server == nil {
 		log.Printf("Starting HTTP server at port %d", s.port)
-		go s.startServerAsync(port)
+		go s.startServer(port)
 	} else {
 		log.Println("Server already running")
 	}
@@ -103,7 +103,7 @@ func (s *Caster) StopServer() {
 	}
 }
 
-func (s *Caster) startServerAsync(port int) {
+func (s *Caster) startServer(port int) {
 	log.Printf("Starting HTTP server:\n"+
 		" * Port: %d\n"+
 		" * Secret: %s", port, s.secret)
@@ -115,6 +115,7 @@ func (s *Caster) startServerAsync(port int) {
 	s.server = &http.Server{Addr: address}
 	if err := s.server.ListenAndServe(); err != nil {
 		log.Println("Could not initialize server", err)
+		s.server = nil
 	}
 }
 
@@ -244,19 +245,21 @@ func (s *Caster) resolveLocalAddress(entry *mdns.ServiceEntry) (net.IP, error) {
 	log.Printf("  - Address v6: %s", entry.AddrV6)
 	var conn net.Conn
 	var err error
+	const chromecastTestPort = 32768 // Just some valid UDP port on Chromecast to connect
 	if entry.AddrV4 != nil {
 		log.Printf("Connecting (IPv4)...")
-		if conn, err = net.Dial("udp", fmt.Sprintf("%s:%d", entry.AddrV4, 32768)); err != nil {
+		if conn, err = net.Dial("udp", fmt.Sprintf("%s:%d", entry.AddrV4, chromecastTestPort)); err != nil {
 			return nil, err
 		}
 
 	} else {
 		log.Printf("Connecting (IPv6)...")
-		if conn, err = net.Dial("udp", fmt.Sprintf("%s:%d", entry.AddrV6, 32768)); err != nil {
+		if conn, err = net.Dial("udp", fmt.Sprintf("%s:%d", entry.AddrV6, chromecastTestPort)); err != nil {
 			return nil, err
 		}
 	}
 	addr := conn.LocalAddr().(*net.UDPAddr).IP
+	log.Printf("Resolved local address to '%s'", addr.String())
 	defer conn.Close()
 	return addr, nil
 }
@@ -292,7 +295,7 @@ func (s *Caster) CastImage(handle *common.Handle) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 	log.Printf("Adding to cast queue: '%s'", handle.GetId())
-	s.imageQueue = append(s.imageQueue, handle)
+	s.imageQueue = handle
 
 	s.imageQueueBroker.SendToTopic(CAST_IMAGE_EVENT)
 }
@@ -304,10 +307,14 @@ func (s *Caster) castImageFromQueue() {
 		s.currentImage = img
 		s.releaseImage()
 	} else {
-		log.Printf("Nothing new to cast")
 		return
 	}
 	time.Sleep(1 * time.Second)
+
+	if s.server == nil {
+		log.Print("Can't cast image, server not running")
+		return
+	}
 
 	if device, ok := s.devices[s.selectedDevice]; ok {
 		log.Println("Cast image")
@@ -340,10 +347,10 @@ func (s *Caster) getImageFromQueue() *common.Handle {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 
-	if len(s.imageQueue) > 0 {
-		img := s.imageQueue[len(s.imageQueue)-1]
+	if s.imageQueue != nil {
+		img := s.imageQueue
 		log.Printf("Getting from cast queue: '%s'", img.GetId())
-		s.imageQueue = []*common.Handle{}
+		s.imageQueue = nil
 		return img
 	} else {
 		return nil
