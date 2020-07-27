@@ -18,8 +18,7 @@ const defaultQuality = 100
 
 type ImageCopy struct {
 	fileOperation
-	reEncode bool
-	quality  int
+	quality int
 
 	ImageOperation
 }
@@ -103,5 +102,5 @@ func (s *ImageCopy) writeJfifBlock(writer *bufio.Writer, bw *bytes.Buffer) {
 	writer.Write(bw.Next(e0Length))
 }
 func (s *ImageCopy) String() string {
-	return fmt.Sprintf("Copy file '%s' to '%s', re-encode: %t", s.dstFile, s.dstPath, s.reEncode)
+	return fmt.Sprintf("Copy file '%s' to '%s'", s.dstFile, s.dstPath)
 }

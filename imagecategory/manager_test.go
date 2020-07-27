@@ -58,6 +58,7 @@ func TestCategorizeOne(t *testing.T) {
 
 	sender := new(MockSender)
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
+	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.FilterManagerNew()
 	imageLoader := new(MockImageLoader)
@@ -66,7 +67,7 @@ func TestCategorizeOne(t *testing.T) {
 
 	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
 	handle := common.HandleNew("/tmp", "foo")
-	cmd := category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false)
+	cmd := category.CategorizeCommandNew(handle, cat1, common.MOVE)
 	sut.SetCategory(cmd)
 
 	result := sut.GetCategories(handle)
@@ -80,6 +81,7 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 
 	sender := new(MockSender)
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
+	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.FilterManagerNew()
 	imageLoader := new(MockImageLoader)
@@ -89,8 +91,8 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
 	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
 	handle := common.HandleNew("/tmp", "foo")
-	cmd1 := category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false)
-	cmd2 := category.CategorizeCommandNewWithStayAttr(handle, cat2, common.MOVE, false, false)
+	cmd1 := category.CategorizeCommandNew(handle, cat1, common.MOVE)
+	cmd2 := category.CategorizeCommandNew(handle, cat2, common.MOVE)
 	sut.SetCategory(cmd1)
 	sut.SetCategory(cmd2)
 
@@ -116,9 +118,9 @@ func TestCategorizeOneRemoveCategory(t *testing.T) {
 	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
 	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
 	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat2, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.NONE, false, false))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.NONE))
 
 	result := sut.GetCategories(handle)
 
@@ -141,10 +143,10 @@ func TestCategorizeOneRemoveAll(t *testing.T) {
 	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
 	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
 	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat2, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.NONE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat2, common.NONE, false, false))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.NONE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.NONE))
 
 	result := sut.GetCategories(handle)
 
@@ -169,9 +171,11 @@ func TestCategorizeForceToCategory(t *testing.T) {
 	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
 	cat3 := common.CategoryEntryNew("Cat 3", "c3", "E")
 	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat2, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat3, common.MOVE, false, true))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
+	command := category.CategorizeCommandNew(handle, cat3, common.MOVE)
+	command.SetForceToCategory(true)
+	sut.SetCategory(command)
 
 	result := sut.GetCategories(handle)
 
@@ -196,8 +200,10 @@ func TestCategorizeForceToExistingCategory(t *testing.T) {
 	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
 	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
 	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat2, common.MOVE, false, true))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
+	command := category.CategorizeCommandNew(handle, cat2, common.MOVE)
+	command.SetForceToCategory(true)
+	sut.SetCategory(command)
 
 	result := sut.GetCategories(handle)
 
@@ -221,9 +227,11 @@ func TestCategorizeForceToCategory_None(t *testing.T) {
 	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
 	cat3 := common.CategoryEntryNew("Cat 3", "c3", "E")
 	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat1, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat2, common.MOVE, false, false))
-	sut.SetCategory(category.CategorizeCommandNewWithStayAttr(handle, cat3, common.NONE, false, true))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
+	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
+	command := category.CategorizeCommandNew(handle, cat3, common.NONE)
+	command.SetForceToCategory(true)
+	sut.SetCategory(command)
 
 	result := sut.GetCategories(handle)
 
@@ -249,7 +257,7 @@ func TestResolveFileOperations(t *testing.T) {
 			"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 		},
 	}
-	command := common.PersistCategorizationCommandNew(true, false)
+	command := common.PersistCategorizationCommandNew(true, false, 100)
 	operations := sut.ResolveFileOperations(imageCategories, command)
 
 	a.Equal(1, len(operations))
@@ -274,13 +282,13 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 	}
 	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(true, false)
+	command := common.PersistCategorizationCommandNew(true, false, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(1, len(ops))
-	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: false", ops[0].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[0].String())
 }
 
 func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
@@ -299,13 +307,13 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 	}
 	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(false, false)
+	command := common.PersistCategorizationCommandNew(false, false, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(2, len(ops))
-	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: false", ops[0].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[0].String())
 	a.Equal("Remove", ops[1].String())
 }
 
@@ -325,14 +333,14 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 	}
 	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(true, true)
+	command := common.PersistCategorizationCommandNew(true, true, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(2, len(ops))
 	a.Equal("Exif Rotate", ops[0].String())
-	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: true", ops[1].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[1].String())
 }
 
 func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
@@ -351,13 +359,13 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
 	}
 	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(false, true)
+	command := common.PersistCategorizationCommandNew(false, true, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(3, len(ops))
 	a.Equal("Exif Rotate", ops[0].String())
-	a.Equal("Copy file 'filename' to 'filepath/cat_1', re-encode: true", ops[1].String())
+	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[1].String())
 	a.Equal("Remove", ops[2].String())
 }
