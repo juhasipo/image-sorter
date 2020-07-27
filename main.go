@@ -109,10 +109,10 @@ func main() {
 
 	gui.Run()
 
-	castManager.Close()
 	categoryManager.Close()
 	categorizationManager.Close()
 	imageLibrary.Close()
+	castManager.Close()
 }
 
 func resolveSecret(secret string) string {
