@@ -11,8 +11,8 @@ import (
 	"vincit.fi/image-sorter/event"
 )
 
-const CATEGORIES_FILE_NAME = ".categories"
 const IMAGE_SORTER_DIR = ".image-sorter"
+const CATEGORIES_FILE_NAME = ".categories"
 
 type Manager struct {
 	commandLineCategories []string
@@ -45,12 +45,13 @@ func New(sender event.Sender, categories []string) CategoryManager {
 func (s *Manager) InitializeFromDirectory(categories []string, rootDir string) {
 	var loadedCategories []*common.Category
 	var categoriesByName = map[string]*common.Category{}
+	s.rootDir = filepath.Join(rootDir, IMAGE_SORTER_DIR)
 
 	if len(categories) > 0 && categories[0] != "" {
 		log.Printf("Reading from command line parameters")
 		loadedCategories = fromCategoriesStrings(categories)
 	} else {
-		loadedCategories = loadCategoriesFromFile(rootDir)
+		loadedCategories = loadCategoriesFromFile(s.rootDir)
 	}
 
 	for _, category := range loadedCategories {
@@ -58,7 +59,6 @@ func (s *Manager) InitializeFromDirectory(categories []string, rootDir string) {
 	}
 
 	s.categories = loadedCategories
-	s.rootDir = rootDir
 	s.categoriesById = categoriesByName
 }
 
