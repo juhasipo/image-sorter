@@ -38,5 +38,6 @@ The `<key>` means a shortcut set for a category.
 |F8  | Cast to Chromecast
 |F10 | Show all images (if selected to show only images from a category)
 |F11 | Toggle full screen
+|ALT + Enter | Toggle full screen
 |CTRL + F11 | No distractions mode
 |F12 | Find similar images
