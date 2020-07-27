@@ -294,10 +294,12 @@ func (s *Caster) getLocalHost() string {
 func (s *Caster) CastImage(handle *common.Handle) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
-	log.Printf("Adding to cast queue: '%s'", handle.GetId())
-	s.imageQueue = handle
+	if handle.IsValid() {
+		log.Printf("Adding to cast queue: '%s'", handle.GetId())
+		s.imageQueue = handle
 
-	s.imageQueueBroker.SendToTopic(CAST_IMAGE_EVENT)
+		s.imageQueueBroker.SendToTopic(CAST_IMAGE_EVENT)
+	}
 }
 
 func (s *Caster) castImageFromQueue() {
