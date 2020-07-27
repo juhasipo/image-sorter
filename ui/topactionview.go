@@ -84,14 +84,8 @@ func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *
 
 func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCallback CategorizeCallback) {
 	layout, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
-	toggle, _ := gtk.LevelBarNew()
-	toggle.SetSensitive(false)
-	toggle.SetSizeRequest(-1, 5)
 	button, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("%s (%s)", entry.GetName(), entry.GetShortcutAsString()))
-	button.SetHExpand(true)
-	layout.Add(button)
-	layout.Add(toggle)
-	layout.SetHExpand(true)
+	toggle, _ := gtk.LevelBarNew()
 
 	categoryButton := &CategoryButton{
 		layout:    layout,
@@ -103,6 +97,53 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 	s.categoryButtons[entry.GetId()] = categoryButton
 
 	send := s.createSendFuncForEntry(categoryButton, categorizeCallback)
+
+	toggle.SetSensitive(false)
+	toggle.SetSizeRequest(-1, 5)
+	button.SetHExpand(true)
+
+	menuButton, _ := gtk.MenuButtonNew()
+	menuPopover, _ := gtk.PopoverNew(menuButton)
+
+	menuButton.SetPopover(menuPopover)
+
+	buttonBox, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 0)
+	buttonBox.SetHExpand(true)
+	buttonBox.SetChildPacking(button, true, true, 0, gtk.PACK_START)
+	buttonBox.SetChildPacking(menuButton, false, true, 0, gtk.PACK_START)
+
+	buttonBox.Add(button)
+	buttonBox.Add(menuButton)
+	menuBox, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
+
+	browseButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Browse '%s' (ALT + %s)", entry.GetName(), entry.GetShortcutAsString()))
+	browseButton.SetRelief(gtk.RELIEF_NONE)
+	browseButton.Connect("clicked", func() {
+		s.sender.SendToTopicWithData(event.CATEGORIES_SHOW_ONLY, entry)
+	})
+	menuBox.Add(browseButton)
+
+	addAndStayButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Add '%s' and Stay (Shift + %s)", entry.GetName(), entry.GetShortcutAsString()))
+	addAndStayButton.SetRelief(gtk.RELIEF_NONE)
+	addAndStayButton.Connect("clicked", func() {
+		send(true, false)
+	})
+	menuBox.Add(addAndStayButton)
+
+	setAsOnly, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Set '%s' as only (CTRL + %s)", entry.GetName(), entry.GetShortcutAsString()))
+	setAsOnly.SetRelief(gtk.RELIEF_NONE)
+	setAsOnly.Connect("clicked", func() {
+		send(false, true)
+	})
+	menuBox.Add(setAsOnly)
+	menuBox.ShowAll()
+
+	menuPopover.Add(menuBox)
+
+	layout.Add(buttonBox)
+	layout.Add(toggle)
+	layout.SetHExpand(true)
+
 	// Catches mouse click and can also check for keyboard for Shift key status
 	button.Connect("button-release-event", func(button *gtk.Button, e *gdk.Event) bool {
 		keyEvent := gdk.EventButtonNewFromEvent(e)
