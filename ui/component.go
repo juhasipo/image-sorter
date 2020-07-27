@@ -6,7 +6,7 @@ import "C"
 import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"log"
+	"vincit.fi/image-sorter/logger"
 )
 
 type Layout int
@@ -24,7 +24,7 @@ func PixbufGetType() glib.Type {
 func GetObjectOrPanic(builder *gtk.Builder, name string) glib.IObject {
 	obj, err := builder.GetObject(name)
 	if err != nil {
-		log.Panic("Could not load object ", name, ": ", err)
+		logger.Error.Panic("Could not load object ", name, ": ", err)
 	}
 	return obj
 }

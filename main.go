@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/google/uuid"
-	"log"
 	"runtime"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/library"
+	"vincit.fi/image-sorter/logger"
 	"vincit.fi/image-sorter/ui"
 )
 
@@ -26,6 +26,8 @@ func main() {
 
 	flag.Parse()
 	rootPath := flag.Arg(0)
+
+	logger.Initialize(logger.DEBUG)
 
 	broker := event.InitBus(1000)
 
@@ -118,7 +120,7 @@ func main() {
 func resolveSecret(secret string) string {
 	if secret == "" {
 		if randomSecret, err := uuid.NewRandom(); err != nil {
-			log.Panic("Could not initialize secret for casting", err)
+			logger.Error.Panic("Could not initialize secret for casting", err)
 			return ""
 		} else {
 			return randomSecret.String()
@@ -129,10 +131,10 @@ func resolveSecret(secret string) string {
 }
 
 func StartBackgroundGC() {
-	log.Print("Start GC background process")
+	logger.Debug.Print("Start GC background process")
 	go func() {
 		for true {
-			log.Printf("Running GC")
+			logger.Trace.Printf("Running GC")
 			runtime.GC()
 			time.Sleep(30 * time.Second)
 		}

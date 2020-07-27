@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/rwcarlsen/goexif/exif"
-	"log"
 	"os"
+	"vincit.fi/image-sorter/logger"
 )
 
 type ExifData struct {
@@ -94,13 +94,13 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 
 		orientation := 0
 		if decodedExif, err := exif.Decode(fileForExif); err != nil {
-			log.Print("Could not decode Exif data", err)
+			logger.Error.Print("Could not decode Exif data", err)
 			return nil, err
 		} else if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
-			log.Print("Could not resolve orientation flag", err)
+			logger.Error.Print("Could not resolve orientation flag", err)
 			return nil, err
 		} else if orientation, err = orientationTag.Int(0); err != nil {
-			log.Print("Could not resolve orientation value", err)
+			logger.Error.Print("Could not resolve orientation value", err)
 			return nil, err
 		} else {
 			angle, flip := ExifOrientationToAngleAndFlip(orientation)

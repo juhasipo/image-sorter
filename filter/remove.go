@@ -2,8 +2,8 @@ package filter
 
 import (
 	"image"
-	"log"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/logger"
 )
 
 type ImageRemove struct {
@@ -17,7 +17,7 @@ func (s *ImageRemove) Apply(operationGroup *ImageOperationGroup) (image.Image, *
 	handle := operationGroup.handle
 	img := operationGroup.img
 	data := operationGroup.exifData
-	log.Printf("Remove %s", handle.GetPath())
+	logger.Debug.Printf("Remove %s", handle.GetPath())
 	return img, data, common.RemoveFile(handle.GetPath())
 }
 func (s *ImageRemove) String() string {

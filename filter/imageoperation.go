@@ -2,8 +2,8 @@ package filter
 
 import (
 	"image"
-	"log"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/logger"
 )
 
 type fileOperation struct {
@@ -44,7 +44,7 @@ func (s *ImageOperationGroup) GetOperations() []ImageOperation {
 
 func (s *ImageOperationGroup) Apply() error {
 	for _, operation := range s.operations {
-		log.Printf("Applying: '%s'", operation)
+		logger.Debug.Printf("Applying: '%s'", operation)
 		var err error
 		if s.img, s.exifData, err = operation.Apply(s); err != nil {
 			return err

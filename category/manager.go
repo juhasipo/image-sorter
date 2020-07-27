@@ -2,13 +2,13 @@ package category
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/logger"
 )
 
 const IMAGE_SORTER_DIR = ".image-sorter"
@@ -48,7 +48,7 @@ func (s *Manager) InitializeFromDirectory(categories []string, rootDir string) {
 	s.rootDir = filepath.Join(rootDir, IMAGE_SORTER_DIR)
 
 	if len(categories) > 0 && categories[0] != "" {
-		log.Printf("Reading from command line parameters")
+		logger.Info.Printf("Reading from command line parameters")
 		loadedCategories = fromCategoriesStrings(categories)
 	} else {
 		loadedCategories = loadCategoriesFromFile(s.rootDir)
@@ -84,7 +84,7 @@ func (s *Manager) SaveDefault(categories []*common.Category) {
 	s.resetCategories(categories)
 
 	if currentUser, err := user.Current(); err != nil {
-		log.Println("Could not find current user", err)
+		logger.Error.Println("Could not find current user", err)
 	} else {
 		categoryFile := filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR)
 
@@ -103,7 +103,7 @@ func (s *Manager) resetCategories(categories []*common.Category) {
 }
 
 func (s *Manager) Close() {
-	log.Print("Shutting down category manager")
+	logger.Info.Print("Shutting down category manager")
 	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, s.categories)
 }
 
@@ -118,10 +118,10 @@ func saveCategoriesToFile(fileDir string, fileName string, categories []*common.
 
 	filePath := filepath.Join(fileDir, fileName)
 
-	log.Printf("Saving categories to file '%s'", filePath)
+	logger.Info.Printf("Saving categories to file '%s'", filePath)
 	f, err := os.Create(filePath)
 	if err != nil {
-		log.Panic("Can't write file ", filePath, err)
+		logger.Error.Panic("Can't write file ", filePath, err)
 	}
 	defer f.Close()
 	w := bufio.NewWriter(f)
@@ -141,9 +141,9 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 			categoryEntries = append(categoryEntries, common.CategoryEntryNew(Parse(categoryName)))
 		}
 	}
-	log.Printf("Parsed %d categories:", len(categoryEntries))
+	logger.Debug.Printf("Parsed %d categories", len(categoryEntries))
 	for _, entry := range categoryEntries {
-		log.Printf(" - %s", entry.GetName())
+		logger.Trace.Printf(" - %s", entry.GetName())
 	}
 	return categoryEntries
 }
@@ -157,7 +157,7 @@ func loadCategoriesFromFile(fileDir string) []*common.Category {
 
 		filePath := common.GetFirstExistingFilePath(filePaths)
 
-		log.Printf("Reading categories from file '%s'", filePath)
+		logger.Info.Printf("Reading categories from file '%s'", filePath)
 
 		if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
 			defer f.Close()
@@ -173,11 +173,11 @@ func loadCategoriesFromFile(fileDir string) []*common.Category {
 				return []*common.Category{}
 			}
 		} else {
-			log.Println("Could not open file: "+filePath, err)
+			logger.Error.Println("Could not open file: "+filePath, err)
 			return []*common.Category{}
 		}
 	} else {
-		log.Println("Could not find current user", err)
+		logger.Error.Println("Could not find current user", err)
 		return []*common.Category{}
 	}
 }

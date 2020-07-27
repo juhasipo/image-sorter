@@ -3,9 +3,9 @@ package common
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
+	"vincit.fi/image-sorter/logger"
 )
 
 func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) error {
@@ -22,7 +22,7 @@ func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) er
 func MakeDirectoriesIfNotExist(srcPath string, dstPath string) error {
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
 		if info, err := os.Stat(srcPath); err != nil {
-			log.Println("Could not resolve srdPath: " + srcPath)
+			logger.Error.Println("Could not resolve srdPath: " + srcPath)
 		} else if err := os.MkdirAll(dstPath, info.Mode()); err != nil {
 			return err
 		}

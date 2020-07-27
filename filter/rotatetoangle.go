@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"image"
-	"log"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/logger"
 )
 
 type ImageRotateToAngle struct {
@@ -23,7 +23,7 @@ func (s *ImageRotateToAngle) Apply(operationGroup *ImageOperationGroup) (image.I
 	img := operationGroup.img
 	data := operationGroup.exifData
 	if s.rotation != 0.0 {
-		log.Printf("Rotate %s to andle %.0f", handle.GetPath(), s.rotation)
+		logger.Debug.Printf("Rotate %s to andle %.0f", handle.GetPath(), s.rotation)
 		rotatedImage := imaging.Rotate(img, s.rotation, image.Black)
 		data.ResetExifRotate()
 		operationGroup.SetModified()

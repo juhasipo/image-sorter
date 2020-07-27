@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"log"
 	"os"
 	"path/filepath"
 	"unsafe"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/logger"
 )
 
 const defaultQuality = 100
@@ -36,7 +36,7 @@ func (s *ImageCopy) Apply(operationGroup *ImageOperationGroup) (image.Image, *co
 	handle := operationGroup.handle
 	img := operationGroup.img
 	exifData := operationGroup.exifData
-	log.Printf("Copy %s", handle.GetPath())
+	logger.Debug.Printf("Copy %s", handle.GetPath())
 
 	if operationGroup.hasBeenModified {
 		encodingOptions := &jpeg.Options{
@@ -46,12 +46,12 @@ func (s *ImageCopy) Apply(operationGroup *ImageOperationGroup) (image.Image, *co
 		jpegBuffer := bytes.NewBuffer([]byte{})
 		dstFilePath := filepath.Join(s.dstPath, s.dstFile)
 		if err := jpeg.Encode(jpegBuffer, img, encodingOptions); err != nil {
-			log.Println("Could not encode image", err)
+			logger.Error.Println("Could not encode image", err)
 			return img, exifData, err
 		} else if err := common.MakeDirectoriesIfNotExist(handle.GetDir(), s.dstPath); err != nil {
 			return img, exifData, err
 		} else if destination, err := os.Create(dstFilePath); err != nil {
-			log.Println("Could not open file for writing", err)
+			logger.Error.Println("Could not open file for writing", err)
 			return img, exifData, err
 		} else {
 			defer destination.Close()
@@ -59,7 +59,7 @@ func (s *ImageCopy) Apply(operationGroup *ImageOperationGroup) (image.Image, *co
 			return img, exifData, nil
 		}
 	} else {
-		log.Printf("Copy '%s' as is", handle.GetPath())
+		logger.Debug.Printf("Copy '%s' as is", handle.GetPath())
 		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	}
 }

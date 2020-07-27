@@ -2,7 +2,6 @@ package imagecategory
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"vincit.fi/image-sorter/filter"
 	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/library"
+	"vincit.fi/image-sorter/logger"
 )
 
 const IMAGE_SORTER_DIR = ".image-sorter"
@@ -72,7 +72,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	var image = s.imageCategory[handle.GetId()]
 	var categorizedImage *category.CategorizedImage = nil
 	if command.ShouldForceToCategory() {
-		log.Printf("Force to category for '%s'", handle.GetPath())
+		logger.Debug.Printf("Force to category for '%s'", handle.GetPath())
 		image = map[string]*category.CategorizedImage{}
 		s.imageCategory[handle.GetId()] = image
 		if operation != common.NONE {
@@ -86,27 +86,27 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	// Case entry was not found or should force to use only the new category
 	if categorizedImage == nil && operation != common.NONE {
 		if image == nil {
-			log.Printf("Create category entry for '%s'", handle.GetPath())
+			logger.Debug.Printf("Create category entry for '%s'", handle.GetPath())
 			image = map[string]*category.CategorizedImage{}
 			s.imageCategory[handle.GetId()] = image
 		}
-		log.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
+		logger.Debug.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
 		categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
 		image[categoryEntry.GetId()] = categorizedImage
 	}
 
 	if operation == common.NONE || categorizedImage == nil {
 		// Case entry is removed
-		log.Printf("Remove entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
+		logger.Debug.Printf("Remove entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
 		delete(s.imageCategory[handle.GetId()], categoryEntry.GetId())
 		if len(s.imageCategory[handle.GetId()]) == 0 {
-			log.Printf("Remove entry for '%s'", handle.GetPath())
+			logger.Debug.Printf("Remove entry for '%s'", handle.GetPath())
 			delete(s.imageCategory, handle.GetId())
 		}
 		s.sendCategories(command.GetHandle())
 	} else {
 		// Case entry found and not removed
-		log.Printf("Update entry for '%s:%s' to %d", handle.GetPath(), categoryEntry.GetName(), operation)
+		logger.Debug.Printf("Update entry for '%s:%s' to %d", handle.GetPath(), categoryEntry.GetName(), operation)
 		categorizedImage.SetOperation(operation)
 		if command.ShouldStayOnSameImage() {
 			s.sendCategories(command.GetHandle())
@@ -119,7 +119,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 }
 
 func (s *Manager) PersistImageCategories(options common.PersistCategorizationCommand) {
-	log.Printf("Persisting files to categories")
+	logger.Debug.Printf("Persisting files to categories")
 	operationsByImage := s.ResolveFileOperations(s.imageCategory, options)
 
 	total := len(operationsByImage)
@@ -127,7 +127,7 @@ func (s *Manager) PersistImageCategories(options common.PersistCategorizationCom
 	for i, operationGroup := range operationsByImage {
 		err := operationGroup.Apply()
 		if err != nil {
-			log.Println("Error", err)
+			logger.Error.Println("Error", err)
 		}
 		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", i+1, total)
 	}
@@ -169,10 +169,10 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 	}
 
 	if fullImage, err := s.imageLoader.LoadImage(handle); err != nil {
-		log.Println("Could not load image", err)
+		logger.Error.Println("Could not load image", err)
 		return nil, err
 	} else if exifData, err := s.imageLoader.LoadExifData(handle); err != nil {
-		log.Println("Could not load exif data")
+		logger.Error.Println("Could not load exif data")
 		return nil, err
 	} else {
 		return filter.ImageOperationGroupNew(handle, fullImage, exifData, imageOperations), nil
@@ -180,7 +180,7 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 }
 
 func (s *Manager) Close() {
-	log.Print("Shutting down image category manager")
+	logger.Info.Print("Shutting down image category manager")
 	s.PersistCategorization()
 }
 
@@ -198,10 +198,10 @@ func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
 func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
 	filePath := filepath.Join(s.settingDir, CATEGORIZATION_FILE_NAME)
 
-	log.Printf("Loading categozation from file '%s'", filePath)
+	logger.Info.Printf("Loading categozation from file '%s'", filePath)
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Print("Can't read file ", filePath, err)
+		logger.Error.Print("Can't read file ", filePath, err)
 		return
 	}
 
@@ -243,10 +243,10 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 func (s *Manager) PersistCategorization() {
 	filePath := filepath.Join(s.settingDir, CATEGORIZATION_FILE_NAME)
 
-	log.Printf("Saving image categorization to file '%s'", filePath)
+	logger.Info.Printf("Saving image categorization to file '%s'", filePath)
 	f, err := os.Create(filePath)
 	if err != nil {
-		log.Println("Can't write file ", filePath, err)
+		logger.Error.Println("Can't write file ", filePath, err)
 		return
 	}
 	defer f.Close()

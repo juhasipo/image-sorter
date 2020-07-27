@@ -3,8 +3,8 @@ package event
 import (
 	"github.com/gotk3/gotk3/glib"
 	messagebus "github.com/vardius/message-bus"
-	"log"
 	"reflect"
+	"vincit.fi/image-sorter/logger"
 )
 
 type Broker struct {
@@ -22,7 +22,7 @@ func InitBus(queueSize int) *Broker {
 func (s *Broker) Subscribe(topic Topic, fn interface{}) {
 	err := s.bus.Subscribe(string(topic), fn)
 	if err != nil {
-		log.Panic("Could not subscribe")
+		logger.Error.Panic("Could not subscribe")
 	}
 }
 
@@ -35,21 +35,21 @@ func (s *Broker) ConnectToGui(topic Topic, callback interface{}) {
 			for _, param := range params {
 				args = append(args, reflect.ValueOf(param))
 			}
-			log.Printf("Calling topic '%s' with %d arguments: %s", topic, len(args), params)
+			logger.Trace.Printf("Calling topic '%s' with %d arguments: %s", topic, len(args), params)
 			reflect.ValueOf(callback).Call(args)
 		})
 	}
 	err := s.bus.Subscribe(string(topic), cb)
 	if err != nil {
-		log.Panic("Could not subscribe")
+		logger.Error.Panic("Could not subscribe")
 	}
 }
 
 func (s *Broker) SendToTopic(topic Topic) {
-	log.Printf("Sending to '%s'", topic)
+	logger.Trace.Printf("Sending to '%s'", topic)
 	s.bus.Publish(string(topic))
 }
 func (s *Broker) SendToTopicWithData(topic Topic, data ...interface{}) {
-	log.Printf("Sending to '%s' with %d arguments", topic, len(data))
+	logger.Trace.Printf("Sending to '%s' with %d arguments", topic, len(data))
 	s.bus.Publish(string(topic), data...)
 }

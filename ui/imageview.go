@@ -6,10 +6,10 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"image"
-	"log"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/logger"
 )
 
 type CurrentImageView struct {
@@ -86,7 +86,7 @@ func (s *ImageView) UpdateCurrentImage() {
 			targetSize.GetWidth(), targetSize.GetHeight())
 		scaled, err := asPixbuf(s.currentImage.img).ScaleSimple(targetWidth, targetHeight, gdk.INTERP_BILINEAR)
 		if err != nil {
-			log.Print(err)
+			logger.Error.Print("Could not load Pixbuf", err)
 		}
 		s.currentImage.view.SetFromPixbuf(scaled)
 

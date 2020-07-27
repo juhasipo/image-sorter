@@ -13,7 +13,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -26,6 +25,7 @@ import (
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/logger"
 )
 
 const (
@@ -83,28 +83,28 @@ func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender even
 
 func (s *Caster) StartServer(port int) {
 	if s.server == nil {
-		log.Printf("Starting HTTP server at port %d", s.port)
+		logger.Info.Printf("Starting HTTP server at port %d", s.port)
 		go s.startServer(port)
 	} else {
-		log.Println("Server already running")
+		logger.Warn.Println("Server already running")
 	}
 }
 
 func (s *Caster) StopServer() {
 	if s.server != nil {
-		log.Println("Shutting down HTTP server")
+		logger.Info.Println("Shutting down HTTP server")
 		err := s.server.Shutdown(context.Background())
 		if err != nil {
-			log.Println(err)
+			logger.Error.Println(err)
 		}
 		s.server = nil
 	} else {
-		log.Println("No server running")
+		logger.Debug.Println("No server running")
 	}
 }
 
 func (s *Caster) startServer(port int) {
-	log.Printf("Starting HTTP server:\n"+
+	logger.Debug.Printf("Starting HTTP server:\n"+
 		" * Port: %d\n"+
 		" * Secret: %s", port, s.secret)
 	s.port = port
@@ -114,7 +114,7 @@ func (s *Caster) startServer(port int) {
 	address := ":" + strconv.Itoa(port)
 	s.server = &http.Server{Addr: address}
 	if err := s.server.ListenAndServe(); err != nil {
-		log.Println("Could not initialize server", err)
+		logger.Error.Println("Could not initialize server", err)
 		s.server = nil
 	}
 }
@@ -123,7 +123,7 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	s.reserveImage()
 	defer s.releaseImage()
 	imageHandle := s.currentImage
-	log.Printf("Sending image '%s' to Chromecast", imageHandle.GetId())
+	logger.Debug.Printf("Sending image '%s' to Chromecast", imageHandle.GetId())
 	img := s.imageCache.GetScaled(imageHandle, common.SizeOf(CANVAS_WIDTH, CANVAS_HEIGHT))
 
 	if img != nil {
@@ -132,25 +132,25 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 }
 
 func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, showBackground bool) {
-	log.Printf("Start writing image to response")
+	logger.Debug.Printf("Start writing image to response")
 	img = resizedAndBlurImage(img, showBackground)
 
 	buffer := new(bytes.Buffer)
 	if err := jpeg.Encode(buffer, img, nil); err != nil {
-		log.Println("Failed to encode image: ", err)
+		logger.Error.Println("Failed to encode image: ", err)
 		return
 	}
 
 	responseWriter.Header().Set("Content-Type", "image/jpeg")
 	responseWriter.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	if _, err := responseWriter.Write(buffer.Bytes()); err != nil {
-		log.Println("Failed to write image: ", err)
+		logger.Error.Println("Failed to write image: ", err)
 	}
-	log.Printf("Image sent to Chromecast")
+	logger.Debug.Printf("Image sent to Chromecast")
 }
 
 func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image {
-	log.Print("Resizing to fit canvas...")
+	logger.Debug.Print("Resizing to fit canvas...")
 	fullHdCanvas := image.NewRGBA(image.Rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT))
 	black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
 	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), &image.Uniform{C: black}, image.Point{}, draw.Src)
@@ -159,7 +159,7 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 	w, h := common.ScaleToFit(srcBounds.X, srcBounds.Y, CANVAS_WIDTH, CANVAS_HEIGHT)
 
 	if blurBackground {
-		log.Print("Blurrign background...")
+		logger.Debug.Print("Blurring background...")
 		// Resize to bigger so that the background surely fills the canvas
 		background := imaging.Resize(srcImage, 2*CANVAS_WIDTH, 2*CANVAS_HEIGHT, imaging.Linear)
 		// Fill canvas by cropping to the canvas size
@@ -187,7 +187,7 @@ func (s *Caster) FindDevices() {
 			}
 			deviceName := s.resolveDeviceName(entry)
 
-			fmt.Printf("Found device: %v\n", entry)
+			logger.Debug.Printf("Found device: %v\n", entry)
 
 			// Resolve the local IP address as which Chromecast sees this host.
 			// This needs to be done before connecting to Chromecast otherwise the TCP
@@ -195,7 +195,7 @@ func (s *Caster) FindDevices() {
 			// because all the information is private in the connection objects
 			localAddr, err := s.resolveLocalAddress(entry)
 			if err != nil {
-				log.Println("Could not resolve local address", err)
+				logger.Error.Println("Could not resolve local address", err)
 				break
 			}
 
@@ -224,7 +224,7 @@ func (s *Caster) FindDevices() {
 
 	// Block until a signal is received.
 	sig := <-c
-	fmt.Println("Got signal:", sig)
+	logger.Trace.Println("Got signal:", sig)
 }
 
 func (s *Caster) resolveDeviceName(entry *mdns.ServiceEntry) string {
@@ -238,39 +238,39 @@ func (s *Caster) resolveDeviceName(entry *mdns.ServiceEntry) string {
 }
 
 func (s *Caster) resolveLocalAddress(entry *mdns.ServiceEntry) (net.IP, error) {
-	log.Printf("Resolving local address when connecting to")
-	log.Printf("  - Host:port: %s:%d", entry.Host, entry.Port)
-	log.Printf("  - Address: %s", entry.Addr)
-	log.Printf("  - Address v4: %s", entry.AddrV4)
-	log.Printf("  - Address v6: %s", entry.AddrV6)
+	logger.Debug.Printf("Resolving local address when connecting to")
+	logger.Debug.Printf("  - Host:port: %s:%d", entry.Host, entry.Port)
+	logger.Debug.Printf("  - Address: %s", entry.Addr)
+	logger.Debug.Printf("  - Address v4: %s", entry.AddrV4)
+	logger.Debug.Printf("  - Address v6: %s", entry.AddrV6)
 	var conn net.Conn
 	var err error
 	const chromecastTestPort = 32768 // Just some valid UDP port on Chromecast to connect
 	if entry.AddrV4 != nil {
-		log.Printf("Connecting (IPv4)...")
+		logger.Trace.Printf("Connecting (IPv4)...")
 		if conn, err = net.Dial("udp", fmt.Sprintf("%s:%d", entry.AddrV4, chromecastTestPort)); err != nil {
 			return nil, err
 		}
 
 	} else {
-		log.Printf("Connecting (IPv6)...")
+		logger.Trace.Printf("Connecting (IPv6)...")
 		if conn, err = net.Dial("udp", fmt.Sprintf("%s:%d", entry.AddrV6, chromecastTestPort)); err != nil {
 			return nil, err
 		}
 	}
 	addr := conn.LocalAddr().(*net.UDPAddr).IP
-	log.Printf("Resolved local address to '%s'", addr.String())
+	logger.Debug.Printf("Resolved local address to '%s'", addr.String())
 	defer conn.Close()
 	return addr, nil
 }
 
 func (s *Caster) SelectDevice(name string, showBackground bool) {
-	log.Printf("Selected device '%s'", name)
+	logger.Debug.Printf("Selected device '%s'", name)
 	s.selectedDevice = name
 	s.showBackground = showBackground
 	device := s.devices[s.selectedDevice]
 	if d, err := cast.NewDevice(device.serviceEntry.Addr, device.serviceEntry.Port); err != nil {
-		log.Println("Could no select device: '"+name+"'", err)
+		logger.Error.Println("Could not select device: '"+name+"'", err)
 	} else {
 		device.device = &d
 		appId := configs.MediaReceiverAppID
@@ -284,7 +284,7 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 
 func (s *Caster) getLocalHost() string {
 	if hostname, err := os.Hostname(); err != nil {
-		log.Panic("Could not get hostname", err)
+		logger.Error.Println("Could not get hostname", err)
 		return ""
 	} else {
 		return hostname
@@ -294,8 +294,8 @@ func (s *Caster) getLocalHost() string {
 func (s *Caster) CastImage(handle *common.Handle) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
-	if handle.IsValid() {
-		log.Printf("Adding to cast queue: '%s'", handle.GetId())
+	if handle.IsValid() && s.server != nil {
+		logger.Debug.Printf("Adding to cast queue: '%s'", handle.GetId())
 		s.imageQueue = handle
 
 		s.imageQueueBroker.SendToTopic(CAST_IMAGE_EVENT)
@@ -314,12 +314,12 @@ func (s *Caster) castImageFromQueue() {
 	time.Sleep(1 * time.Second)
 
 	if s.server == nil {
-		log.Print("Can't cast image, server not running")
+		logger.Error.Print("Can't cast image, server not running")
 		return
 	}
 
 	if device, ok := s.devices[s.selectedDevice]; ok {
-		log.Println("Cast image")
+		logger.Debug.Println("Cast image")
 
 		// Send a random string as part of path so that Chromecast
 		// triggers image change. The server will decide which image to show
@@ -334,11 +334,11 @@ func (s *Caster) castImageFromQueue() {
 
 		ip := device.localAddr.String()
 		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, cacheBusterStr)
-		log.Printf("Casting image '%s'", imageUrl)
+		logger.Debug.Printf("Casting image '%s'", imageUrl)
 		if _, err := device.device.MediaController.Load(imageUrl, "image/jpeg", time.Second*5); err != nil {
-			log.Print("Could not cast image", err)
+			logger.Error.Print("Could not cast image", err)
 		} else {
-			log.Printf("Casted image")
+			logger.Debug.Printf("Casted image")
 		}
 	}
 }
@@ -351,7 +351,7 @@ func (s *Caster) getImageFromQueue() *common.Handle {
 
 	if s.imageQueue != nil {
 		img := s.imageQueue
-		log.Printf("Getting from cast queue: '%s'", img.GetId())
+		logger.Debug.Printf("Getting from cast queue: '%s'", img.GetId())
 		s.imageQueue = nil
 		return img
 	} else {
@@ -361,7 +361,7 @@ func (s *Caster) getImageFromQueue() *common.Handle {
 
 func (s *Caster) StopCasting() {
 	if s.selectedDevice != "" {
-		log.Printf("Stop casting to '%s'", s.selectedDevice)
+		logger.Info.Printf("Stop casting to '%s'", s.selectedDevice)
 		if device, ok := s.devices[s.selectedDevice]; ok {
 			device.device.QuitApplication(time.Second * 5)
 			s.selectedDevice = ""
@@ -374,7 +374,7 @@ func (s *Caster) StopCasting() {
 }
 
 func (s *Caster) Close() {
-	log.Println("Shutdown caster")
+	logger.Info.Println("Shutdown caster")
 	s.StopCasting()
 }
 

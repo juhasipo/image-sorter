@@ -1,8 +1,8 @@
 package filter
 
 import (
-	"log"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/logger"
 )
 
 type Filter struct {
@@ -27,7 +27,7 @@ func FilterManagerNew() *Manager {
 
 func (s *Manager) AddFilterForImage(handle *common.Handle, id string) {
 	if filter, ok := s.filters[id]; !ok {
-		log.Printf("Could not find filter '%s'", id)
+		logger.Error.Printf("Could not find filter '%s'", id)
 	} else if filterList, ok := s.filtersToApply[handle.GetId()]; ok {
 		s.filtersToApply[handle.GetId()] = append(filterList, filter)
 	}

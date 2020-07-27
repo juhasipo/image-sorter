@@ -3,10 +3,10 @@ package common
 import (
 	"image"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/duplo"
+	"vincit.fi/image-sorter/logger"
 )
 
 type ImageContainer struct {
@@ -108,17 +108,17 @@ func LoadImageHandles(dir string) []*Handle {
 	var handles []*Handle
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error.Fatal(err)
 	}
 
-	log.Printf("Scanning directory '%s'", dir)
+	logger.Debug.Printf("Scanning directory '%s'", dir)
 	for _, file := range files {
 		extension := filepath.Ext(file.Name())
 		if isSupported(extension) {
 			handles = append(handles, HandleNew(dir, file.Name()))
 		}
 	}
-	log.Printf("Found %d images", len(handles))
+	logger.Debug.Printf("Found %d images", len(handles))
 
 	return handles
 }

@@ -6,12 +6,12 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"log"
 	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/logger"
 )
 
 type Ui struct {
@@ -44,7 +44,7 @@ func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageCach
 
 	// Check to make sure no errors when creating Gtk Application
 	if err != nil {
-		log.Fatal("Could not create application.", err)
+		logger.Error.Fatal("Could not create application.", err)
 	}
 
 	ui := Ui{
@@ -66,21 +66,21 @@ func (s *Ui) Init(directory string) {
 	// shutdown ->  performs shutdown tasks
 	// Setup activate signal with a closure function.
 	s.application.Connect("activate", func() {
-		log.Println("Application activate")
+		logger.Debug.Println("Application activate")
 
 		if cssProvider, err := gtk.CssProviderNew(); err != nil {
-			log.Panic("Error while loading CSS provider", err)
+			logger.Error.Panic("Error while loading CSS provider", err)
 		} else if err = cssProvider.LoadFromPath("style.css"); err != nil {
-			log.Panic("Error while loading CSS ", err)
+			logger.Error.Panic("Error while loading CSS ", err)
 		} else if screen, err := gdk.ScreenGetDefault(); err != nil {
-			log.Panic("Error while loading screen ", err)
+			logger.Error.Panic("Error while loading screen ", err)
 		} else {
 			gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 		}
 
 		builder, err := gtk.BuilderNewFromFile("main-view.glade")
 		if err != nil {
-			log.Fatal("Could not load Glade file.", err)
+			logger.Error.Fatal("Could not load Glade file.", err)
 		}
 
 		// Get the object with the id of "main_window".
@@ -269,19 +269,17 @@ func (s *Ui) Run() {
 }
 
 func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
-	log.Print("Start setting image category")
 	for _, button := range s.topActionView.categoryButtons {
 		button.SetStatus(common.NONE)
 	}
 
 	for _, command := range commands {
-		log.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
+		logger.Debug.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
 
 		if button, ok := s.topActionView.categoryButtons[command.GetEntry().GetId()]; ok {
 			button.SetStatus(command.GetOperation())
 		}
 	}
-	log.Print("End setting image category")
 }
 
 func (s *Ui) UpdateProgress(name string, status int, total int) {
@@ -323,7 +321,7 @@ func (s *Ui) showEditCategoriesModal() {
 func (s *Ui) openFolderChooser(numOfButtons int) {
 	folderChooser, err := createFileChooser(numOfButtons, s.application.GetActiveWindow())
 	if err != nil {
-		log.Panic("Can't open file chooser")
+		logger.Error.Panic("Can't open file chooser")
 	}
 	defer folderChooser.Destroy()
 

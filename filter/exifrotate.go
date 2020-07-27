@@ -2,9 +2,9 @@ package filter
 
 import (
 	"image"
-	"log"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/logger"
 )
 
 type ImageExifRotate struct {
@@ -18,7 +18,7 @@ func (s *ImageExifRotate) Apply(operationGroup *ImageOperationGroup) (image.Imag
 	handle := operationGroup.handle
 	img := operationGroup.img
 	data := operationGroup.exifData
-	log.Printf("Exif rotate %s", handle.GetPath())
+	logger.Debug.Printf("Exif rotate %s", handle.GetPath())
 	rotatedImage, err := imageloader.ExifRotateImage(img, data)
 	if err != nil {
 		return img, data, err

@@ -1,7 +1,6 @@
 package library
 
 import (
-	"log"
 	"runtime"
 	"sort"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/imageloader/goimage"
+	"vincit.fi/image-sorter/logger"
 	"vincit.fi/image-sorter/util"
 )
 
@@ -97,12 +97,12 @@ func (s *Manager) RequestGenerateHashes() {
 	if s.shouldGenerateSimilarHashed {
 		startTime := time.Now()
 		hashExpected := len(s.imageList)
-		log.Printf("Generate hashes for %d images...", hashExpected)
+		logger.Info.Printf("Generate hashes for %d images...", hashExpected)
 		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", 0, hashExpected)
 
 		// Just to make things consistent in case Go decides to change the default
 		cpuCores := s.getTreadCount()
-		log.Printf(" * Using %d threads", cpuCores)
+		logger.Info.Printf(" * Using %d threads", cpuCores)
 		runtime.GOMAXPROCS(cpuCores)
 
 		s.stopChannel = make(chan bool)
@@ -139,12 +139,12 @@ func (s *Manager) RequestGenerateHashes() {
 
 		endTime := time.Now()
 		d := endTime.Sub(startTime)
-		log.Printf("%d hashes created in %s", hashExpected, d.String())
+		logger.Info.Printf("%d hashes created in %s", hashExpected, d.String())
 
 		avg := d.Milliseconds() / int64(hashExpected)
 		// Remember to take thread count otherwise the avg time is too small
 		f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
-		log.Printf("  On average: %s/image", f.String())
+		logger.Info.Printf("  On average: %s/image", f.String())
 
 		// Always send 100% status even if cancelled so that the progress bar is hidden
 		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "hash", hashExpected, hashExpected)
@@ -242,7 +242,7 @@ func (s *Manager) ChangeImageListSize(imageListSize int) {
 }
 
 func (s *Manager) Close() {
-	log.Print("Shutting down library")
+	logger.Info.Print("Shutting down library")
 }
 
 // Private API

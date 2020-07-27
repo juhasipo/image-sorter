@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
-	"log"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/logger"
 )
 
 type CategoryButton struct {
@@ -74,7 +74,7 @@ func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
-			log.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
+			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
 			return category.CategorizeCommandNew(
 				handle, button.entry, button.operation.NextOperation())
 		}
@@ -179,7 +179,7 @@ type CategorizeCallback func(*common.Category, common.Operation, bool, bool)
 
 func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, categoizeCB CategorizeCallback) func(bool, bool) {
 	return func(stayOnSameImage bool, forceToCategory bool) {
-		log.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
+		logger.Debug.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
 		if forceToCategory {
 			categoizeCB(categoryButton.entry, common.MOVE, stayOnSameImage, forceToCategory)
 		} else {

@@ -1,11 +1,11 @@
 package library
 
 import (
-	"log"
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/duplo"
 	"vincit.fi/image-sorter/imageloader/goimage"
+	"vincit.fi/image-sorter/logger"
 )
 
 type HashResult struct {
@@ -20,14 +20,14 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 	for {
 		select {
 		case <-quitChannel:
-			log.Printf("Quit")
+			logger.Debug.Printf("Quit")
 			return
 		case handle := <-input:
 			{
 				startTime := time.Now()
 				decodedImage, err := imageLoader.LoadImageScaled(handle, hashImageSize)
 				endTime := time.Now()
-				log.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
+				logger.Debug.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 
 				if err != nil {
 					ReturnResult(output, handle, nil)
@@ -36,7 +36,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 				startTime = time.Now()
 				hash, _ := duplo.CreateHash(decodedImage)
 				endTime = time.Now()
-				log.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
+				logger.Debug.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
 				ReturnResult(output, handle, &hash)
 			}
 		}

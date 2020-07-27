@@ -4,12 +4,12 @@ import (
 	"github.com/disintegration/imaging"
 	"image"
 	"image/color"
-	"log"
 	"os"
 	"sync"
 	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/imageloader/goimage"
+	"vincit.fi/image-sorter/logger"
 )
 
 const (
@@ -64,14 +64,14 @@ func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, 
 	}
 
 	if err != nil {
-		log.Print(err)
+		logger.Error.Print(err)
 		return nil, err
 	}
 
 	if fileStat, err := os.Stat(s.handle.GetPath()); err == nil {
 		s.handle.SetByteSize(fileStat.Size())
 	} else {
-		log.Println("Could not load statistic for " + s.handle.GetPath())
+		logger.Error.Println("Could not load statistic for " + s.handle.GetPath())
 	}
 
 	return ExifRotateImage(loadedImage, s.exifData)
@@ -116,12 +116,12 @@ func (s *Instance) GetScaled(size common.Size) image.Image {
 		if newWidth != size.Dx() && newHeight != size.Dy() {
 			s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
 		} else {
-			log.Print("Use cached scaled image")
+			logger.Trace.Print("Use cached scaled image")
 			// Use cached
 		}
 	}
 	endTime := time.Now()
-	log.Printf("'%s': Scaled loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+	logger.Trace.Printf("'%s': Scaled loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 
 	return s.scaled
 }
@@ -141,10 +141,10 @@ func (s *Instance) GetThumbnail() image.Image {
 
 		s.thumbnail = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
 	} else {
-		log.Print("Use cached thumbnail")
+		logger.Trace.Print("Use cached thumbnail")
 	}
 	endTime := time.Now()
-	log.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+	logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 	return s.thumbnail
 }
 
@@ -168,14 +168,14 @@ func (s *Instance) LoadFullFromCache() image.Image {
 
 		var err error
 		if s.full, err = s.loadFull(nil); err != nil {
-			log.Println("Could not load image: "+s.handle.GetPath(), err)
+			logger.Error.Println("Could not load image: "+s.handle.GetPath(), err)
 		}
 
 		endTime := time.Now()
-		log.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+		logger.Trace.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 		return s.full
 	} else {
-		log.Print("Use cached full image")
+		logger.Trace.Print("Use cached full image")
 		return s.full
 	}
 }
@@ -189,14 +189,14 @@ func (s *Instance) LoadThumbnailFromCache() image.Image {
 		size := common.SizeOf(THUMBNAIL_SIZE, THUMBNAIL_SIZE)
 		var err error
 		if s.thumbnail, err = s.loadFull(&size); err != nil {
-			log.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
+			logger.Error.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
 		}
 
 		endTime := time.Now()
-		log.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+		logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
 		return s.thumbnail
 	} else {
-		log.Print("Use cached thumbnail image")
+		logger.Trace.Print("Use cached thumbnail image")
 		return s.thumbnail
 	}
 }
