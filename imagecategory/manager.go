@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -107,6 +108,8 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		if command.ShouldStayOnSameImage() {
 			s.sendCategories(command.GetHandle())
 		} else {
+			s.sendCategories(handle)
+			time.Sleep(command.GetNextImageDelay())
 			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		}
 	}

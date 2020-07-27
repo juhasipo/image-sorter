@@ -2,6 +2,7 @@ package category
 
 import (
 	"fmt"
+	"time"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 )
@@ -11,6 +12,7 @@ type CategorizeCommand struct {
 	entry           *common.Category
 	operation       common.Operation
 	stayOnSameImage bool
+	nextImageDelay  time.Duration
 	forceToCategory bool
 
 	event.Command
@@ -46,22 +48,15 @@ func (s *CategorizeCommand) ShouldStayOnSameImage() bool {
 func (s *CategorizeCommand) ShouldForceToCategory() bool {
 	return s.forceToCategory
 }
+func (s *CategorizeCommand) GetNextImageDelay() time.Duration {
+	return s.nextImageDelay
+}
 
 func CategorizeCommandNew(handle *common.Handle, entry *common.Category, operation common.Operation) *CategorizeCommand {
 	return &CategorizeCommand{
 		handle:    handle,
 		entry:     entry,
 		operation: operation,
-	}
-}
-
-func CategorizeCommandNewWithStayAttr(handle *common.Handle, entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) *CategorizeCommand {
-	return &CategorizeCommand{
-		handle:          handle,
-		entry:           entry,
-		operation:       operation,
-		stayOnSameImage: stayOnSameImage,
-		forceToCategory: forceToCategory,
 	}
 }
 
@@ -76,4 +71,8 @@ func (s *CategorizeCommand) SetStayOfSameImage(stayOnSameImage bool) {
 
 func (s *CategorizeCommand) SetForceToCategory(forceToCategory bool) {
 	s.forceToCategory = forceToCategory
+}
+
+func (s *CategorizeCommand) SetNextImageDelay(duration time.Duration) {
+	s.nextImageDelay = duration
 }

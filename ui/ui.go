@@ -7,6 +7,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
+	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -217,9 +218,13 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 
 	for _, entry := range categories.GetCategories() {
 		s.topActionView.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
+			command := category.CategorizeCommandNew(s.imageView.currentImage.image, entry, operation)
+			command.SetForceToCategory(forceToCategory)
+			command.SetStayOfSameImage(stayOnSameImage)
+			command.SetNextImageDelay(200 * time.Millisecond)
 			s.sender.SendToTopicWithData(
 				event.CATEGORIZE_IMAGE,
-				category.CategorizeCommandNewWithStayAttr(s.imageView.currentImage.image, entry, operation, stayOnSameImage, forceToCategory))
+				command)
 		})
 	}
 
