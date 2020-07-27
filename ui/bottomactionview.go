@@ -15,6 +15,7 @@ type BottomActionView struct {
 	editCategoriesButton *gtk.Button
 	openFolderButton     *gtk.Button
 	fullscreenButton     *gtk.Button
+	noDistractionsButton *gtk.Button
 	exitFullscreenButton *gtk.Button
 }
 
@@ -27,10 +28,11 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		editCategoriesButton: GetObjectOrPanic(builder, "edit-categories-button").(*gtk.Button),
 		openFolderButton:     GetObjectOrPanic(builder, "open-folder-button").(*gtk.Button),
 		fullscreenButton:     GetObjectOrPanic(builder, "fullscreen-button").(*gtk.Button),
+		noDistractionsButton: GetObjectOrPanic(builder, "no-distractions-button").(*gtk.Button),
 		exitFullscreenButton: GetObjectOrPanic(builder, "exit-fullscreen-button").(*gtk.Button),
 	}
 	bottomActionView.exitFullscreenButton.SetVisible(false)
-	
+
 	bottomActionView.persistButton.Connect("clicked", func() {
 		confirm := GetObjectOrPanic(builder, "confirm-categorization-dialog").(*gtk.MessageDialog)
 		confirm.SetTransientFor(ui.application.GetActiveWindow())
@@ -111,6 +113,9 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 			return true
 		}
 		return false
+	})
+	bottomActionView.noDistractionsButton.Connect("clicked", func() {
+		ui.enterFullScreenNoDistraction()
 	})
 	bottomActionView.exitFullscreenButton.Connect("clicked", func() {
 		ui.exitFullScreen()
