@@ -247,6 +247,7 @@ func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer
 		s.similarImagesView.SetImages(handles, s.sender)
 	} else {
 		s.topActionView.SetCurrentStatus(index, total, title)
+		s.bottomActionView.SetShowOnlyCategory(title != "")
 		s.SetCurrentImage(handles[0])
 		s.imageCache.Purge(s.imageView.currentImage.image)
 	}

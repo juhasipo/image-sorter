@@ -17,6 +17,7 @@ type BottomActionView struct {
 	fullscreenButton     *gtk.Button
 	noDistractionsButton *gtk.Button
 	exitFullscreenButton *gtk.Button
+	showAllImagesButton  *gtk.Button
 }
 
 func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
@@ -30,6 +31,7 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		fullscreenButton:     GetObjectOrPanic(builder, "fullscreen-button").(*gtk.Button),
 		noDistractionsButton: GetObjectOrPanic(builder, "no-distractions-button").(*gtk.Button),
 		exitFullscreenButton: GetObjectOrPanic(builder, "exit-fullscreen-button").(*gtk.Button),
+		showAllImagesButton:  GetObjectOrPanic(builder, "show-all-images-button").(*gtk.Button),
 	}
 	bottomActionView.exitFullscreenButton.SetVisible(false)
 
@@ -121,6 +123,10 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		ui.exitFullScreen()
 	})
 
+	bottomActionView.showAllImagesButton.Connect("clicked", func() {
+		sender.SendToTopic(event.IMAGE_SHOW_ALL)
+	})
+
 	return bottomActionView
 }
 
@@ -136,4 +142,8 @@ func (v *BottomActionView) SetNoDistractionMode(value bool) {
 func (v *BottomActionView) SetShowFullscreenButton(visible bool) {
 	v.fullscreenButton.SetVisible(visible)
 	v.exitFullscreenButton.SetVisible(!visible)
+}
+
+func (v *BottomActionView) SetShowOnlyCategory(status bool) {
+	v.showAllImagesButton.SetVisible(status)
 }
