@@ -196,6 +196,7 @@ func (s *Ui) enterFullScreen() {
 	s.imageView.SetNoDistractionMode(false)
 	s.topActionView.SetNoDistractionMode(false)
 	s.bottomActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetShowFullscreenButton(false)
 }
 
 func (s *Ui) exitFullScreen() {
@@ -204,6 +205,7 @@ func (s *Ui) exitFullScreen() {
 	s.imageView.SetNoDistractionMode(false)
 	s.topActionView.SetNoDistractionMode(false)
 	s.bottomActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetShowFullscreenButton(true)
 }
 
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {

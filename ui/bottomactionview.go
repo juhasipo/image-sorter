@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -13,6 +14,8 @@ type BottomActionView struct {
 	findDevicesButton    *gtk.Button
 	editCategoriesButton *gtk.Button
 	openFolderButton     *gtk.Button
+	fullscreenButton     *gtk.Button
+	exitFullscreenButton *gtk.Button
 }
 
 func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
@@ -23,7 +26,11 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		findDevicesButton:    GetObjectOrPanic(builder, "find-devices-button").(*gtk.Button),
 		editCategoriesButton: GetObjectOrPanic(builder, "edit-categories-button").(*gtk.Button),
 		openFolderButton:     GetObjectOrPanic(builder, "open-folder-button").(*gtk.Button),
+		fullscreenButton:     GetObjectOrPanic(builder, "fullscreen-button").(*gtk.Button),
+		exitFullscreenButton: GetObjectOrPanic(builder, "exit-fullscreen-button").(*gtk.Button),
 	}
+	bottomActionView.exitFullscreenButton.SetVisible(false)
+	
 	bottomActionView.persistButton.Connect("clicked", func() {
 		confirm := GetObjectOrPanic(builder, "confirm-categorization-dialog").(*gtk.MessageDialog)
 		confirm.SetTransientFor(ui.application.GetActiveWindow())
@@ -74,6 +81,40 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 	bottomActionView.openFolderButton.Connect("clicked", func() {
 		ui.openFolderChooser(2)
 	})
+	bottomActionView.fullscreenButton.Connect("button-release-event", func(button *gtk.Button, e *gdk.Event) bool {
+		keyEvent := gdk.EventButtonNewFromEvent(e)
+
+		modifiers := gtk.AcceleratorGetDefaultModMask()
+		state := gdk.ModifierType(keyEvent.State())
+
+		controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+		if controlDown {
+			ui.enterFullScreenNoDistraction()
+		} else {
+			ui.enterFullScreen()
+		}
+		return true
+	})
+	bottomActionView.fullscreenButton.Connect("key-press-event", func(button *gtk.Button, e *gdk.Event) bool {
+		keyEvent := gdk.EventKeyNewFromEvent(e)
+		key := keyEvent.KeyVal()
+
+		if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
+			modifiers := gtk.AcceleratorGetDefaultModMask()
+			state := gdk.ModifierType(keyEvent.State())
+			controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+			if controlDown {
+				ui.enterFullScreenNoDistraction()
+			} else {
+				ui.enterFullScreen()
+			}
+			return true
+		}
+		return false
+	})
+	bottomActionView.exitFullscreenButton.Connect("clicked", func() {
+		ui.exitFullScreen()
+	})
 
 	return bottomActionView
 }
@@ -85,4 +126,9 @@ func (v *BottomActionView) SetVisible(visible bool) {
 func (v *BottomActionView) SetNoDistractionMode(value bool) {
 	value = !value
 	v.layout.SetVisible(value)
+}
+
+func (v *BottomActionView) SetShowFullscreenButton(visible bool) {
+	v.fullscreenButton.SetVisible(visible)
+	v.exitFullscreenButton.SetVisible(!visible)
 }

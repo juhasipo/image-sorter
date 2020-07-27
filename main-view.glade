@@ -105,6 +105,11 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-edit</property>
   </object>
+  <object class="GtkImage" id="fullscreen-icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-fullscreen</property>
+  </object>
   <object class="GtkImage" id="generate-hashes-icon">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -115,6 +120,11 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-go-down</property>
   </object>
+  <object class="GtkImage" id="leave-fullscreen-icon">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-leave-fullscreen</property>
+  </object>
   <object class="GtkImage" id="next-icon">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -124,6 +134,132 @@
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="stock">gtk-open</property>
+  </object>
+  <object class="GtkPopoverMenu" id="bottom-action-menu">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkButton" id="find-similar-button">
+            <property name="label" translatable="yes">Find Similar (F12)</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">generate-hashes-icon</property>
+            <property name="relief">none</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="fullscreen-button">
+            <property name="label" translatable="yes">Fullscreen (F11)</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">fullscreen-icon</property>
+            <property name="relief">none</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="exit-fullscreen-button">
+            <property name="label" translatable="yes">Leave Fullscreen (F11)</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">leave-fullscreen-icon</property>
+            <property name="relief">none</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="find-devices-button">
+            <property name="label" translatable="yes">Cast (F8)</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">cast-icon</property>
+            <property name="relief">none</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="open-folder-button">
+            <property name="label">Open Folder</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">open-folder-icon</property>
+            <property name="relief">none</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="edit-categories-button">
+            <property name="label" translatable="yes">Edit Categories</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="image">categories-edit-icon</property>
+            <property name="relief">none</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">7</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="submenu">main</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
   </object>
   <object class="GtkImage" id="previous-icon">
     <property name="visible">True</property>
@@ -165,59 +301,35 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="edit-categories-button">
-                <property name="label" translatable="yes">Categories</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">categories-edit-icon</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="find-similar-button">
-                <property name="label" translatable="yes">Find Similar (F12)</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">generate-hashes-icon</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="find-devices-button">
-                <property name="label" translatable="yes">Cast (F8)</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">cast-icon</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="open-folder-button">
-                <property name="label">Open Folder</property>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkMenuButton" id="bottom-action-menu-button">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="image">open-folder-icon</property>
+                <property name="popover">bottom-action-menu</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="icon_name">open-menu-symbolic</property>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">4</property>
+                <property name="position">5</property>
               </packing>
             </child>
           </object>
@@ -653,6 +765,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="image">save-as-defaults-icon</property>
+            <property name="relief">none</property>
           </object>
           <packing>
             <property name="expand">False</property>
