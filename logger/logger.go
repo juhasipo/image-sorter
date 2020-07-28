@@ -18,11 +18,12 @@ const (
 )
 
 var (
-	Info  *log.Logger
-	Warn  *log.Logger
-	Error *log.Logger
-	Debug *log.Logger
-	Trace *log.Logger
+	nullWriter = &NullWriter{}
+	Info       *log.Logger
+	Warn       *log.Logger
+	Error      *log.Logger
+	Debug      *log.Logger
+	Trace      *log.Logger
 )
 
 func StringToLogLevel(value string) LogLevel {
@@ -66,34 +67,30 @@ func (s *NullWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func init() {
+	Error = log.New(nullWriter, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	Warn = log.New(nullWriter, "WARN:  ", log.Ldate|log.Ltime|log.Lshortfile)
+	Info = log.New(nullWriter, "INFO:  ", log.Ldate|log.Ltime|log.Lshortfile)
+	Debug = log.New(nullWriter, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
+	Trace = log.New(nullWriter, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
+}
+
 func Initialize(logLevel LogLevel) {
 	log.Printf("Initialize loggers: '%s'", logLevel.String())
 
-	nullWriter := &NullWriter{}
-	var errorWriter io.Writer = nullWriter
-	var warnWriter io.Writer = nullWriter
-	var infoWriter io.Writer = nullWriter
-	var debugWriter io.Writer = nullWriter
-	var traceWriter io.Writer = nullWriter
 	if logLevel >= ERROR {
-		errorWriter = os.Stderr
+		Error = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
 	if logLevel >= WARN {
-		warnWriter = os.Stdout
+		Warn = log.New(os.Stdout, "WARN:  ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
 	if logLevel >= INFO {
-		infoWriter = os.Stdout
+		Info = log.New(os.Stdout, "INFO:  ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
 	if logLevel >= DEBUG {
-		debugWriter = os.Stdout
+		Debug = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
 	if logLevel >= TRACE {
-		traceWriter = os.Stdout
+		Trace = log.New(os.Stdout, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
-
-	Error = log.New(errorWriter, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-	Warn = log.New(warnWriter, "WARN:  ", log.Ldate|log.Ltime|log.Lshortfile)
-	Info = log.New(infoWriter, "INFO:  ", log.Ldate|log.Ltime|log.Lshortfile)
-	Debug = log.New(debugWriter, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
-	Trace = log.New(traceWriter, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
 }

@@ -14,8 +14,6 @@ import (
 	"vincit.fi/image-sorter/logger"
 )
 
-const defaultQuality = 100
-
 type ImageCopy struct {
 	fileOperation
 	quality int
