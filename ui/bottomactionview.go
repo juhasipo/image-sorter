@@ -41,12 +41,22 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		confirm.SetTitle("Apply categories?")
 
 		confirmChild := GetObjectOrPanic(builder, "confirm-categorization-dialog-content").(*gtk.Box)
-		keepOriginalsCB, _ := gtk.CheckButtonNewWithLabel("Keep old images?")
+
+		keepOriginalsLayout, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 10)
+		keepOriginalsLabel, _ := gtk.LabelNew("Keep old images?")
+		keepOriginalsCB, _ := gtk.SwitchNew()
 		keepOriginalsCB.SetActive(true)
-		exifCorrect, _ := gtk.CheckButtonNewWithLabel("Rotate image to correct orientation?")
+		keepOriginalsLayout.Add(keepOriginalsCB)
+		keepOriginalsLayout.Add(keepOriginalsLabel)
+
+		exifCorrectLayout, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 10)
+		exifCorrectLabel, _ := gtk.LabelNew("Rotate image to correct orientation?")
+		exifCorrect, _ := gtk.SwitchNew()
+		exifCorrectLayout.Add(exifCorrect)
+		exifCorrectLayout.Add(exifCorrectLabel)
 
 		qualityLayout, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 0)
-		qualityLayout.SetHExpand(true)
+		qualityLayout.SetHExpand(false)
 		adjustment, _ := gtk.AdjustmentNew(90, 0, 100, 0, 0, 0)
 		qualityScale, _ := gtk.ScaleNew(gtk.ORIENTATION_HORIZONTAL, adjustment)
 		qualityScale.SetProperty("value-pos", gtk.POS_LEFT)
@@ -57,8 +67,8 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		qualityLayout.Add(qualityLabel)
 		qualityLayout.Add(qualityScale)
 
-		confirmChild.Add(keepOriginalsCB)
-		confirmChild.Add(exifCorrect)
+		confirmChild.Add(keepOriginalsLayout)
+		confirmChild.Add(exifCorrectLayout)
 		confirmChild.Add(qualityLayout)
 		confirm.ShowAll()
 
