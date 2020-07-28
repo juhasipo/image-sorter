@@ -82,14 +82,14 @@ func (s *Manager) ShowOnlyImages(title string, handles []*common.Handle) {
 	})
 	s.imagesTitle = title
 	s.index = 0
-	s.sendStatus()
+	s.sendStatus(true)
 }
 
 func (s *Manager) ShowAllImages() {
 	s.imageList = make([]*common.Handle, len(s.fullImageList))
 	copy(s.imageList, s.fullImageList)
 	s.imagesTitle = ""
-	s.sendStatus()
+	s.sendStatus(true)
 }
 
 func (s *Manager) RequestGenerateHashes() {
@@ -190,7 +190,7 @@ func (s *Manager) RequestNextImageWithOffset(offset int) {
 	if s.index < 0 {
 		s.index = 0
 	}
-	s.sendStatus()
+	s.sendStatus(true)
 }
 
 func (s *Manager) RequestImage(handle *common.Handle) {
@@ -227,17 +227,17 @@ func (s *Manager) RequestPrevImageWithOffset(offset int) {
 	if s.index < 0 {
 		s.index = 0
 	}
-	s.sendStatus()
+	s.sendStatus(true)
 }
 
 func (s *Manager) RequestImages() {
-	s.sendStatus()
+	s.sendStatus(true)
 }
 
 func (s *Manager) ChangeImageListSize(imageListSize int) {
 	if s.imageListSize != imageListSize {
 		s.imageListSize = imageListSize
-		s.sendStatus()
+		s.sendStatus(false)
 	}
 }
 
@@ -247,15 +247,17 @@ func (s *Manager) Close() {
 
 // Private API
 
-func (s *Manager) sendStatus() {
+func (s *Manager) sendStatus(sendCurrentImage bool) {
 	currentImage := s.getCurrentImage()
 	currentIndex := s.index + 1
 	totalImages := len(s.imageList)
 	if totalImages == 0 {
 		currentIndex = 0
 	}
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage},
-		currentIndex, len(s.imageList), s.imagesTitle)
+	if sendCurrentImage {
+		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage},
+			currentIndex, len(s.imageList), s.imagesTitle)
+	}
 
 	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize),
 		0, len(s.imageList), "Next")
