@@ -23,11 +23,12 @@ func main() {
 	httpPort := flag.Int("httpPort", 8080, "HTTP Server port for Chrome Cast")
 	secret := flag.String("secret", "", "Override default random secret for casting")
 	alwaysStartHttpServer := flag.Bool("alwaysStartHttpServer", false, "Always start HTTP server. Not only when casting.")
+	logLevel := flag.String("logLevel", "INFO", "Log level: ERROR, WARN, INFO, DEBUG, Trace")
 
 	flag.Parse()
 	rootPath := flag.Arg(0)
 
-	logger.Initialize(logger.DEBUG)
+	logger.Initialize(logger.StringToLogLevel(*logLevel))
 
 	broker := event.InitBus(1000)
 

@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type LogLevel int
@@ -23,6 +24,23 @@ var (
 	Debug *log.Logger
 	Trace *log.Logger
 )
+
+func StringToLogLevel(value string) LogLevel {
+	switch strings.ToLower(value) {
+	case "error":
+		return ERROR
+	case "warn":
+		return WARN
+	case "info":
+		return INFO
+	case "debug":
+		return DEBUG
+	case "trace":
+		return TRACE
+	}
+	log.Printf("Invalid log level: '%s'. Returning INFO", value)
+	return INFO
+}
 
 func (s LogLevel) String() string {
 	switch s {
