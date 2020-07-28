@@ -27,7 +27,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 				startTime := time.Now()
 				decodedImage, err := imageLoader.LoadImageScaled(handle, hashImageSize)
 				endTime := time.Now()
-				logger.Debug.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
+				logger.Trace.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 
 				if err != nil {
 					ReturnResult(output, handle, nil)
@@ -36,7 +36,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 				startTime = time.Now()
 				hash, _ := duplo.CreateHash(decodedImage)
 				endTime = time.Now()
-				logger.Debug.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
+				logger.Trace.Printf("'%s': Calculated hash in %s", handle.GetPath(), endTime.Sub(startTime).String())
 				ReturnResult(output, handle, &hash)
 			}
 		}
