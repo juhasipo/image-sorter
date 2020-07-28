@@ -55,13 +55,6 @@ func LibraryNew(sender event.Sender, imageCache imageloader.ImageCache, imageLoa
 	return &manager
 }
 
-func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
-	channel <- &HashResult{
-		handle: handle,
-		hash:   hash,
-	}
-}
-
 func (s *Manager) InitializeFromDirectory(directory string) {
 	s.rootDir = directory
 	s.index = 0
