@@ -43,6 +43,7 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		confirmChild := GetObjectOrPanic(builder, "confirm-categorization-dialog-content").(*gtk.Box)
 
 		keepOriginalsLayout, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 10)
+		keepOriginalsLayout.SetMarginBottom(5)
 		keepOriginalsLabel, _ := gtk.LabelNew("Keep old images?")
 		keepOriginalsCB, _ := gtk.SwitchNew()
 		keepOriginalsCB.SetActive(true)
@@ -50,6 +51,7 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 		keepOriginalsLayout.Add(keepOriginalsLabel)
 
 		exifCorrectLayout, _ := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 10)
+		exifCorrectLayout.SetMarginBottom(5)
 		exifCorrectLabel, _ := gtk.LabelNew("Rotate image to correct orientation?")
 		exifCorrect, _ := gtk.SwitchNew()
 		exifCorrectLayout.Add(exifCorrect)
@@ -74,8 +76,8 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 
 		defer confirm.Hide()
 		response := confirm.Run()
-		defer keepOriginalsCB.Destroy()
-		defer exifCorrect.Destroy()
+		defer keepOriginalsLayout.Destroy()
+		defer exifCorrectLayout.Destroy()
 		defer qualityLayout.Destroy()
 
 		if response == gtk.RESPONSE_YES {
