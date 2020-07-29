@@ -8,6 +8,7 @@ import (
 	"vincit.fi/image-sorter/logger"
 )
 
+// Copies file. Creates destination directories if they don't exist
 func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) error {
 	srcFilePath := filepath.Join(srcPath, srcFile)
 	dstFilePath := filepath.Join(dstPath, dstFile)
@@ -19,6 +20,8 @@ func CopyFile(srcPath string, srcFile string, dstPath string, dstFile string) er
 	return copyInternal(srcFilePath, dstFilePath)
 }
 
+// Creates dstPath directories if they do not exist. Uses srdDir file mode
+// for the created directories
 func MakeDirectoriesIfNotExist(srcPath string, dstPath string) error {
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
 		if info, err := os.Stat(srcPath); err != nil {
@@ -52,10 +55,12 @@ func copyInternal(src string, dst string) error {
 	return err
 }
 
+// Removes file
 func RemoveFile(src string) error {
 	return os.Remove(src)
 }
 
+// Returns true if file at the path exists. False if not
 func DoesFileExist(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
