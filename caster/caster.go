@@ -46,7 +46,7 @@ type Caster struct {
 	currentImage          *common.Handle
 	server                *http.Server
 	showBackground        bool
-	imageCache            imageloader.ImageCache
+	imageCache            imageloader.ImageStore
 	alwaysStartHttpServer bool
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
@@ -61,7 +61,7 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache imageloader.ImageCache) *Caster {
+func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache imageloader.ImageStore) *Caster {
 	c := &Caster{
 		port:                  port,
 		alwaysStartHttpServer: alwaysStartHttpServer,

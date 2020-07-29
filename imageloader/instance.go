@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/logger"
 )
 
@@ -22,11 +21,11 @@ type Instance struct {
 	thumbnail   image.Image
 	scaled      image.Image
 	exifData    *common.ExifData
-	imageLoader goimage.ImageLoader
+	imageLoader ImageLoader
 	mux         sync.Mutex
 }
 
-func NewInstance(handle *common.Handle, imageLoader goimage.ImageLoader) *Instance {
+func NewInstance(handle *common.Handle, imageLoader ImageLoader) *Instance {
 	var instance *Instance
 	if exifData, err := common.LoadExifData(handle); err == nil {
 		instance = &Instance{

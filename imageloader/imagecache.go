@@ -5,14 +5,13 @@ import (
 	"runtime"
 	"sync"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/imageloader/goimage"
 )
 
 type CacheContainer struct {
 	img *image.NRGBA
 }
 
-type ImageCache interface {
+type ImageStore interface {
 	Initialize([]*common.Handle)
 	GetFull(*common.Handle) image.Image
 	GetScaled(*common.Handle, common.Size) image.Image
@@ -20,15 +19,15 @@ type ImageCache interface {
 	Purge(*common.Handle)
 }
 
-type DefaultImageCache struct {
+type DefaultImageStore struct {
 	imageCache  map[string]*Instance
 	mux         sync.Mutex
-	imageLoader goimage.ImageLoader
+	imageLoader ImageLoader
 
-	ImageCache
+	ImageStore
 }
 
-func (s *DefaultImageCache) Initialize(handles []*common.Handle) {
+func (s *DefaultImageStore) Initialize(handles []*common.Handle) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.imageCache = map[string]*Instance{}
@@ -38,25 +37,25 @@ func (s *DefaultImageCache) Initialize(handles []*common.Handle) {
 	runtime.GC()
 }
 
-func ImageCacheNew(imageLoader goimage.ImageLoader) ImageCache {
-	return &DefaultImageCache{
+func ImageCacheNew(imageLoader ImageLoader) ImageStore {
+	return &DefaultImageStore{
 		imageCache:  map[string]*Instance{},
 		mux:         sync.Mutex{},
 		imageLoader: imageLoader,
 	}
 }
 
-func (s *DefaultImageCache) GetFull(handle *common.Handle) image.Image {
+func (s *DefaultImageStore) GetFull(handle *common.Handle) image.Image {
 	return s.getImage(handle).LoadFullFromCache()
 }
-func (s *DefaultImageCache) GetScaled(handle *common.Handle, size common.Size) image.Image {
+func (s *DefaultImageStore) GetScaled(handle *common.Handle, size common.Size) image.Image {
 	return s.getImage(handle).GetScaled(size)
 }
-func (s *DefaultImageCache) GetThumbnail(handle *common.Handle) image.Image {
+func (s *DefaultImageStore) GetThumbnail(handle *common.Handle) image.Image {
 	return s.getImage(handle).GetThumbnail()
 }
 
-func (s *DefaultImageCache) getImage(handle *common.Handle) *Instance {
+func (s *DefaultImageStore) getImage(handle *common.Handle) *Instance {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if handle.IsValid() {
@@ -72,7 +71,7 @@ func (s *DefaultImageCache) getImage(handle *common.Handle) *Instance {
 	}
 }
 
-func (s *DefaultImageCache) Purge(handle *common.Handle) {
+func (s *DefaultImageStore) Purge(handle *common.Handle) {
 	for _, instance := range s.imageCache {
 		instance.Purge()
 	}

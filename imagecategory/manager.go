@@ -10,7 +10,7 @@ import (
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/filter"
-	"vincit.fi/image-sorter/imageloader/goimage"
+	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/logger"
 )
@@ -25,12 +25,12 @@ type Manager struct {
 	sender        event.Sender
 	library       library.Library
 	filterManager *filter.Manager
-	imageLoader   goimage.ImageLoader
+	imageLoader   imageloader.ImageLoader
 
 	ImageCategoryManager
 }
 
-func ManagerNew(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader goimage.ImageLoader) ImageCategoryManager {
+func ManagerNew(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader imageloader.ImageLoader) ImageCategoryManager {
 	var manager = Manager{
 		imageCategory: map[string]map[string]*category.CategorizedImage{},
 		sender:        sender,

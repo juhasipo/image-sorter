@@ -12,7 +12,6 @@ import (
 	"vincit.fi/image-sorter/filter"
 	"vincit.fi/image-sorter/imagecategory"
 	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/logger"
 	"vincit.fi/image-sorter/ui"
@@ -34,7 +33,7 @@ func main() {
 
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr)
-	imageLoader := goimage.ImageLoaderNew()
+	imageLoader := imageloader.ImageLoaderNew()
 	imageCache := imageloader.ImageCacheNew(imageLoader)
 	imageLibrary := library.LibraryNew(broker, imageCache, imageLoader)
 	filterManager := filter.FilterManagerNew()

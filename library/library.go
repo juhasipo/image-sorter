@@ -9,7 +9,6 @@ import (
 	"vincit.fi/image-sorter/duplo"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/logger"
 	"vincit.fi/image-sorter/util"
 )
@@ -33,8 +32,8 @@ type Manager struct {
 	sender                      event.Sender
 	categoryManager             *category.Manager
 	imageListSize               int
-	imageCache                  imageloader.ImageCache
-	imageLoader                 goimage.ImageLoader
+	imageStore                  imageloader.ImageStore
+	imageLoader                 imageloader.ImageLoader
 
 	Library
 
@@ -42,14 +41,14 @@ type Manager struct {
 	outputChannel chan *HashResult
 }
 
-func LibraryNew(sender event.Sender, imageCache imageloader.ImageCache, imageLoader goimage.ImageLoader) Library {
+func LibraryNew(sender event.Sender, imageCache imageloader.ImageStore, imageLoader imageloader.ImageLoader) Library {
 	var manager = Manager{
 		index:                       0,
 		sender:                      sender,
 		imageHash:                   duplo.New(),
 		shouldGenerateSimilarHashed: true,
 		imageListSize:               0,
-		imageCache:                  imageCache,
+		imageStore:                  imageCache,
 		imageLoader:                 imageLoader,
 	}
 	return &manager
@@ -265,7 +264,7 @@ func (s *Manager) sendStatus(sendCurrentImage bool) {
 func (s *Manager) getCurrentImage() *common.ImageContainer {
 	if s.index < len(s.imageList) {
 		handle := s.imageList[s.index]
-		return common.ImageContainerNew(handle, s.imageCache.GetFull(handle))
+		return common.ImageContainerNew(handle, s.imageStore.GetFull(handle))
 	} else {
 		return common.ImageContainerNew(common.GetEmptyHandle(), nil)
 	}
@@ -285,7 +284,7 @@ func (s *Manager) getNextImages(number int) []*common.ImageContainer {
 	slice := s.imageList[startIndex:endIndex]
 	images := make([]*common.ImageContainer, len(slice))
 	for i, handle := range slice {
-		images[i] = common.ImageContainerNew(handle, s.imageCache.GetThumbnail(handle))
+		images[i] = common.ImageContainerNew(handle, s.imageStore.GetThumbnail(handle))
 	}
 	return images
 }
@@ -298,7 +297,7 @@ func (s *Manager) getPrevImages(number int) []*common.ImageContainer {
 	slice := s.imageList[prevIndex:s.index]
 	images := make([]*common.ImageContainer, len(slice))
 	for i, handle := range slice {
-		images[i] = common.ImageContainerNew(handle, s.imageCache.GetThumbnail(handle))
+		images[i] = common.ImageContainerNew(handle, s.imageStore.GetThumbnail(handle))
 	}
 	util.Reverse(images)
 	return images
@@ -315,7 +314,7 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 		for _, match := range matches {
 			similar := match.ID.(*common.Handle)
 			if handle.GetId() != similar.GetId() {
-				images[i] = common.ImageContainerNew(similar, s.imageCache.GetThumbnail(similar))
+				images[i] = common.ImageContainerNew(similar, s.imageStore.GetThumbnail(similar))
 				i++
 			}
 			if i == maxImages {

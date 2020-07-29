@@ -1,4 +1,4 @@
-package goimage
+package imageloader
 
 import (
 	"github.com/pixiv/go-libjpeg/jpeg"

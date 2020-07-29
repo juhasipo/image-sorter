@@ -11,7 +11,6 @@ import (
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/filter"
 	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/imageloader/goimage"
 	"vincit.fi/image-sorter/library"
 )
 
@@ -26,12 +25,12 @@ type MockLibrary struct {
 }
 
 type MockImageCache struct {
-	imageloader.ImageCache
+	imageloader.ImageStore
 	mock.Mock
 }
 
 type MockImageLoader struct {
-	goimage.ImageLoader
+	imageloader.ImageLoader
 	mock.Mock
 }
 
