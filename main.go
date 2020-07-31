@@ -78,7 +78,8 @@ func main() {
 	broker.Subscribe(event.SIMILAR_SET_STATUS, imageLibrary.SetSimilarStatus)
 
 	// Library -> UI
-	broker.ConnectToGui(event.IMAGE_UPDATE, gui.SetImages)
+	broker.ConnectToGui(event.IMAGE_LIST_UPDATE, gui.SetImages)
+	broker.ConnectToGui(event.IMAGE_CURRENT_UPDATE, gui.SetCurrentImage)
 	broker.ConnectToGui(event.UPDATE_PROCESS_STATUS, gui.UpdateProgress)
 
 	// UI -> Image Categorization

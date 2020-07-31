@@ -238,26 +238,24 @@ func (s *Ui) UpdateCurrentImage() {
 	s.imageView.UpdateCurrentImage()
 }
 
-func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer, index int, total int, title string) {
+func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer) {
 	if imageTarget == event.IMAGE_REQUEST_NEXT {
 		s.imageView.AddImagesToNextStore(handles)
 	} else if imageTarget == event.IMAGE_REQUEST_PREV {
 		s.imageView.AddImagesToPrevStore(handles)
 	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
 		s.similarImagesView.SetImages(handles, s.sender)
-	} else {
-		s.topActionView.SetCurrentStatus(index, total, title)
-		s.bottomActionView.SetShowOnlyCategory(title != "")
-		s.SetCurrentImage(handles[0])
-		s.imageCache.Purge(s.imageView.currentImage.image)
 	}
 }
 
-func (s *Ui) SetCurrentImage(handle *common.ImageContainer) {
-	s.imageView.SetCurrentImage(handle)
-
+func (s *Ui) SetCurrentImage(image *common.ImageContainer, index int, total int, title string, exifData *common.ExifData) {
+	s.topActionView.SetCurrentStatus(index, total, title)
+	s.bottomActionView.SetShowOnlyCategory(title != "")
+	s.imageView.SetCurrentImage(image, exifData)
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
+
+	s.imageCache.Purge(s.imageView.currentImage.image)
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {

@@ -16,6 +16,7 @@ type ImageStore interface {
 	GetFull(*common.Handle) image.Image
 	GetScaled(*common.Handle, common.Size) image.Image
 	GetThumbnail(*common.Handle) image.Image
+	GetExifData(handle *common.Handle) *common.ExifData
 	Purge(*common.Handle)
 }
 
@@ -53,6 +54,9 @@ func (s *DefaultImageStore) GetScaled(handle *common.Handle, size common.Size) i
 }
 func (s *DefaultImageStore) GetThumbnail(handle *common.Handle) image.Image {
 	return s.getImage(handle).GetThumbnail()
+}
+func (s *DefaultImageStore) GetExifData(handle *common.Handle) *common.ExifData {
+	return s.getImage(handle).exifData
 }
 
 func (s *DefaultImageStore) getImage(handle *common.Handle) *Instance {

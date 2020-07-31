@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/rwcarlsen/goexif/exif"
+	"github.com/rwcarlsen/goexif/tiff"
 	"os"
 	"vincit.fi/image-sorter/logger"
 )
@@ -81,6 +82,18 @@ func (s *ExifData) IsFlipped() bool {
 
 func (s *ExifData) GetRaw() []byte {
 	return s.raw.Raw
+}
+
+func (s *ExifData) Get(name exif.FieldName) *tiff.Tag {
+	if tag, err := s.raw.Get(name); err != nil {
+		return nil
+	} else {
+		return tag
+	}
+}
+
+func (s *ExifData) Walk(walker exif.Walker) {
+	_ = s.raw.Walk(walker)
 }
 
 func (s *ExifData) GetRawLength() uint16 {

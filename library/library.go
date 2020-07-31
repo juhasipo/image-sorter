@@ -247,14 +247,12 @@ func (s *Manager) sendStatus(sendCurrentImage bool) {
 		currentIndex = 0
 	}
 	if sendCurrentImage {
-		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_CURRENT, []*common.ImageContainer{currentImage},
-			currentIndex, len(s.imageList), s.imagesTitle)
+		s.sender.SendToTopicWithData(event.IMAGE_CURRENT_UPDATE, currentImage,
+			currentIndex, len(s.imageList), s.imagesTitle, s.imageStore.GetExifData(currentImage.GetHandle()))
 	}
 
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize),
-		0, len(s.imageList), "Next")
-	s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize),
-		0, len(s.imageList), "Previous")
+	s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_NEXT, s.getNextImages(s.imageListSize))
+	s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_PREV, s.getPrevImages(s.imageListSize))
 
 	if s.shouldSendSimilar {
 		s.sendSimilarImages(currentImage.GetHandle())
@@ -322,7 +320,7 @@ func (s *Manager) sendSimilarImages(handle *common.Handle) {
 			}
 		}
 
-		s.sender.SendToTopicWithData(event.IMAGE_UPDATE, event.IMAGE_REQUEST_SIMILAR, images, 0, 0, "")
+		s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_SIMILAR, images, 0, 0, "")
 	}
 }
 
@@ -345,4 +343,8 @@ func (s *Manager) AddHandles(imageList []*common.Handle) {
 
 func (s *Manager) GetHandleById(handleId string) *common.Handle {
 	return s.imageHandles[handleId]
+}
+
+func (s *Manager) GetMetaData(handle *common.Handle) *common.ExifData {
+	return s.imageStore.GetExifData(handle)
 }

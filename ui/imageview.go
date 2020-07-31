@@ -1,11 +1,16 @@
 package ui
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/rwcarlsen/goexif/exif"
+	"github.com/rwcarlsen/goexif/tiff"
 	"image"
+	"sort"
+	"strings"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
@@ -98,7 +103,35 @@ func (s *ImageView) UpdateCurrentImage() {
 	}
 }
 
-func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
+type W struct {
+	stringBuffer *bytes.Buffer
+	values       []string
+
+	exif.Walker
+}
+
+func (s *W) Walk(name exif.FieldName, tag *tiff.Tag) error {
+	tagValue := strings.Trim(tag.String(), " \t\"")
+
+	if tagValue != "" {
+		s.values = append(s.values, fmt.Sprintf("%s: %s", string(name), tagValue))
+	}
+	return nil
+}
+
+func (s *W) String() string {
+	sort.Strings(s.values)
+	b := bytes.NewBuffer([]byte{})
+	for _, value := range s.values {
+		b.WriteString(value)
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+const showExifData = false
+
+func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifData *common.ExifData) {
 	handle := imageContainer.GetHandle()
 	img := imageContainer.GetImage()
 	s.currentImage.img = img
@@ -106,8 +139,17 @@ func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer) {
 	if img != nil {
 		size := img.Bounds()
 		buffer, _ := s.currentImage.details.GetBuffer()
-		details := fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy())
-		buffer.SetText(details)
+		stringBuffer := bytes.NewBuffer([]byte{})
+		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy()))
+
+		if showExifData {
+			w := &W{stringBuffer: stringBuffer}
+			exifData.Walk(w)
+			stringBuffer.WriteString("\n")
+			stringBuffer.WriteString(w.String())
+		}
+
+		buffer.SetText(stringBuffer.String())
 		s.currentImage.image = handle
 	} else {
 		s.currentImage.image = nil
