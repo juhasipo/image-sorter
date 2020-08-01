@@ -175,7 +175,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	sut.AddHandles(handles)
 
 	t.Run("Jump to forward 5 images", func(t *testing.T) {
-		sut.RequestNextImageWithOffset(5)
+		sut.MoveToNextImageWithOffset(5)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(5, index)
@@ -183,7 +183,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	})
 
 	t.Run("Jump beyond the last", func(t *testing.T) {
-		sut.RequestNextImageWithOffset(10)
+		sut.MoveToNextImageWithOffset(10)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
@@ -191,7 +191,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	})
 
 	t.Run("Jump back to 5 images", func(t *testing.T) {
-		sut.RequestPrevImageWithOffset(5)
+		sut.MoveToPrevImageWithOffset(5)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(4, index)
@@ -199,7 +199,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	})
 
 	t.Run("Jump beyond the first", func(t *testing.T) {
-		sut.RequestPrevImageWithOffset(10)
+		sut.MoveToPrevImageWithOffset(10)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
@@ -225,7 +225,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	sut.AddHandles(handles)
 
 	t.Run("Index first image", func(t *testing.T) {
-		sut.RequestImageAt(0)
+		sut.MoveToImageAt(0)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
@@ -233,7 +233,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	})
 
 	t.Run("Index 5", func(t *testing.T) {
-		sut.RequestImageAt(5)
+		sut.MoveToImageAt(5)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(5, index)
@@ -241,7 +241,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	})
 
 	t.Run("Index last image", func(t *testing.T) {
-		sut.RequestImageAt(9)
+		sut.MoveToImageAt(9)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
@@ -249,7 +249,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	})
 
 	t.Run("Index after the last gives the last image", func(t *testing.T) {
-		sut.RequestImageAt(10)
+		sut.MoveToImageAt(10)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
@@ -257,7 +257,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	})
 
 	t.Run("Index last image with negative index", func(t *testing.T) {
-		sut.RequestImageAt(-1)
+		sut.MoveToImageAt(-1)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
@@ -265,7 +265,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	})
 
 	t.Run("Index second to last image with negative index", func(t *testing.T) {
-		sut.RequestImageAt(-2)
+		sut.MoveToImageAt(-2)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(8, index)
@@ -273,7 +273,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	})
 
 	t.Run("Too big negative index returns the first", func(t *testing.T) {
-		sut.RequestImageAt(-100)
+		sut.MoveToImageAt(-100)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
@@ -294,14 +294,14 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	sut.AddHandles(handles)
 
 	t.Run("foo1", func(t *testing.T) {
-		sut.RequestImage(common.NewHandle("/tmp", "foo1"))
+		sut.MoveToImage(common.NewHandle("/tmp", "foo1"))
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
 		a.Equal("foo1", img.GetHandle().GetFile())
 	})
 	t.Run("foo3", func(t *testing.T) {
-		sut.RequestImage(common.NewHandle("/tmp", "foo3"))
+		sut.MoveToImage(common.NewHandle("/tmp", "foo3"))
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
@@ -309,7 +309,7 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	})
 
 	t.Run("Nil stays on the current image", func(t *testing.T) {
-		sut.RequestImage(nil)
+		sut.MoveToImage(nil)
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
@@ -333,7 +333,7 @@ func TestGetNextImages(t *testing.T) {
 		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
-	sut.ChangeImageListSize(5)
+	sut.SetImageListSize(5)
 	a.Equal(5, sut.getImageListSize())
 
 	t.Run("Initial image count", func(t *testing.T) {
@@ -362,7 +362,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("If no more next images, dont return more", func(t *testing.T) {
-		sut.RequestImageAt(6)
+		sut.MoveToImageAt(6)
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(3, len(imgList)) {
@@ -373,7 +373,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("Second to last", func(t *testing.T) {
-		sut.RequestImageAt(8)
+		sut.MoveToImageAt(8)
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
@@ -382,7 +382,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("The last", func(t *testing.T) {
-		sut.RequestImageAt(9)
+		sut.MoveToImageAt(9)
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		a.Equal(0, len(imgList))
@@ -406,7 +406,7 @@ func TestGetPrevImages(t *testing.T) {
 		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
-	sut.ChangeImageListSize(5)
+	sut.SetImageListSize(5)
 	a.Equal(5, sut.getImageListSize())
 
 	t.Run("Initial image count", func(t *testing.T) {
@@ -425,7 +425,7 @@ func TestGetPrevImages(t *testing.T) {
 	})
 
 	t.Run("Image at 5 gives the first 5 images", func(t *testing.T) {
-		sut.RequestImageAt(5)
+		sut.MoveToImageAt(5)
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
@@ -438,7 +438,7 @@ func TestGetPrevImages(t *testing.T) {
 	})
 
 	t.Run("Second to last image ", func(t *testing.T) {
-		sut.RequestImageAt(8)
+		sut.MoveToImageAt(8)
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
@@ -451,7 +451,7 @@ func TestGetPrevImages(t *testing.T) {
 	})
 
 	t.Run("The last", func(t *testing.T) {
-		sut.RequestImageAt(9)
+		sut.MoveToImageAt(9)
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
@@ -502,7 +502,7 @@ func TestShowOnlyImages(t *testing.T) {
 		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
-	sut.ChangeImageListSize(10)
+	sut.SetImageListSize(10)
 
 	categoryHandles := []*common.Handle{
 		common.NewHandle("/tmp", "foo1"),
@@ -532,7 +532,7 @@ func TestShowOnlyImages(t *testing.T) {
 	})
 
 	t.Run("Next and prev images at 2", func(t *testing.T) {
-		sut.RequestImageAt(2)
+		sut.MoveToImageAt(2)
 		nextImages := sut.getNextImages()
 		prevImages := sut.getPrevImages()
 		a.NotNil(nextImages)
@@ -565,7 +565,7 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
-	sut.ChangeImageListSize(10)
+	sut.SetImageListSize(10)
 
 	categoryHandles := []*common.Handle{
 		common.NewHandle("/tmp", "foo1"),

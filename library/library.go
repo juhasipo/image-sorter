@@ -31,64 +31,68 @@ func (s *Manager) GetHandles() []*common.Handle {
 
 func (s *Manager) ShowOnlyImages(title string, handles []*common.Handle) {
 	s.manager.ShowOnlyImages(title, handles)
-	s.sendStatus(true)
+	s.RequestImages()
 }
 
 func (s *Manager) ShowAllImages() {
 	s.manager.ShowAllImages()
-	s.sendStatus(true)
+	s.RequestImages()
 }
 
 func (s *Manager) RequestGenerateHashes() {
-	if s.manager.RequestGenerateHashes(s.sender) {
+	if s.manager.GenerateHashes(s.sender) {
 		image, _ := s.manager.getCurrentImage()
 		s.sendSimilarImages(image.GetHandle())
 	}
 }
 
-func (s *Manager) SetSimilarStatus(sendSimilarImages bool) {
+func (s *Manager) SetSendSimilarImages(sendSimilarImages bool) {
 	s.manager.SetSimilarStatus(sendSimilarImages)
 }
 
 func (s *Manager) RequestStopHashes() {
-	s.manager.RequestStopHashes()
-}
-
-func (s *Manager) RequestNextImage() {
-	s.manager.RequestNextImage()
+	s.manager.StopHashes()
 }
 
 func (s *Manager) RequestNextImageWithOffset(offset int) {
-	s.manager.RequestNextImageWithOffset(offset)
-	s.sendStatus(true)
+	s.manager.MoveToNextImageWithOffset(offset)
+	s.RequestImages()
+}
+
+func (s *Manager) RequestPrevImageWithOffset(offset int) {
+	s.manager.MoveToPrevImageWithOffset(offset)
+	s.RequestImages()
+}
+
+func (s *Manager) RequestNextImage() {
+	s.RequestNextImageWithOffset(1)
+}
+
+func (s *Manager) RequestPrevImage() {
+	s.RequestNextImageWithOffset(-1)
 }
 
 func (s *Manager) RequestImage(handle *common.Handle) {
-	s.manager.RequestImage(handle)
+	s.manager.MoveToImage(handle)
 	s.RequestImages()
 }
 
 func (s *Manager) RequestImageAt(index int) {
-	s.manager.RequestImageAt(index)
+	s.manager.MoveToImageAt(index)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestPrevImage() {
-	s.manager.RequestPrevImage()
-}
-
-func (s *Manager) RequestPrevImageWithOffset(offset int) {
-	s.manager.RequestPrevImageWithOffset(offset)
-	s.sendStatus(true)
-}
-
 func (s *Manager) RequestImages() {
-	s.sendStatus(true)
+	s.sendImages(true)
 }
 
-func (s *Manager) ChangeImageListSize(imageListSize int) {
-	if s.manager.ChangeImageListSize(imageListSize) {
-		s.sendStatus(false)
+func (s *Manager) requestImageLists() {
+	s.sendImages(false)
+}
+
+func (s *Manager) SetImageListSize(imageListSize int) {
+	if s.manager.SetImageListSize(imageListSize) {
+		s.requestImageLists()
 	}
 }
 
@@ -110,7 +114,7 @@ func (s *Manager) GetMetaData(handle *common.Handle) *common.ExifData {
 
 // Private API
 
-func (s *Manager) sendStatus(sendCurrentImage bool) {
+func (s *Manager) sendImages(sendCurrentImage bool) {
 	currentImage, currentIndex := s.manager.getCurrentImage()
 	totalImages := s.manager.getTotalImages()
 	if totalImages == 0 {
@@ -134,7 +138,7 @@ func (s *Manager) sendStatus(sendCurrentImage bool) {
 func (s *Manager) sendSimilarImages(handle *common.Handle) {
 	images, shouldSend := s.manager.getSimilarImages(handle)
 	if shouldSend {
-		s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_SIMILAR, images, 0, 0, "")
+		s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_SIMILAR, images)
 	}
 }
 

@@ -78,7 +78,7 @@ func (s *internalManager) ShowAllImages() {
 	s.imagesTitle = ""
 }
 
-func (s *internalManager) RequestGenerateHashes(sender event.Sender) bool {
+func (s *internalManager) GenerateHashes(sender event.Sender) bool {
 	shouldSendSimilarImages := false
 	s.shouldSendSimilar = true
 	if s.shouldGenerateSimilarHashed {
@@ -118,7 +118,7 @@ func (s *internalManager) RequestGenerateHashes(sender event.Sender) bool {
 			s.imageHash.Add(result.handle, *result.hash)
 
 			if i == hashExpected {
-				s.RequestStopHashes()
+				s.StopHashes()
 			}
 		}
 		close(inputChannel)
@@ -150,7 +150,7 @@ func (s *internalManager) SetSimilarStatus(sendSimilarImages bool) {
 	s.shouldSendSimilar = sendSimilarImages
 }
 
-func (s *internalManager) RequestStopHashes() {
+func (s *internalManager) StopHashes() {
 	if s.stopChannel != nil {
 		for i := 0; i < s.getTreadCount(); i++ {
 			s.stopChannel <- true
@@ -161,7 +161,7 @@ func (s *internalManager) RequestStopHashes() {
 	}
 }
 
-func (s *internalManager) RequestImage(handle *common.Handle) {
+func (s *internalManager) MoveToImage(handle *common.Handle) {
 	for i, c := range s.imageList {
 		if handle.GetId() == c.GetId() {
 			s.index = i
@@ -169,7 +169,7 @@ func (s *internalManager) RequestImage(handle *common.Handle) {
 	}
 }
 
-func (s *internalManager) RequestImageAt(index int) {
+func (s *internalManager) MoveToImageAt(index int) {
 	if index >= 0 {
 		s.index = index
 	} else {
@@ -185,18 +185,18 @@ func (s *internalManager) RequestImageAt(index int) {
 }
 
 func (s *internalManager) RequestNextImage() {
-	s.RequestNextImageWithOffset(1)
+	s.MoveToNextImageWithOffset(1)
 }
 
 func (s *internalManager) RequestPrevImage() {
-	s.RequestPrevImageWithOffset(1)
+	s.MoveToPrevImageWithOffset(1)
 }
 
-func (s *internalManager) RequestNextImageWithOffset(offset int) {
+func (s *internalManager) MoveToNextImageWithOffset(offset int) {
 	s.requestImageWithOffset(offset)
 }
 
-func (s *internalManager) RequestPrevImageWithOffset(offset int) {
+func (s *internalManager) MoveToPrevImageWithOffset(offset int) {
 	s.requestImageWithOffset(-offset)
 }
 
@@ -211,7 +211,7 @@ func (s *internalManager) requestImageWithOffset(offset int) {
 	}
 }
 
-func (s *internalManager) ChangeImageListSize(imageListSize int) bool {
+func (s *internalManager) SetImageListSize(imageListSize int) bool {
 	if s.imageListSize != imageListSize {
 		s.imageListSize = imageListSize
 		return true

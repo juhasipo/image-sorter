@@ -7,23 +7,27 @@ import (
 
 type Library interface {
 	InitializeFromDirectory(directory string)
+
 	RequestImages()
 	RequestNextImage()
-	RequestNextImageWithOffset(int)
 	RequestPrevImage()
+	RequestNextImageWithOffset(int)
 	RequestPrevImageWithOffset(int)
 	RequestImage(*common.Handle)
 	RequestImageAt(int)
+
 	RequestGenerateHashes()
 	RequestStopHashes()
+
 	GetHandles() []*common.Handle
 	AddHandles(imageList []*common.Handle)
 	GetHandleById(handleId string) *common.Handle
-	ChangeImageListSize(imageListSize int)
-	SetSimilarStatus(sendSimilarImages bool)
 
 	ShowAllImages()
 	ShowOnlyImages(string, []*common.Handle)
+
+	SetImageListSize(imageListSize int)
+	SetSendSimilarImages(sendSimilarImages bool)
 
 	Close()
 }
