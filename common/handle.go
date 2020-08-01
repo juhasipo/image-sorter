@@ -66,7 +66,11 @@ func GetEmptyHandle() *Handle {
 }
 
 func (s *Handle) GetId() string {
-	return s.id
+	if s != nil {
+		return s.id
+	} else {
+		return ""
+	}
 }
 
 func (s *Handle) String() string {
