@@ -35,7 +35,7 @@ type CategoryModal struct {
 	addCancelButton    *gtk.Button
 }
 
-func CategoryModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *CategoryModal {
+func NewCategoryModal(builder *gtk.Builder, ui *Ui, sender event.Sender) *CategoryModal {
 	modalDialog := GetObjectOrPanic(builder, "category-dialog").(*gtk.Dialog)
 	modalDialog.SetSizeRequest(400, 300)
 	deviceList := GetObjectOrPanic(builder, "category-list").(*gtk.TreeView)
@@ -267,7 +267,7 @@ func (s *CategoryModal) getCategoriesFromList() []*common.Category {
 	var categories []*common.Category
 	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
 		name, path, key := extractValuesFromModel(s.model, iter)
-		entry := common.CategoryEntryNew(name, path, key)
+		entry := common.NewCategory(name, path, key)
 
 		categories = append(categories, entry)
 	}

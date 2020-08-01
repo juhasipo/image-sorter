@@ -88,14 +88,14 @@ func (s *Ui) Init(directory string) {
 		s.win.SetSizeRequest(800, 600)
 		s.win.Connect("key_press_event", s.handleKeyPress)
 
-		s.similarImagesView = SimilarImagesViewNew(builder, s.sender, s.imageCache)
-		s.imageView = ImageViewNew(builder, s)
-		s.topActionView = TopActionsNew(builder, s.sender)
-		s.bottomActionView = BottomActionsNew(builder, s, s.sender)
-		s.progressView = ProgressViewNew(builder, s.sender)
+		s.similarImagesView = NewSimilarImagesView(builder, s.sender, s.imageCache)
+		s.imageView = NewImageView(builder, s)
+		s.topActionView = NewTopActions(builder, s.sender)
+		s.bottomActionView = NewBottomActions(builder, s, s.sender)
+		s.progressView = NewProgressView(builder, s.sender)
 
-		s.castModal = CastModalNew(builder, s, s.sender)
-		s.editCategoriesModal = CategoryModalNew(builder, s, s.sender)
+		s.castModal = NewCastModal(builder, s, s.sender)
+		s.editCategoriesModal = NewCategoryModal(builder, s, s.sender)
 
 		if directory == "" {
 			s.openFolderChooser(1)
@@ -220,7 +220,7 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 
 	for _, entry := range categories.GetCategories() {
 		s.topActionView.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
-			command := category.CategorizeCommandNew(s.imageView.currentImage.image, entry, operation)
+			command := category.NewCategorizeCommand(s.imageView.currentImage.image, entry, operation)
 			command.SetForceToCategory(forceToCategory)
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetNextImageDelay(200 * time.Millisecond)

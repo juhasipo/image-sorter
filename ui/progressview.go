@@ -12,7 +12,7 @@ type ProgressView struct {
 	stopButton  *gtk.Button
 }
 
-func ProgressViewNew(builder *gtk.Builder, sender event.Sender) *ProgressView {
+func NewProgressView(builder *gtk.Builder, sender event.Sender) *ProgressView {
 	progressView := &ProgressView{
 		view:        GetObjectOrPanic(builder, "progress-view").(*gtk.Box),
 		stopButton:  GetObjectOrPanic(builder, "stop-progress-button").(*gtk.Button),

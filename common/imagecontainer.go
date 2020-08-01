@@ -23,7 +23,7 @@ func (s *ImageContainer) GetImage() image.Image {
 	return s.img
 }
 
-func ImageContainerNew(handle *Handle, img image.Image) *ImageContainer {
+func NewImageContainer(handle *Handle, img image.Image) *ImageContainer {
 	return &ImageContainer{
 		handle: handle,
 		img:    img,

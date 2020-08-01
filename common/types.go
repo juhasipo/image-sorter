@@ -17,7 +17,7 @@ type PersistCategorizationCommand struct {
 	quality        int
 }
 
-func PersistCategorizationCommandNew(keepOriginals bool, fixOrientation bool, quality int) PersistCategorizationCommand {
+func NewPersistCategorizationCommand(keepOriginals bool, fixOrientation bool, quality int) PersistCategorizationCommand {
 	return PersistCategorizationCommand{
 		keepOriginals:  keepOriginals,
 		fixOrientation: fixOrientation,

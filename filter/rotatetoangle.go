@@ -13,7 +13,7 @@ type ImageRotateToAngle struct {
 	ImageOperation
 }
 
-func ImageRotateToAngleNew(angle int) ImageOperation {
+func NewImageRotateToAngle(angle int) ImageOperation {
 	return &ImageRotateToAngle{
 		rotation: float64(angle),
 	}

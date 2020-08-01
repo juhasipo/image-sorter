@@ -41,7 +41,7 @@ type ImageView struct {
 	imagesListImageCount int
 }
 
-func ImageViewNew(builder *gtk.Builder, ui *Ui) *ImageView {
+func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 	nextImagesList := &ImageList{
 		layout:    GetObjectOrPanic(builder, "next-images-scrolled-view").(*gtk.ScrolledWindow),
 		component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView),

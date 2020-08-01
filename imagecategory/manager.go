@@ -30,7 +30,7 @@ type Manager struct {
 	ImageCategoryManager
 }
 
-func ManagerNew(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader imageloader.ImageLoader) ImageCategoryManager {
+func NewManager(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader imageloader.ImageLoader) ImageCategoryManager {
 	var manager = Manager{
 		imageCategory: map[string]map[string]*category.CategorizedImage{},
 		sender:        sender,
@@ -76,7 +76,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		image = map[string]*category.CategorizedImage{}
 		s.imageCategory[handle.GetId()] = image
 		if operation != common.NONE {
-			categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
+			categorizedImage = category.NewCategorizedImage(categoryEntry, operation)
 			image[categoryEntry.GetId()] = categorizedImage
 		}
 	} else if image != nil {
@@ -91,7 +91,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 			s.imageCategory[handle.GetId()] = image
 		}
 		logger.Debug.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
-		categorizedImage = category.CategorizedImageNew(categoryEntry, operation)
+		categorizedImage = category.NewCategorizedImage(categoryEntry, operation)
 		image[categoryEntry.GetId()] = categorizedImage
 	}
 
@@ -162,10 +162,10 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 		for _, f := range filters {
 			imageOperations = append(imageOperations, f.GetOperation())
 		}
-		imageOperations = append(imageOperations, filter.ImageCopyNew(targetDir, file, options.GetQuality()))
+		imageOperations = append(imageOperations, filter.NewImageCopy(targetDir, file, options.GetQuality()))
 	}
 	if !options.ShouldKeepOriginals() {
-		imageOperations = append(imageOperations, filter.ImageRemoveNew())
+		imageOperations = append(imageOperations, filter.NewImageRemove())
 	}
 
 	if fullImage, err := s.imageLoader.LoadImage(handle); err != nil {
@@ -175,7 +175,7 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 		logger.Error.Println("Could not load exif data")
 		return nil, err
 	} else {
-		return filter.ImageOperationGroupNew(handle, fullImage, exifData, imageOperations), nil
+		return filter.NewImageOperationGroup(handle, fullImage, exifData, imageOperations), nil
 	}
 }
 
@@ -233,7 +233,7 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 			if c != "" {
 				entry := categoryManager.GetCategoryById(c)
 				if entry != nil {
-					categoryMap[entry.GetId()] = category.CategorizedImageNew(entry, common.MOVE)
+					categoryMap[entry.GetId()] = category.NewCategorizedImage(entry, common.MOVE)
 				}
 			}
 		}
@@ -287,7 +287,7 @@ func (s *Manager) sendCategories(currentImage *common.Handle) {
 		var categories = s.getCategories(currentImage)
 
 		for _, image := range categories {
-			commands = append(commands, category.CategorizeCommandNew(currentImage, image.GetEntry(), image.GetOperation()))
+			commands = append(commands, category.NewCategorizeCommand(currentImage, image.GetEntry(), image.GetOperation()))
 		}
 	}
 	s.sender.SendToTopicWithData(event.CATEGORY_IMAGE_UPDATE, commands)

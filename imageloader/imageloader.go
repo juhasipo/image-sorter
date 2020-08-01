@@ -9,7 +9,7 @@ import (
 
 var options = &jpeg.DecoderOptions{}
 
-func ImageLoaderNew() ImageLoader {
+func NewImageLoader() ImageLoader {
 	return &LibJPEGImageLoader{}
 }
 

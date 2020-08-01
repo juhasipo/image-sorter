@@ -24,7 +24,7 @@ type ImageOperationGroup struct {
 	operations      []ImageOperation
 }
 
-func ImageOperationGroupNew(handle *common.Handle, img image.Image, exifData *common.ExifData, operations []ImageOperation) *ImageOperationGroup {
+func NewImageOperationGroup(handle *common.Handle, img image.Image, exifData *common.ExifData, operations []ImageOperation) *ImageOperationGroup {
 	return &ImageOperationGroup{
 		handle:          handle,
 		img:             img,

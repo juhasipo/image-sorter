@@ -36,7 +36,7 @@ type TopActionView struct {
 	sender                   event.Sender
 }
 
-func TopActionsNew(builder *gtk.Builder, sender event.Sender) *TopActionView {
+func NewTopActions(builder *gtk.Builder, sender event.Sender) *TopActionView {
 	topActionView := &TopActionView{
 		categoriesView:           GetObjectOrPanic(builder, "categories").(*gtk.Box),
 		categoryButtons:          map[string]*CategoryButton{},
@@ -75,7 +75,7 @@ func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			return category.CategorizeCommandNew(
+			return category.NewCategorizeCommand(
 				handle, button.entry, button.operation.NextOperation())
 		}
 	}

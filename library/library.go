@@ -14,10 +14,10 @@ type Manager struct {
 	Library
 }
 
-func LibraryNew(sender event.Sender, imageCache imageloader.ImageStore, imageLoader imageloader.ImageLoader) Library {
+func NewLibrary(sender event.Sender, imageCache imageloader.ImageStore, imageLoader imageloader.ImageLoader) Library {
 	return &Manager{
 		sender:  sender,
-		manager: libraryNew(imageCache, imageLoader),
+		manager: newLibrary(imageCache, imageLoader),
 	}
 }
 

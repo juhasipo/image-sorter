@@ -19,7 +19,7 @@ type Manager struct {
 	filters        map[string]*Filter
 }
 
-func FilterManagerNew() *Manager {
+func NewFilterManager() *Manager {
 	return &Manager{
 		filtersToApply: map[string][]*Filter{},
 	}
@@ -43,7 +43,7 @@ func (s *Manager) GetFilters(handle *common.Handle, options common.PersistCatego
 	if options.ShouldFixOrientation() {
 		filtersToApply = append(filtersToApply, &Filter{
 			id:        "exifRotate",
-			operation: ImageExifRotateNew(),
+			operation: NewImageExifRotate(),
 		})
 	}
 	return filtersToApply

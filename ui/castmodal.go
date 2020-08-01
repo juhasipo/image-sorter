@@ -17,7 +17,7 @@ type CastModal struct {
 	showBackgroundCB *gtk.CheckButton
 }
 
-func CastModalNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *CastModal {
+func NewCastModal(builder *gtk.Builder, ui *Ui, sender event.Sender) *CastModal {
 	modalDialog := GetObjectOrPanic(builder, "cast-dialog").(*gtk.Dialog)
 	deviceList := GetObjectOrPanic(builder, "cast-device-list").(*gtk.TreeView)
 

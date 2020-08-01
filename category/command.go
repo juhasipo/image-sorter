@@ -52,7 +52,7 @@ func (s *CategorizeCommand) GetNextImageDelay() time.Duration {
 	return s.nextImageDelay
 }
 
-func CategorizeCommandNew(handle *common.Handle, entry *common.Category, operation common.Operation) *CategorizeCommand {
+func NewCategorizeCommand(handle *common.Handle, entry *common.Category, operation common.Operation) *CategorizeCommand {
 	return &CategorizeCommand{
 		handle:    handle,
 		entry:     entry,

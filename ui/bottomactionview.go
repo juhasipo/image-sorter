@@ -20,7 +20,7 @@ type BottomActionView struct {
 	showAllImagesButton  *gtk.Button
 }
 
-func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
+func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
 	bottomActionView := &BottomActionView{
 		layout:               GetObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
 		persistButton:        GetObjectOrPanic(builder, "persist-button").(*gtk.Button),
@@ -82,7 +82,7 @@ func BottomActionsNew(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 
 		if response == gtk.RESPONSE_YES {
 			value := qualityScale.GetValue()
-			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, common.PersistCategorizationCommandNew(
+			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, common.NewPersistCategorizationCommand(
 				keepOriginalsCB.GetActive(), exifCorrect.GetActive(), int(value)))
 		}
 	})

@@ -26,7 +26,7 @@ var (
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func HandleNew(fileDir string, fileName string) *Handle {
+func NewHandle(fileDir string, fileName string) *Handle {
 	return &Handle{
 		id:        fileName,
 		directory: fileDir,
@@ -122,7 +122,7 @@ func LoadImageHandles(dir string) []*Handle {
 	for _, file := range files {
 		extension := filepath.Ext(file.Name())
 		if isSupported(extension) {
-			handles = append(handles, HandleNew(dir, file.Name()))
+			handles = append(handles, NewHandle(dir, file.Name()))
 		}
 	}
 	logger.Debug.Printf("Found %d images", len(handles))

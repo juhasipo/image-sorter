@@ -16,7 +16,7 @@ type SimilarImagesView struct {
 	sender       event.Sender
 }
 
-func SimilarImagesViewNew(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageStore) *SimilarImagesView {
+func NewSimilarImagesView(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageStore) *SimilarImagesView {
 	imageList := &ImageList{component: GetObjectOrPanic(builder, "similar-images-list").(*gtk.IconView)}
 	initializeStore(imageList, HORIZONTAL, sender)
 

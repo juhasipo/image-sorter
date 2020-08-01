@@ -60,7 +60,7 @@ func setup() {
 	store.On("GetFull", mock.Anything).Return(new(MockImage))
 	store.On("GetThumbnail", mock.Anything).Return(new(MockImage))
 
-	sut = libraryNew(store, loader)
+	sut = newLibrary(store, loader)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
@@ -76,7 +76,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo1"),
 	}
 	sut.AddHandles(handles)
 
@@ -108,9 +108,9 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
 	}
 	sut.AddHandles(handles)
 
@@ -161,16 +161,16 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 
@@ -211,16 +211,16 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 
@@ -285,23 +285,23 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
 	}
 	sut.AddHandles(handles)
 
 	t.Run("foo1", func(t *testing.T) {
-		sut.RequestImage(common.HandleNew("/tmp", "foo1"))
+		sut.RequestImage(common.NewHandle("/tmp", "foo1"))
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
 		a.Equal("foo1", img.GetHandle().GetFile())
 	})
 	t.Run("foo3", func(t *testing.T) {
-		sut.RequestImage(common.HandleNew("/tmp", "foo3"))
+		sut.RequestImage(common.NewHandle("/tmp", "foo3"))
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
@@ -321,16 +321,16 @@ func TestGetNextImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.ChangeImageListSize(5)
@@ -394,16 +394,16 @@ func TestGetPrevImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.ChangeImageListSize(5)
@@ -468,16 +468,16 @@ func TestGetTotalCount(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 
@@ -490,26 +490,26 @@ func TestShowOnlyImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.ChangeImageListSize(10)
 
 	categoryHandles := []*common.Handle{
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.ShowOnlyImages("category1", categoryHandles)
 
@@ -553,26 +553,26 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*common.Handle{
-		common.HandleNew("/tmp", "foo0"),
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo3"),
-		common.HandleNew("/tmp", "foo4"),
-		common.HandleNew("/tmp", "foo5"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo8"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo0"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo3"),
+		common.NewHandle("/tmp", "foo4"),
+		common.NewHandle("/tmp", "foo5"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo8"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.ChangeImageListSize(10)
 
 	categoryHandles := []*common.Handle{
-		common.HandleNew("/tmp", "foo1"),
-		common.HandleNew("/tmp", "foo2"),
-		common.HandleNew("/tmp", "foo6"),
-		common.HandleNew("/tmp", "foo7"),
-		common.HandleNew("/tmp", "foo9"),
+		common.NewHandle("/tmp", "foo1"),
+		common.NewHandle("/tmp", "foo2"),
+		common.NewHandle("/tmp", "foo6"),
+		common.NewHandle("/tmp", "foo7"),
+		common.NewHandle("/tmp", "foo9"),
 	}
 	sut.ShowOnlyImages("category1", categoryHandles)
 

@@ -59,14 +59,14 @@ func TestCategorizeOne(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	handle := common.HandleNew("/tmp", "foo")
-	cmd := category.CategorizeCommandNew(handle, cat1, common.MOVE)
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	handle := common.NewHandle("/tmp", "foo")
+	cmd := category.NewCategorizeCommand(handle, cat1, common.MOVE)
 	sut.SetCategory(cmd)
 
 	result := sut.GetCategories(handle)
@@ -82,16 +82,16 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
-	handle := common.HandleNew("/tmp", "foo")
-	cmd1 := category.CategorizeCommandNew(handle, cat1, common.MOVE)
-	cmd2 := category.CategorizeCommandNew(handle, cat2, common.MOVE)
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	cat2 := common.NewCategory("Cat 2", "c2", "D")
+	handle := common.NewHandle("/tmp", "foo")
+	cmd1 := category.NewCategorizeCommand(handle, cat1, common.MOVE)
+	cmd2 := category.NewCategorizeCommand(handle, cat2, common.MOVE)
 	sut.SetCategory(cmd1)
 	sut.SetCategory(cmd2)
 
@@ -109,17 +109,17 @@ func TestCategorizeOneRemoveCategory(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
-	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.NONE))
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	cat2 := common.NewCategory("Cat 2", "c2", "D")
+	handle := common.NewHandle("/tmp", "foo")
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.MOVE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat2, common.MOVE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.NONE))
 
 	result := sut.GetCategories(handle)
 
@@ -134,18 +134,18 @@ func TestCategorizeOneRemoveAll(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
-	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.NONE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.NONE))
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	cat2 := common.NewCategory("Cat 2", "c2", "D")
+	handle := common.NewHandle("/tmp", "foo")
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.MOVE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat2, common.MOVE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.NONE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat2, common.NONE))
 
 	result := sut.GetCategories(handle)
 
@@ -161,18 +161,18 @@ func TestCategorizeForceToCategory(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
-	cat3 := common.CategoryEntryNew("Cat 3", "c3", "E")
-	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
-	command := category.CategorizeCommandNew(handle, cat3, common.MOVE)
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	cat2 := common.NewCategory("Cat 2", "c2", "D")
+	cat3 := common.NewCategory("Cat 3", "c3", "E")
+	handle := common.NewHandle("/tmp", "foo")
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.MOVE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat2, common.MOVE))
+	command := category.NewCategorizeCommand(handle, cat3, common.MOVE)
 	command.SetForceToCategory(true)
 	sut.SetCategory(command)
 
@@ -191,16 +191,16 @@ func TestCategorizeForceToExistingCategory(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
-	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
-	command := category.CategorizeCommandNew(handle, cat2, common.MOVE)
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	cat2 := common.NewCategory("Cat 2", "c2", "D")
+	handle := common.NewHandle("/tmp", "foo")
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.MOVE))
+	command := category.NewCategorizeCommand(handle, cat2, common.MOVE)
 	command.SetForceToCategory(true)
 	sut.SetCategory(command)
 
@@ -217,18 +217,18 @@ func TestCategorizeForceToCategory_None(t *testing.T) {
 	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
 	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
 	lib := new(MockLibrary)
-	filterManager := filter.FilterManagerNew()
+	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
-	cat1 := common.CategoryEntryNew("Cat 1", "c1", "C")
-	cat2 := common.CategoryEntryNew("Cat 2", "c2", "D")
-	cat3 := common.CategoryEntryNew("Cat 3", "c3", "E")
-	handle := common.HandleNew("/tmp", "foo")
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat1, common.MOVE))
-	sut.SetCategory(category.CategorizeCommandNew(handle, cat2, common.MOVE))
-	command := category.CategorizeCommandNew(handle, cat3, common.NONE)
+	cat1 := common.NewCategory("Cat 1", "c1", "C")
+	cat2 := common.NewCategory("Cat 2", "c2", "D")
+	cat3 := common.NewCategory("Cat 3", "c3", "E")
+	handle := common.NewHandle("/tmp", "foo")
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat1, common.MOVE))
+	sut.SetCategory(category.NewCategorizeCommand(handle, cat2, common.MOVE))
+	command := category.NewCategorizeCommand(handle, cat3, common.NONE)
 	command.SetForceToCategory(true)
 	sut.SetCategory(command)
 
@@ -244,19 +244,19 @@ func TestResolveFileOperations(t *testing.T) {
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
-	lib := library.LibraryNew(sender, imageCache, imageLoader)
-	filterManager := filter.FilterManagerNew()
+	lib := library.NewLibrary(sender, imageCache, imageLoader)
+	filterManager := filter.NewFilterManager()
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
-	handle := common.HandleNew("filepath", "filename")
+	sut := NewManager(sender, lib, filterManager, imageLoader)
+	handle := common.NewHandle("filepath", "filename")
 	lib.AddHandles([]*common.Handle{handle})
 
 	var imageCategories = map[string]map[string]*category.CategorizedImage{
 		"filename": {
-			"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+			"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
 		},
 	}
-	command := common.PersistCategorizationCommandNew(true, false, 100)
+	command := common.NewPersistCategorizationCommand(true, false, 100)
 	operations := sut.ResolveFileOperations(imageCategories, command)
 
 	a.Equal(1, len(operations))
@@ -272,16 +272,16 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
-	lib := library.LibraryNew(sender, imageCache, imageLoader)
-	filterManager := filter.FilterManagerNew()
+	lib := library.NewLibrary(sender, imageCache, imageLoader)
+	filterManager := filter.NewFilterManager()
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
-		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
 	}
-	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(true, false, 100)
+	handle := common.NewHandle("filepath", "filename")
+	command := common.NewPersistCategorizationCommand(true, false, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
@@ -297,16 +297,16 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
-	lib := library.LibraryNew(sender, imageCache, imageLoader)
-	filterManager := filter.FilterManagerNew()
+	lib := library.NewLibrary(sender, imageCache, imageLoader)
+	filterManager := filter.NewFilterManager()
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
-		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
 	}
-	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(false, false, 100)
+	handle := common.NewHandle("filepath", "filename")
+	command := common.NewPersistCategorizationCommand(false, false, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
@@ -323,16 +323,16 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
-	lib := library.LibraryNew(sender, imageCache, imageLoader)
-	filterManager := filter.FilterManagerNew()
+	lib := library.NewLibrary(sender, imageCache, imageLoader)
+	filterManager := filter.NewFilterManager()
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
-		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
 	}
-	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(true, true, 100)
+	handle := common.NewHandle("filepath", "filename")
+	command := common.NewPersistCategorizationCommand(true, true, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)
@@ -349,16 +349,16 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
-	lib := library.LibraryNew(sender, imageCache, imageLoader)
-	filterManager := filter.FilterManagerNew()
+	lib := library.NewLibrary(sender, imageCache, imageLoader)
+	filterManager := filter.NewFilterManager()
 
-	sut := ManagerNew(sender, lib, filterManager, imageLoader)
+	sut := NewManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
-		"cat1": category.CategorizedImageNew(common.CategoryEntryNew("cat1", "cat_1", ""), common.MOVE),
+		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
 	}
-	handle := common.HandleNew("filepath", "filename")
-	command := common.PersistCategorizationCommandNew(false, true, 100)
+	handle := common.NewHandle("filepath", "filename")
+	command := common.NewPersistCategorizationCommand(false, true, 100)
 	operations, err := sut.ResolveOperationsForGroup(handle, imageCategories, command)
 
 	a.Nil(err)

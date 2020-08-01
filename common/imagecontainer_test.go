@@ -9,11 +9,11 @@ func TestImageContainer_String(t *testing.T) {
 	a := assert.New(t)
 
 	t.Run("Valid", func(t *testing.T) {
-		container := ImageContainerNew(HandleNew("foo", "bar"), nil)
+		container := NewImageContainer(NewHandle("foo", "bar"), nil)
 		a.Equal("ImageContainer{Handle{bar}}", container.String())
 	})
 	t.Run("Nil Handle", func(t *testing.T) {
-		container := ImageContainerNew(nil, nil)
+		container := NewImageContainer(nil, nil)
 		a.Equal("ImageContainer{Handle<nil>}", container.String())
 	})
 	t.Run("Nil", func(t *testing.T) {

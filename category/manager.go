@@ -139,7 +139,7 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 	var categoryEntries []*common.Category
 	for _, categoryName := range categories {
 		if len(categoryName) > 0 {
-			categoryEntries = append(categoryEntries, common.CategoryEntryNew(Parse(categoryName)))
+			categoryEntries = append(categoryEntries, common.NewCategory(Parse(categoryName)))
 		}
 	}
 	logger.Debug.Printf("Parsed %d categories", len(categoryEntries))

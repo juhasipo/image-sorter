@@ -10,7 +10,7 @@ type ImageRemove struct {
 	ImageOperation
 }
 
-func ImageRemoveNew() ImageOperation {
+func NewImageRemove() ImageOperation {
 	return &ImageRemove{}
 }
 func (s *ImageRemove) Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error) {

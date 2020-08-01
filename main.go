@@ -33,11 +33,11 @@ func main() {
 
 	categoryArr := strings.Split(*categories, ",")
 	categoryManager := category.New(broker, categoryArr)
-	imageLoader := imageloader.ImageLoaderNew()
-	imageCache := imageloader.ImageCacheNew(imageLoader)
-	imageLibrary := library.LibraryNew(broker, imageCache, imageLoader)
-	filterManager := filter.FilterManagerNew()
-	categorizationManager := imagecategory.ManagerNew(broker, imageLibrary, filterManager, imageLoader)
+	imageLoader := imageloader.NewImageLoader()
+	imageCache := imageloader.NewImageCache(imageLoader)
+	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader)
+	filterManager := filter.NewFilterManager()
+	categorizationManager := imagecategory.NewManager(broker, imageLibrary, filterManager, imageLoader)
 
 	secretValue := resolveSecret(*secret)
 	castManager := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)

@@ -9,7 +9,7 @@ type CategorizedImage struct {
 	operation common.Operation
 }
 
-func CategorizedImageNew(entry *common.Category, operation common.Operation) *CategorizedImage {
+func NewCategorizedImage(entry *common.Category, operation common.Operation) *CategorizedImage {
 	return &CategorizedImage{
 		category:  entry,
 		operation: operation,

@@ -21,7 +21,7 @@ type ImageCopy struct {
 	ImageOperation
 }
 
-func ImageCopyNew(targetDir string, targetFile string, quality int) ImageOperation {
+func NewImageCopy(targetDir string, targetFile string, quality int) ImageOperation {
 	return &ImageCopy{
 		quality: quality,
 		fileOperation: fileOperation{

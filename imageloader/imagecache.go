@@ -38,7 +38,7 @@ func (s *DefaultImageStore) Initialize(handles []*common.Handle) {
 	runtime.GC()
 }
 
-func ImageCacheNew(imageLoader ImageLoader) ImageStore {
+func NewImageCache(imageLoader ImageLoader) ImageStore {
 	return &DefaultImageStore{
 		imageCache:  map[string]*Instance{},
 		mux:         sync.Mutex{},

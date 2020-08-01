@@ -11,7 +11,7 @@ type ImageExifRotate struct {
 	ImageOperation
 }
 
-func ImageExifRotateNew() ImageOperation {
+func NewImageExifRotate() ImageOperation {
 	return &ImageExifRotate{}
 }
 func (s *ImageExifRotate) Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error) {

@@ -12,7 +12,7 @@ type Category struct {
 	shortcut uint
 }
 
-func CategoryEntryNew(name string, subPath string, shortcut string) *Category {
+func NewCategory(name string, subPath string, shortcut string) *Category {
 	return &Category{
 		id:       name,
 		name:     name,
