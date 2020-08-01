@@ -1,37 +1,12 @@
 package common
 
 import (
-	"image"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/duplo"
 	"vincit.fi/image-sorter/logger"
 )
-
-type ImageContainer struct {
-	handle *Handle
-	img    image.Image
-}
-
-func (s *ImageContainer) String() string {
-	return "ImageContainer{" + s.handle.GetId() + "}"
-}
-
-func (s *ImageContainer) GetHandle() *Handle {
-	return s.handle
-}
-
-func (s *ImageContainer) GetImage() image.Image {
-	return s.img
-}
-
-func ImageContainerNew(handle *Handle, img image.Image) *ImageContainer {
-	return &ImageContainer{
-		handle: handle,
-		img:    img,
-	}
-}
 
 type Handle struct {
 	id        string
@@ -74,19 +49,39 @@ func (s *Handle) GetId() string {
 }
 
 func (s *Handle) String() string {
-	return s.id
+	if s != nil {
+		if s.IsValid() {
+			return "Handle{" + s.id + "}"
+		} else {
+			return "Handle<invalid>"
+		}
+	} else {
+		return "Handle<nil>"
+	}
 }
 
 func (s *Handle) GetPath() string {
-	return s.path
+	if s != nil {
+		return s.path
+	} else {
+		return ""
+	}
 }
 
 func (s *Handle) GetDir() string {
-	return s.directory
+	if s != nil {
+		return s.directory
+	} else {
+		return ""
+	}
 }
 
 func (s *Handle) GetFile() string {
-	return s.filename
+	if s != nil {
+		return s.filename
+	} else {
+		return ""
+	}
 }
 
 func (s *Handle) SetHash(hash *duplo.Hash) {
@@ -101,11 +96,19 @@ func (s *Handle) SetByteSize(length int64) {
 }
 
 func (s *Handle) GetByteSize() int64 {
-	return s.byteSize
+	if s != nil {
+		return s.byteSize
+	} else {
+		return 0
+	}
 }
 
 func (s *Handle) GetByteSizeMB() float64 {
-	return float64(s.byteSize) / (1024.0 * 1024.0)
+	if s != nil {
+		return float64(s.byteSize) / (1024.0 * 1024.0)
+	} else {
+		return 0.0
+	}
 }
 
 func LoadImageHandles(dir string) []*Handle {
