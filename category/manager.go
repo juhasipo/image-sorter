@@ -8,12 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/constants"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/logger"
 )
-
-const IMAGE_SORTER_DIR = ".image-sorter"
-const CATEGORIES_FILE_NAME = ".categories"
 
 type Manager struct {
 	commandLineCategories []string
@@ -51,7 +49,7 @@ func New(sender event.Sender, categories []string) CategoryManager {
 func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir string) {
 	var loadedCategories []*common.Category
 	var categoriesByName = map[string]*common.Category{}
-	s.rootDir = filepath.Join(rootDir, IMAGE_SORTER_DIR)
+	s.rootDir = filepath.Join(rootDir, constants.ImageSorterDir)
 
 	if len(defaultCategories) > 0 && defaultCategories[0] != "" {
 		logger.Info.Printf("Reading from command line parameters")
@@ -81,7 +79,7 @@ func (s *Manager) RequestCategories() {
 func (s *Manager) Save(categories []*common.Category) {
 	s.resetCategories(categories)
 
-	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, categories)
+	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, categories)
 	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
 		categories: categories,
 	})
@@ -92,9 +90,9 @@ func (s *Manager) SaveDefault(categories []*common.Category) {
 	if currentUser, err := user.Current(); err != nil {
 		logger.Error.Println("Could not find current user", err)
 	} else {
-		categoryFile := filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR)
+		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
-		saveCategoriesToFile(categoryFile, CATEGORIES_FILE_NAME, categories)
+		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
 		s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
 			categories: categories,
 		})
@@ -110,7 +108,7 @@ func (s *Manager) resetCategories(categories []*common.Category) {
 
 func (s *Manager) Close() {
 	logger.Info.Print("Shutting down category manager")
-	saveCategoriesToFile(s.rootDir, CATEGORIES_FILE_NAME, s.categories)
+	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, s.categories)
 }
 
 func (s *Manager) GetCategoryById(id string) *common.Category {
@@ -152,8 +150,8 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 func loadCategoriesFromFile(fileDir string) []*common.Category {
 	if currentUser, err := user.Current(); err == nil {
 		filePaths := []string{
-			filepath.Join(fileDir, CATEGORIES_FILE_NAME),
-			filepath.Join(currentUser.HomeDir, IMAGE_SORTER_DIR, CATEGORIES_FILE_NAME),
+			filepath.Join(fileDir, constants.CategoriesFileName),
+			filepath.Join(currentUser.HomeDir, constants.ImageSorterDir, constants.CategoriesFileName),
 		}
 
 		filePath := common.GetFirstExistingFilePath(filePaths)

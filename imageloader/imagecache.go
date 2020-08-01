@@ -71,7 +71,7 @@ func (s *DefaultImageStore) getImage(handle *common.Handle) *Instance {
 			return existingInstance
 		}
 	} else {
-		return &EMPTY_INSTANCE
+		return &emptyInstance
 	}
 }
 

@@ -12,7 +12,11 @@ import (
 )
 
 const (
-	THUMBNAIL_SIZE = 100
+	thumbnailSize = 100
+)
+
+var (
+	emptyInstance = Instance{}
 )
 
 type Instance struct {
@@ -49,11 +53,7 @@ func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
 	return s.loadImageWithExifCorrection(size)
 }
 
-var mux = sync.Mutex{}
-
 func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, error) {
-	//mux.Lock(); defer mux.Unlock()
-
 	var loadedImage image.Image
 	var err error
 	if size != nil {
@@ -92,10 +92,6 @@ func ExifRotateImage(loadedImage image.Image, exifData *common.ExifData) (image.
 func (s *Instance) IsValid() bool {
 	return s.handle != nil
 }
-
-var (
-	EMPTY_INSTANCE = Instance{}
-)
 
 func (s *Instance) GetScaled(size common.Size) image.Image {
 	if !s.IsValid() {
@@ -136,7 +132,7 @@ func (s *Instance) GetThumbnail() image.Image {
 		full := s.LoadThumbnailFromCache()
 
 		fullSize := full.Bounds()
-		newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), THUMBNAIL_SIZE, THUMBNAIL_SIZE)
+		newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), thumbnailSize, thumbnailSize)
 
 		s.thumbnail = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
 	} else {
@@ -185,7 +181,7 @@ func (s *Instance) LoadThumbnailFromCache() image.Image {
 	if s.thumbnail == nil {
 		startTime := time.Now()
 
-		size := common.SizeOf(THUMBNAIL_SIZE, THUMBNAIL_SIZE)
+		size := common.SizeOf(thumbnailSize, thumbnailSize)
 		var err error
 		if s.thumbnail, err = s.loadFull(&size); err != nil {
 			logger.Error.Println("Could not load thumbnail: "+s.handle.GetPath(), err)

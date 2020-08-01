@@ -22,7 +22,7 @@ func (s *Handle) IsValid() bool {
 }
 
 var (
-	EMPTY_HANDLE         = Handle{id: "", path: ""}
+	EmptyHandle          = Handle{id: "", path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
@@ -37,7 +37,7 @@ func NewHandle(fileDir string, fileName string) *Handle {
 }
 
 func GetEmptyHandle() *Handle {
-	return &EMPTY_HANDLE
+	return &EmptyHandle
 }
 
 func (s *Handle) GetId() string {

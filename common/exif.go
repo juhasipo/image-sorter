@@ -130,34 +130,34 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 }
 
 const (
-	NO_ROTATE  = 0
-	ROTATE_180 = 180
-	LEFT_90    = 90
-	RIGHT_90   = 270
+	noRotate  = 0
+	rotate180 = 180
+	left90    = 90
+	right90   = 270
 
-	NO_HORIZONTAL_FLIP = false
-	HORIZONTAL_FLIP    = true
+	noHorizontalFlip = false
+	horizontalFlip   = true
 )
 
 func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
 	switch orientation {
 	case 1:
-		return NO_ROTATE, NO_HORIZONTAL_FLIP
+		return noRotate, noHorizontalFlip
 	case 2:
-		return NO_ROTATE, HORIZONTAL_FLIP
+		return noRotate, horizontalFlip
 	case 3:
-		return ROTATE_180, NO_HORIZONTAL_FLIP
+		return rotate180, noHorizontalFlip
 	case 4:
-		return ROTATE_180, HORIZONTAL_FLIP
+		return rotate180, horizontalFlip
 	case 5:
-		return RIGHT_90, HORIZONTAL_FLIP
+		return right90, horizontalFlip
 	case 6:
-		return RIGHT_90, NO_HORIZONTAL_FLIP
+		return right90, noHorizontalFlip
 	case 7:
-		return LEFT_90, HORIZONTAL_FLIP
+		return left90, horizontalFlip
 	case 8:
-		return LEFT_90, NO_HORIZONTAL_FLIP
+		return left90, noHorizontalFlip
 	default:
-		return NO_ROTATE, NO_HORIZONTAL_FLIP
+		return noRotate, noHorizontalFlip
 	}
 }

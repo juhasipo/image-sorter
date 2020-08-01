@@ -8,15 +8,13 @@ import (
 	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/constants"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/filter"
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/logger"
 )
-
-const IMAGE_SORTER_DIR = ".image-sorter"
-const CATEGORIZATION_FILE_NAME = ".categorization"
 
 type Manager struct {
 	rootDir       string
@@ -43,7 +41,7 @@ func NewManager(sender event.Sender, lib library.Library, filterManager *filter.
 
 func (s *Manager) InitializeForDirectory(directory string) {
 	s.rootDir = directory
-	s.settingDir = filepath.Join(directory, IMAGE_SORTER_DIR)
+	s.settingDir = filepath.Join(directory, constants.ImageSorterDir)
 	s.imageCategory = map[string]map[string]*category.CategorizedImage{}
 }
 
@@ -196,7 +194,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
 }
 
 func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
-	filePath := filepath.Join(s.settingDir, CATEGORIZATION_FILE_NAME)
+	filePath := filepath.Join(s.settingDir, constants.CategorizationFileName)
 
 	logger.Info.Printf("Loading categozation from file '%s'", filePath)
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
@@ -241,7 +239,7 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 }
 
 func (s *Manager) PersistCategorization() {
-	filePath := filepath.Join(s.settingDir, CATEGORIZATION_FILE_NAME)
+	filePath := filepath.Join(s.settingDir, constants.CategorizationFileName)
 
 	logger.Info.Printf("Saving image categorization to file '%s'", filePath)
 	f, err := os.Create(filePath)

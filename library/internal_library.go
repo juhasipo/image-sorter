@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	EMPTY_HANDLES = []*common.ImageContainer{}
+	emptyHandles = []*common.ImageContainer{}
 )
 
 type ImageList func(number int) []*common.Handle
@@ -272,7 +272,7 @@ func (s *internalManager) getNextImages() []*common.ImageContainer {
 	}
 
 	if startIndex >= len(s.imageList) {
-		return EMPTY_HANDLES
+		return emptyHandles
 	}
 
 	slice := s.imageList[startIndex:endIndex]

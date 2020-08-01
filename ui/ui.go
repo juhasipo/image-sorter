@@ -115,8 +115,8 @@ func (s *Ui) findDevices() {
 }
 
 func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
-	const BIG_JUMP_SIZE = 10
-	const HUGE_JUMP_SIZE = 100
+	const bigJumpSize = 10
+	const hugeJumpSize = 100
 
 	keyEvent := gdk.EventKeyNewFromEvent(e)
 	key := keyEvent.KeyVal()
@@ -146,22 +146,22 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 	} else if key == gdk.KEY_F12 {
 		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
 	} else if key == gdk.KEY_Page_Up {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, HUGE_JUMP_SIZE)
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, hugeJumpSize)
 	} else if key == gdk.KEY_Page_Down {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, HUGE_JUMP_SIZE)
+		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, hugeJumpSize)
 	} else if key == gdk.KEY_Home {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, 0)
 	} else if key == gdk.KEY_End {
 		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, -1)
 	} else if key == gdk.KEY_Left {
 		if controlDown {
-			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, BIG_JUMP_SIZE)
+			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, bigJumpSize)
 		} else {
 			s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
 		}
 	} else if key == gdk.KEY_Right {
 		if controlDown {
-			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, BIG_JUMP_SIZE)
+			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, bigJumpSize)
 		} else {
 			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
 		}

@@ -29,11 +29,11 @@ import (
 )
 
 const (
-	DEVICE_SEARCH_TIMEOUT = time.Second * 30
-	CAST_SERVICE          = "_googlecast._tcp"
-	CANVAS_WIDTH          = 1920
-	CANVAS_HEIGHT         = 1080
-	CAST_IMAGE_EVENT      = "caster-internal-cast-image"
+	deviceSearchTimeout = time.Second * 30
+	castService         = "_googlecast._tcp"
+	canvasWidth         = 1920
+	canvasHeight        = 1080
+	cast_image_event    = "caster-internal-cast-image"
 )
 
 type Caster struct {
@@ -72,7 +72,7 @@ func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender even
 		imageQueueBroker:      *event.InitBus(100),
 	}
 
-	c.imageQueueBroker.Subscribe(CAST_IMAGE_EVENT, c.castImageFromQueue)
+	c.imageQueueBroker.Subscribe(cast_image_event, c.castImageFromQueue)
 
 	if alwaysStartHttpServer {
 		c.StartServer(port)
@@ -124,7 +124,7 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	defer s.releaseImage()
 	imageHandle := s.currentImage
 	logger.Debug.Printf("Sending image '%s' to Chromecast", imageHandle.GetId())
-	img := s.imageCache.GetScaled(imageHandle, common.SizeOf(CANVAS_WIDTH, CANVAS_HEIGHT))
+	img := s.imageCache.GetScaled(imageHandle, common.SizeOf(canvasWidth, canvasHeight))
 
 	if img != nil {
 		writeImageToResponse(responseWriter, img, s.showBackground)
@@ -151,19 +151,19 @@ func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, s
 
 func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image {
 	logger.Debug.Print("Resizing to fit canvas...")
-	fullHdCanvas := image.NewRGBA(image.Rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT))
+	fullHdCanvas := image.NewRGBA(image.Rect(0, 0, canvasWidth, canvasHeight))
 	black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
 	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), &image.Uniform{C: black}, image.Point{}, draw.Src)
 
 	srcBounds := srcImage.Bounds().Size()
-	w, h := common.ScaleToFit(srcBounds.X, srcBounds.Y, CANVAS_WIDTH, CANVAS_HEIGHT)
+	w, h := common.ScaleToFit(srcBounds.X, srcBounds.Y, canvasWidth, canvasHeight)
 
 	if blurBackground {
 		logger.Debug.Print("Blurring background...")
 		// Resize to bigger so that the background surely fills the canvas
-		background := imaging.Resize(srcImage, 2*CANVAS_WIDTH, 2*CANVAS_HEIGHT, imaging.Linear)
+		background := imaging.Resize(srcImage, 2*canvasWidth, 2*canvasHeight, imaging.Linear)
 		// Fill canvas by cropping to the canvas size
-		background = imaging.Fill(srcImage, CANVAS_WIDTH, CANVAS_HEIGHT, imaging.Center, imaging.Linear)
+		background = imaging.Fill(srcImage, canvasWidth, canvasHeight, imaging.Center, imaging.Linear)
 		// Blur and grayscale so that the background doesn't distract too much
 		background = imaging.Blur(background, 10)
 		background = imaging.Grayscale(background)
@@ -171,7 +171,7 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 	}
 
 	srcImage = imaging.Resize(srcImage, w, h, imaging.Linear)
-	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (w - CANVAS_WIDTH) / 2}, draw.Src)
+	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (w - canvasWidth) / 2}, draw.Src)
 
 	var img image.Image = fullHdCanvas
 	return img
@@ -182,7 +182,7 @@ func (s *Caster) FindDevices() {
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	go func() {
 		for entry := range entriesCh {
-			if !strings.Contains(entry.Name, CAST_SERVICE) {
+			if !strings.Contains(entry.Name, castService) {
 				return
 			}
 			deviceName := s.resolveDeviceName(entry)
@@ -212,8 +212,8 @@ func (s *Caster) FindDevices() {
 	c := make(chan os.Signal, 1)
 	go func() {
 		mdns.Query(&mdns.QueryParam{
-			Service: CAST_SERVICE,
-			Timeout: DEVICE_SEARCH_TIMEOUT,
+			Service: castService,
+			Timeout: deviceSearchTimeout,
 			Entries: entriesCh,
 		})
 		s.sender.SendToTopic(event.CAST_DEVICES_SEARCH_DONE)
@@ -298,7 +298,7 @@ func (s *Caster) CastImage(handle *common.Handle) {
 		logger.Debug.Printf("Adding to cast queue: '%s'", handle.GetId())
 		s.imageQueue = handle
 
-		s.imageQueueBroker.SendToTopic(CAST_IMAGE_EVENT)
+		s.imageQueueBroker.SendToTopic(cast_image_event)
 	}
 }
 

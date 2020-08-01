@@ -120,6 +120,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 	if totalImages == 0 {
 		currentIndex = 0
 	}
+
 	if sendCurrentImage {
 		s.sender.SendToTopicWithData(event.IMAGE_CURRENT_UPDATE,
 			currentImage, currentIndex, totalImages,
