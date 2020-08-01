@@ -2,6 +2,7 @@ package category
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -24,14 +25,19 @@ type Manager struct {
 	CategoryManager
 }
 
-func Parse(name string) (string, string, string) {
-	parts := strings.Split(name, ":")
+func Parse(value string) (name string, path string, shortcut string) {
+	parts := strings.Split(value, ":")
 
 	if len(parts) == 2 {
-		return parts[0], parts[0], parts[1]
+		name = parts[0]
+		path = parts[0]
+		shortcut = parts[1]
 	} else {
-		return parts[0], parts[1], parts[2]
+		name = parts[0]
+		path = parts[1]
+		shortcut = parts[2]
 	}
+	return
 }
 
 func New(sender event.Sender, categories []string) CategoryManager {
@@ -42,14 +48,14 @@ func New(sender event.Sender, categories []string) CategoryManager {
 	return &manager
 }
 
-func (s *Manager) InitializeFromDirectory(categories []string, rootDir string) {
+func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir string) {
 	var loadedCategories []*common.Category
 	var categoriesByName = map[string]*common.Category{}
 	s.rootDir = filepath.Join(rootDir, IMAGE_SORTER_DIR)
 
-	if len(categories) > 0 && categories[0] != "" {
+	if len(defaultCategories) > 0 && defaultCategories[0] != "" {
 		logger.Info.Printf("Reading from command line parameters")
-		loadedCategories = fromCategoriesStrings(categories)
+		loadedCategories = fromCategoriesStrings(defaultCategories)
 	} else {
 		loadedCategories = loadCategoriesFromFile(s.rootDir)
 	}
@@ -125,13 +131,8 @@ func saveCategoriesToFile(fileDir string, fileName string, categories []*common.
 	}
 	defer f.Close()
 	w := bufio.NewWriter(f)
-	w.WriteString("#version:1")
-	w.WriteString("\n")
-	for _, category := range categories {
-		w.WriteString(category.Serialize())
-		w.WriteString("\n")
-	}
-	w.Flush()
+
+	writeCategoriesToBuffer(w, categories)
 }
 
 func fromCategoriesStrings(categories []string) []*common.Category {
@@ -161,17 +162,7 @@ func loadCategoriesFromFile(fileDir string) []*common.Category {
 
 		if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
 			defer f.Close()
-			var lines []string
-			scanner := bufio.NewScanner(f)
-			for scanner.Scan() {
-				lines = append(lines, scanner.Text())
-			}
-
-			if lines != nil {
-				return fromCategoriesStrings(lines[1:])
-			} else {
-				return []*common.Category{}
-			}
+			return readCategoriesFromReader(f)
 		} else {
 			logger.Error.Println("Could not open file: "+filePath, err)
 			return []*common.Category{}
@@ -180,4 +171,29 @@ func loadCategoriesFromFile(fileDir string) []*common.Category {
 		logger.Error.Println("Could not find current user", err)
 		return []*common.Category{}
 	}
+}
+
+func writeCategoriesToBuffer(w *bufio.Writer, categories []*common.Category) {
+	w.WriteString("#version:1")
+	w.WriteString("\n")
+	for _, category := range categories {
+		w.WriteString(category.Serialize())
+		w.WriteString("\n")
+	}
+	w.Flush()
+}
+
+func readCategoriesFromReader(f io.Reader) []*common.Category {
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if lines != nil {
+		return fromCategoriesStrings(lines[1:])
+	} else {
+		return []*common.Category{}
+	}
+	return nil
 }
