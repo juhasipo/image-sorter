@@ -56,8 +56,8 @@ func TestCategorizeOne(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -79,8 +79,8 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -106,8 +106,8 @@ func TestCategorizeOneRemoveCategory(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -131,8 +131,8 @@ func TestCategorizeOneRemoveAll(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -158,8 +158,8 @@ func TestCategorizeForceToCategory(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -188,8 +188,8 @@ func TestCategorizeForceToExistingCategory(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -214,8 +214,8 @@ func TestCategorizeForceToCategory_None(t *testing.T) {
 	a := assert.New(t)
 
 	sender := new(MockSender)
-	sender.On("SendToTopic", event.IMAGE_REQUEST_NEXT).Return()
-	sender.On("SendToTopicWithData", event.CATEGORY_IMAGE_UPDATE, mock.Anything).Return()
+	sender.On("SendToTopic", event.ImageRequestNext).Return()
+	sender.On("SendToTopicWithData", event.CategoryImageUpdate, mock.Anything).Return()
 	lib := new(MockLibrary)
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
@@ -243,7 +243,7 @@ func TestResolveFileOperations(t *testing.T) {
 	sender := new(MockSender)
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
-	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	imageLoader.On("LoadImage", event.ImageRequestNext).Return(nil, nil)
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
@@ -271,7 +271,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	sender := new(MockSender)
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
-	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	imageLoader.On("LoadImage", event.ImageRequestNext).Return(nil, nil)
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
@@ -296,7 +296,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	sender := new(MockSender)
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
-	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	imageLoader.On("LoadImage", event.ImageRequestNext).Return(nil, nil)
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
@@ -322,7 +322,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	sender := new(MockSender)
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
-	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	imageLoader.On("LoadImage", event.ImageRequestNext).Return(nil, nil)
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
@@ -348,7 +348,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	sender := new(MockSender)
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
-	imageLoader.On("LoadImage", event.IMAGE_REQUEST_NEXT).Return(nil, nil)
+	imageLoader.On("LoadImage", event.ImageRequestNext).Return(nil, nil)
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 

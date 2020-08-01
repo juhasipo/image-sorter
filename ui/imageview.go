@@ -73,7 +73,7 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 		height := ui.imageView.nextImages.component.GetAllocatedHeight() / 80
 		if imageView.imagesListImageCount != height {
 			imageView.imagesListImageCount = height
-			ui.sender.SendToTopicWithData(event.IMAGE_LIST_SIZE_CHANGED, height)
+			ui.sender.SendToTopicWithData(event.ImageListSizeChanged, height)
 		}
 
 	})
@@ -200,7 +200,7 @@ func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
 	imageList.component.Connect("item-activated", func(view *gtk.IconView, path *gtk.TreePath) {
 		index := path.GetIndices()[0]
 		handle := imageList.images[index].GetHandle()
-		sender.SendToTopicWithData(event.IMAGE_REQUEST, handle)
+		sender.SendToTopicWithData(event.ImageRequest, handle)
 	})
 	imageList.model, _ = gtk.ListStoreNew(PixbufGetType(), glib.TYPE_STRING)
 	imageList.component.SetModel(imageList.model)

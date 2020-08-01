@@ -71,7 +71,7 @@ func (s *Manager) GetCategories() []*common.Category {
 }
 
 func (s *Manager) RequestCategories() {
-	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
+	s.sender.SendToTopicWithData(event.CategoriesUpdated, &CategoriesCommand{
 		categories: s.categories,
 	})
 }
@@ -80,7 +80,7 @@ func (s *Manager) Save(categories []*common.Category) {
 	s.resetCategories(categories)
 
 	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, categories)
-	s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
+	s.sender.SendToTopicWithData(event.CategoriesUpdated, &CategoriesCommand{
 		categories: categories,
 	})
 }
@@ -93,7 +93,7 @@ func (s *Manager) SaveDefault(categories []*common.Category) {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
 		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
-		s.sender.SendToTopicWithData(event.CATEGORIES_UPDATED, &CategoriesCommand{
+		s.sender.SendToTopicWithData(event.CategoriesUpdated, &CategoriesCommand{
 			categories: categories,
 		})
 	}

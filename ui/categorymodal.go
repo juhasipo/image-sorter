@@ -246,11 +246,11 @@ func (s *CategoryModal) Show(parent gtk.IWindow, categories []*common.Category) 
 }
 
 func (s *CategoryModal) save() {
-	s.sender.SendToTopicWithData(event.CATEGORIES_SAVE, s.getCategoriesFromList())
+	s.sender.SendToTopicWithData(event.CategoriesSave, s.getCategoriesFromList())
 	s.modal.Hide()
 }
 func (s *CategoryModal) saveDefault() {
-	s.sender.SendToTopicWithData(event.CATEGORIES_SAVE_DEFAULT, s.getCategoriesFromList())
+	s.sender.SendToTopicWithData(event.CategoriesSaveDefault, s.getCategoriesFromList())
 	s.modal.Hide()
 }
 

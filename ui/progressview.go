@@ -19,7 +19,7 @@ func NewProgressView(builder *gtk.Builder, sender event.Sender) *ProgressView {
 		progressbar: GetObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar),
 	}
 	progressView.stopButton.Connect("clicked", func() {
-		sender.SendToTopic(event.SIMILAR_REQUEST_STOP)
+		sender.SendToTopic(event.SimilarRequestStop)
 	})
 
 	return progressView

@@ -100,7 +100,7 @@ func (s *Ui) Init(directory string) {
 		if directory == "" {
 			s.openFolderChooser(1)
 		} else {
-			s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, directory)
+			s.sender.SendToTopicWithData(event.DirectoryChanged, directory)
 		}
 
 		// Show the Window and all of its components.
@@ -111,7 +111,7 @@ func (s *Ui) Init(directory string) {
 
 func (s *Ui) findDevices() {
 	s.castModal.StartSearch(s.application.GetActiveWindow())
-	s.sender.SendToTopic(event.CAST_DEVICE_SEARCH)
+	s.sender.SendToTopic(event.CastDeviceSearch)
 }
 
 func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
@@ -131,7 +131,7 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 	if key == gdk.KEY_F8 {
 		s.findDevices()
 	} else if key == gdk.KEY_F10 {
-		s.sender.SendToTopic(event.IMAGE_SHOW_ALL)
+		s.sender.SendToTopic(event.ImageShowAll)
 	} else if key == gdk.KEY_Escape {
 		s.exitFullScreen()
 	} else if key == gdk.KEY_F11 || (altDown && key == gdk.KEY_Return) {
@@ -144,37 +144,37 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			s.enterFullScreen()
 		}
 	} else if key == gdk.KEY_F12 {
-		s.sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
+		s.sender.SendToTopic(event.SimilarRequestSearch)
 	} else if key == gdk.KEY_Page_Up {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, hugeJumpSize)
+		s.sender.SendToTopicWithData(event.ImageRequestPrevOffset, hugeJumpSize)
 	} else if key == gdk.KEY_Page_Down {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, hugeJumpSize)
+		s.sender.SendToTopicWithData(event.ImageRequestNextOffset, hugeJumpSize)
 	} else if key == gdk.KEY_Home {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, 0)
+		s.sender.SendToTopicWithData(event.ImageRequestAtIndex, 0)
 	} else if key == gdk.KEY_End {
-		s.sender.SendToTopicWithData(event.IMAGE_REQUEST_AT_INDEX, -1)
+		s.sender.SendToTopicWithData(event.ImageRequestAtIndex, -1)
 	} else if key == gdk.KEY_Left {
 		if controlDown {
-			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_PREV_OFFSET, bigJumpSize)
+			s.sender.SendToTopicWithData(event.ImageRequestPrevOffset, bigJumpSize)
 		} else {
-			s.sender.SendToTopic(event.IMAGE_REQUEST_PREV)
+			s.sender.SendToTopic(event.ImageRequestPrev)
 		}
 	} else if key == gdk.KEY_Right {
 		if controlDown {
-			s.sender.SendToTopicWithData(event.IMAGE_REQUEST_NEXT_OFFSET, bigJumpSize)
+			s.sender.SendToTopicWithData(event.ImageRequestNextOffset, bigJumpSize)
 		} else {
-			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
+			s.sender.SendToTopic(event.ImageRequestNext)
 		}
 	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
-			s.sender.SendToTopicWithData(event.CATEGORIES_SHOW_ONLY, command.GetEntry())
+			s.sender.SendToTopicWithData(event.CategoriesShowOnly, command.GetEntry())
 		} else {
 			stayOnSameImage := shiftDown
 			forceToCategory := controlDown
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetForceToCategory(forceToCategory)
-			s.sender.SendToTopicWithData(event.CATEGORIZE_IMAGE, command)
+			s.sender.SendToTopicWithData(event.CategorizeImage, command)
 		}
 	} else {
 		return false
@@ -225,13 +225,13 @@ func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetNextImageDelay(200 * time.Millisecond)
 			s.sender.SendToTopicWithData(
-				event.CATEGORIZE_IMAGE,
+				event.CategorizeImage,
 				command)
 		})
 	}
 
 	s.topActionView.categoriesView.ShowAll()
-	s.sender.SendToTopic(event.IMAGE_REQUEST_CURRENT)
+	s.sender.SendToTopic(event.ImageRequestCurrent)
 }
 
 func (s *Ui) UpdateCurrentImage() {
@@ -239,11 +239,11 @@ func (s *Ui) UpdateCurrentImage() {
 }
 
 func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer) {
-	if imageTarget == event.IMAGE_REQUEST_NEXT {
+	if imageTarget == event.ImageRequestNext {
 		s.imageView.AddImagesToNextStore(handles)
-	} else if imageTarget == event.IMAGE_REQUEST_PREV {
+	} else if imageTarget == event.ImageRequestPrev {
 		s.imageView.AddImagesToPrevStore(handles)
-	} else if imageTarget == event.IMAGE_REQUEST_SIMILAR {
+	} else if imageTarget == event.ImageRequestSimilar {
 		s.similarImagesView.SetImages(handles, s.sender)
 	}
 }
@@ -259,7 +259,7 @@ func (s *Ui) SetCurrentImage(image *common.ImageContainer, index int, total int,
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {
-	s.sender.SendToTopicWithData(event.IMAGE_CHANGED, s.imageView.currentImage.image)
+	s.sender.SendToTopicWithData(event.ImageChanged, s.imageView.currentImage.image)
 }
 
 func (s *Ui) Run() {
@@ -330,7 +330,7 @@ func runAndProcessFolderChooser(folderChooser *gtk.FileChooserDialog, sender eve
 	response := folderChooser.Run()
 	if response == gtk.RESPONSE_ACCEPT {
 		folder := folderChooser.GetFilename()
-		sender.SendToTopicWithData(event.DIRECTORY_CHANGED, folder)
+		sender.SendToTopicWithData(event.DirectoryChanged, folder)
 	}
 }
 

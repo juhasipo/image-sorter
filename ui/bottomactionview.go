@@ -82,13 +82,13 @@ func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 
 		if response == gtk.RESPONSE_YES {
 			value := qualityScale.GetValue()
-			sender.SendToTopicWithData(event.CATEGORY_PERSIST_ALL, common.NewPersistCategorizationCommand(
+			sender.SendToTopicWithData(event.CategoryPersistAll, common.NewPersistCategorizationCommand(
 				keepOriginalsCB.GetActive(), exifCorrect.GetActive(), int(value)))
 		}
 	})
 
 	bottomActionView.findSimilarButton.Connect("clicked", func() {
-		sender.SendToTopic(event.SIMILAR_REQUEST_SEARCH)
+		sender.SendToTopic(event.SimilarRequestSearch)
 	})
 	bottomActionView.findDevicesButton.Connect("clicked", ui.findDevices)
 
@@ -136,7 +136,7 @@ func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 	})
 
 	bottomActionView.showAllImagesButton.Connect("clicked", func() {
-		sender.SendToTopic(event.IMAGE_SHOW_ALL)
+		sender.SendToTopic(event.ImageShowAll)
 	})
 
 	return bottomActionView

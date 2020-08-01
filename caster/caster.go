@@ -205,7 +205,7 @@ func (s *Caster) FindDevices() {
 			}
 
 			s.devices[deviceName] = deviceEntry
-			s.sender.SendToTopicWithData(event.CAST_DEVICE_FOUND, deviceName)
+			s.sender.SendToTopicWithData(event.CastDeviceFound, deviceName)
 		}
 	}()
 
@@ -216,7 +216,7 @@ func (s *Caster) FindDevices() {
 			Timeout: deviceSearchTimeout,
 			Entries: entriesCh,
 		})
-		s.sender.SendToTopic(event.CAST_DEVICES_SEARCH_DONE)
+		s.sender.SendToTopic(event.CastDevicesSearchDone)
 		close(c)
 	}()
 
@@ -278,7 +278,7 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 
 		s.StartServer(s.port)
 
-		s.sender.SendToTopic(event.CAST_READY)
+		s.sender.SendToTopic(event.CastReady)
 	}
 }
 

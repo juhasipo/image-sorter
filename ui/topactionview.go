@@ -46,10 +46,10 @@ func NewTopActions(builder *gtk.Builder, sender event.Sender) *TopActionView {
 		sender:                   sender,
 	}
 	topActionView.nextButton.Connect("clicked", func() {
-		sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
+		sender.SendToTopic(event.ImageRequestNext)
 	})
 	topActionView.prevButton.Connect("clicked", func() {
-		sender.SendToTopic(event.IMAGE_REQUEST_PREV)
+		sender.SendToTopic(event.ImageRequestPrev)
 	})
 
 	return topActionView
@@ -119,7 +119,7 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 	browseButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Browse '%s' (ALT + %s)", entry.GetName(), entry.GetShortcutAsString()))
 	browseButton.SetRelief(gtk.RELIEF_NONE)
 	browseButton.Connect("clicked", func() {
-		s.sender.SendToTopicWithData(event.CATEGORIES_SHOW_ONLY, entry)
+		s.sender.SendToTopicWithData(event.CategoriesShowOnly, entry)
 	})
 	menuBox.Add(browseButton)
 

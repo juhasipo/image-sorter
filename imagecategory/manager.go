@@ -111,7 +111,7 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 		} else {
 			s.sendCategories(handle)
 			time.Sleep(command.GetNextImageDelay())
-			s.sender.SendToTopic(event.IMAGE_REQUEST_NEXT)
+			s.sender.SendToTopic(event.ImageRequestNext)
 		}
 	}
 }
@@ -121,15 +121,15 @@ func (s *Manager) PersistImageCategories(options common.PersistCategorizationCom
 	operationsByImage := s.ResolveFileOperations(s.imageCategory, options)
 
 	total := len(operationsByImage)
-	s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", 0, total)
+	s.sender.SendToTopicWithData(event.ProcessStatusUpdated, "categorize", 0, total)
 	for i, operationGroup := range operationsByImage {
 		err := operationGroup.Apply()
 		if err != nil {
 			logger.Error.Println("Error", err)
 		}
-		s.sender.SendToTopicWithData(event.UPDATE_PROCESS_STATUS, "categorize", i+1, total)
+		s.sender.SendToTopicWithData(event.ProcessStatusUpdated, "categorize", i+1, total)
 	}
-	s.sender.SendToTopicWithData(event.DIRECTORY_CHANGED, s.rootDir)
+	s.sender.SendToTopicWithData(event.DirectoryChanged, s.rootDir)
 }
 
 func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, options common.PersistCategorizationCommand) []*filter.ImageOperationGroup {
@@ -190,7 +190,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
 			handles = append(handles, handle)
 		}
 	}
-	s.sender.SendToTopicWithData(event.IMAGE_SHOW_ONLY, cat.GetName(), handles)
+	s.sender.SendToTopicWithData(event.ImageShowOnly, cat.GetName(), handles)
 }
 
 func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
@@ -288,5 +288,5 @@ func (s *Manager) sendCategories(currentImage *common.Handle) {
 			commands = append(commands, category.NewCategorizeCommand(currentImage, image.GetEntry(), image.GetOperation()))
 		}
 	}
-	s.sender.SendToTopicWithData(event.CATEGORY_IMAGE_UPDATE, commands)
+	s.sender.SendToTopicWithData(event.CategoryImageUpdate, commands)
 }

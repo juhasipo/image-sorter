@@ -122,14 +122,14 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 	}
 
 	if sendCurrentImage {
-		s.sender.SendToTopicWithData(event.IMAGE_CURRENT_UPDATE,
+		s.sender.SendToTopicWithData(event.ImageCurrentUpdated,
 			currentImage, currentIndex, totalImages,
 			s.manager.getCurrentCategoryName(),
 			s.manager.GetMetaData(currentImage.GetHandle()))
 	}
 
-	s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_NEXT, s.manager.getNextImages())
-	s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_PREV, s.manager.getPrevImages())
+	s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestNext, s.manager.getNextImages())
+	s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestPrev, s.manager.getPrevImages())
 
 	if s.manager.shouldSendSimilarImages() {
 		s.sendSimilarImages(currentImage.GetHandle())
@@ -139,7 +139,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 func (s *Manager) sendSimilarImages(handle *common.Handle) {
 	images, shouldSend := s.manager.getSimilarImages(handle)
 	if shouldSend {
-		s.sender.SendToTopicWithData(event.IMAGE_LIST_UPDATE, event.IMAGE_REQUEST_SIMILAR, images)
+		s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestSimilar, images)
 	}
 }
 
