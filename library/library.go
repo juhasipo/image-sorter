@@ -16,6 +16,7 @@ type Manager struct {
 
 func LibraryNew(sender event.Sender, imageCache imageloader.ImageStore, imageLoader imageloader.ImageLoader) Library {
 	return &Manager{
+		sender:  sender,
 		manager: libraryNew(imageCache, imageLoader),
 	}
 }
@@ -34,7 +35,7 @@ func (s *Manager) ShowOnlyImages(title string, handles []*common.Handle) {
 }
 
 func (s *Manager) ShowAllImages() {
-	s.ShowAllImages()
+	s.manager.ShowAllImages()
 	s.sendStatus(true)
 }
 
@@ -54,7 +55,7 @@ func (s *Manager) RequestStopHashes() {
 }
 
 func (s *Manager) RequestNextImage() {
-	s.RequestNextImageWithOffset(1)
+	s.manager.RequestNextImage()
 }
 
 func (s *Manager) RequestNextImageWithOffset(offset int) {
@@ -73,7 +74,7 @@ func (s *Manager) RequestImageAt(index int) {
 }
 
 func (s *Manager) RequestPrevImage() {
-	s.RequestPrevImageWithOffset(1)
+	s.manager.RequestPrevImage()
 }
 
 func (s *Manager) RequestPrevImageWithOffset(offset int) {
