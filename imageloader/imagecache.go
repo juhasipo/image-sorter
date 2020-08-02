@@ -13,9 +13,9 @@ type CacheContainer struct {
 
 type ImageStore interface {
 	Initialize([]*common.Handle)
-	GetFull(*common.Handle) image.Image
-	GetScaled(*common.Handle, common.Size) image.Image
-	GetThumbnail(*common.Handle) image.Image
+	GetFull(*common.Handle) (image.Image, error)
+	GetScaled(*common.Handle, common.Size) (image.Image, error)
+	GetThumbnail(*common.Handle) (image.Image, error)
 	GetExifData(handle *common.Handle) *common.ExifData
 	Purge(*common.Handle)
 }
@@ -46,13 +46,13 @@ func NewImageCache(imageLoader ImageLoader) ImageStore {
 	}
 }
 
-func (s *DefaultImageStore) GetFull(handle *common.Handle) image.Image {
-	return s.getImage(handle).LoadFullFromCache()
+func (s *DefaultImageStore) GetFull(handle *common.Handle) (image.Image, error) {
+	return s.getImage(handle).GetFull()
 }
-func (s *DefaultImageStore) GetScaled(handle *common.Handle, size common.Size) image.Image {
+func (s *DefaultImageStore) GetScaled(handle *common.Handle, size common.Size) (image.Image, error) {
 	return s.getImage(handle).GetScaled(size)
 }
-func (s *DefaultImageStore) GetThumbnail(handle *common.Handle) image.Image {
+func (s *DefaultImageStore) GetThumbnail(handle *common.Handle) (image.Image, error) {
 	return s.getImage(handle).GetThumbnail()
 }
 func (s *DefaultImageStore) GetExifData(handle *common.Handle) *common.ExifData {

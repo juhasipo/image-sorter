@@ -124,9 +124,9 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	defer s.releaseImage()
 	imageHandle := s.currentImage
 	logger.Debug.Printf("Sending image '%s' to Chromecast", imageHandle.GetId())
-	img := s.imageCache.GetScaled(imageHandle, common.SizeOf(canvasWidth, canvasHeight))
+	img, err := s.imageCache.GetScaled(imageHandle, common.SizeOf(canvasWidth, canvasHeight))
 
-	if img != nil {
+	if img != nil && err == nil {
 		writeImageToResponse(responseWriter, img, s.showBackground)
 	}
 }

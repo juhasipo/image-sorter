@@ -1,6 +1,7 @@
 package imageloader
 
 import (
+	"errors"
 	"github.com/disintegration/imaging"
 	"image"
 	"image/color"
@@ -45,8 +46,125 @@ func NewInstance(handle *common.Handle, imageLoader ImageLoader) *Instance {
 		}
 	}
 
-	instance.thumbnail = instance.GetThumbnail()
+	instance.thumbnail, _ = instance.GetThumbnail()
 	return instance
+}
+
+func ExifRotateImage(loadedImage image.Image, exifData *common.ExifData) (image.Image, error) {
+	if exifData != nil {
+		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
+		if exifData.IsFlipped() {
+			return imaging.FlipH(loadedImage), nil
+		} else {
+			return loadedImage, nil
+		}
+	} else {
+		return loadedImage, nil
+	}
+}
+
+func (s *Instance) IsValid() bool {
+	return s.handle != nil
+}
+
+func (s *Instance) GetFull() (image.Image, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	if s.full == nil {
+		startTime := time.Now()
+
+		if full, err := s.loadFull(nil); err != nil {
+			logger.Error.Println("Could not load full image: " + s.handle.GetPath())
+			return nil, err
+		} else {
+			s.full = full
+			endTime := time.Now()
+			logger.Trace.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+			return s.full, nil
+		}
+	} else {
+		logger.Trace.Print("Use cached full image")
+		return s.full, nil
+	}
+}
+
+func (s *Instance) GetScaled(size common.Size) (image.Image, error) {
+	if !s.IsValid() {
+		return nil, errors.New("invalid handle")
+	}
+
+	startTime := time.Now()
+	var full image.Image
+	var err error
+	if full, err = s.GetFull(); err != nil {
+		return nil, err
+	}
+
+	fullSize := full.Bounds()
+	newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), size.GetWidth(), size.GetHeight())
+
+	if s.scaled == nil {
+		s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
+	} else {
+		size := s.scaled.Bounds()
+		if newWidth != size.Dx() && newHeight != size.Dy() {
+			s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
+		} else {
+			logger.Trace.Print("Use cached scaled image")
+			// Use cached
+		}
+	}
+	endTime := time.Now()
+	logger.Trace.Printf("'%s': Scaled loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+
+	return s.scaled, err
+}
+
+func (s *Instance) GetThumbnail() (image.Image, error) {
+	if s.handle == nil || !s.handle.IsValid() {
+		return nil, errors.New("invalid handle")
+	}
+	var err error
+	startTime := time.Now()
+	if s.thumbnail == nil {
+
+		if full, err := s.loadThumbnailFromCache(); err != nil {
+			return nil, err
+		} else {
+			fullSize := full.Bounds()
+			newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), thumbnailSize, thumbnailSize)
+
+			s.thumbnail = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
+		}
+	} else {
+		logger.Trace.Print("Use cached thumbnail")
+	}
+	endTime := time.Now()
+	logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+	return s.thumbnail, err
+}
+
+func (s *Instance) Purge() {
+	s.full = nil
+	s.scaled = nil
+}
+
+func (s *Instance) GetByteLength() int {
+	var byteLength = 0
+	byteLength += GetByteLength(s.full)
+	byteLength += GetByteLength(s.scaled)
+	byteLength += GetByteLength(s.thumbnail)
+	return byteLength
+}
+func GetByteLength(pixbuf image.Image) int {
+	if pixbuf != nil {
+		// Approximation using the image size
+		const bytesPerPixel = 4
+		bounds := pixbuf.Bounds()
+		return bounds.Dx() * bounds.Dy() * bytesPerPixel
+	} else {
+		return 0
+	}
 }
 
 func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
@@ -76,133 +194,24 @@ func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, 
 	return ExifRotateImage(loadedImage, s.exifData)
 }
 
-func ExifRotateImage(loadedImage image.Image, exifData *common.ExifData) (image.Image, error) {
-	if exifData != nil {
-		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
-		if exifData.IsFlipped() {
-			return imaging.FlipH(loadedImage), nil
-		} else {
-			return loadedImage, nil
-		}
-	} else {
-		return loadedImage, nil
-	}
-}
-
-func (s *Instance) IsValid() bool {
-	return s.handle != nil
-}
-
-func (s *Instance) GetScaled(size common.Size) image.Image {
-	if !s.IsValid() {
-		return nil
-	}
-
-	startTime := time.Now()
-	full := s.LoadFullFromCache()
-
-	fullSize := full.Bounds()
-	newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), size.GetWidth(), size.GetHeight())
-
-	if s.scaled == nil {
-		s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
-	} else {
-		size := s.scaled.Bounds()
-		if newWidth != size.Dx() && newHeight != size.Dy() {
-			s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
-		} else {
-			logger.Trace.Print("Use cached scaled image")
-			// Use cached
-		}
-	}
-	endTime := time.Now()
-	logger.Trace.Printf("'%s': Scaled loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
-
-	return s.scaled
-}
-
-func (s *Instance) GetThumbnail() image.Image {
-	if s.handle == nil {
-		return nil
-	}
-
-	startTime := time.Now()
-	if s.thumbnail == nil {
-
-		full := s.LoadThumbnailFromCache()
-
-		fullSize := full.Bounds()
-		newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), thumbnailSize, thumbnailSize)
-
-		s.thumbnail = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
-	} else {
-		logger.Trace.Print("Use cached thumbnail")
-	}
-	endTime := time.Now()
-	logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
-	return s.thumbnail
-}
-
-func (s *Instance) Purge() {
-	s.full = nil
-	s.scaled = nil
-}
-
-func (s *Instance) GetByteLength() int {
-	var byteLength = 0
-	byteLength += GetByteLength(s.scaled)
-	byteLength += GetByteLength(s.thumbnail)
-	return byteLength
-}
-
-func (s *Instance) LoadFullFromCache() image.Image {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	if s.full == nil {
-		startTime := time.Now()
-
-		var err error
-		if s.full, err = s.loadFull(nil); err != nil {
-			logger.Error.Println("Could not load image: "+s.handle.GetPath(), err)
-		}
-
-		endTime := time.Now()
-		logger.Trace.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
-		return s.full
-	} else {
-		logger.Trace.Print("Use cached full image")
-		return s.full
-	}
-}
-
-func (s *Instance) LoadThumbnailFromCache() image.Image {
+func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if s.thumbnail == nil {
 		startTime := time.Now()
 
 		size := common.SizeOf(thumbnailSize, thumbnailSize)
-		var err error
-		if s.thumbnail, err = s.loadFull(&size); err != nil {
+		if thumbnail, err := s.loadFull(&size); err != nil {
 			logger.Error.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
+			return nil, err
+		} else {
+			s.thumbnail = thumbnail
+			endTime := time.Now()
+			logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+			return s.thumbnail, nil
 		}
-
-		endTime := time.Now()
-		logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
-		return s.thumbnail
 	} else {
 		logger.Trace.Print("Use cached thumbnail image")
-		return s.thumbnail
-	}
-}
-
-func GetByteLength(pixbuf image.Image) int {
-	if pixbuf != nil {
-		// Approximation using the image size
-		const bytesPerPixel = 4
-		bounds := pixbuf.Bounds()
-		return bounds.Dx() * bounds.Dy() * bytesPerPixel
-	} else {
-		return 0
+		return s.thumbnail, nil
 	}
 }

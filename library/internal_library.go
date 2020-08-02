@@ -246,7 +246,12 @@ func (s *internalManager) GetMetaData(handle *common.Handle) *common.ExifData {
 func (s *internalManager) getCurrentImage() (*common.ImageContainer, int) {
 	if s.index < len(s.imageList) {
 		handle := s.imageList[s.index]
-		return common.NewImageContainer(handle, s.imageStore.GetFull(handle)), s.index
+		if full, err := s.imageStore.GetFull(handle); err != nil {
+			logger.Error.Print("Error while loading full image", err)
+			return common.NewImageContainer(common.GetEmptyHandle(), nil), 0
+		} else {
+			return common.NewImageContainer(handle, full), s.index
+		}
 	} else {
 		return common.NewImageContainer(common.GetEmptyHandle(), nil), 0
 	}
@@ -278,7 +283,11 @@ func (s *internalManager) getNextImages() []*common.ImageContainer {
 	slice := s.imageList[startIndex:endIndex]
 	images := make([]*common.ImageContainer, len(slice))
 	for i, handle := range slice {
-		images[i] = common.NewImageContainer(handle, s.imageStore.GetThumbnail(handle))
+		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
+			logger.Error.Print("Error while loading thumbnail", err)
+		} else {
+			images[i] = common.NewImageContainer(handle, thumbnail)
+		}
 	}
 
 	return images
@@ -292,7 +301,11 @@ func (s *internalManager) getPrevImages() []*common.ImageContainer {
 	slice := s.imageList[prevIndex:s.index]
 	images := make([]*common.ImageContainer, len(slice))
 	for i, handle := range slice {
-		images[i] = common.NewImageContainer(handle, s.imageStore.GetThumbnail(handle))
+		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
+			logger.Error.Print("Error while loading thumbnail", err)
+		} else {
+			images[i] = common.NewImageContainer(handle, thumbnail)
+		}
 	}
 	util.Reverse(images)
 	return images
@@ -318,7 +331,11 @@ func (s *internalManager) getSimilarImages(handle *common.Handle) ([]*common.Ima
 		for _, match := range matches {
 			similar := match.ID.(*common.Handle)
 			if handle.GetId() != similar.GetId() {
-				images[i] = common.NewImageContainer(similar, s.imageStore.GetThumbnail(similar))
+				if thumbnail, err := s.imageStore.GetThumbnail(similar); err != nil {
+					logger.Error.Print("Error while loading thumbnail", err)
+				} else {
+					images[i] = common.NewImageContainer(similar, thumbnail)
+				}
 				i++
 			}
 			if i == maxImages {

@@ -26,12 +26,12 @@ type MockImage struct {
 	mock.Mock
 }
 
-func (s *MockImageStore) GetFull(handle *common.Handle) image.Image {
-	return nil
+func (s *MockImageStore) GetFull(handle *common.Handle) (image.Image, error) {
+	return nil, nil
 }
 
-func (s *MockImageStore) GetThumbnail(handle *common.Handle) image.Image {
-	return nil
+func (s *MockImageStore) GetThumbnail(handle *common.Handle) (image.Image, error) {
+	return nil, nil
 }
 
 type MockImageLoader struct {
