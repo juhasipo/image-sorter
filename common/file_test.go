@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 )
@@ -44,6 +43,7 @@ func TestMakeDirectoriesIfNotExist(t *testing.T) {
 
 func TestCopyFile(t *testing.T) {
 	a := assert.New(t)
+	r := require.New(t)
 
 	dir, err := ioutil.TempDir("", "test_dir")
 	if a.Nil(err) {
@@ -51,18 +51,20 @@ func TestCopyFile(t *testing.T) {
 		if a.Nil(err) {
 			// Write content to file and copy
 			_, err := file1.WriteString("Test string")
-			a.Nil(err)
-			filename := path.Base(file1.Name())
+			r.Nil(err)
+			filename := filepath.Base(file1.Name())
 			err = CopyFile(dir, filename, dir, "file2")
-			a.Nil(err)
+			r.Nil(err)
+			file1.Close()
 
 			// Assert that file exists and has the correct content
 			copiedFile := filepath.Join(dir, "file2")
 			a.True(DoesFileExist(copiedFile))
 			file2Bytes, err := ioutil.ReadFile(copiedFile)
-			a.Nil(err)
-			file2Content := string(file2Bytes)
-			a.Equal("Test string", file2Content)
+			if a.Nil(err) {
+				file2Content := string(file2Bytes)
+				a.Equal("Test string", file2Content)
+			}
 
 			// Clean up
 			err = os.Remove(copiedFile)
@@ -90,16 +92,18 @@ func TestCopyFile_FileDoesntExist(t *testing.T) {
 
 func TestRemoveFile(t *testing.T) {
 	a := assert.New(t)
+	r := require.New(t)
 
 	dir, err := ioutil.TempDir("", "test_dir")
 	a.Nil(err)
 	file1, err := ioutil.TempFile(dir, "file_1_")
-	a.Nil(err)
-	a.True(DoesFileExist(file1.Name()))
+	r.Nil(err)
+	r.True(DoesFileExist(file1.Name()))
+	file1.Close()
 
 	err = RemoveFile(file1.Name())
 	a.Nil(err)
-	a.False(DoesFileExist(file1.Name()))
+	r.False(DoesFileExist(file1.Name()))
 
 	err = os.Remove(dir)
 	a.Nil(err)

@@ -1,10 +1,12 @@
 package imagecategory
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"image"
+	"path/filepath"
 	"testing"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
@@ -287,7 +289,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(1, len(ops))
-	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[0].String())
+	a.Equal(fmt.Sprintf("Copy file 'filename' to '%s'", filepath.Join("filepath", "cat_1")), ops[0].String())
 }
 
 func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
@@ -312,7 +314,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	a.Nil(err)
 	ops := operations.GetOperations()
 	a.Equal(2, len(ops))
-	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[0].String())
+	a.Equal(fmt.Sprintf("Copy file 'filename' to '%s'", filepath.Join("filepath", "cat_1")), ops[0].String())
 	a.Equal("Remove", ops[1].String())
 }
 
@@ -339,7 +341,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	ops := operations.GetOperations()
 	a.Equal(2, len(ops))
 	a.Equal("Exif Rotate", ops[0].String())
-	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[1].String())
+	a.Equal(fmt.Sprintf("Copy file 'filename' to '%s'", filepath.Join("filepath", "cat_1")), ops[1].String())
 }
 
 func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
@@ -365,6 +367,6 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	ops := operations.GetOperations()
 	a.Equal(3, len(ops))
 	a.Equal("Exif Rotate", ops[0].String())
-	a.Equal("Copy file 'filename' to 'filepath/cat_1'", ops[1].String())
+	a.Equal(fmt.Sprintf("Copy file 'filename' to '%s'", filepath.Join("filepath", "cat_1")), ops[1].String())
 	a.Equal("Remove", ops[2].String())
 }

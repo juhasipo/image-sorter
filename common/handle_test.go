@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/stretchr/testify/assert"
+	"path/filepath"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestHandle_String(t *testing.T) {
 func TestValidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandle("/some/dir", "file.jpeg")
+	handle := NewHandle("some/dir", "file.jpeg")
 	handle.SetByteSize(1.5 * 1024 * 1024)
 
 	t.Run("Validity", func(t *testing.T) {
@@ -34,8 +35,8 @@ func TestValidHandle(t *testing.T) {
 	t.Run("Properties", func(t *testing.T) {
 		a.Equal("file.jpeg", handle.GetId())
 		a.Equal("file.jpeg", handle.GetFile())
-		a.Equal("/some/dir", handle.GetDir())
-		a.Equal("/some/dir/file.jpeg", handle.GetPath())
+		a.Equal("some/dir", handle.GetDir())
+		a.Equal(filepath.Join("some", "dir", "file.jpeg"), handle.GetPath())
 		a.Equal(int64(1.5*1024*1024), handle.GetByteSize())
 		a.Equal(1.5, handle.GetByteSizeMB())
 	})
