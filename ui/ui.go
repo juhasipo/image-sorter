@@ -255,7 +255,7 @@ func (s *Ui) SetCurrentImage(image *common.ImageContainer, index int, total int,
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
 
-	s.imageCache.Purge(s.imageView.currentImage.image)
+	s.imageCache.Purge()
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {

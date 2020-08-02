@@ -17,7 +17,9 @@ type ImageStore interface {
 	GetScaled(*common.Handle, common.Size) (image.Image, error)
 	GetThumbnail(*common.Handle) (image.Image, error)
 	GetExifData(handle *common.Handle) *common.ExifData
-	Purge(*common.Handle)
+	GetByteSize() uint64
+	GetSizeInMB() float64
+	Purge()
 }
 
 type DefaultImageStore struct {
@@ -75,8 +77,19 @@ func (s *DefaultImageStore) getImage(handle *common.Handle) *Instance {
 	}
 }
 
-func (s *DefaultImageStore) Purge(handle *common.Handle) {
+func (s *DefaultImageStore) Purge() {
 	for _, instance := range s.imageCache {
 		instance.Purge()
 	}
+}
+
+func (s *DefaultImageStore) GetByteSize() (byteSize uint64) {
+	for _, instance := range s.imageCache {
+		byteSize += uint64(instance.GetByteLength())
+	}
+	return
+}
+
+func (s *DefaultImageStore) GetSizeInMB() (mbSize float64) {
+	return float64(s.GetByteSize()) / (1024 * 1024)
 }
