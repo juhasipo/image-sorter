@@ -32,18 +32,15 @@ type Instance struct {
 
 func NewInstance(handle *common.Handle, imageLoader ImageLoader) *Instance {
 	var instance *Instance
-	if exifData, err := common.LoadExifData(handle); err == nil {
-		instance = &Instance{
-			handle:      handle,
-			exifData:    exifData,
-			imageLoader: imageLoader,
-		}
-	} else {
-		instance = &Instance{
-			handle:      handle,
-			exifData:    nil,
-			imageLoader: imageLoader,
-		}
+	exifData, err := common.LoadExifData(handle)
+	if err != nil {
+		logger.Warn.Printf("Exif data not properly loaded for '%s'", handle.GetId())
+	}
+
+	instance = &Instance{
+		handle:      handle,
+		exifData:    exifData,
+		imageLoader: imageLoader,
 	}
 
 	instance.thumbnail, _ = instance.GetThumbnail()
@@ -172,6 +169,10 @@ func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
 }
 
 func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, error) {
+	if s.imageLoader == nil {
+		return nil, errors.New("no valid loader")
+	}
+
 	var loadedImage image.Image
 	var err error
 	if size != nil {

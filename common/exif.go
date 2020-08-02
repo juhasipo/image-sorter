@@ -110,11 +110,11 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 			logger.Error.Print("Could not decode Exif data", err)
 			return nil, err
 		} else if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
-			logger.Error.Print("Could not resolve orientation flag", err)
-			return nil, err
+			logger.Warn.Print("Could not resolve orientation flag", err)
+			return &ExifData{1, 0, false, decodedExif}, err
 		} else if orientation, err = orientationTag.Int(0); err != nil {
-			logger.Error.Print("Could not resolve orientation value", err)
-			return nil, err
+			logger.Warn.Print("Could not resolve orientation value", err)
+			return &ExifData{1, 0, false, decodedExif}, err
 		} else {
 			angle, flip := ExifOrientationToAngleAndFlip(orientation)
 			return &ExifData{

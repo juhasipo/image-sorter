@@ -59,11 +59,27 @@ func TestDefaultImageStore_GetFull(t *testing.T) {
 	loader := NewImageLoader()
 	cache := NewImageCache(loader)
 
-	handle := common.NewHandle("../testassets", "horizontal.jpg")
-	img, err := cache.GetFull(handle)
+	t.Run("Valid", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "horizontal.jpg")
+		img, err := cache.GetFull(handle)
 
-	a.Nil(err)
-	a.NotNil(img)
+		a.Nil(err)
+		a.NotNil(img)
+	})
+	t.Run("No exif", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		img, err := cache.GetFull(handle)
+
+		a.Nil(err)
+		a.NotNil(img)
+	})
+	t.Run("Invalid", func(t *testing.T) {
+		handle := common.NewHandle("", "")
+		img, err := cache.GetFull(handle)
+
+		a.NotNil(err)
+		a.Nil(img)
+	})
 }
 
 func TestDefaultImageStore_GetScaled(t *testing.T) {
@@ -72,12 +88,30 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	loader := NewImageLoader()
 	cache := NewImageCache(loader)
 
-	handle := common.NewHandle("../testassets", "horizontal.jpg")
-	size := common.SizeOf(400, 400)
-	img, err := cache.GetScaled(handle, size)
+	t.Run("Valid", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "horizontal.jpg")
+		size := common.SizeOf(400, 400)
+		img, err := cache.GetScaled(handle, size)
 
-	a.Nil(err)
-	a.NotNil(img)
+		a.Nil(err)
+		a.NotNil(img)
+	})
+	t.Run("No exif", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		size := common.SizeOf(400, 400)
+		img, err := cache.GetScaled(handle, size)
+
+		a.Nil(err)
+		a.NotNil(img)
+	})
+	t.Run("Invalid", func(t *testing.T) {
+		handle := common.NewHandle("", "")
+		size := common.SizeOf(400, 400)
+		img, err := cache.GetScaled(handle, size)
+
+		a.NotNil(err)
+		a.Nil(img)
+	})
 }
 
 func TestDefaultImageStore_GetThumbnail(t *testing.T) {
@@ -86,11 +120,27 @@ func TestDefaultImageStore_GetThumbnail(t *testing.T) {
 	loader := NewImageLoader()
 	cache := NewImageCache(loader)
 
-	handle := common.NewHandle("../testassets", "horizontal.jpg")
-	img, err := cache.GetThumbnail(handle)
+	t.Run("Valid", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "horizontal.jpg")
+		img, err := cache.GetThumbnail(handle)
 
-	a.Nil(err)
-	a.NotNil(img)
+		a.Nil(err)
+		a.NotNil(img)
+	})
+	t.Run("No exif", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		img, err := cache.GetThumbnail(handle)
+
+		a.Nil(err)
+		a.NotNil(img)
+	})
+	t.Run("Invalid", func(t *testing.T) {
+		handle := common.NewHandle("", "")
+		img, err := cache.GetThumbnail(handle)
+
+		a.NotNil(err)
+		a.Nil(img)
+	})
 }
 
 func TestDefaultImageStore_GetExifData(t *testing.T) {
@@ -99,18 +149,34 @@ func TestDefaultImageStore_GetExifData(t *testing.T) {
 	loader := NewImageLoader()
 	cache := NewImageCache(loader)
 
-	handle := common.NewHandle("../testassets", "vertical.jpg")
-	exifData := cache.GetExifData(handle)
+	t.Run("Valid", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "vertical.jpg")
+		exifData := cache.GetExifData(handle)
 
-	a.Equal(gdk.PixbufRotation(270), exifData.GetRotation())
-	a.NotNil(exifData)
-	if orientationTag := exifData.Get(exif.Orientation); a.NotNil(orientationTag) {
-		orientation, _ := orientationTag.Int(0)
-		a.Equal(6, orientation)
-	}
+		a.Equal(gdk.PixbufRotation(270), exifData.GetRotation())
+		a.NotNil(exifData)
+		if orientationTag := exifData.Get(exif.Orientation); a.NotNil(orientationTag) {
+			orientation, _ := orientationTag.Int(0)
+			a.Equal(6, orientation)
+		}
 
-	if modelTag := exifData.Get(exif.Model); a.NotNil(modelTag) {
-		model, _ := modelTag.StringVal()
-		a.Equal("XZ-1", strings.TrimSpace(model))
-	}
+		if modelTag := exifData.Get(exif.Model); a.NotNil(modelTag) {
+			model, _ := modelTag.StringVal()
+			a.Equal("XZ-1", strings.TrimSpace(model))
+		}
+	})
+	t.Run("No exif", func(t *testing.T) {
+		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		exifData := cache.GetExifData(handle)
+
+		if a.NotNil(exifData) {
+			a.Equal(gdk.PixbufRotation(0), exifData.GetRotation())
+		}
+	})
+	t.Run("Invalid", func(t *testing.T) {
+		handle := common.NewHandle("", "")
+		exifData := cache.GetExifData(handle)
+
+		a.Nil(exifData)
+	})
 }
