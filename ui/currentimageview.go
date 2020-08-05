@@ -9,10 +9,14 @@ import (
 type CurrentImageView struct {
 	scrolledView *gtk.ScrolledWindow
 	//viewport     *gtk.Viewport
-	view          *gtk.Image
-	image         *common.Handle
-	details       *gtk.TextView
-	imageInstance image.Image
-	zoomLevel     uint16
-	imageChanged  bool
+	view           *gtk.Image
+	image          *common.Handle
+	details        *gtk.TextView
+	zoomInButton   *gtk.Button
+	zoomOutButton  *gtk.Button
+	zoomFitButton  *gtk.Button
+	zoomLevelLabel *gtk.Label
+	imageInstance  image.Image
+	zoomLevel      int
+	imageChanged   bool
 }

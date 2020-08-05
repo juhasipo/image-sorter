@@ -42,11 +42,15 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 
 	imageView := &ImageView{
 		currentImage: &CurrentImageView{
-			scrolledView: GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
-			view:         img,
-			details:      GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
-			zoomLevel:    100,
-			imageChanged: false,
+			scrolledView:   GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
+			view:           img,
+			details:        GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
+			zoomLevel:      findZoomIndexForValue(100),
+			imageChanged:   false,
+			zoomInButton:   GetObjectOrPanic(builder, "zoom-in-button").(*gtk.Button),
+			zoomOutButton:  GetObjectOrPanic(builder, "zoom-out-button").(*gtk.Button),
+			zoomFitButton:  GetObjectOrPanic(builder, "zoom-to-fit-button").(*gtk.Button),
+			zoomLevelLabel: GetObjectOrPanic(builder, "zoom-level-label").(*gtk.Label),
 		},
 		nextImages:           nextImagesList,
 		prevImages:           prevImagesList,
@@ -66,6 +70,10 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 			ui.sender.SendToTopicWithData(event.ImageListSizeChanged, height)
 		}
 	})
+
+	imageView.currentImage.zoomInButton.Connect("clicked", imageView.zoomIn)
+	imageView.currentImage.zoomOutButton.Connect("clicked", imageView.zoomOut)
+	imageView.currentImage.zoomFitButton.Connect("clicked", imageView.zoomToFit)
 
 	return imageView
 }
@@ -92,7 +100,7 @@ func (s *ImageView) UpdateCurrentImage() {
 	gtkImage := s.currentImage.view
 	if s.currentImage.imageInstance != nil {
 		fullSize := s.currentImage.imageInstance.Bounds()
-		zoomPercent := float64(s.currentImage.zoomLevel) / 100.0
+		zoomPercent := float64(getZoomLevelValue(s.currentImage.zoomLevel)) / 100.0
 		targetSize := common.SizeFromWindow(s.currentImage.scrolledView, zoomPercent)
 		targetWidth, targetHeight := common.ScaleToFit(
 			fullSize.Dx(), fullSize.Dy(),
@@ -176,24 +184,49 @@ func (s *ImageView) SetNoDistractionMode(value bool) {
 	s.currentImage.details.SetVisible(value)
 }
 
-func (s *ImageView) zoomIn() {
-	s.currentImage.zoomLevel += 10
-	if s.currentImage.zoomLevel >= 1000 {
-		s.currentImage.zoomLevel = 1000
+var zoomLevels = []uint16{
+	5, 10, 25, 36, 50, 75, 80, 90, 100, 110, 120, 130, 150, 175, 200, 300, 400, 500, 1000,
+}
+
+func findZoomIndexForValue(value uint16) int {
+	for i := range zoomLevels {
+		if zoomLevels[i] == value {
+			return i
+		}
 	}
+	logger.Error.Panic("Invalid initial zoom value")
+	return 0
+}
+
+func getZoomLevelValue(i int) uint16 {
+	return zoomLevels[i]
+}
+
+func getFormattedZoomLevel(i int) string {
+	return fmt.Sprintf("%d %%", getZoomLevelValue(i))
+}
+
+func (s *ImageView) zoomIn() {
+	s.currentImage.zoomLevel += 1
+	if s.currentImage.zoomLevel >= len(zoomLevels) {
+		s.currentImage.zoomLevel = len(zoomLevels) - 1
+	}
+	s.currentImage.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.currentImage.zoomLevel))
 	s.UpdateCurrentImage()
 }
 
 func (s *ImageView) zoomOut() {
-	s.currentImage.zoomLevel -= 10
-	if s.currentImage.zoomLevel < 10 {
-		s.currentImage.zoomLevel = 10
+	s.currentImage.zoomLevel -= 1
+	if s.currentImage.zoomLevel < 0 {
+		s.currentImage.zoomLevel = 0
 	}
+	s.currentImage.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.currentImage.zoomLevel))
 	s.UpdateCurrentImage()
 }
 
 func (s *ImageView) zoomToFit() {
-	s.currentImage.zoomLevel = 100
+	s.currentImage.zoomLevel = findZoomIndexForValue(100)
+	s.currentImage.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.currentImage.zoomLevel))
 	s.UpdateCurrentImage()
 }
 
