@@ -1,9 +1,10 @@
-package ui
+package component
 
 import (
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
@@ -201,4 +202,35 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	} else {
 		s.currentImagesStatusLabel.SetText(fmt.Sprintf("All pictures (%s)", progressText))
 	}
+}
+
+func (s *TopActionView) UpdateCategories(categories *category.CategoriesCommand, currentImageHandle *common.Handle) {
+	s.categoryButtons = map[string]*CategoryButton{}
+	children := s.categoriesView.GetChildren()
+	children.Foreach(func(item interface{}) {
+		s.categoriesView.Remove(item.(gtk.IWidget))
+	})
+
+	for _, entry := range categories.GetCategories() {
+		s.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
+			command := category.NewCategorizeCommand(currentImageHandle, entry, operation)
+			command.SetForceToCategory(forceToCategory)
+			command.SetStayOfSameImage(stayOnSameImage)
+			command.SetNextImageDelay(200 * time.Millisecond)
+			s.sender.SendToTopicWithData(
+				event.CategorizeImage,
+				command)
+		})
+	}
+
+	s.categoriesView.ShowAll()
+}
+
+func (s *TopActionView) GetCategoryButtons() map[string]*CategoryButton {
+	return s.categoryButtons
+}
+
+func (s *TopActionView) GetCategoryButton(id string) (*CategoryButton, bool) {
+	button, ok := s.categoryButtons[id]
+	return button, ok
 }

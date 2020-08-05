@@ -1,4 +1,4 @@
-package ui
+package component
 
 import (
 	"github.com/gotk3/gotk3/gtk"

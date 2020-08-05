@@ -1,4 +1,4 @@
-package ui
+package component
 
 // #cgo pkg-config: gdk-3.0 glib-2.0 gobject-2.0
 // #include <gdk/gdk.h>

@@ -6,12 +6,12 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"time"
 	"vincit.fi/image-sorter/category"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/ui/component"
 )
 
 type Ui struct {
@@ -25,15 +25,16 @@ type Ui struct {
 	rootPath    string
 
 	// UI components
-	progressView        *ProgressView
-	topActionView       *TopActionView
-	imageView           *ImageView
-	similarImagesView   *SimilarImagesView
-	bottomActionView    *BottomActionView
-	castModal           *CastModal
-	editCategoriesModal *CategoryModal
+	progressView        *component.ProgressView
+	topActionView       *component.TopActionView
+	imageView           *component.ImageView
+	similarImagesView   *component.SimilarImagesView
+	bottomActionView    *component.BottomActionView
+	castModal           *component.CastModal
+	editCategoriesModal *component.CategoryModal
 
 	Gui
+	component.CallbackApi
 }
 
 func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) Gui {
@@ -84,21 +85,21 @@ func (s *Ui) Init(directory string) {
 		}
 
 		// Get the object with the id of "main_window".
-		s.win = GetObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
+		s.win = component.GetObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
 		s.win.SetSizeRequest(800, 600)
 		s.win.Connect("key_press_event", s.handleKeyPress)
 
-		s.similarImagesView = NewSimilarImagesView(builder, s.sender, s.imageCache)
-		s.imageView = NewImageView(builder, s)
-		s.topActionView = NewTopActions(builder, s.sender)
-		s.bottomActionView = NewBottomActions(builder, s, s.sender)
-		s.progressView = NewProgressView(builder, s.sender)
+		s.similarImagesView = component.NewSimilarImagesView(builder, s.sender, s.imageCache)
+		s.imageView = component.NewImageView(builder, s.sender, s.imageCache)
+		s.topActionView = component.NewTopActions(builder, s.sender)
+		s.bottomActionView = component.NewBottomActions(builder, s.application.GetActiveWindow(), s, s.sender)
+		s.progressView = component.NewProgressView(builder, s.sender)
 
-		s.castModal = NewCastModal(builder, s, s.sender)
-		s.editCategoriesModal = NewCategoryModal(builder, s, s.sender)
+		s.castModal = component.NewCastModal(builder, s, s.sender)
+		s.editCategoriesModal = component.NewCategoryModal(builder, s.sender)
 
 		if directory == "" {
-			s.openFolderChooser(1)
+			s.OpenFolderChooser(1)
 		} else {
 			s.sender.SendToTopicWithData(event.DirectoryChanged, directory)
 		}
@@ -109,12 +110,7 @@ func (s *Ui) Init(directory string) {
 	})
 }
 
-func (s *Ui) findDevices() {
-	s.castModal.StartSearch(s.application.GetActiveWindow())
-	s.sender.SendToTopic(event.CastDeviceSearch)
-}
-
-func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
+func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	const bigJumpSize = 10
 	const hugeJumpSize = 100
 
@@ -129,19 +125,19 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 	altDown := modifierType&gdk.GDK_MOD1_MASK > 0
 
 	if key == gdk.KEY_F8 {
-		s.findDevices()
+		s.FindDevices()
 	} else if key == gdk.KEY_F10 {
 		s.sender.SendToTopic(event.ImageShowAll)
 	} else if key == gdk.KEY_Escape {
-		s.exitFullScreen()
+		s.ExitFullScreen()
 	} else if key == gdk.KEY_F11 || (altDown && key == gdk.KEY_Return) {
 		noDistractionMode := controlDown
 		if noDistractionMode {
-			s.enterFullScreenNoDistraction()
+			s.EnterFullScreenNoDistraction()
 		} else if s.fullscreen {
-			s.exitFullScreen()
+			s.ExitFullScreen()
 		} else {
-			s.enterFullScreen()
+			s.EnterFullScreen()
 		}
 	} else if key == gdk.KEY_F12 {
 		s.sender.SendToTopic(event.SimilarRequestSearch)
@@ -165,7 +161,7 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.sender.SendToTopic(event.ImageRequestNext)
 		}
-	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.currentImage.image); command != nil {
+	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.GetCurrentHandle()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
 			s.sender.SendToTopicWithData(event.CategoriesShowOnly, command.GetEntry())
@@ -177,66 +173,22 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			s.sender.SendToTopicWithData(event.CategorizeImage, command)
 		}
 	} else if key == gdk.KEY_plus || key == gdk.KEY_KP_Add {
-		s.imageView.zoomIn()
+		s.imageView.ZoomIn()
 	} else if key == gdk.KEY_minus || key == gdk.KEY_KP_Subtract {
-		s.imageView.zoomOut()
+		s.imageView.ZoomOut()
 	} else if key == gdk.KEY_BackSpace {
-		s.imageView.zoomToFit()
+		s.imageView.ZoomToFit()
 	} else {
 		return false
 	}
 	return true
 }
 
-func (s *Ui) enterFullScreenNoDistraction() {
-	s.win.Fullscreen()
-	s.fullscreen = true
-	s.imageView.SetNoDistractionMode(true)
-	s.topActionView.SetNoDistractionMode(true)
-	s.bottomActionView.SetNoDistractionMode(true)
-}
-
-func (s *Ui) enterFullScreen() {
-	s.win.Fullscreen()
-	s.fullscreen = true
-	s.imageView.SetNoDistractionMode(false)
-	s.topActionView.SetNoDistractionMode(false)
-	s.bottomActionView.SetNoDistractionMode(false)
-	s.bottomActionView.SetShowFullscreenButton(false)
-}
-
-func (s *Ui) exitFullScreen() {
-	s.win.Unfullscreen()
-	s.fullscreen = false
-	s.imageView.SetNoDistractionMode(false)
-	s.topActionView.SetNoDistractionMode(false)
-	s.bottomActionView.SetNoDistractionMode(false)
-	s.bottomActionView.SetShowFullscreenButton(true)
-}
-
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	s.categories = make([]*common.Category, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
-	s.topActionView.categoryButtons = map[string]*CategoryButton{}
-	children := s.topActionView.categoriesView.GetChildren()
-	children.Foreach(func(item interface{}) {
-		s.topActionView.categoriesView.Remove(item.(gtk.IWidget))
-	})
-
-	for _, entry := range categories.GetCategories() {
-		s.topActionView.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
-			command := category.NewCategorizeCommand(s.imageView.currentImage.image, entry, operation)
-			command.SetForceToCategory(forceToCategory)
-			command.SetStayOfSameImage(stayOnSameImage)
-			command.SetNextImageDelay(200 * time.Millisecond)
-			s.sender.SendToTopicWithData(
-				event.CategorizeImage,
-				command)
-		})
-	}
-
-	s.topActionView.categoriesView.ShowAll()
+	s.topActionView.UpdateCategories(categories, s.imageView.GetCurrentHandle())
 	s.sender.SendToTopic(event.ImageRequestCurrent)
 }
 
@@ -265,7 +217,7 @@ func (s *Ui) SetCurrentImage(image *common.ImageContainer, index int, total int,
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {
-	s.sender.SendToTopicWithData(event.ImageChanged, s.imageView.currentImage.image)
+	s.sender.SendToTopicWithData(event.ImageChanged, s.imageView.GetCurrentHandle())
 }
 
 func (s *Ui) Run() {
@@ -273,14 +225,14 @@ func (s *Ui) Run() {
 }
 
 func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
-	for _, button := range s.topActionView.categoryButtons {
+	for _, button := range s.topActionView.GetCategoryButtons() {
 		button.SetStatus(common.NONE)
 	}
 
 	for _, command := range commands {
 		logger.Debug.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
 
-		if button, ok := s.topActionView.categoryButtons[command.GetEntry().GetId()]; ok {
+		if button, ok := s.topActionView.GetCategoryButton(command.GetEntry().GetId()); ok {
 			button.SetStatus(command.GetOperation())
 		}
 	}
@@ -310,26 +262,10 @@ func (s *Ui) CastReady() {
 	s.sendCurrentImageChangedEvent()
 }
 func (s *Ui) CastFindDone() {
-	if len(s.castModal.devices) == 0 {
+	if len(s.castModal.GetDevices()) == 0 {
 		s.castModal.SetNoDevices()
 	}
 	s.castModal.SearchDone()
-}
-
-func (s *Ui) showEditCategoriesModal() {
-	categories := make([]*common.Category, len(s.categories))
-	copy(categories, s.categories)
-	s.editCategoriesModal.Show(s.application.GetActiveWindow(), categories)
-}
-
-func (s *Ui) openFolderChooser(numOfButtons int) {
-	folderChooser, err := createFileChooser(numOfButtons, s.application.GetActiveWindow())
-	if err != nil {
-		logger.Error.Panic("Can't open file chooser")
-	}
-	defer folderChooser.Destroy()
-
-	runAndProcessFolderChooser(folderChooser, s.sender)
 }
 
 func runAndProcessFolderChooser(folderChooser *gtk.FileChooserDialog, sender event.Sender) {
@@ -359,4 +295,51 @@ func createFileChooser(numOfButtons int, parent gtk.IWindow) (*gtk.FileChooserDi
 		err = errors.New(fmt.Sprintf("Invalid number of buttons: %d", numOfButtons))
 	}
 	return folderChooser, err
+}
+
+func (s *Ui) ShowEditCategoriesModal() {
+	categories := make([]*common.Category, len(s.categories))
+	copy(categories, s.categories)
+	s.editCategoriesModal.Show(s.application.GetActiveWindow(), categories)
+}
+
+func (s *Ui) OpenFolderChooser(numOfButtons int) {
+	folderChooser, err := createFileChooser(numOfButtons, s.application.GetActiveWindow())
+	if err != nil {
+		logger.Error.Panic("Can't open file chooser")
+	}
+	defer folderChooser.Destroy()
+
+	runAndProcessFolderChooser(folderChooser, s.sender)
+}
+
+func (s *Ui) EnterFullScreenNoDistraction() {
+	s.win.Fullscreen()
+	s.fullscreen = true
+	s.imageView.SetNoDistractionMode(true)
+	s.topActionView.SetNoDistractionMode(true)
+	s.bottomActionView.SetNoDistractionMode(true)
+}
+
+func (s *Ui) EnterFullScreen() {
+	s.win.Fullscreen()
+	s.fullscreen = true
+	s.imageView.SetNoDistractionMode(false)
+	s.topActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetShowFullscreenButton(false)
+}
+
+func (s *Ui) ExitFullScreen() {
+	s.win.Unfullscreen()
+	s.fullscreen = false
+	s.imageView.SetNoDistractionMode(false)
+	s.topActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetNoDistractionMode(false)
+	s.bottomActionView.SetShowFullscreenButton(true)
+}
+
+func (s *Ui) FindDevices() {
+	s.castModal.StartSearch(s.application.GetActiveWindow())
+	s.sender.SendToTopic(event.CastDeviceSearch)
 }

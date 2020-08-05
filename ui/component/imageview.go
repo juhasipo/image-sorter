@@ -1,4 +1,4 @@
-package ui
+package component
 
 import (
 	"github.com/gotk3/gotk3/glib"
@@ -16,23 +16,23 @@ type ImageView struct {
 	imagesListImageCount int
 }
 
-func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
+func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageStore) *ImageView {
 	nextImagesList := &ImageList{
 		layout:    GetObjectOrPanic(builder, "next-images-scrolled-view").(*gtk.ScrolledWindow),
 		component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView),
 	}
-	initializeStore(nextImagesList, VERTICAL, ui.sender)
+	initializeStore(nextImagesList, VERTICAL, sender)
 	prevImagesList := &ImageList{
 		layout:    GetObjectOrPanic(builder, "prev-images-scrolled-view").(*gtk.ScrolledWindow),
 		component: GetObjectOrPanic(builder, "prev-images").(*gtk.IconView),
 	}
-	initializeStore(prevImagesList, VERTICAL, ui.sender)
+	initializeStore(prevImagesList, VERTICAL, sender)
 
 	imageView := &ImageView{
 		currentImage:         newCurrentImageView(builder),
 		nextImages:           nextImagesList,
 		prevImages:           prevImagesList,
-		imageCache:           ui.imageCache,
+		imageCache:           imageCache,
 		imagesListImageCount: 5,
 	}
 
@@ -40,17 +40,17 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 	bufferNew, _ := gtk.TextBufferNew(tableNew)
 	imageView.currentImage.details.SetBuffer(bufferNew)
 	imageView.currentImage.scrolledView.Connect("size-allocate", func() {
-		ui.UpdateCurrentImage()
-		height := ui.imageView.nextImages.component.GetAllocatedHeight() / 80
+		imageView.UpdateCurrentImage()
+		height := imageView.nextImages.component.GetAllocatedHeight() / 80
 		if imageView.imagesListImageCount != height {
 			imageView.imagesListImageCount = height
-			ui.sender.SendToTopicWithData(event.ImageListSizeChanged, height)
+			sender.SendToTopicWithData(event.ImageListSizeChanged, height)
 		}
 	})
 
-	imageView.currentImage.zoomInButton.Connect("clicked", imageView.zoomIn)
-	imageView.currentImage.zoomOutButton.Connect("clicked", imageView.zoomOut)
-	imageView.currentImage.zoomFitButton.Connect("clicked", imageView.zoomToFit)
+	imageView.currentImage.zoomInButton.Connect("clicked", imageView.ZoomIn)
+	imageView.currentImage.zoomOutButton.Connect("clicked", imageView.ZoomOut)
+	imageView.currentImage.zoomFitButton.Connect("clicked", imageView.ZoomToFit)
 
 	return imageView
 }
@@ -96,17 +96,21 @@ func (s *ImageView) SetNoDistractionMode(value bool) {
 	s.currentImage.details.SetVisible(value)
 }
 
-func (s *ImageView) zoomIn() {
+func (s *ImageView) ZoomIn() {
 	s.currentImage.zoomIn()
 	s.UpdateCurrentImage()
 }
 
-func (s *ImageView) zoomOut() {
+func (s *ImageView) ZoomOut() {
 	s.currentImage.zoomOut()
 	s.UpdateCurrentImage()
 }
 
-func (s *ImageView) zoomToFit() {
+func (s *ImageView) ZoomToFit() {
 	s.currentImage.zoomToFit()
 	s.UpdateCurrentImage()
+}
+
+func (s *ImageView) GetCurrentHandle() *common.Handle {
+	return s.currentImage.image
 }

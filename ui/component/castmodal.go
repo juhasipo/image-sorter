@@ -1,4 +1,4 @@
-package ui
+package component
 
 import (
 	"github.com/gotk3/gotk3/glib"
@@ -17,7 +17,7 @@ type CastModal struct {
 	showBackgroundCB *gtk.CheckButton
 }
 
-func NewCastModal(builder *gtk.Builder, ui *Ui, sender event.Sender) *CastModal {
+func NewCastModal(builder *gtk.Builder, ui CallbackApi, sender event.Sender) *CastModal {
 	modalDialog := GetObjectOrPanic(builder, "cast-dialog").(*gtk.Dialog)
 	deviceList := GetObjectOrPanic(builder, "cast-device-list").(*gtk.TreeView)
 
@@ -27,7 +27,7 @@ func NewCastModal(builder *gtk.Builder, ui *Ui, sender event.Sender) *CastModal 
 	})
 
 	refreshButton := GetObjectOrPanic(builder, "cast-dialog-refresh-button").(*gtk.Button)
-	refreshButton.Connect("clicked", ui.findDevices)
+	refreshButton.Connect("clicked", ui.FindDevices)
 
 	castModal := &CastModal{
 		modal:            modalDialog,
@@ -75,6 +75,10 @@ func (s *CastModal) StartSearch(parent gtk.IWindow) {
 
 func (s *CastModal) SearchDone() {
 	s.refreshButton.SetSensitive(true)
+}
+
+func (s *CastModal) GetDevices() []string {
+	return s.devices
 }
 
 func createDeviceList(castModal *CastModal, modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {

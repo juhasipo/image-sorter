@@ -1,4 +1,4 @@
-package ui
+package component
 
 import (
 	"github.com/gotk3/gotk3/glib"
@@ -35,7 +35,7 @@ type CategoryModal struct {
 	addCancelButton    *gtk.Button
 }
 
-func NewCategoryModal(builder *gtk.Builder, ui *Ui, sender event.Sender) *CategoryModal {
+func NewCategoryModal(builder *gtk.Builder, sender event.Sender) *CategoryModal {
 	modalDialog := GetObjectOrPanic(builder, "category-dialog").(*gtk.Dialog)
 	modalDialog.SetSizeRequest(400, 300)
 	deviceList := GetObjectOrPanic(builder, "category-list").(*gtk.TreeView)

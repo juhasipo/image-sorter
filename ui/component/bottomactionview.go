@@ -1,4 +1,4 @@
-package ui
+package component
 
 import (
 	"github.com/gotk3/gotk3/gdk"
@@ -20,7 +20,7 @@ type BottomActionView struct {
 	showAllImagesButton  *gtk.Button
 }
 
-func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *BottomActionView {
+func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks CallbackApi, sender event.Sender) *BottomActionView {
 	bottomActionView := &BottomActionView{
 		layout:               GetObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
 		persistButton:        GetObjectOrPanic(builder, "persist-button").(*gtk.Button),
@@ -37,7 +37,7 @@ func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 
 	bottomActionView.persistButton.Connect("clicked", func() {
 		confirm := GetObjectOrPanic(builder, "confirm-categorization-dialog").(*gtk.MessageDialog)
-		confirm.SetTransientFor(ui.application.GetActiveWindow())
+		confirm.SetTransientFor(appWindow)
 		confirm.SetTitle("Apply categories?")
 
 		confirmChild := GetObjectOrPanic(builder, "confirm-categorization-dialog-content").(*gtk.Box)
@@ -90,12 +90,12 @@ func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 	bottomActionView.findSimilarButton.Connect("clicked", func() {
 		sender.SendToTopic(event.SimilarRequestSearch)
 	})
-	bottomActionView.findDevicesButton.Connect("clicked", ui.findDevices)
+	bottomActionView.findDevicesButton.Connect("clicked", callbacks.FindDevices)
 
-	bottomActionView.editCategoriesButton.Connect("clicked", ui.showEditCategoriesModal)
+	bottomActionView.editCategoriesButton.Connect("clicked", callbacks.ShowEditCategoriesModal)
 
 	bottomActionView.openFolderButton.Connect("clicked", func() {
-		ui.openFolderChooser(2)
+		callbacks.OpenFolderChooser(2)
 	})
 	bottomActionView.fullscreenButton.Connect("button-release-event", func(button *gtk.Button, e *gdk.Event) bool {
 		keyEvent := gdk.EventButtonNewFromEvent(e)
@@ -105,9 +105,9 @@ func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 
 		controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
 		if controlDown {
-			ui.enterFullScreenNoDistraction()
+			callbacks.EnterFullScreenNoDistraction()
 		} else {
-			ui.enterFullScreen()
+			callbacks.EnterFullScreen()
 		}
 		return true
 	})
@@ -120,19 +120,19 @@ func NewBottomActions(builder *gtk.Builder, ui *Ui, sender event.Sender) *Bottom
 			state := gdk.ModifierType(keyEvent.State())
 			controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
 			if controlDown {
-				ui.enterFullScreenNoDistraction()
+				callbacks.EnterFullScreenNoDistraction()
 			} else {
-				ui.enterFullScreen()
+				callbacks.EnterFullScreen()
 			}
 			return true
 		}
 		return false
 	})
 	bottomActionView.noDistractionsButton.Connect("clicked", func() {
-		ui.enterFullScreenNoDistraction()
+		callbacks.EnterFullScreenNoDistraction()
 	})
 	bottomActionView.exitFullscreenButton.Connect("clicked", func() {
-		ui.exitFullScreen()
+		callbacks.ExitFullScreen()
 	})
 
 	bottomActionView.showAllImagesButton.Connect("clicked", func() {
