@@ -33,29 +33,38 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 	}
 	initializeStore(prevImagesList, VERTICAL, ui.sender)
 
+	img, _ := gtk.ImageNew()
+	img.SetHExpand(true)
+	img.SetVExpand(true)
+	img.SetHAlign(gtk.ALIGN_BASELINE)
+	img.SetVAlign(gtk.ALIGN_BASELINE)
+	img.SetName("current-image")
+
 	imageView := &ImageView{
 		currentImage: &CurrentImageView{
 			scrolledView: GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
-			viewport:     GetObjectOrPanic(builder, "current-image-view").(*gtk.Viewport),
-			view:         GetObjectOrPanic(builder, "current-image").(*gtk.Image),
+			view:         img,
 			details:      GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
+			zoomLevel:    100,
+			imageChanged: false,
 		},
 		nextImages:           nextImagesList,
 		prevImages:           prevImagesList,
 		imageCache:           ui.imageCache,
 		imagesListImageCount: 5,
 	}
+	imageView.currentImage.scrolledView.Add(img)
+	imageView.currentImage.scrolledView.ShowAll()
 	tableNew, _ := gtk.TextTagTableNew()
 	bufferNew, _ := gtk.TextBufferNew(tableNew)
 	imageView.currentImage.details.SetBuffer(bufferNew)
-	imageView.currentImage.viewport.Connect("size-allocate", func() {
+	imageView.currentImage.scrolledView.Connect("size-allocate", func() {
 		ui.UpdateCurrentImage()
 		height := ui.imageView.nextImages.component.GetAllocatedHeight() / 80
 		if imageView.imagesListImageCount != height {
 			imageView.imagesListImageCount = height
 			ui.sender.SendToTopicWithData(event.ImageListSizeChanged, height)
 		}
-
 	})
 
 	return imageView
@@ -80,33 +89,55 @@ func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
 }
 
 func (s *ImageView) UpdateCurrentImage() {
-	if s.currentImage.img != nil {
-		fullSize := s.currentImage.img.Bounds()
-		s.currentImage.scrolledView.Remove(s.currentImage.viewport)
-		targetSize := common.SizeFromWindow(s.currentImage.scrolledView)
+	gtkImage := s.currentImage.view
+	if s.currentImage.imageInstance != nil {
+		fullSize := s.currentImage.imageInstance.Bounds()
+		zoomPercent := float64(s.currentImage.zoomLevel) / 100.0
+		targetSize := common.SizeFromWindow(s.currentImage.scrolledView, zoomPercent)
 		targetWidth, targetHeight := common.ScaleToFit(
 			fullSize.Dx(), fullSize.Dy(),
 			targetSize.GetWidth(), targetSize.GetHeight())
-		scaled, err := asPixbuf(s.currentImage.img).ScaleSimple(targetWidth, targetHeight, gdk.INTERP_BILINEAR)
-		if err != nil {
-			logger.Error.Print("Could not load Pixbuf", err)
-		}
-		s.currentImage.view.SetFromPixbuf(scaled)
 
-		// Hack to prevent image from being center of the scrolled
-		// window after minimize. First remove and then add again
-		s.currentImage.scrolledView.Add(s.currentImage.viewport)
+		pixBufSize := getPixbufSize(gtkImage.GetPixbuf())
+		if s.currentImage.imageChanged ||
+			(targetWidth != pixBufSize.GetWidth() &&
+				targetHeight != pixBufSize.GetHeight()) {
+			s.currentImage.imageChanged = false
+			//s.currentImage.scrolledView.Remove(gtkImage)
+			scaled, err := asPixbuf(s.currentImage.imageInstance).ScaleSimple(targetWidth, targetHeight, gdk.INTERP_TILES)
+			if err != nil {
+				logger.Error.Print("Could not load Pixbuf", err)
+			}
+
+			logger.Info.Print("Render ", targetHeight, "x", targetWidth)
+			gtkImage.SetFromPixbuf(scaled)
+
+			// Hack to prevent image from being center of the scrolled
+			// window after minimize. First remove and then add again
+			//s.currentImage.scrolledView.Add(gtkImage)
+			//s.currentImage.scrolledView.GetVAdjustment().SetValue(0.0)
+			//s.currentImage.scrolledView.GetHAdjustment().SetValue(0.0)
+		}
 	} else {
-		s.currentImage.view.SetFromPixbuf(nil)
+		gtkImage.SetFromPixbuf(nil)
+	}
+}
+
+func getPixbufSize(pixbuf *gdk.Pixbuf) common.Size {
+	if pixbuf != nil {
+		return common.SizeOf(pixbuf.GetWidth(), pixbuf.GetHeight())
+	} else {
+		return common.SizeOf(0, 0)
 	}
 }
 
 const showExifData = false
 
 func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifData *common.ExifData) {
+	s.currentImage.imageChanged = true
 	handle := imageContainer.GetHandle()
 	img := imageContainer.GetImage()
-	s.currentImage.img = img
+	s.currentImage.imageInstance = img
 
 	if img != nil {
 		size := img.Bounds()
@@ -143,6 +174,27 @@ func (s *ImageView) SetNoDistractionMode(value bool) {
 	s.nextImages.layout.SetVisible(value)
 	s.prevImages.layout.SetVisible(value)
 	s.currentImage.details.SetVisible(value)
+}
+
+func (s *ImageView) zoomIn() {
+	s.currentImage.zoomLevel += 10
+	if s.currentImage.zoomLevel >= 1000 {
+		s.currentImage.zoomLevel = 1000
+	}
+	s.UpdateCurrentImage()
+}
+
+func (s *ImageView) zoomOut() {
+	s.currentImage.zoomLevel -= 10
+	if s.currentImage.zoomLevel < 10 {
+		s.currentImage.zoomLevel = 10
+	}
+	s.UpdateCurrentImage()
+}
+
+func (s *ImageView) zoomToFit() {
+	s.currentImage.zoomLevel = 100
+	s.UpdateCurrentImage()
 }
 
 func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {

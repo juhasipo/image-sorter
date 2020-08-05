@@ -5,6 +5,14 @@ GTK3 application for sorting images to different folders
 
 # Shortcuts
 
+## Zoom
+
+|Key | Description |
+|----|-------------|
+| +  | Zoom in
+| -  | Zoom out
+| Backspace | Zoom to fit
+
 ## Navigation
 
 |Key | Description |

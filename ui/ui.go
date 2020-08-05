@@ -176,6 +176,12 @@ func (s *Ui) handleKeyPress(windows *gtk.ApplicationWindow, e *gdk.Event) bool {
 			command.SetForceToCategory(forceToCategory)
 			s.sender.SendToTopicWithData(event.CategorizeImage, command)
 		}
+	} else if key == gdk.KEY_plus || key == gdk.KEY_KP_Add {
+		s.imageView.zoomIn()
+	} else if key == gdk.KEY_minus || key == gdk.KEY_KP_Subtract {
+		s.imageView.zoomOut()
+	} else if key == gdk.KEY_BackSpace {
+		s.imageView.zoomToFit()
 	} else {
 		return false
 	}
