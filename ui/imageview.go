@@ -6,32 +6,12 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"github.com/rwcarlsen/goexif/exif"
-	"github.com/rwcarlsen/goexif/tiff"
 	"image"
-	"sort"
-	"strings"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/logger"
 )
-
-type CurrentImageView struct {
-	scrolledView *gtk.ScrolledWindow
-	viewport     *gtk.Viewport
-	view         *gtk.Image
-	image        *common.Handle
-	details      *gtk.TextView
-	img          image.Image
-}
-
-type ImageList struct {
-	layout    *gtk.ScrolledWindow
-	component *gtk.IconView
-	model     *gtk.ListStore
-	images    []*common.ImageContainer
-}
 
 type ImageView struct {
 	currentImage         *CurrentImageView
@@ -81,6 +61,24 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 	return imageView
 }
 
+func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
+	const requestedSize = 102
+	if layout == HORIZONTAL {
+		imageList.component.SetSizeRequest(-1, requestedSize)
+	} else {
+		imageList.component.SetSizeRequest(requestedSize, -1)
+	}
+
+	imageList.component.Connect("item-activated", func(view *gtk.IconView, path *gtk.TreePath) {
+		index := path.GetIndices()[0]
+		handle := imageList.images[index].GetHandle()
+		sender.SendToTopicWithData(event.ImageRequest, handle)
+	})
+	imageList.model, _ = gtk.ListStoreNew(PixbufGetType(), glib.TYPE_STRING)
+	imageList.component.SetModel(imageList.model)
+	imageList.component.SetPixbufColumn(0)
+}
+
 func (s *ImageView) UpdateCurrentImage() {
 	if s.currentImage.img != nil {
 		fullSize := s.currentImage.img.Bounds()
@@ -103,32 +101,6 @@ func (s *ImageView) UpdateCurrentImage() {
 	}
 }
 
-type W struct {
-	stringBuffer *bytes.Buffer
-	values       []string
-
-	exif.Walker
-}
-
-func (s *W) Walk(name exif.FieldName, tag *tiff.Tag) error {
-	tagValue := strings.Trim(tag.String(), " \t\"")
-
-	if tagValue != "" {
-		s.values = append(s.values, fmt.Sprintf("%s: %s", string(name), tagValue))
-	}
-	return nil
-}
-
-func (s *W) String() string {
-	sort.Strings(s.values)
-	b := bytes.NewBuffer([]byte{})
-	for _, value := range s.values {
-		b.WriteString(value)
-		b.WriteString("\n")
-	}
-	return b.String()
-}
-
 const showExifData = false
 
 func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifData *common.ExifData) {
@@ -143,7 +115,7 @@ func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifD
 		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy()))
 
 		if showExifData {
-			w := &W{stringBuffer: stringBuffer}
+			w := &ExifWalker{stringBuffer: stringBuffer}
 			exifData.Walk(w)
 			stringBuffer.WriteString("\n")
 			stringBuffer.WriteString(w.String())
@@ -171,40 +143,6 @@ func (s *ImageView) SetNoDistractionMode(value bool) {
 	s.nextImages.layout.SetVisible(value)
 	s.prevImages.layout.SetVisible(value)
 	s.currentImage.details.SetVisible(value)
-}
-
-func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {
-	s.model.Clear()
-	for _, img := range images {
-		iter := s.model.Append()
-		if img != nil {
-			thumbnail := img.GetImage()
-			s.model.SetValue(iter, 0, asPixbuf(thumbnail))
-			s.model.SetValue(iter, 1, img.GetHandle().GetId())
-		} else {
-			s.model.SetValue(iter, 0, nil)
-			s.model.SetValue(iter, 1, "")
-		}
-	}
-	s.images = images
-}
-
-func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
-	const requestedSize = 102
-	if layout == HORIZONTAL {
-		imageList.component.SetSizeRequest(-1, requestedSize)
-	} else {
-		imageList.component.SetSizeRequest(requestedSize, -1)
-	}
-
-	imageList.component.Connect("item-activated", func(view *gtk.IconView, path *gtk.TreePath) {
-		index := path.GetIndices()[0]
-		handle := imageList.images[index].GetHandle()
-		sender.SendToTopicWithData(event.ImageRequest, handle)
-	})
-	imageList.model, _ = gtk.ListStoreNew(PixbufGetType(), glib.TYPE_STRING)
-	imageList.component.SetModel(imageList.model)
-	imageList.component.SetPixbufColumn(0)
 }
 
 func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {
