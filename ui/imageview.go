@@ -1,16 +1,11 @@
 package ui
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"image"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/logger"
 )
 
 type ImageView struct {
@@ -33,32 +28,14 @@ func NewImageView(builder *gtk.Builder, ui *Ui) *ImageView {
 	}
 	initializeStore(prevImagesList, VERTICAL, ui.sender)
 
-	img, _ := gtk.ImageNew()
-	img.SetHExpand(true)
-	img.SetVExpand(true)
-	img.SetHAlign(gtk.ALIGN_BASELINE)
-	img.SetVAlign(gtk.ALIGN_BASELINE)
-	img.SetName("current-image")
-
 	imageView := &ImageView{
-		currentImage: &CurrentImageView{
-			scrolledView:   GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
-			view:           img,
-			details:        GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
-			zoomLevel:      findZoomIndexForValue(100),
-			imageChanged:   false,
-			zoomInButton:   GetObjectOrPanic(builder, "zoom-in-button").(*gtk.Button),
-			zoomOutButton:  GetObjectOrPanic(builder, "zoom-out-button").(*gtk.Button),
-			zoomFitButton:  GetObjectOrPanic(builder, "zoom-to-fit-button").(*gtk.Button),
-			zoomLevelLabel: GetObjectOrPanic(builder, "zoom-level-label").(*gtk.Label),
-		},
+		currentImage:         newCurrentImageView(builder),
 		nextImages:           nextImagesList,
 		prevImages:           prevImagesList,
 		imageCache:           ui.imageCache,
 		imagesListImageCount: 5,
 	}
-	imageView.currentImage.scrolledView.Add(img)
-	imageView.currentImage.scrolledView.ShowAll()
+
 	tableNew, _ := gtk.TextTagTableNew()
 	bufferNew, _ := gtk.TextBufferNew(tableNew)
 	imageView.currentImage.details.SetBuffer(bufferNew)
@@ -97,76 +74,11 @@ func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
 }
 
 func (s *ImageView) UpdateCurrentImage() {
-	gtkImage := s.currentImage.view
-	if s.currentImage.imageInstance != nil {
-		fullSize := s.currentImage.imageInstance.Bounds()
-		zoomPercent := float64(getZoomLevelValue(s.currentImage.zoomLevel)) / 100.0
-		targetSize := common.SizeFromWindow(s.currentImage.scrolledView, zoomPercent)
-		targetWidth, targetHeight := common.ScaleToFit(
-			fullSize.Dx(), fullSize.Dy(),
-			targetSize.GetWidth(), targetSize.GetHeight())
-
-		pixBufSize := getPixbufSize(gtkImage.GetPixbuf())
-		if s.currentImage.imageChanged ||
-			(targetWidth != pixBufSize.GetWidth() &&
-				targetHeight != pixBufSize.GetHeight()) {
-			s.currentImage.imageChanged = false
-			//s.currentImage.scrolledView.Remove(gtkImage)
-			scaled, err := asPixbuf(s.currentImage.imageInstance).ScaleSimple(targetWidth, targetHeight, gdk.INTERP_TILES)
-			if err != nil {
-				logger.Error.Print("Could not load Pixbuf", err)
-			}
-
-			logger.Info.Print("Render ", targetHeight, "x", targetWidth)
-			gtkImage.SetFromPixbuf(scaled)
-
-			// Hack to prevent image from being center of the scrolled
-			// window after minimize. First remove and then add again
-			//s.currentImage.scrolledView.Add(gtkImage)
-			//s.currentImage.scrolledView.GetVAdjustment().SetValue(0.0)
-			//s.currentImage.scrolledView.GetHAdjustment().SetValue(0.0)
-		}
-	} else {
-		gtkImage.SetFromPixbuf(nil)
-	}
+	s.currentImage.UpdateCurrentImage()
 }
-
-func getPixbufSize(pixbuf *gdk.Pixbuf) common.Size {
-	if pixbuf != nil {
-		return common.SizeOf(pixbuf.GetWidth(), pixbuf.GetHeight())
-	} else {
-		return common.SizeOf(0, 0)
-	}
-}
-
-const showExifData = false
 
 func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifData *common.ExifData) {
-	s.currentImage.imageChanged = true
-	handle := imageContainer.GetHandle()
-	img := imageContainer.GetImage()
-	s.currentImage.imageInstance = img
-
-	if img != nil {
-		size := img.Bounds()
-		buffer, _ := s.currentImage.details.GetBuffer()
-		stringBuffer := bytes.NewBuffer([]byte{})
-		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy()))
-
-		if showExifData {
-			w := &ExifWalker{stringBuffer: stringBuffer}
-			exifData.Walk(w)
-			stringBuffer.WriteString("\n")
-			stringBuffer.WriteString(w.String())
-		}
-
-		buffer.SetText(stringBuffer.String())
-		s.currentImage.image = handle
-	} else {
-		s.currentImage.image = nil
-		buffer, _ := s.currentImage.details.GetBuffer()
-		buffer.SetText("No image")
-	}
+	s.currentImage.SetCurrentImage(imageContainer, exifData)
 }
 
 func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer) {
@@ -184,68 +96,17 @@ func (s *ImageView) SetNoDistractionMode(value bool) {
 	s.currentImage.details.SetVisible(value)
 }
 
-var zoomLevels = []uint16{
-	5, 10, 25, 36, 50, 75, 80, 90, 100, 110, 120, 130, 150, 175, 200, 300, 400, 500, 1000,
-}
-
-func findZoomIndexForValue(value uint16) int {
-	for i := range zoomLevels {
-		if zoomLevels[i] == value {
-			return i
-		}
-	}
-	logger.Error.Panic("Invalid initial zoom value")
-	return 0
-}
-
-func getZoomLevelValue(i int) uint16 {
-	return zoomLevels[i]
-}
-
-func getFormattedZoomLevel(i int) string {
-	return fmt.Sprintf("%d %%", getZoomLevelValue(i))
-}
-
 func (s *ImageView) zoomIn() {
-	s.currentImage.zoomLevel += 1
-	if s.currentImage.zoomLevel >= len(zoomLevels) {
-		s.currentImage.zoomLevel = len(zoomLevels) - 1
-	}
-	s.currentImage.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.currentImage.zoomLevel))
+	s.currentImage.zoomIn()
 	s.UpdateCurrentImage()
 }
 
 func (s *ImageView) zoomOut() {
-	s.currentImage.zoomLevel -= 1
-	if s.currentImage.zoomLevel < 0 {
-		s.currentImage.zoomLevel = 0
-	}
-	s.currentImage.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.currentImage.zoomLevel))
+	s.currentImage.zoomOut()
 	s.UpdateCurrentImage()
 }
 
 func (s *ImageView) zoomToFit() {
-	s.currentImage.zoomLevel = findZoomIndexForValue(100)
-	s.currentImage.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.currentImage.zoomLevel))
+	s.currentImage.zoomToFit()
 	s.UpdateCurrentImage()
-}
-
-func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {
-	if img, ok := cachedImage.(*image.NRGBA); ok {
-
-		size := img.Bounds()
-		const bitsPerSample = 8
-		const hasAlpha = true
-		pb, err := PixbufNewFromData(
-			img.Pix,
-			gdk.COLORSPACE_RGB, hasAlpha,
-			bitsPerSample,
-			size.Dx(), size.Dy(),
-			img.Stride)
-		if err != nil {
-			return nil
-		}
-		return pb
-	}
-	return nil
 }
