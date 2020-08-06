@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/gotk3/gotk3/gtk"
+	"image"
 )
 
 type Size struct {
@@ -29,6 +30,13 @@ func SizeFromWindow(widget *gtk.ScrolledWindow, zoom float64) Size {
 	return Size{
 		width:  applyZoom(widget.GetAllocatedWidth(), zoom),
 		height: applyZoom(widget.GetAllocatedHeight(), zoom),
+	}
+}
+
+func SizeFromRectangle(rectangle image.Rectangle, zoom float64) Size {
+	return Size{
+		width:  applyZoom(rectangle.Dx(), zoom),
+		height: applyZoom(rectangle.Dy(), zoom),
 	}
 }
 

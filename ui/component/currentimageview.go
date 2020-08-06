@@ -11,21 +11,22 @@ import (
 )
 
 var zoomLevels = []uint16{
-	5, 10, 25, 36, 50, 75, 80, 90, 100, 110, 120, 130, 150, 175, 200, 300, 400, 500, 1000,
+	5, 10, 25, 33, 50, 75, 80, 90, 100, 110, 120, 130, 150, 175, 200, 300, 400, 500, 1000,
 }
 
 type CurrentImageView struct {
-	scrolledView   *gtk.ScrolledWindow
-	view           *gtk.Image
-	image          *common.Handle
-	details        *gtk.TextView
-	zoomInButton   *gtk.Button
-	zoomOutButton  *gtk.Button
-	zoomFitButton  *gtk.Button
-	zoomLevelLabel *gtk.Label
-	imageInstance  image.Image
-	zoomIndex      int
-	imageChanged   bool
+	scrolledView     *gtk.ScrolledWindow
+	view             *gtk.Image
+	image            *common.Handle
+	details          *gtk.TextView
+	zoomInButton     *gtk.Button
+	zoomOutButton    *gtk.Button
+	zoomFitButton    *gtk.Button
+	zoomLevelLabel   *gtk.Label
+	imageInstance    image.Image
+	zoomIndex        int
+	zoomToFixEnabled bool
+	imageChanged     bool
 }
 
 func newCurrentImageView(builder *gtk.Builder) *CurrentImageView {
@@ -37,15 +38,16 @@ func newCurrentImageView(builder *gtk.Builder) *CurrentImageView {
 	img.SetName("current-image")
 
 	view := &CurrentImageView{
-		scrolledView:   GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
-		view:           img,
-		details:        GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
-		zoomIndex:      findZoomIndexForValue(100),
-		imageChanged:   false,
-		zoomInButton:   GetObjectOrPanic(builder, "zoom-in-button").(*gtk.Button),
-		zoomOutButton:  GetObjectOrPanic(builder, "zoom-out-button").(*gtk.Button),
-		zoomFitButton:  GetObjectOrPanic(builder, "zoom-to-fit-button").(*gtk.Button),
-		zoomLevelLabel: GetObjectOrPanic(builder, "zoom-level-label").(*gtk.Label),
+		scrolledView:     GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
+		view:             img,
+		details:          GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
+		zoomIndex:        findZoomIndexForValue(100),
+		zoomToFixEnabled: true,
+		imageChanged:     false,
+		zoomInButton:     GetObjectOrPanic(builder, "zoom-in-button").(*gtk.Button),
+		zoomOutButton:    GetObjectOrPanic(builder, "zoom-out-button").(*gtk.Button),
+		zoomFitButton:    GetObjectOrPanic(builder, "zoom-to-fit-button").(*gtk.Button),
+		zoomLevelLabel:   GetObjectOrPanic(builder, "zoom-level-label").(*gtk.Label),
 	}
 
 	view.scrolledView.Add(img)
@@ -55,42 +57,62 @@ func newCurrentImageView(builder *gtk.Builder) *CurrentImageView {
 }
 
 func findZoomIndexForValue(value uint16) int {
+	if value < zoomLevels[0] {
+		return 0
+	}
+
 	for i := range zoomLevels {
-		if zoomLevels[i] == value {
-			return i
+		if zoomLevels[i] > value {
+			return i - 1
 		}
 	}
-	logger.Error.Panic("Invalid initial zoom value")
-	return 0
+
+	return len(zoomLevels) - 1
 }
 
 func getZoomLevelValue(i int) uint16 {
 	return zoomLevels[i]
 }
 
-func getFormattedZoomLevel(i int) string {
-	return fmt.Sprintf("%d %%", getZoomLevelValue(i))
+func (s *CurrentImageView) getFormattedZoomLevel() string {
+	if s.zoomToFixEnabled {
+		return fmt.Sprintf("Fit (%d %%)", s.getCalculatedZoomLevel())
+	} else {
+		return fmt.Sprintf("%d %%", getZoomLevelValue(s.zoomIndex))
+	}
 }
 
 func (s *CurrentImageView) zoomIn() {
+	if s.zoomToFixEnabled {
+		s.zoomIndex = findZoomIndexForValue(s.getCalculatedZoomLevel())
+	}
+
+	s.zoomToFixEnabled = false
 	s.zoomIndex += 1
 	if s.zoomIndex >= len(zoomLevels) {
 		s.zoomIndex = len(zoomLevels) - 1
 	}
-	s.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.zoomIndex))
+}
+
+func (s *CurrentImageView) updateZoomLevelLabel() {
+	s.zoomLevelLabel.SetLabel(s.getFormattedZoomLevel())
 }
 
 func (s *CurrentImageView) zoomOut() {
+	if s.zoomToFixEnabled {
+		s.zoomIndex = findZoomIndexForValue(s.getCalculatedZoomLevel())
+	}
+
+	s.zoomToFixEnabled = false
 	s.zoomIndex -= 1
 	if s.zoomIndex < 0 {
 		s.zoomIndex = 0
 	}
-	s.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.zoomIndex))
 }
 
 func (s *CurrentImageView) zoomToFit() {
 	s.zoomIndex = findZoomIndexForValue(100)
-	s.zoomLevelLabel.SetLabel(getFormattedZoomLevel(s.zoomIndex))
+	s.zoomToFixEnabled = true
 }
 
 func (s *CurrentImageView) getCurrentZoomLevel() float64 {
@@ -102,7 +124,12 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 	if s.imageInstance != nil {
 		fullSize := s.imageInstance.Bounds()
 		zoomPercent := s.getCurrentZoomLevel() / 100.0
-		targetSize := common.SizeFromWindow(s.scrolledView, zoomPercent)
+		var targetSize common.Size
+		if s.zoomToFixEnabled {
+			targetSize = common.SizeFromWindow(s.scrolledView, zoomPercent)
+		} else {
+			targetSize = common.SizeFromRectangle(fullSize, zoomPercent)
+		}
 		targetWidth, targetHeight := common.ScaleToFit(
 			fullSize.Dx(), fullSize.Dy(),
 			targetSize.GetWidth(), targetSize.GetHeight())
@@ -121,6 +148,7 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 	} else {
 		gtkImage.SetFromPixbuf(nil)
 	}
+	s.updateZoomLevelLabel()
 }
 
 const showExifData = false
@@ -150,6 +178,17 @@ func (s *CurrentImageView) SetCurrentImage(imageContainer *common.ImageContainer
 		s.image = nil
 		buffer, _ := s.details.GetBuffer()
 		buffer.SetText("No image")
+	}
+}
+
+func (s *CurrentImageView) getCalculatedZoomLevel() uint16 {
+	if s.imageInstance != nil && s.view.GetPixbuf() != nil {
+		currentSize := s.imageInstance.Bounds()
+		width := s.view.GetPixbuf().GetWidth()
+
+		return uint16(float64(width) / float64(currentSize.Dx()) * 100.0)
+	} else {
+		return 100
 	}
 }
 
