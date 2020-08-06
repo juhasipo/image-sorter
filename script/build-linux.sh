@@ -1,3 +1,4 @@
 #!/bin/bash
 
-go build -v -i -o image-sorter main.go
+mkdir -p out/linux
+go build -v -i -o out/linux ./...
