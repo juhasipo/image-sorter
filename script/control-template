@@ -1,0 +1,10 @@
+Package: image-sorter
+Version: 0.1-1
+Section: base
+Priority: optional
+Architecture: amd64
+Depends: libgtk-3-0 (>= 3.22.0)
+Maintainer: Juha Siponen <juha.siponen@vincit.fi>
+Description: Image Sorter
+ Simple application for sorting images to different
+ folders. Also supports casting to Chromecast.
