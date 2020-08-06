@@ -17,6 +17,7 @@ RESOURCE_DEST_DIR="${DEPLOY_DIR}/usr/local/bin"
 
 # Create directory structure for deployment
 echo "Create directories..."
+mkdir -p ${DEPLOY_BASE_DIR}/out
 mkdir -p ${DEPLOY_DIR}/usr/local/bin
 mkdir -p ${DEPLOY_DIR}/DEBIAN
 
@@ -31,3 +32,6 @@ cp ${RESOURCE_SRC_DIR}/style.css ${RESOURCE_DEST_DIR}
 echo "Create DEB..."
 cd ${DEPLOY_BASE_DIR}
 dpkg-deb --build image-sorter_${VERSION}
+
+echo "Move to artifacts dir"
+mv *.deb artifacts/
