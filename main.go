@@ -14,7 +14,7 @@ import (
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/logger"
-	"vincit.fi/image-sorter/ui"
+	gtkUi "vincit.fi/image-sorter/ui/gtk"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 	secretValue := resolveSecret(*secret)
 	castManager := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)
 
-	gui := ui.Init(rootPath, broker, imageCache)
+	gui := gtkUi.Init(rootPath, broker, imageCache)
 
 	// Startup
 	broker.Subscribe(event.UiReady, func() {

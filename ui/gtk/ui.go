@@ -1,4 +1,4 @@
-package ui
+package gtk
 
 import (
 	"errors"
@@ -11,7 +11,8 @@ import (
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/logger"
-	"vincit.fi/image-sorter/ui/component"
+	"vincit.fi/image-sorter/ui"
+	"vincit.fi/image-sorter/ui/gtk/component"
 )
 
 type Ui struct {
@@ -33,11 +34,11 @@ type Ui struct {
 	castModal           *component.CastModal
 	editCategoriesModal *component.CategoryModal
 
-	Gui
+	ui.Gui
 	component.CallbackApi
 }
 
-func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) Gui {
+func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "org.gtk.example"
