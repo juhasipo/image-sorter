@@ -41,7 +41,7 @@ type Ui struct {
 func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
-	const appID = "org.gtk.example"
+	const appID = "fi.vincit.imagesorter"
 	application, err := gtk.ApplicationNew(appID, glib.APPLICATION_FLAGS_NONE)
 
 	// Check to make sure no errors when creating Gtk Application
