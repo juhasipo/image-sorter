@@ -49,15 +49,15 @@ func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageStor
 		logger.Error.Fatal("Could not create application.", err)
 	}
 
-	ui := Ui{
+	gui := Ui{
 		application: application,
 		imageCache:  imageCache,
 		sender:      broker,
 		rootPath:    rootPath,
 	}
 
-	ui.Init(rootPath)
-	return &ui
+	gui.Init(rootPath)
+	return &gui
 }
 
 func (s *Ui) Init(directory string) {
