@@ -8,6 +8,7 @@ import (
 
 type Gui interface {
 	SetCurrentImage(*common.ImageContainer, int, int, string, *common.ExifData)
+	AddGridImage(*common.ImageContainer, int, int)
 	SetImages(event.Topic, []*common.ImageContainer)
 	UpdateCategories(categories *category.CategoriesCommand)
 	SetImageCategory(command []*category.CategorizeCommand)

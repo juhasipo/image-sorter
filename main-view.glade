@@ -973,6 +973,29 @@
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
             <child>
+              <object class="GtkScrolledWindow" id="image-grid-scrolled-view">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkIconView" id="image-grid-view">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="margin">6</property>
+                    <property name="selection_mode">multiple</property>
+                    <property name="item_orientation">horizontal</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkScrolledWindow" id="current-image-window">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -982,11 +1005,11 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="zoom-view">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -1069,7 +1092,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>

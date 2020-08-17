@@ -105,6 +105,8 @@ func (s *Ui) Init(directory string) {
 			s.sender.SendToTopicWithData(event.DirectoryChanged, directory)
 		}
 
+		s.showListView()
+
 		// Show the Window and all of its components.
 		s.win.Show()
 		s.application.AddWindow(s.win)
@@ -125,7 +127,11 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	controlDown := modifierType&gdk.GDK_CONTROL_MASK > 0
 	altDown := modifierType&gdk.GDK_MOD1_MASK > 0
 
-	if key == gdk.KEY_F8 {
+	if key == gdk.KEY_F1 {
+		s.showListView()
+	} else if key == gdk.KEY_F2 {
+		s.showGridView()
+	} else if key == gdk.KEY_F8 {
 		s.FindDevices()
 	} else if key == gdk.KEY_F10 {
 		s.sender.SendToTopic(event.ImageShowAll)
@@ -162,16 +168,18 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.sender.SendToTopic(event.ImageRequestNext)
 		}
-	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.GetCurrentHandle()); command != nil {
+	} else if commands := s.topActionView.FindActionForShortcut(key, s.imageView.GetCurrentHandles()); commands != nil {
 		switchToCategory := altDown
-		if switchToCategory {
-			s.sender.SendToTopicWithData(event.CategoriesShowOnly, command.GetEntry())
-		} else {
-			stayOnSameImage := shiftDown
-			forceToCategory := controlDown
-			command.SetStayOfSameImage(stayOnSameImage)
-			command.SetForceToCategory(forceToCategory)
-			s.sender.SendToTopicWithData(event.CategorizeImage, command)
+		for _, command := range commands {
+			if switchToCategory {
+				s.sender.SendToTopicWithData(event.CategoriesShowOnly, command.GetEntry())
+			} else {
+				stayOnSameImage := shiftDown
+				forceToCategory := controlDown
+				command.SetStayOfSameImage(stayOnSameImage)
+				command.SetForceToCategory(forceToCategory)
+				s.sender.SendToTopicWithData(event.CategorizeImage, command)
+			}
 		}
 	} else if key == gdk.KEY_plus || key == gdk.KEY_KP_Add {
 		s.imageView.ZoomIn()
@@ -185,12 +193,26 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	return true
 }
 
+func (s *Ui) showGridView() {
+	s.imageView.ShowGridView()
+	s.topActionView.HideNavigation()
+}
+
+func (s *Ui) showListView() {
+	s.imageView.ShowListView()
+	s.topActionView.ShowNavigation()
+}
+
 func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
 	s.categories = make([]*common.Category, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
-	s.topActionView.UpdateCategories(categories, s.imageView.GetCurrentHandle())
-	s.sender.SendToTopic(event.ImageRequestCurrent)
+	if s.imageView.GetViewMode() == component.ListView {
+		s.topActionView.UpdateCategories(categories, func() []*common.Handle {
+			return s.imageView.GetCurrentHandles()
+		})
+		s.sender.SendToTopic(event.ImageRequestCurrent)
+	}
 }
 
 func (s *Ui) UpdateCurrentImage() {
@@ -217,8 +239,15 @@ func (s *Ui) SetCurrentImage(image *common.ImageContainer, index int, total int,
 	s.imageCache.Purge()
 }
 
+func (s *Ui) AddGridImage(image *common.ImageContainer, index int, total int) {
+	s.imageView.AddImageToGrid(image, index, total)
+	s.imageCache.Purge()
+}
+
 func (s *Ui) sendCurrentImageChangedEvent() {
-	s.sender.SendToTopicWithData(event.ImageChanged, s.imageView.GetCurrentHandle())
+	if s.imageView.GetViewMode() == component.ListView {
+		s.sender.SendToTopicWithData(event.ImageChanged, s.imageView.GetCurrentHandles()[0])
+	}
 }
 
 func (s *Ui) Run() {

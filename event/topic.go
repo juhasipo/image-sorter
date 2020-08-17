@@ -17,10 +17,12 @@ const (
 	ImageRequestPrevOffset Topic = "image-request-prev-offset"
 	ImageRequestCurrent    Topic = "image-request-current"
 	ImageRequestSimilar    Topic = "image-request-similar"
+	ImageRequestGrid       Topic = "image-request-grid"
 	ImageShowOnly          Topic = "image-show-only"
 	ImageShowAll           Topic = "image-show-all"
 	ImageChanged           Topic = "image-changed"
 	ImageListUpdated       Topic = "image-list-updated"
+	ImageAddGridImage      Topic = "image-add-grid-image"
 	ImageCurrentUpdated    Topic = "image-current-updated"
 	ImageListSizeChanged   Topic = "image-list-size-changed"
 

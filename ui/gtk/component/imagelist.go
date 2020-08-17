@@ -27,3 +27,11 @@ func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {
 	}
 	s.images = images
 }
+
+func (s *ImageList) Hide() {
+	s.layout.Hide()
+}
+
+func (s *ImageList) Show() {
+	s.layout.Show()
+}

@@ -8,8 +8,9 @@ import (
 )
 
 type Manager struct {
-	sender  event.Sender
-	manager *internalManager
+	sender            event.Sender
+	manager           *internalManager
+	sendingGridImages bool
 
 	Library
 }
@@ -131,8 +132,24 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 	s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestNext, s.manager.getNextImages())
 	s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestPrev, s.manager.getPrevImages())
 
+	go s.sendImagesToGrid()
+
 	if s.manager.shouldSendSimilarImages() {
 		s.sendSimilarImages(currentImage.GetHandle())
+	}
+}
+
+func (s *Manager) sendImagesToGrid() {
+	if !s.sendingGridImages {
+		s.sendingGridImages = true
+		allImages := s.manager.getImageHandles()
+		for i, handle := range allImages {
+			container := s.manager.getImageContainer(handle)
+			if container != nil {
+				s.sender.SendToTopicWithData(event.ImageAddGridImage, container, i, len(allImages))
+			}
+		}
+		s.sendingGridImages = false
 	}
 }
 

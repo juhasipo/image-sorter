@@ -69,15 +69,26 @@ func (v *TopActionView) SetNoDistractionMode(value bool) {
 	v.prevButton.SetVisible(value)
 }
 
-func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
+func (v *TopActionView) FindActionForShortcut(key uint, handles []*common.Handle) []*category.CategorizeCommand {
 	for _, button := range v.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			return category.NewCategorizeCommand(
-				handle, button.entry, button.operation.NextOperation())
+			commands := []*category.CategorizeCommand{}
+			var operation = button.operation.NextOperation()
+			if len(handles) > 1 {
+				// When selecting multiple, always add category
+				// this makes the UX more consistent when the operation for
+				// all images is the same
+				operation = common.MOVE
+			}
+			for _, handle := range handles {
+				commands = append(commands, category.NewCategorizeCommand(
+					handle, button.entry, operation))
+			}
+			return commands
 		}
 	}
 	return nil
@@ -204,7 +215,9 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	}
 }
 
-func (s *TopActionView) UpdateCategories(categories *category.CategoriesCommand, currentImageHandle *common.Handle) {
+type GetCategoriesCallback func() []*common.Handle
+
+func (s *TopActionView) UpdateCategories(categories *category.CategoriesCommand, getHandles GetCategoriesCallback) {
 	s.categoryButtons = map[string]*CategoryButton{}
 	children := s.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
@@ -213,13 +226,16 @@ func (s *TopActionView) UpdateCategories(categories *category.CategoriesCommand,
 
 	for _, entry := range categories.GetCategories() {
 		s.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
-			command := category.NewCategorizeCommand(currentImageHandle, entry, operation)
-			command.SetForceToCategory(forceToCategory)
-			command.SetStayOfSameImage(stayOnSameImage)
-			command.SetNextImageDelay(200 * time.Millisecond)
-			s.sender.SendToTopicWithData(
-				event.CategorizeImage,
-				command)
+			handles := getHandles()
+			for _, currentImageHandle := range handles {
+				command := category.NewCategorizeCommand(currentImageHandle, entry, operation)
+				command.SetForceToCategory(forceToCategory)
+				command.SetStayOfSameImage(stayOnSameImage)
+				command.SetNextImageDelay(200 * time.Millisecond)
+				s.sender.SendToTopicWithData(
+					event.CategorizeImage,
+					command)
+			}
 		})
 	}
 
@@ -233,4 +249,14 @@ func (s *TopActionView) GetCategoryButtons() map[string]*CategoryButton {
 func (s *TopActionView) GetCategoryButton(id string) (*CategoryButton, bool) {
 	button, ok := s.categoryButtons[id]
 	return button, ok
+}
+
+func (s *TopActionView) HideNavigation() {
+	s.nextButton.SetVisible(false)
+	s.prevButton.SetVisible(false)
+}
+
+func (s *TopActionView) ShowNavigation() {
+	s.nextButton.SetVisible(true)
+	s.prevButton.SetVisible(true)
 }

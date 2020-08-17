@@ -8,12 +8,21 @@ import (
 	"vincit.fi/image-sorter/imageloader"
 )
 
+type ViewMode int
+
+const (
+	ListView ViewMode = iota
+	GridView
+)
+
 type ImageView struct {
 	currentImage         *CurrentImageView
 	nextImages           *ImageList
 	prevImages           *ImageList
 	imageCache           imageloader.ImageStore
+	imageGrid            *ImageGrid
 	imagesListImageCount int
+	viewMode             ViewMode
 }
 
 func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageStore) *ImageView {
@@ -28,12 +37,20 @@ func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache imageloa
 	}
 	initializeStore(prevImagesList, VERTICAL, sender)
 
+	grid := &ImageGrid{
+		layout:    GetObjectOrPanic(builder, "image-grid-scrolled-view").(*gtk.ScrolledWindow),
+		component: GetObjectOrPanic(builder, "image-grid-view").(*gtk.IconView),
+	}
+	grid.initializeStore(sender)
+
 	imageView := &ImageView{
 		currentImage:         newCurrentImageView(builder),
 		nextImages:           nextImagesList,
 		prevImages:           prevImagesList,
 		imageCache:           imageCache,
+		imageGrid:            grid,
 		imagesListImageCount: 5,
+		viewMode:             ListView,
 	}
 
 	tableNew, _ := gtk.TextTagTableNew()
@@ -89,6 +106,14 @@ func (s *ImageView) AddImagesToPrevStore(images []*common.ImageContainer) {
 	s.prevImages.addImagesToStore(images)
 }
 
+func (s *ImageView) AddImageToGrid(images *common.ImageContainer, index int, total int) {
+	if index == 0 {
+		s.imageGrid.clearImageStore()
+	}
+
+	s.imageGrid.addImagesToStore(images)
+}
+
 func (s *ImageView) SetNoDistractionMode(value bool) {
 	value = !value
 	s.nextImages.layout.SetVisible(value)
@@ -111,6 +136,30 @@ func (s *ImageView) ZoomToFit() {
 	s.UpdateCurrentImage()
 }
 
-func (s *ImageView) GetCurrentHandle() *common.Handle {
-	return s.currentImage.image
+func (s *ImageView) GetCurrentHandles() []*common.Handle {
+	if s.viewMode == ListView {
+		return []*common.Handle{s.currentImage.image}
+	} else {
+		return s.imageGrid.getSelected()
+	}
+}
+
+func (s *ImageView) ShowGridView() {
+	s.currentImage.Hide()
+	s.nextImages.Hide()
+	s.prevImages.Hide()
+	s.imageGrid.Show()
+	s.viewMode = GridView
+}
+
+func (s *ImageView) ShowListView() {
+	s.currentImage.Show()
+	s.nextImages.Show()
+	s.prevImages.Show()
+	s.imageGrid.Hide()
+	s.viewMode = ListView
+}
+
+func (s *ImageView) GetViewMode() ViewMode {
+	return s.viewMode
 }

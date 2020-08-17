@@ -348,3 +348,16 @@ func (s *internalManager) getSimilarImages(handle *common.Handle) ([]*common.Ima
 		return []*common.ImageContainer{}, false
 	}
 }
+
+func (s *internalManager) getImageHandles() []*common.Handle {
+	return s.imageList
+}
+
+func (s *internalManager) getImageContainer(handle *common.Handle) *common.ImageContainer {
+	if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
+		logger.Error.Print("Error while loading thumbnail", err)
+		return nil
+	} else {
+		return common.NewImageContainer(handle, thumbnail)
+	}
+}

@@ -19,6 +19,7 @@ type CurrentImageView struct {
 	view             *gtk.Image
 	image            *common.Handle
 	details          *gtk.TextView
+	zoomView         *gtk.Box
 	zoomInButton     *gtk.Button
 	zoomOutButton    *gtk.Button
 	zoomFitButton    *gtk.Button
@@ -41,6 +42,7 @@ func newCurrentImageView(builder *gtk.Builder) *CurrentImageView {
 		scrolledView:     GetObjectOrPanic(builder, "current-image-window").(*gtk.ScrolledWindow),
 		view:             img,
 		details:          GetObjectOrPanic(builder, "image-details-view").(*gtk.TextView),
+		zoomView:         GetObjectOrPanic(builder, "zoom-view").(*gtk.Box),
 		zoomIndex:        findZoomIndexForValue(100),
 		zoomToFixEnabled: true,
 		imageChanged:     false,
@@ -190,6 +192,18 @@ func (s *CurrentImageView) getCalculatedZoomLevel() uint16 {
 	} else {
 		return 100
 	}
+}
+
+func (s *CurrentImageView) Hide() {
+	s.zoomView.Hide()
+	s.scrolledView.Hide()
+	s.details.Hide()
+}
+
+func (s *CurrentImageView) Show() {
+	s.zoomView.Show()
+	s.scrolledView.Show()
+	s.details.Show()
 }
 
 func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {

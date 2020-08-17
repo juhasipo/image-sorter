@@ -80,6 +80,7 @@ func main() {
 	// Library -> UI
 	broker.ConnectToGui(event.ImageListUpdated, gui.SetImages)
 	broker.ConnectToGui(event.ImageCurrentUpdated, gui.SetCurrentImage)
+	broker.ConnectToGui(event.ImageAddGridImage, gui.AddGridImage)
 	broker.ConnectToGui(event.ProcessStatusUpdated, gui.UpdateProgress)
 
 	// UI -> Image Categorization
