@@ -4,6 +4,7 @@ MSYS_DIR="/c/msys64/mingw64"
 DEPLOY_DIR_WIN="./deploy/windows"
 DEPLOY_DIR_WIN_BIN="${DEPLOY_DIR_WIN}/bin"
 DEPLOY_DIR_WIN_LIB="${DEPLOY_DIR_WIN}/lib"
+DEPLOY_DIR_WIN_ASSETS="${DEPLOY_DIR_WIN_BIN}/assets"
 
 # Copy DLLs for Windows
 mkdir -p "${DEPLOY_DIR_WIN_BIN}"
@@ -38,3 +39,7 @@ cp ${MSYS_DIR}/lib/gio/modules/*.dll "${DEPLOY_DIR_WIN_LIB}/gio/modules"
 # General assets
 cp style.css ${DEPLOY_DIR_WIN_BIN}/style.css
 cp main-view.glade ${DEPLOY_DIR_WIN_BIN}/main-view.glade
+
+# Icon
+mkdir -p "${DEPLOY_DIR_WIN_ASSETS}"
+cp assets/icon-*.png ${DEPLOY_DIR_WIN_ASSETS}

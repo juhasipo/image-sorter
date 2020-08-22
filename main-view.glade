@@ -767,6 +767,7 @@
   <object class="GtkApplicationWindow" id="window">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Image Sorter</property>
+    <property name="icon">assets/icon-32x32.png</property>
     <property name="has_resize_grip">True</property>
     <child>
       <placeholder/>
