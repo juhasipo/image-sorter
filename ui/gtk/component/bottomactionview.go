@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/common"
@@ -18,6 +19,7 @@ type BottomActionView struct {
 	noDistractionsButton *gtk.Button
 	exitFullscreenButton *gtk.Button
 	showAllImagesButton  *gtk.Button
+	aboutButton          *gtk.Button
 }
 
 func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks CallbackApi, sender event.Sender) *BottomActionView {
@@ -32,6 +34,7 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 		noDistractionsButton: GetObjectOrPanic(builder, "no-distractions-button").(*gtk.Button),
 		exitFullscreenButton: GetObjectOrPanic(builder, "exit-fullscreen-button").(*gtk.Button),
 		showAllImagesButton:  GetObjectOrPanic(builder, "show-all-images-button").(*gtk.Button),
+		aboutButton:          GetObjectOrPanic(builder, "about-button").(*gtk.Button),
 	}
 	bottomActionView.exitFullscreenButton.SetVisible(false)
 
@@ -137,6 +140,23 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 
 	bottomActionView.showAllImagesButton.Connect("clicked", func() {
 		sender.SendToTopic(event.ImageShowAll)
+	})
+
+	bottomActionView.aboutButton.Connect("clicked", func() {
+		logo, _ := gdk.PixbufNewFromFile("assets/icon-128x128.png")
+
+		aboutDialog, _ := gtk.AboutDialogNew()
+		aboutDialog.SetLogo(logo)
+		_ = aboutDialog.SetIconFromFile("assets/icon-32x32.png")
+		aboutDialog.SetAuthors([]string{common.Author})
+		aboutDialog.SetName(common.AppName)
+		aboutDialog.SetProgramName(common.AppName)
+		aboutDialog.SetWebsite(common.WebSiteUrl)
+		aboutDialog.SetVersion(common.Version)
+		aboutDialog.SetCopyright(fmt.Sprintf("Copyright ©️ %s %s", common.Author, common.CopyrightYear))
+
+		aboutDialog.Run()
+		aboutDialog.Destroy()
 	})
 
 	return bottomActionView
