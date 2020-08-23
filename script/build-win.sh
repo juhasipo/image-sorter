@@ -4,8 +4,8 @@
 VERSION="$(cat VERSION)-$(git rev-parse --short HEAD)"
 sed -i "s/__IMAGE_SORTER_VERSION__/${VERSION}/g" common/constants.go
 
-mkdir -p out/linux
-go build -v -i -o out/linux ./...
+mkdir -p out/windows
+go build -v -i -o out/windows ./...
 
 # Revert the version back to normal
 sed -i "s/${VERSION}/__IMAGE_SORTER_VERSION__/g" common/constants.go
