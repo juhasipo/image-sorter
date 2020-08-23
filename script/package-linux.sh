@@ -2,7 +2,7 @@
 
 set -e
 APP_NAME="image-sorter"
-VERSION="0.1-1"
+VERSION="$(cat VERSION)-$(git rev-parse --short HEAD)"
 
 # Source dirs
 BIN_SRC_DIR="out/linux"
