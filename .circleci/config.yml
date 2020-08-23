@@ -15,7 +15,7 @@ jobs:
       - run: gotestsum --junitfile unit-tests.xml
       - store_test_results:
           path: .
-#      - run: ./script/build-linux.sh
-#      - run: ./script/package-linux.sh
-#      - store_artifacts:
-#          path: deploy/linux/artifacts
+      - run: ./script/build-linux.sh
+      - run: ./script/package-linux.sh
+      - store_artifacts:
+          path: deploy/linux/artifacts
