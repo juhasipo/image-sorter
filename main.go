@@ -1,10 +1,8 @@
 package main
 
 import (
-	"flag"
 	"github.com/google/uuid"
 	"runtime"
-	"strings"
 	"time"
 	"vincit.fi/image-sorter/caster"
 	"vincit.fi/image-sorter/category"
@@ -15,34 +13,29 @@ import (
 	"vincit.fi/image-sorter/library"
 	"vincit.fi/image-sorter/logger"
 	gtkUi "vincit.fi/image-sorter/ui/gtk"
+	"vincit.fi/image-sorter/util"
 )
 
+const EventBusQueueSize = 1000
+
 func main() {
-	categories := flag.String("categories", "", "Comma separated categories. Each category in format <name>:<shortcut> e.g. Good:G")
-	httpPort := flag.Int("httpPort", 8080, "HTTP Server port for Chrome Cast")
-	secret := flag.String("secret", "", "Override default random secret for casting")
-	alwaysStartHttpServer := flag.Bool("alwaysStartHttpServer", false, "Always start HTTP server. Not only when casting.")
-	logLevel := flag.String("logLevel", "INFO", "Log level: ERROR, WARN, INFO, DEBUG, Trace")
+	params := util.GetAppParams()
 
-	flag.Parse()
-	rootPath := flag.Arg(0)
+	logger.Initialize(logger.StringToLogLevel(params.LogLevel))
 
-	logger.Initialize(logger.StringToLogLevel(*logLevel))
+	broker := event.InitBus(EventBusQueueSize)
 
-	broker := event.InitBus(1000)
-
-	categoryArr := strings.Split(*categories, ",")
-	categoryManager := category.New(broker, categoryArr)
+	categoryManager := category.New(broker, params.Categories)
 	imageLoader := imageloader.NewImageLoader()
 	imageCache := imageloader.NewImageCache(imageLoader)
 	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
-	categorizationManager := imagecategory.NewManager(broker, imageLibrary, filterManager, imageLoader)
+	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader)
 
-	secretValue := resolveSecret(*secret)
-	castManager := caster.InitCaster(*httpPort, *alwaysStartHttpServer, secretValue, broker, imageCache)
+	secretValue := resolveSecret(params.Secret)
+	castManager := caster.NewCaster(params.HttpPort, params.AlwaysStartHttpServer, secretValue, broker, imageCache)
 
-	gui := gtkUi.Init(rootPath, broker, imageCache)
+	gui := gtkUi.NewUi(params.RootPath, broker, imageCache)
 
 	// Startup
 	broker.Subscribe(event.UiReady, func() {
@@ -55,8 +48,8 @@ func main() {
 			imageCache.Initialize(imageLibrary.GetHandles()[:5])
 		}
 
-		categorizationManager.InitializeForDirectory(directory)
-		categorizationManager.LoadCategorization(imageLibrary, categoryManager)
+		imageCategoryManager.InitializeForDirectory(directory)
+		imageCategoryManager.LoadCategorization(imageLibrary, categoryManager)
 
 		categoryManager.RequestCategories()
 	})
@@ -83,10 +76,10 @@ func main() {
 	broker.ConnectToGui(event.ProcessStatusUpdated, gui.UpdateProgress)
 
 	// UI -> Image Categorization
-	broker.Subscribe(event.CategorizeImage, categorizationManager.SetCategory)
-	broker.Subscribe(event.CategoryPersistAll, categorizationManager.PersistImageCategories)
-	broker.Subscribe(event.ImageChanged, categorizationManager.RequestCategory)
-	broker.Subscribe(event.CategoriesShowOnly, categorizationManager.ShowOnlyCategoryImages)
+	broker.Subscribe(event.CategorizeImage, imageCategoryManager.SetCategory)
+	broker.Subscribe(event.CategoryPersistAll, imageCategoryManager.PersistImageCategories)
+	broker.Subscribe(event.ImageChanged, imageCategoryManager.RequestCategory)
+	broker.Subscribe(event.CategoriesShowOnly, imageCategoryManager.ShowOnlyCategoryImages)
 
 	// Image Categorization -> UI
 	broker.ConnectToGui(event.CategoryImageUpdate, gui.SetImageCategory)
@@ -113,7 +106,7 @@ func main() {
 	gui.Run()
 
 	categoryManager.Close()
-	categorizationManager.Close()
+	imageCategoryManager.Close()
 	imageLibrary.Close()
 	castManager.Close()
 }

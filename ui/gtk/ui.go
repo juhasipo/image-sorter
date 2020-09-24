@@ -38,7 +38,7 @@ type Ui struct {
 	component.CallbackApi
 }
 
-func Init(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
+func NewUi(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "fi.vincit.imagesorter"

@@ -61,7 +61,7 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func InitCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache imageloader.ImageStore) *Caster {
+func NewCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache imageloader.ImageStore) *Caster {
 	c := &Caster{
 		port:                  port,
 		alwaysStartHttpServer: alwaysStartHttpServer,

@@ -28,7 +28,7 @@ type Manager struct {
 	ImageCategoryManager
 }
 
-func NewManager(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader imageloader.ImageLoader) ImageCategoryManager {
+func NewImageCategoryManager(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader imageloader.ImageLoader) ImageCategoryManager {
 	var manager = Manager{
 		imageCategory: map[string]map[string]*category.CategorizedImage{},
 		sender:        sender,

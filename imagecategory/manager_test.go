@@ -64,7 +64,7 @@ func TestCategorizeOne(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	handle := common.NewHandle("/tmp", "foo")
@@ -87,7 +87,7 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	cat2 := common.NewCategory("Cat 2", "c2", "D")
@@ -114,7 +114,7 @@ func TestCategorizeOneRemoveCategory(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	cat2 := common.NewCategory("Cat 2", "c2", "D")
@@ -139,7 +139,7 @@ func TestCategorizeOneRemoveAll(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	cat2 := common.NewCategory("Cat 2", "c2", "D")
@@ -166,7 +166,7 @@ func TestCategorizeForceToCategory(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	cat2 := common.NewCategory("Cat 2", "c2", "D")
@@ -196,7 +196,7 @@ func TestCategorizeForceToExistingCategory(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	cat2 := common.NewCategory("Cat 2", "c2", "D")
@@ -222,7 +222,7 @@ func TestCategorizeForceToCategory_None(t *testing.T) {
 	filterManager := filter.NewFilterManager()
 	imageLoader := new(MockImageLoader)
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	cat1 := common.NewCategory("Cat 1", "c1", "C")
 	cat2 := common.NewCategory("Cat 2", "c2", "D")
@@ -249,7 +249,7 @@ func TestResolveFileOperations(t *testing.T) {
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 	handle := common.NewHandle("filepath", "filename")
 	lib.AddHandles([]*common.Handle{handle})
 
@@ -277,7 +277,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
 		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
@@ -302,7 +302,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
 		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
@@ -328,7 +328,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
 		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
@@ -354,7 +354,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	lib := library.NewLibrary(sender, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 
-	sut := NewManager(sender, lib, filterManager, imageLoader)
+	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader)
 
 	var imageCategories = map[string]*category.CategorizedImage{
 		"cat1": category.NewCategorizedImage(common.NewCategory("cat1", "cat_1", ""), common.MOVE),
