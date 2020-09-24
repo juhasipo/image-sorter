@@ -33,7 +33,12 @@ func main() {
 	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader)
 
 	secretValue := resolveSecret(params.Secret)
-	castManager := caster.NewCaster(params.HttpPort, params.AlwaysStartHttpServer, secretValue, broker, imageCache)
+	casterInstance := caster.NewCaster(params.HttpPort, params.AlwaysStartHttpServer, secretValue, broker, imageCache)
+
+	defer categoryManager.Close()
+	defer imageCategoryManager.Close()
+	defer imageLibrary.Close()
+	defer casterInstance.Close()
 
 	gui := gtkUi.NewUi(params.RootPath, broker, imageCache)
 
@@ -85,9 +90,9 @@ func main() {
 	broker.ConnectToGui(event.CategoryImageUpdate, gui.SetImageCategory)
 
 	// UI -> Caster
-	broker.Subscribe(event.CastDeviceSearch, castManager.FindDevices)
-	broker.Subscribe(event.CastDeviceSelect, castManager.SelectDevice)
-	broker.Subscribe(event.ImageChanged, castManager.CastImage)
+	broker.Subscribe(event.CastDeviceSearch, casterInstance.FindDevices)
+	broker.Subscribe(event.CastDeviceSelect, casterInstance.SelectDevice)
+	broker.Subscribe(event.ImageChanged, casterInstance.CastImage)
 
 	// Caster -> UI
 	broker.ConnectToGui(event.CastDeviceFound, gui.DeviceFound)
@@ -104,11 +109,6 @@ func main() {
 	StartBackgroundGC()
 
 	gui.Run()
-
-	categoryManager.Close()
-	imageCategoryManager.Close()
-	imageLibrary.Close()
-	castManager.Close()
 }
 
 func resolveSecret(secret string) string {
