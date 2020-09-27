@@ -13,6 +13,7 @@ import (
 	"vincit.fi/image-sorter/logger"
 	"vincit.fi/image-sorter/ui"
 	"vincit.fi/image-sorter/ui/gtk/component"
+	"vincit.fi/image-sorter/util"
 )
 
 type Ui struct {
@@ -38,7 +39,7 @@ type Ui struct {
 	component.CallbackApi
 }
 
-func NewUi(rootPath string, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
+func NewUi(params *util.Params, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "fi.vincit.imagesorter"
@@ -53,10 +54,10 @@ func NewUi(rootPath string, broker event.Sender, imageCache imageloader.ImageSto
 		application: application,
 		imageCache:  imageCache,
 		sender:      broker,
-		rootPath:    rootPath,
+		rootPath:    params.GetRootPath(),
 	}
 
-	gui.Init(rootPath)
+	gui.Init(params.GetRootPath())
 	return &gui
 }
 

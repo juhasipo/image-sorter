@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/google/uuid"
 	"runtime"
 	"time"
 	"vincit.fi/image-sorter/caster"
@@ -19,28 +18,27 @@ import (
 const EventBusQueueSize = 1000
 
 func main() {
-	params := util.GetAppParams()
+	params := util.ParseParams()
 
-	logger.Initialize(logger.StringToLogLevel(params.LogLevel))
+	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
 
 	broker := event.InitBus(EventBusQueueSize)
 
-	categoryManager := category.New(broker, params.Categories)
+	categoryManager := category.New(params, broker)
 	imageLoader := imageloader.NewImageLoader()
 	imageCache := imageloader.NewImageCache(imageLoader)
 	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader)
 	filterManager := filter.NewFilterManager()
 	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader)
 
-	secretValue := resolveSecret(params.Secret)
-	casterInstance := caster.NewCaster(params.HttpPort, params.AlwaysStartHttpServer, secretValue, broker, imageCache)
+	casterInstance := caster.NewCaster(params, broker, imageCache)
 
 	defer categoryManager.Close()
 	defer imageCategoryManager.Close()
 	defer imageLibrary.Close()
 	defer casterInstance.Close()
 
-	gui := gtkUi.NewUi(params.RootPath, broker, imageCache)
+	gui := gtkUi.NewUi(params, broker, imageCache)
 
 	// Startup
 	broker.Subscribe(event.UiReady, func() {
@@ -109,19 +107,6 @@ func main() {
 	StartBackgroundGC()
 
 	gui.Run()
-}
-
-func resolveSecret(secret string) string {
-	if secret == "" {
-		if randomSecret, err := uuid.NewRandom(); err != nil {
-			logger.Error.Panic("Could not initialize secret for casting", err)
-			return ""
-		} else {
-			return randomSecret.String()
-		}
-	} else {
-		return secret
-	}
 }
 
 func StartBackgroundGC() {

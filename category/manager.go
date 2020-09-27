@@ -11,6 +11,7 @@ import (
 	"vincit.fi/image-sorter/constants"
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/util"
 )
 
 type Manager struct {
@@ -38,10 +39,10 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(sender event.Sender, categories []string) CategoryManager {
+func New(params *util.Params, sender event.Sender) CategoryManager {
 	manager := Manager{
 		sender:                sender,
-		commandLineCategories: categories,
+		commandLineCategories: params.GetCategories(),
 	}
 	return &manager
 }

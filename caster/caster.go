@@ -26,6 +26,7 @@ import (
 	"vincit.fi/image-sorter/event"
 	"vincit.fi/image-sorter/imageloader"
 	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/util"
 )
 
 const (
@@ -61,11 +62,11 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func NewCaster(port int, alwaysStartHttpServer bool, secret string, sender event.Sender, imageCache imageloader.ImageStore) *Caster {
+func NewCaster(params *util.Params, sender event.Sender, imageCache imageloader.ImageStore) *Caster {
 	c := &Caster{
-		port:                  port,
-		alwaysStartHttpServer: alwaysStartHttpServer,
-		secret:                secret,
+		port:                  params.GetHttpPort(),
+		alwaysStartHttpServer: params.GetAlwaysStartHttpServer(),
+		secret:                resolveSecret(params.GetSecret()),
 		sender:                sender,
 		imageCache:            imageCache,
 		showBackground:        true,
@@ -74,11 +75,24 @@ func NewCaster(port int, alwaysStartHttpServer bool, secret string, sender event
 
 	c.imageQueueBroker.Subscribe(cast_image_event, c.castImageFromQueue)
 
-	if alwaysStartHttpServer {
-		c.StartServer(port)
+	if params.GetAlwaysStartHttpServer() {
+		c.StartServer(params.GetHttpPort())
 	}
 
 	return c
+}
+
+func resolveSecret(secret string) string {
+	if secret == "" {
+		if randomSecret, err := uuid.NewRandom(); err != nil {
+			logger.Error.Panic("Could not initialize secret for casting", err)
+			return ""
+		} else {
+			return randomSecret.String()
+		}
+	} else {
+		return secret
+	}
 }
 
 func (s *Caster) StartServer(port int) {

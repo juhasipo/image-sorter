@@ -6,15 +6,15 @@ import (
 )
 
 type Params struct {
-	Categories            []string
-	HttpPort              int
-	Secret                string
-	AlwaysStartHttpServer bool
-	LogLevel              string
-	RootPath              string
+	categories            []string
+	httpPort              int
+	secret                string
+	alwaysStartHttpServer bool
+	logLevel              string
+	rootPath              string
 }
 
-func GetAppParams() *Params {
+func ParseParams() *Params {
 	categories := flag.String("categories", "", "Comma separated categories. Each category in format <name>:<shortcut> e.g. Good:G")
 	categoryArr := strings.Split(*categories, ",")
 	httpPort := flag.Int("httpPort", 8080, "HTTP Server port for Chrome Cast")
@@ -26,11 +26,35 @@ func GetAppParams() *Params {
 	rootPath := flag.Arg(0)
 
 	return &Params{
-		Categories:            categoryArr,
-		HttpPort:              *httpPort,
-		Secret:                *secret,
-		AlwaysStartHttpServer: *alwaysStartHttpServer,
-		LogLevel:              *logLevel,
-		RootPath:              rootPath,
+		categories:            categoryArr,
+		httpPort:              *httpPort,
+		secret:                *secret,
+		alwaysStartHttpServer: *alwaysStartHttpServer,
+		logLevel:              *logLevel,
+		rootPath:              rootPath,
 	}
+}
+
+func (s *Params) GetCategories() []string {
+	return s.categories
+}
+
+func (s *Params) GetHttpPort() int {
+	return s.httpPort
+}
+
+func (s *Params) GetSecret() string {
+	return s.secret
+}
+
+func (s *Params) GetAlwaysStartHttpServer() bool {
+	return s.alwaysStartHttpServer
+}
+
+func (s *Params) GetLogLevel() string {
+	return s.logLevel
+}
+
+func (s *Params) GetRootPath() string {
+	return s.rootPath
 }
