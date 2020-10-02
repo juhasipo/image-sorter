@@ -3,20 +3,20 @@ package component
 import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/common/event"
 )
 
 type ImageView struct {
 	currentImage         *CurrentImageView
 	nextImages           *ImageList
 	prevImages           *ImageList
-	imageCache           imageloader.ImageStore
+	imageCache           api.ImageStore
 	imagesListImageCount int
 }
 
-func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageStore) *ImageView {
+func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache api.ImageStore) *ImageView {
 	nextImagesList := &ImageList{
 		layout:    GetObjectOrPanic(builder, "next-images-scrolled-view").(*gtk.ScrolledWindow),
 		component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView),

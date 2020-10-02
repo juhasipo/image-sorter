@@ -5,7 +5,7 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/common/event"
 )
 
 type BottomActionView struct {

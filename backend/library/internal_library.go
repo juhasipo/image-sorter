@@ -4,13 +4,12 @@ import (
 	"runtime"
 	"sort"
 	"time"
-	"vincit.fi/image-sorter/category"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 	"vincit.fi/image-sorter/duplo"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/logger"
-	"vincit.fi/image-sorter/util"
 )
 
 var (
@@ -29,16 +28,16 @@ type internalManager struct {
 	imageHash                   *duplo.Store
 	shouldSendSimilar           bool
 	shouldGenerateSimilarHashed bool
-	categoryManager             *category.Manager
+	categoryManager             api.CategoryManager
 	imageListSize               int
-	imageStore                  imageloader.ImageStore
-	imageLoader                 imageloader.ImageLoader
+	imageStore                  api.ImageStore
+	imageLoader                 api.ImageLoader
 
 	stopChannel   chan bool
 	outputChannel chan *HashResult
 }
 
-func newLibrary(imageCache imageloader.ImageStore, imageLoader imageloader.ImageLoader) *internalManager {
+func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader) *internalManager {
 	var manager = internalManager{
 		index:                       0,
 		imageHash:                   duplo.New(),

@@ -1,20 +1,20 @@
 package library
 
 import (
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type Manager struct {
 	sender  event.Sender
 	manager *internalManager
 
-	Library
+	api.Library
 }
 
-func NewLibrary(sender event.Sender, imageCache imageloader.ImageStore, imageLoader imageloader.ImageLoader) Library {
+func NewLibrary(sender event.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader) api.Library {
 	return &Manager{
 		sender:  sender,
 		manager: newLibrary(imageCache, imageLoader),

@@ -6,14 +6,12 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"vincit.fi/image-sorter/category"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/logger"
-	"vincit.fi/image-sorter/ui"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 	"vincit.fi/image-sorter/ui/gtk/component"
-	"vincit.fi/image-sorter/util"
 )
 
 type Ui struct {
@@ -21,7 +19,7 @@ type Ui struct {
 	win         *gtk.ApplicationWindow
 	fullscreen  bool
 	application *gtk.Application
-	imageCache  imageloader.ImageStore
+	imageCache  api.ImageStore
 	sender      event.Sender
 	categories  []*common.Category
 	rootPath    string
@@ -35,11 +33,11 @@ type Ui struct {
 	castModal           *component.CastModal
 	editCategoriesModal *component.CategoryModal
 
-	ui.Gui
+	api.Gui
 	component.CallbackApi
 }
 
-func NewUi(params *util.Params, broker event.Sender, imageCache imageloader.ImageStore) ui.Gui {
+func NewUi(params *util.Params, broker event.Sender, imageCache api.ImageStore) api.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "fi.vincit.imagesorter"
@@ -186,7 +184,7 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	return true
 }
 
-func (s *Ui) UpdateCategories(categories *category.CategoriesCommand) {
+func (s *Ui) UpdateCategories(categories *api.CategoriesCommand) {
 	s.categories = make([]*common.Category, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
@@ -226,7 +224,7 @@ func (s *Ui) Run() {
 	s.application.Run([]string{})
 }
 
-func (s *Ui) SetImageCategory(commands []*category.CategorizeCommand) {
+func (s *Ui) SetImageCategory(commands []*api.CategorizeCommand) {
 	for _, button := range s.topActionView.GetCategoryButtons() {
 		button.SetStatus(common.NONE)
 	}

@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/gotk3/gotk3/gtk"
-	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/common/event"
 )
 
 type ProgressView struct {

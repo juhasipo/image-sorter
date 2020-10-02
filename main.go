@@ -3,16 +3,16 @@ package main
 import (
 	"runtime"
 	"time"
-	"vincit.fi/image-sorter/caster"
-	"vincit.fi/image-sorter/category"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/filter"
-	"vincit.fi/image-sorter/imagecategory"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/library"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/backend/caster"
+	"vincit.fi/image-sorter/backend/category"
+	"vincit.fi/image-sorter/backend/filter"
+	"vincit.fi/image-sorter/backend/imagecategory"
+	"vincit.fi/image-sorter/backend/imageloader"
+	"vincit.fi/image-sorter/backend/library"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 	gtkUi "vincit.fi/image-sorter/ui/gtk"
-	"vincit.fi/image-sorter/util"
 )
 
 const EventBusQueueSize = 1000

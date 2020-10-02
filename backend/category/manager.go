@@ -7,11 +7,12 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/constants"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/logger"
-	"vincit.fi/image-sorter/util"
+	"vincit.fi/image-sorter/common/constants"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 )
 
 type Manager struct {
@@ -21,7 +22,7 @@ type Manager struct {
 	sender                event.Sender
 	rootDir               string
 
-	CategoryManager
+	api.CategoryManager
 }
 
 func Parse(value string) (name string, path string, shortcut string) {
@@ -39,7 +40,7 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(params *util.Params, sender event.Sender) CategoryManager {
+func New(params *util.Params, sender event.Sender) api.CategoryManager {
 	manager := Manager{
 		sender:                sender,
 		commandLineCategories: params.GetCategories(),
@@ -72,18 +73,14 @@ func (s *Manager) GetCategories() []*common.Category {
 }
 
 func (s *Manager) RequestCategories() {
-	s.sender.SendToTopicWithData(event.CategoriesUpdated, &CategoriesCommand{
-		categories: s.categories,
-	})
+	s.sender.SendToTopicWithData(event.CategoriesUpdated, api.NewCategoriesCommand(s.categories))
 }
 
 func (s *Manager) Save(categories []*common.Category) {
 	s.resetCategories(categories)
 
 	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, categories)
-	s.sender.SendToTopicWithData(event.CategoriesUpdated, &CategoriesCommand{
-		categories: categories,
-	})
+	s.sender.SendToTopicWithData(event.CategoriesUpdated, api.NewCategoriesCommand(s.categories))
 }
 func (s *Manager) SaveDefault(categories []*common.Category) {
 	s.resetCategories(categories)
@@ -94,9 +91,7 @@ func (s *Manager) SaveDefault(categories []*common.Category) {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
 		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
-		s.sender.SendToTopicWithData(event.CategoriesUpdated, &CategoriesCommand{
-			categories: categories,
-		})
+		s.sender.SendToTopicWithData(event.CategoriesUpdated, api.NewCategoriesCommand(s.categories))
 	}
 }
 

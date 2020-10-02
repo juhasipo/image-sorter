@@ -4,17 +4,18 @@ import (
 	"github.com/pixiv/go-libjpeg/jpeg"
 	"image"
 	"os"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
 )
 
 var options = &jpeg.DecoderOptions{}
 
-func NewImageLoader() ImageLoader {
+func NewImageLoader() api.ImageLoader {
 	return &LibJPEGImageLoader{}
 }
 
 type LibJPEGImageLoader struct {
-	ImageLoader
+	api.ImageLoader
 }
 
 func (s *LibJPEGImageLoader) LoadImage(handle *common.Handle) (image.Image, error) {

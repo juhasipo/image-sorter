@@ -6,9 +6,9 @@ import (
 	"image"
 	"os"
 	"testing"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
 )
 
 type MockSender struct {
@@ -17,7 +17,7 @@ type MockSender struct {
 }
 
 type MockImageStore struct {
-	imageloader.ImageStore
+	api.ImageStore
 	mock.Mock
 }
 
@@ -35,7 +35,7 @@ func (s *MockImageStore) GetThumbnail(handle *common.Handle) (image.Image, error
 }
 
 type MockImageLoader struct {
-	imageloader.ImageLoader
+	api.ImageLoader
 	mock.Mock
 }
 

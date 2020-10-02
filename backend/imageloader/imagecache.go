@@ -4,6 +4,7 @@ import (
 	"image"
 	"runtime"
 	"sync"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
 )
 
@@ -11,23 +12,12 @@ type CacheContainer struct {
 	img *image.NRGBA
 }
 
-type ImageStore interface {
-	Initialize([]*common.Handle)
-	GetFull(*common.Handle) (image.Image, error)
-	GetScaled(*common.Handle, common.Size) (image.Image, error)
-	GetThumbnail(*common.Handle) (image.Image, error)
-	GetExifData(handle *common.Handle) *common.ExifData
-	GetByteSize() uint64
-	GetSizeInMB() float64
-	Purge()
-}
-
 type DefaultImageStore struct {
 	imageCache  map[string]*Instance
 	mux         sync.Mutex
-	imageLoader ImageLoader
+	imageLoader api.ImageLoader
 
-	ImageStore
+	api.ImageStore
 }
 
 func (s *DefaultImageStore) Initialize(handles []*common.Handle) {
@@ -40,7 +30,7 @@ func (s *DefaultImageStore) Initialize(handles []*common.Handle) {
 	runtime.GC()
 }
 
-func NewImageCache(imageLoader ImageLoader) ImageStore {
+func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
 	return &DefaultImageStore{
 		imageCache:  map[string]*Instance{},
 		mux:         sync.Mutex{},

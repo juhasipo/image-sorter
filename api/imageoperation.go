@@ -1,15 +1,10 @@
-package filter
+package api
 
 import (
 	"image"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
-
-type fileOperation struct {
-	dstPath string
-	dstFile string
-}
 
 type ImageOperation interface {
 	Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error)
@@ -24,6 +19,26 @@ type ImageOperationGroup struct {
 	operations      []ImageOperation
 }
 
+func (s *ImageOperationGroup) GetHandle() *common.Handle {
+	return s.handle
+}
+
+func (s *ImageOperationGroup) GetImage() image.Image {
+	return s.img
+}
+
+func (s *ImageOperationGroup) GetExifData() *common.ExifData {
+	return s.exifData
+}
+
+func (s *ImageOperationGroup) GetHasBeenModified() bool {
+	return s.hasBeenModified
+}
+
+func (s *ImageOperationGroup) GetOperations() []ImageOperation {
+	return s.operations
+}
+
 func NewImageOperationGroup(handle *common.Handle, img image.Image, exifData *common.ExifData, operations []ImageOperation) *ImageOperationGroup {
 	return &ImageOperationGroup{
 		handle:          handle,
@@ -36,10 +51,6 @@ func NewImageOperationGroup(handle *common.Handle, img image.Image, exifData *co
 
 func (s *ImageOperationGroup) SetModified() {
 	s.hasBeenModified = true
-}
-
-func (s *ImageOperationGroup) GetOperations() []ImageOperation {
-	return s.operations
 }
 
 func (s *ImageOperationGroup) Apply() error {

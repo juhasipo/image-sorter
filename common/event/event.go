@@ -4,7 +4,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	messagebus "github.com/vardius/message-bus"
 	"reflect"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type Broker struct {

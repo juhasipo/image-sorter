@@ -3,11 +3,14 @@ package common
 import (
 	"bytes"
 	"errors"
+	"github.com/disintegration/imaging"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/rwcarlsen/goexif/exif"
 	"github.com/rwcarlsen/goexif/tiff"
+	"image"
+	"image/color"
 	"os"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type ExifData struct {
@@ -159,5 +162,18 @@ func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
 		return left90, noHorizontalFlip
 	default:
 		return noRotate, noHorizontalFlip
+	}
+}
+
+func ExifRotateImage(loadedImage image.Image, exifData *ExifData) (image.Image, error) {
+	if exifData != nil {
+		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
+		if exifData.IsFlipped() {
+			return imaging.FlipH(loadedImage), nil
+		} else {
+			return loadedImage, nil
+		}
+	} else {
+		return loadedImage, nil
 	}
 }

@@ -10,18 +10,24 @@ import (
 	"os"
 	"path/filepath"
 	"unsafe"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
+
+type fileOperation struct {
+	dstPath string
+	dstFile string
+}
 
 type ImageCopy struct {
 	fileOperation
 	quality int
 
-	ImageOperation
+	api.ImageOperation
 }
 
-func NewImageCopy(targetDir string, targetFile string, quality int) ImageOperation {
+func NewImageCopy(targetDir string, targetFile string, quality int) api.ImageOperation {
 	return &ImageCopy{
 		quality: quality,
 		fileOperation: fileOperation{
@@ -30,13 +36,13 @@ func NewImageCopy(targetDir string, targetFile string, quality int) ImageOperati
 		},
 	}
 }
-func (s *ImageCopy) Apply(operationGroup *ImageOperationGroup) (image.Image, *common.ExifData, error) {
-	handle := operationGroup.handle
-	img := operationGroup.img
-	exifData := operationGroup.exifData
+func (s *ImageCopy) Apply(operationGroup *api.ImageOperationGroup) (image.Image, *common.ExifData, error) {
+	handle := operationGroup.GetHandle()
+	img := operationGroup.GetImage()
+	exifData := operationGroup.GetExifData()
 	logger.Debug.Printf("Copy %s", handle.GetPath())
 
-	if operationGroup.hasBeenModified {
+	if operationGroup.GetHasBeenModified() {
 		encodingOptions := &jpeg.Options{
 			Quality: s.quality,
 		}

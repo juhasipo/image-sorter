@@ -2,21 +2,21 @@ package component
 
 import (
 	"github.com/gotk3/gotk3/gtk"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
+	"vincit.fi/image-sorter/common/event"
 )
 
 type SimilarImagesView struct {
 	view         *gtk.Box
 	scrollLayout *gtk.ScrolledWindow
 	list         *ImageList
-	imageCache   imageloader.ImageStore
+	imageCache   api.ImageStore
 	closeButton  *gtk.Button
 	sender       event.Sender
 }
 
-func NewSimilarImagesView(builder *gtk.Builder, sender event.Sender, imageCache imageloader.ImageStore) *SimilarImagesView {
+func NewSimilarImagesView(builder *gtk.Builder, sender event.Sender, imageCache api.ImageStore) *SimilarImagesView {
 	imageList := &ImageList{component: GetObjectOrPanic(builder, "similar-images-list").(*gtk.IconView)}
 	initializeStore(imageList, HORIZONTAL, sender)
 

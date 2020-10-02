@@ -3,16 +3,16 @@ package library
 import (
 	"image"
 	"time"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/duplo"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/logger"
 )
 
 type HashResult struct {
 	handle      *common.Handle
 	hash        *duplo.Hash
-	imageLoader imageloader.ImageLoader
+	imageLoader api.ImageLoader
 }
 
 func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
@@ -24,7 +24,7 @@ func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.H
 
 var hashImageSize = common.SizeOf(duplo.ImageScale, duplo.ImageScale)
 
-func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool, imageLoader imageloader.ImageLoader) {
+func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool, imageLoader api.ImageLoader) {
 	for {
 		select {
 		case <-quitChannel:
@@ -43,7 +43,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 	}
 }
 
-func openImageForHashing(imageLoader imageloader.ImageLoader, handle *common.Handle) (image.Image, error) {
+func openImageForHashing(imageLoader api.ImageLoader, handle *common.Handle) (image.Image, error) {
 	startTime := time.Now()
 	decodedImage, err := imageLoader.LoadImageScaled(handle, hashImageSize)
 	endTime := time.Now()

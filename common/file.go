@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 // Copies file. Creates destination directories if they don't exist

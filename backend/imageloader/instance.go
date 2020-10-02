@@ -4,12 +4,12 @@ import (
 	"errors"
 	"github.com/disintegration/imaging"
 	"image"
-	"image/color"
 	"os"
 	"sync"
 	"time"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 const (
@@ -26,11 +26,11 @@ type Instance struct {
 	thumbnail   image.Image
 	scaled      image.Image
 	exifData    *common.ExifData
-	imageLoader ImageLoader
+	imageLoader api.ImageLoader
 	mux         sync.Mutex
 }
 
-func NewInstance(handle *common.Handle, imageLoader ImageLoader) *Instance {
+func NewInstance(handle *common.Handle, imageLoader api.ImageLoader) *Instance {
 	var instance *Instance
 	exifData, err := common.LoadExifData(handle)
 	if err != nil {
@@ -45,19 +45,6 @@ func NewInstance(handle *common.Handle, imageLoader ImageLoader) *Instance {
 
 	instance.thumbnail, _ = instance.GetThumbnail()
 	return instance
-}
-
-func ExifRotateImage(loadedImage image.Image, exifData *common.ExifData) (image.Image, error) {
-	if exifData != nil {
-		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
-		if exifData.IsFlipped() {
-			return imaging.FlipH(loadedImage), nil
-		} else {
-			return loadedImage, nil
-		}
-	} else {
-		return loadedImage, nil
-	}
 }
 
 func (s *Instance) IsValid() bool {
@@ -192,7 +179,7 @@ func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, 
 		logger.Error.Println("Could not load statistic for " + s.handle.GetPath())
 	}
 
-	return ExifRotateImage(loadedImage, s.exifData)
+	return common.ExifRotateImage(loadedImage, s.exifData)
 }
 
 func (s *Instance) loadThumbnailFromCache() (image.Image, error) {

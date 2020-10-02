@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/duplo"
-	"vincit.fi/image-sorter/logger"
 )
 
 type Handle struct {

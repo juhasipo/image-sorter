@@ -22,11 +22,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/logger"
-	"vincit.fi/image-sorter/util"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 )
 
 const (
@@ -47,7 +47,7 @@ type Caster struct {
 	currentImage          *common.Handle
 	server                *http.Server
 	showBackground        bool
-	imageCache            imageloader.ImageStore
+	imageCache            api.ImageStore
 	alwaysStartHttpServer bool
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
@@ -62,7 +62,7 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func NewCaster(params *util.Params, sender event.Sender, imageCache imageloader.ImageStore) *Caster {
+func NewCaster(params *util.Params, sender event.Sender, imageCache api.ImageStore) *Caster {
 	c := &Caster{
 		port:                  params.GetHttpPort(),
 		alwaysStartHttpServer: params.GetAlwaysStartHttpServer(),

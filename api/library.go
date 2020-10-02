@@ -1,8 +1,8 @@
-package library
+package api
 
 import (
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/common/event"
 )
 
 type Library interface {

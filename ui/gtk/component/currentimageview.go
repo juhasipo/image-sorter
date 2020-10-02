@@ -7,7 +7,7 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"image"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 var zoomLevels = []uint16{

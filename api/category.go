@@ -1,11 +1,21 @@
-package category
+package api
 
 import (
 	"fmt"
 	"time"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
+	"vincit.fi/image-sorter/common/event"
 )
+
+type CategoryManager interface {
+	InitializeFromDirectory(categories []string, rootDir string)
+	GetCategories() []*common.Category
+	RequestCategories()
+	Save(categories []*common.Category)
+	SaveDefault(categories []*common.Category)
+	Close()
+	GetCategoryById(id string) *common.Category
+}
 
 type CategorizeCommand struct {
 	handle          *common.Handle
@@ -22,6 +32,12 @@ type CategoriesCommand struct {
 	categories []*common.Category
 
 	event.Command
+}
+
+func NewCategoriesCommand(categories []*common.Category) *CategoriesCommand {
+	return &CategoriesCommand{
+		categories: categories,
+	}
 }
 
 func (s *CategoriesCommand) GetCategories() []*common.Category {
@@ -75,4 +91,32 @@ func (s *CategorizeCommand) SetForceToCategory(forceToCategory bool) {
 
 func (s *CategorizeCommand) SetNextImageDelay(duration time.Duration) {
 	s.nextImageDelay = duration
+}
+
+type CategorizedImage struct {
+	category  *common.Category
+	operation common.Operation
+}
+
+func NewCategorizedImage(entry *common.Category, operation common.Operation) *CategorizedImage {
+	return &CategorizedImage{
+		category:  entry,
+		operation: operation,
+	}
+}
+
+func (s *CategorizedImage) GetOperation() common.Operation {
+	return s.operation
+}
+
+func (s *CategorizedImage) SetOperation(operation common.Operation) {
+	s.operation = operation
+}
+
+func (s *CategorizedImage) GetEntry() *common.Category {
+	return s.category
+}
+
+func (s *CategorizeCommand) ToLabel() string {
+	return s.GetEntry().GetName()
 }

@@ -5,10 +5,10 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"time"
-	"vincit.fi/image-sorter/category"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type CategoryButton struct {
@@ -69,14 +69,14 @@ func (v *TopActionView) SetNoDistractionMode(value bool) {
 	v.prevButton.SetVisible(value)
 }
 
-func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *category.CategorizeCommand {
+func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *api.CategorizeCommand {
 	for _, button := range v.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			return category.NewCategorizeCommand(
+			return api.NewCategorizeCommand(
 				handle, button.entry, button.operation.NextOperation())
 		}
 	}
@@ -204,7 +204,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	}
 }
 
-func (s *TopActionView) UpdateCategories(categories *category.CategoriesCommand, currentImageHandle *common.Handle) {
+func (s *TopActionView) UpdateCategories(categories *api.CategoriesCommand, currentImageHandle *common.Handle) {
 	s.categoryButtons = map[string]*CategoryButton{}
 	children := s.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
@@ -213,7 +213,7 @@ func (s *TopActionView) UpdateCategories(categories *category.CategoriesCommand,
 
 	for _, entry := range categories.GetCategories() {
 		s.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
-			command := category.NewCategorizeCommand(currentImageHandle, entry, operation)
+			command := api.NewCategorizeCommand(currentImageHandle, entry, operation)
 			command.SetForceToCategory(forceToCategory)
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetNextImageDelay(200 * time.Millisecond)

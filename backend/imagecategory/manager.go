@@ -6,31 +6,29 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"vincit.fi/image-sorter/category"
+	"vincit.fi/image-sorter/api"
+	"vincit.fi/image-sorter/backend/filter"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/constants"
-	"vincit.fi/image-sorter/event"
-	"vincit.fi/image-sorter/filter"
-	"vincit.fi/image-sorter/imageloader"
-	"vincit.fi/image-sorter/library"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/constants"
+	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type Manager struct {
 	rootDir       string
 	settingDir    string
-	imageCategory map[string]map[string]*category.CategorizedImage
+	imageCategory map[string]map[string]*api.CategorizedImage
 	sender        event.Sender
-	library       library.Library
+	library       api.Library
 	filterManager *filter.Manager
-	imageLoader   imageloader.ImageLoader
+	imageLoader   api.ImageLoader
 
-	ImageCategoryManager
+	api.ImageCategoryManager
 }
 
-func NewImageCategoryManager(sender event.Sender, lib library.Library, filterManager *filter.Manager, imageLoader imageloader.ImageLoader) ImageCategoryManager {
+func NewImageCategoryManager(sender event.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader) api.ImageCategoryManager {
 	var manager = Manager{
-		imageCategory: map[string]map[string]*category.CategorizedImage{},
+		imageCategory: map[string]map[string]*api.CategorizedImage{},
 		sender:        sender,
 		library:       lib,
 		filterManager: filterManager,
@@ -42,39 +40,39 @@ func NewImageCategoryManager(sender event.Sender, lib library.Library, filterMan
 func (s *Manager) InitializeForDirectory(directory string) {
 	s.rootDir = directory
 	s.settingDir = filepath.Join(directory, constants.ImageSorterDir)
-	s.imageCategory = map[string]map[string]*category.CategorizedImage{}
+	s.imageCategory = map[string]map[string]*api.CategorizedImage{}
 }
 
 func (s *Manager) RequestCategory(handle *common.Handle) {
 	s.sendCategories(handle)
 }
 
-func (s *Manager) GetCategories(handle *common.Handle) map[string]*category.CategorizedImage {
+func (s *Manager) GetCategories(handle *common.Handle) map[string]*api.CategorizedImage {
 	if categories, ok := s.imageCategory[handle.GetId()]; ok {
-		categorizedEntries := map[string]*category.CategorizedImage{}
+		categorizedEntries := map[string]*api.CategorizedImage{}
 		for _, categorizedImage := range categories {
 			categorizedEntries[categorizedImage.GetEntry().GetId()] = categorizedImage
 		}
 		return categorizedEntries
 	} else {
-		return map[string]*category.CategorizedImage{}
+		return map[string]*api.CategorizedImage{}
 	}
 }
 
-func (s *Manager) SetCategory(command *category.CategorizeCommand) {
+func (s *Manager) SetCategory(command *api.CategorizeCommand) {
 	handle := command.GetHandle()
 	categoryEntry := command.GetEntry()
 	operation := command.GetOperation()
 
 	// Find existing entry for the image
 	var image = s.imageCategory[handle.GetId()]
-	var categorizedImage *category.CategorizedImage = nil
+	var categorizedImage *api.CategorizedImage = nil
 	if command.ShouldForceToCategory() {
 		logger.Debug.Printf("Force to category for '%s'", handle.GetPath())
-		image = map[string]*category.CategorizedImage{}
+		image = map[string]*api.CategorizedImage{}
 		s.imageCategory[handle.GetId()] = image
 		if operation != common.NONE {
-			categorizedImage = category.NewCategorizedImage(categoryEntry, operation)
+			categorizedImage = api.NewCategorizedImage(categoryEntry, operation)
 			image[categoryEntry.GetId()] = categorizedImage
 		}
 	} else if image != nil {
@@ -85,11 +83,11 @@ func (s *Manager) SetCategory(command *category.CategorizeCommand) {
 	if categorizedImage == nil && operation != common.NONE {
 		if image == nil {
 			logger.Debug.Printf("Create category entry for '%s'", handle.GetPath())
-			image = map[string]*category.CategorizedImage{}
+			image = map[string]*api.CategorizedImage{}
 			s.imageCategory[handle.GetId()] = image
 		}
 		logger.Debug.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
-		categorizedImage = category.NewCategorizedImage(categoryEntry, operation)
+		categorizedImage = api.NewCategorizedImage(categoryEntry, operation)
 		image[categoryEntry.GetId()] = categorizedImage
 	}
 
@@ -132,8 +130,8 @@ func (s *Manager) PersistImageCategories(options common.PersistCategorizationCom
 	s.sender.SendToTopicWithData(event.DirectoryChanged, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*category.CategorizedImage, options common.PersistCategorizationCommand) []*filter.ImageOperationGroup {
-	var operationGroups []*filter.ImageOperationGroup
+func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*api.CategorizedImage, options common.PersistCategorizationCommand) []*api.ImageOperationGroup {
+	var operationGroups []*api.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
 		handle := s.library.GetHandleById(handleId)
@@ -146,13 +144,13 @@ func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*cat
 }
 
 func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
-	categoryEntries map[string]*category.CategorizedImage,
-	options common.PersistCategorizationCommand) (*filter.ImageOperationGroup, error) {
+	categoryEntries map[string]*api.CategorizedImage,
+	options common.PersistCategorizationCommand) (*api.ImageOperationGroup, error) {
 	dir, file := filepath.Split(handle.GetPath())
 
 	filters := s.filterManager.GetFilters(handle, options)
 
-	var imageOperations []filter.ImageOperation
+	var imageOperations []api.ImageOperation
 	for _, categorizedImage := range categoryEntries {
 		targetDirName := categorizedImage.GetEntry().GetSubPath()
 		targetDir := filepath.Join(dir, targetDirName)
@@ -173,7 +171,7 @@ func (s *Manager) ResolveOperationsForGroup(handle *common.Handle,
 		logger.Error.Println("Could not load exif data")
 		return nil, err
 	} else {
-		return filter.NewImageOperationGroup(handle, fullImage, exifData, imageOperations), nil
+		return api.NewImageOperationGroup(handle, fullImage, exifData, imageOperations), nil
 	}
 }
 
@@ -193,7 +191,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *common.Category) {
 	s.sender.SendToTopicWithData(event.ImageShowOnly, cat.GetName(), handles)
 }
 
-func (s *Manager) LoadCategorization(handleManager library.Library, categoryManager category.CategoryManager) {
+func (s *Manager) LoadCategorization(handleManager api.Library, categoryManager api.CategoryManager) {
 	filePath := filepath.Join(s.settingDir, constants.CategorizationFileName)
 
 	logger.Info.Printf("Loading categozation from file '%s'", filePath)
@@ -223,7 +221,7 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 
 		categoryMap := s.imageCategory[handle.GetId()]
 		if categoryMap == nil {
-			s.imageCategory[handle.GetId()] = map[string]*category.CategorizedImage{}
+			s.imageCategory[handle.GetId()] = map[string]*api.CategorizedImage{}
 			categoryMap = s.imageCategory[handle.GetId()]
 		}
 
@@ -231,7 +229,7 @@ func (s *Manager) LoadCategorization(handleManager library.Library, categoryMana
 			if c != "" {
 				entry := categoryManager.GetCategoryById(c)
 				if entry != nil {
-					categoryMap[entry.GetId()] = category.NewCategorizedImage(entry, common.MOVE)
+					categoryMap[entry.GetId()] = api.NewCategorizedImage(entry, common.MOVE)
 				}
 			}
 		}
@@ -249,26 +247,26 @@ func (s *Manager) PersistCategorization() {
 	}
 	defer f.Close()
 	w := bufio.NewWriter(f)
-	w.WriteString("#version:1")
-	w.WriteString("\n")
+	_, _ = w.WriteString("#version:1")
+	_, _ = w.WriteString("\n")
 	for handleId, categorization := range s.imageCategory {
 		if handleId != "" {
-			w.WriteString(handleId)
-			w.WriteString(";")
+			_, _ = w.WriteString(handleId)
+			_, _ = w.WriteString(";")
 			for entry, categorizedImage := range categorization {
 				if categorizedImage.GetOperation() == common.MOVE {
-					w.WriteString(entry)
-					w.WriteString(";")
+					_, _ = w.WriteString(entry)
+					_, _ = w.WriteString(";")
 				}
 			}
-			w.WriteString("\n")
+			_, _ = w.WriteString("\n")
 		}
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
-func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedImage {
-	var categories []*category.CategorizedImage
+func (s *Manager) getCategories(image *common.Handle) []*api.CategorizedImage {
+	var categories []*api.CategorizedImage
 
 	if i, ok := s.imageCategory[image.GetId()]; ok {
 		for _, categorizedImage := range i {
@@ -280,12 +278,12 @@ func (s *Manager) getCategories(image *common.Handle) []*category.CategorizedIma
 }
 
 func (s *Manager) sendCategories(currentImage *common.Handle) {
-	var commands []*category.CategorizeCommand
+	var commands []*api.CategorizeCommand
 	if currentImage != nil {
 		var categories = s.getCategories(currentImage)
 
 		for _, image := range categories {
-			commands = append(commands, category.NewCategorizeCommand(currentImage, image.GetEntry(), image.GetOperation()))
+			commands = append(commands, api.NewCategorizeCommand(currentImage, image.GetEntry(), image.GetOperation()))
 		}
 	}
 	s.sender.SendToTopicWithData(event.CategoryImageUpdate, commands)

@@ -1,16 +1,17 @@
 package filter
 
 import (
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/logger"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type Filter struct {
 	id        string
-	operation ImageOperation
+	operation api.ImageOperation
 }
 
-func (s *Filter) GetOperation() ImageOperation {
+func (s *Filter) GetOperation() api.ImageOperation {
 	return s.operation
 }
 
