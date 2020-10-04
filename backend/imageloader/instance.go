@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -21,18 +21,18 @@ var (
 )
 
 type Instance struct {
-	handle      *common.Handle
+	handle      *apitype.Handle
 	full        image.Image
 	thumbnail   image.Image
 	scaled      image.Image
-	exifData    *common.ExifData
+	exifData    *apitype.ExifData
 	imageLoader api.ImageLoader
 	mux         sync.Mutex
 }
 
-func NewInstance(handle *common.Handle, imageLoader api.ImageLoader) *Instance {
+func NewInstance(handle *apitype.Handle, imageLoader api.ImageLoader) *Instance {
 	var instance *Instance
-	exifData, err := common.LoadExifData(handle)
+	exifData, err := apitype.LoadExifData(handle)
 	if err != nil {
 		logger.Warn.Printf("Exif data not properly loaded for '%s'", handle.GetId())
 	}
@@ -72,7 +72,7 @@ func (s *Instance) GetFull() (image.Image, error) {
 	}
 }
 
-func (s *Instance) GetScaled(size common.Size) (image.Image, error) {
+func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 	if !s.IsValid() {
 		return nil, errors.New("invalid handle")
 	}
@@ -85,7 +85,7 @@ func (s *Instance) GetScaled(size common.Size) (image.Image, error) {
 	}
 
 	fullSize := full.Bounds()
-	newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), size.GetWidth(), size.GetHeight())
+	newWidth, newHeight := apitype.ScaleToFit(fullSize.Dx(), fullSize.Dy(), size.GetWidth(), size.GetHeight())
 
 	if s.scaled == nil {
 		s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
@@ -116,7 +116,7 @@ func (s *Instance) GetThumbnail() (image.Image, error) {
 			return nil, err
 		} else {
 			fullSize := full.Bounds()
-			newWidth, newHeight := common.ScaleToFit(fullSize.Dx(), fullSize.Dy(), thumbnailSize, thumbnailSize)
+			newWidth, newHeight := apitype.ScaleToFit(fullSize.Dx(), fullSize.Dy(), thumbnailSize, thumbnailSize)
 
 			s.thumbnail = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
 		}
@@ -151,11 +151,11 @@ func GetByteLength(pixbuf image.Image) int {
 	}
 }
 
-func (s *Instance) loadFull(size *common.Size) (image.Image, error) {
+func (s *Instance) loadFull(size *apitype.Size) (image.Image, error) {
 	return s.loadImageWithExifCorrection(size)
 }
 
-func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, error) {
+func (s *Instance) loadImageWithExifCorrection(size *apitype.Size) (image.Image, error) {
 	if s.imageLoader == nil {
 		return nil, errors.New("no valid loader")
 	}
@@ -179,7 +179,7 @@ func (s *Instance) loadImageWithExifCorrection(size *common.Size) (image.Image, 
 		logger.Error.Println("Could not load statistic for " + s.handle.GetPath())
 	}
 
-	return common.ExifRotateImage(loadedImage, s.exifData)
+	return apitype.ExifRotateImage(loadedImage, s.exifData)
 }
 
 func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
@@ -188,7 +188,7 @@ func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
 	if s.thumbnail == nil {
 		startTime := time.Now()
 
-		size := common.SizeOf(thumbnailSize, thumbnailSize)
+		size := apitype.SizeOf(thumbnailSize, thumbnailSize)
 		if thumbnail, err := s.loadFull(&size); err != nil {
 			logger.Error.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
 			return nil, err

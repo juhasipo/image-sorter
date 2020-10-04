@@ -1,26 +1,24 @@
 package api
 
-import (
-	"vincit.fi/image-sorter/common"
-)
+import "vincit.fi/image-sorter/api/apitype"
 
 type ImageCategoryManager interface {
 	InitializeForDirectory(directory string)
 
-	RequestCategory(handle *common.Handle)
-	GetCategories(handle *common.Handle) map[string]*CategorizedImage
-	SetCategory(command *CategorizeCommand)
+	RequestCategory(handle *apitype.Handle)
+	GetCategories(handle *apitype.Handle) map[string]*apitype.CategorizedImage
+	SetCategory(command *apitype.CategorizeCommand)
 
-	PersistImageCategories(common.PersistCategorizationCommand)
-	PersistImageCategory(handle *common.Handle, categories map[string]*CategorizedImage)
+	PersistImageCategories(apitype.PersistCategorizationCommand)
+	PersistImageCategory(handle *apitype.Handle, categories map[string]*apitype.CategorizedImage)
 
 	PersistCategorization()
 	LoadCategorization(handleManager Library, categoryManager CategoryManager)
 
-	ShowOnlyCategoryImages(*common.Category)
+	ShowOnlyCategoryImages(*apitype.Category)
 
-	ResolveFileOperations(map[string]map[string]*CategorizedImage, common.PersistCategorizationCommand) []*ImageOperationGroup
-	ResolveOperationsForGroup(*common.Handle, map[string]*CategorizedImage, common.PersistCategorizationCommand) (*ImageOperationGroup, error)
+	ResolveFileOperations(map[string]map[string]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup
+	ResolveOperationsForGroup(*apitype.Handle, map[string]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()
 }

@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 type CacheContainer struct {
@@ -20,7 +20,7 @@ type DefaultImageStore struct {
 	api.ImageStore
 }
 
-func (s *DefaultImageStore) Initialize(handles []*common.Handle) {
+func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.imageCache = map[string]*Instance{}
@@ -38,20 +38,20 @@ func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
 	}
 }
 
-func (s *DefaultImageStore) GetFull(handle *common.Handle) (image.Image, error) {
+func (s *DefaultImageStore) GetFull(handle *apitype.Handle) (image.Image, error) {
 	return s.getImage(handle).GetFull()
 }
-func (s *DefaultImageStore) GetScaled(handle *common.Handle, size common.Size) (image.Image, error) {
+func (s *DefaultImageStore) GetScaled(handle *apitype.Handle, size apitype.Size) (image.Image, error) {
 	return s.getImage(handle).GetScaled(size)
 }
-func (s *DefaultImageStore) GetThumbnail(handle *common.Handle) (image.Image, error) {
+func (s *DefaultImageStore) GetThumbnail(handle *apitype.Handle) (image.Image, error) {
 	return s.getImage(handle).GetThumbnail()
 }
-func (s *DefaultImageStore) GetExifData(handle *common.Handle) *common.ExifData {
+func (s *DefaultImageStore) GetExifData(handle *apitype.Handle) *apitype.ExifData {
 	return s.getImage(handle).exifData
 }
 
-func (s *DefaultImageStore) getImage(handle *common.Handle) *Instance {
+func (s *DefaultImageStore) getImage(handle *apitype.Handle) *Instance {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if handle.IsValid() {

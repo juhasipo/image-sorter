@@ -3,15 +3,17 @@ package imageloader
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
+
+const testAssetsDir = "../../testassets"
 
 func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 	a := assert.New(t)
 
 	loader := LibJPEGImageLoader{}
 	t.Run("Horizontal", func(t *testing.T) {
-		img, err := loader.LoadImage(common.NewHandle("../testassets", "horizontal.jpg"))
+		img, err := loader.LoadImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -20,7 +22,7 @@ func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 		a.Equal(2736, img.Bounds().Dy())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		img, err := loader.LoadImage(common.NewHandle("../testassets", "vertical.jpg"))
+		img, err := loader.LoadImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -34,11 +36,11 @@ func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 func TestLibJPEGImageLoader_LoadImageScaled(t *testing.T) {
 	a := assert.New(t)
 
-	size := common.SizeOf(1, 1)
+	size := apitype.SizeOf(1, 1)
 
 	loader := LibJPEGImageLoader{}
 	t.Run("Horizontal is loaded with the smallest image lib JPEG could load image", func(t *testing.T) {
-		img, err := loader.LoadImageScaled(common.NewHandle("../testassets", "horizontal.jpg"), size)
+		img, err := loader.LoadImageScaled(apitype.NewHandle(testAssetsDir, "horizontal.jpg"), size)
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -47,7 +49,7 @@ func TestLibJPEGImageLoader_LoadImageScaled(t *testing.T) {
 		a.Equal(342, img.Bounds().Dy())
 	})
 	t.Run("Vertical is loaded with the smallest image lib JPEG could load image", func(t *testing.T) {
-		img, err := loader.LoadImageScaled(common.NewHandle("../testassets", "vertical.jpg"), size)
+		img, err := loader.LoadImageScaled(apitype.NewHandle(testAssetsDir, "vertical.jpg"), size)
 
 		a.Nil(err)
 		a.NotNil(img)

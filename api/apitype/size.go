@@ -1,4 +1,4 @@
-package common
+package apitype
 
 import (
 	"github.com/gotk3/gotk3/gtk"
@@ -40,6 +40,7 @@ func SizeFromRectangle(rectangle image.Rectangle, zoom float64) Size {
 	}
 }
 
+// TODO: Implement via Size
 func ScaleToFit(sourceWidth int, sourceHeight int, targetWidth int, targetHeight int) (int, int) {
 	ratio := float32(sourceWidth) / float32(sourceHeight)
 	newWidth := int(float32(targetHeight) * ratio)

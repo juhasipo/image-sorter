@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"unsafe"
-	"vincit.fi/image-sorter/api"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -24,10 +24,10 @@ type ImageCopy struct {
 	fileOperation
 	quality int
 
-	api.ImageOperation
+	apitype.ImageOperation
 }
 
-func NewImageCopy(targetDir string, targetFile string, quality int) api.ImageOperation {
+func NewImageCopy(targetDir string, targetFile string, quality int) apitype.ImageOperation {
 	return &ImageCopy{
 		quality: quality,
 		fileOperation: fileOperation{
@@ -36,7 +36,7 @@ func NewImageCopy(targetDir string, targetFile string, quality int) api.ImageOpe
 		},
 	}
 }
-func (s *ImageCopy) Apply(operationGroup *api.ImageOperationGroup) (image.Image, *common.ExifData, error) {
+func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
 	handle := operationGroup.GetHandle()
 	img := operationGroup.GetImage()
 	exifData := operationGroup.GetExifData()
@@ -68,7 +68,7 @@ func (s *ImageCopy) Apply(operationGroup *api.ImageOperationGroup) (image.Image,
 	}
 }
 
-func (s *ImageCopy) writeJpegWithExifData(destination *os.File, buffer *bytes.Buffer, exifData *common.ExifData) {
+func (s *ImageCopy) writeJpegWithExifData(destination *os.File, buffer *bytes.Buffer, exifData *apitype.ExifData) {
 	writer := bufio.NewWriter(destination)
 	// 0xFF 0xD8: Start of JPEG
 	writer.Write(buffer.Next(2))
@@ -81,7 +81,7 @@ func (s *ImageCopy) writeJpegWithExifData(destination *os.File, buffer *bytes.Bu
 	writer.Flush()
 }
 
-func (s *ImageCopy) writeExifBlock(data *common.ExifData, writer *bufio.Writer) {
+func (s *ImageCopy) writeExifBlock(data *apitype.ExifData, writer *bufio.Writer) {
 	const lengthBytes = 2
 	const exifHeader = "Exif\x00\x00"
 	headerLength := len(exifHeader)

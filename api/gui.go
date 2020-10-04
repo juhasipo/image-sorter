@@ -1,15 +1,16 @@
 package api
 
 import (
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 )
 
 type Gui interface {
-	SetCurrentImage(*common.ImageContainer, int, int, string, *common.ExifData)
-	SetImages(event.Topic, []*common.ImageContainer)
-	UpdateCategories(categories *CategoriesCommand)
-	SetImageCategory(command []*CategorizeCommand)
+	SetCurrentImage(*
+	apitype.ImageContainer, int, int, string, *apitype.ExifData)
+	SetImages(event.Topic, []*apitype.ImageContainer)
+	UpdateCategories(categories *apitype.CategoriesCommand)
+	SetImageCategory(command []*apitype.CategorizeCommand)
 	Run()
 
 	UpdateProgress(name string, status int, total int)

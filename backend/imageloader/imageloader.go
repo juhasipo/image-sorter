@@ -5,7 +5,7 @@ import (
 	"image"
 	"os"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 var options = &jpeg.DecoderOptions{}
@@ -18,7 +18,7 @@ type LibJPEGImageLoader struct {
 	api.ImageLoader
 }
 
-func (s *LibJPEGImageLoader) LoadImage(handle *common.Handle) (image.Image, error) {
+func (s *LibJPEGImageLoader) LoadImage(handle *apitype.Handle) (image.Image, error) {
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (s *LibJPEGImageLoader) LoadImage(handle *common.Handle) (image.Image, erro
 	return imageFile, err
 }
 
-func (s *LibJPEGImageLoader) LoadImageScaled(handle *common.Handle, size common.Size) (image.Image, error) {
+func (s *LibJPEGImageLoader) LoadImageScaled(handle *apitype.Handle, size apitype.Size) (image.Image, error) {
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -46,6 +46,6 @@ func (s *LibJPEGImageLoader) LoadImageScaled(handle *common.Handle, size common.
 	return imageFile, err
 }
 
-func (s *LibJPEGImageLoader) LoadExifData(handle *common.Handle) (*common.ExifData, error) {
-	return common.LoadExifData(handle)
+func (s *LibJPEGImageLoader) LoadExifData(handle *apitype.Handle) (*apitype.ExifData, error) {
+	return apitype.LoadExifData(handle)
 }

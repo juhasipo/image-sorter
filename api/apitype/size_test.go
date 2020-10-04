@@ -1,4 +1,4 @@
-package common
+package apitype
 
 import (
 	"github.com/stretchr/testify/assert"

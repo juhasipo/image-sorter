@@ -4,22 +4,21 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"image"
-	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
 
 type ImageRotateToAngle struct {
 	rotation float64
-	api.ImageOperation
+	apitype.ImageOperation
 }
 
-func NewImageRotateToAngle(angle int) api.ImageOperation {
+func NewImageRotateToAngle(angle int) apitype.ImageOperation {
 	return &ImageRotateToAngle{
 		rotation: float64(angle),
 	}
 }
-func (s *ImageRotateToAngle) Apply(operationGroup *api.ImageOperationGroup) (image.Image, *common.ExifData, error) {
+func (s *ImageRotateToAngle) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
 	handle := operationGroup.GetHandle()
 	img := operationGroup.GetImage()
 	data := operationGroup.GetExifData()

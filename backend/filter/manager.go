@@ -1,17 +1,16 @@
 package filter
 
 import (
-	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
 
 type Filter struct {
 	id        string
-	operation api.ImageOperation
+	operation apitype.ImageOperation
 }
 
-func (s *Filter) GetOperation() api.ImageOperation {
+func (s *Filter) GetOperation() apitype.ImageOperation {
 	return s.operation
 }
 
@@ -26,7 +25,7 @@ func NewFilterManager() *Manager {
 	}
 }
 
-func (s *Manager) AddFilterForImage(handle *common.Handle, id string) {
+func (s *Manager) AddFilterForImage(handle *apitype.Handle, id string) {
 	if filter, ok := s.filters[id]; !ok {
 		logger.Error.Printf("Could not find filter '%s'", id)
 	} else if filterList, ok := s.filtersToApply[handle.GetId()]; ok {
@@ -38,7 +37,7 @@ func (s *Manager) AddFilter(filter *Filter) {
 	s.filters[filter.id] = filter
 }
 
-func (s *Manager) GetFilters(handle *common.Handle, options common.PersistCategorizationCommand) []*Filter {
+func (s *Manager) GetFilters(handle *apitype.Handle, options apitype.PersistCategorizationCommand) []*Filter {
 	filtersToApply := s.getFiltersForHandle(handle)
 
 	if options.ShouldFixOrientation() {
@@ -50,7 +49,7 @@ func (s *Manager) GetFilters(handle *common.Handle, options common.PersistCatego
 	return filtersToApply
 }
 
-func (s *Manager) getFiltersForHandle(handle *common.Handle) []*Filter {
+func (s *Manager) getFiltersForHandle(handle *apitype.Handle) []*Filter {
 	var filtersToApply []*Filter
 	if f, ok := s.filtersToApply[handle.GetId()]; ok {
 		filtersToApply = make([]*Filter, len(f)+1)

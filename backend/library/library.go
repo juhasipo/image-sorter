@@ -2,7 +2,7 @@ package library
 
 import (
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -25,11 +25,11 @@ func (s *Manager) InitializeFromDirectory(directory string) {
 	s.manager.InitializeFromDirectory(directory)
 }
 
-func (s *Manager) GetHandles() []*common.Handle {
+func (s *Manager) GetHandles() []*apitype.Handle {
 	return s.manager.GetHandles()
 }
 
-func (s *Manager) ShowOnlyImages(title string, handles []*common.Handle) {
+func (s *Manager) ShowOnlyImages(title string, handles []*apitype.Handle) {
 	s.manager.ShowOnlyImages(title, handles)
 	s.RequestImages()
 }
@@ -72,7 +72,7 @@ func (s *Manager) RequestPrevImage() {
 	s.RequestNextImageWithOffset(-1)
 }
 
-func (s *Manager) RequestImage(handle *common.Handle) {
+func (s *Manager) RequestImage(handle *apitype.Handle) {
 	s.manager.MoveToImage(handle)
 	s.RequestImages()
 }
@@ -100,15 +100,15 @@ func (s *Manager) Close() {
 	logger.Info.Print("Shutting down library")
 }
 
-func (s *Manager) AddHandles(imageList []*common.Handle) {
+func (s *Manager) AddHandles(imageList []*apitype.Handle) {
 	s.manager.AddHandles(imageList)
 }
 
-func (s *Manager) GetHandleById(handleId string) *common.Handle {
+func (s *Manager) GetHandleById(handleId string) *apitype.Handle {
 	return s.manager.GetHandleById(handleId)
 }
 
-func (s *Manager) GetMetaData(handle *common.Handle) *common.ExifData {
+func (s *Manager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
 	return s.manager.GetMetaData(handle)
 }
 
@@ -136,7 +136,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 	}
 }
 
-func (s *Manager) sendSimilarImages(handle *common.Handle) {
+func (s *Manager) sendSimilarImages(handle *apitype.Handle) {
 	images, shouldSend := s.manager.getSimilarImages(handle)
 	if shouldSend {
 		s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestSimilar, images)

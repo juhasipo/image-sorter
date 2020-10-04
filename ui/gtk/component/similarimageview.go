@@ -3,7 +3,7 @@ package component
 import (
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 )
 
@@ -40,13 +40,13 @@ func NewSimilarImagesView(builder *gtk.Builder, sender event.Sender, imageCache 
 	return similarImagesView
 }
 
-func (s *SimilarImagesView) SetImages(handles []*common.ImageContainer, sender event.Sender) {
+func (s *SimilarImagesView) SetImages(handles []*apitype.ImageContainer, sender event.Sender) {
 	s.list.addImagesToStore(handles)
 	s.view.SetVisible(true)
 	s.view.ShowAll()
 }
 
-func (s *SimilarImagesView) createSimilarImage(handle *common.ImageContainer, sender event.Sender) *gtk.EventBox {
+func (s *SimilarImagesView) createSimilarImage(handle *apitype.ImageContainer, sender event.Sender) *gtk.EventBox {
 	eventBox, _ := gtk.EventBoxNew()
 	thumbnail := handle.GetImage()
 	imageWidget, _ := gtk.ImageNewFromPixbuf(asPixbuf(thumbnail))

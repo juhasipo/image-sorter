@@ -2,11 +2,11 @@ package api
 
 import (
 	"image"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 type ImageLoader interface {
-	LoadImage(*common.Handle) (image.Image, error)
-	LoadImageScaled(*common.Handle, common.Size) (image.Image, error)
-	LoadExifData(*common.Handle) (*common.ExifData, error)
+	LoadImage(*apitype.Handle) (image.Image, error)
+	LoadImageScaled(*apitype.Handle, apitype.Size) (image.Image, error)
+	LoadExifData(*apitype.Handle) (*apitype.ExifData, error)
 }

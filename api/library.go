@@ -1,7 +1,7 @@
 package api
 
 import (
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 )
 
@@ -13,18 +13,18 @@ type Library interface {
 	RequestPrevImage()
 	RequestNextImageWithOffset(int)
 	RequestPrevImageWithOffset(int)
-	RequestImage(*common.Handle)
+	RequestImage(*apitype.Handle)
 	RequestImageAt(int)
 
 	RequestGenerateHashes()
 	RequestStopHashes()
 
-	GetHandles() []*common.Handle
-	AddHandles(imageList []*common.Handle)
-	GetHandleById(handleId string) *common.Handle
+	GetHandles() []*apitype.Handle
+	AddHandles(imageList []*apitype.Handle)
+	GetHandleById(handleId string) *apitype.Handle
 
 	ShowAllImages()
-	ShowOnlyImages(string, []*common.Handle)
+	ShowOnlyImages(string, []*apitype.Handle)
 
 	SetImageListSize(imageListSize int)
 	SetSendSimilarImages(sendSimilarImages bool)
@@ -33,10 +33,10 @@ type Library interface {
 }
 
 type ImageCommand struct {
-	handles []*common.Handle
+	handles []*apitype.Handle
 	event.Command
 }
 
-func (s *ImageCommand) GetHandles() []*common.Handle {
+func (s *ImageCommand) GetHandles() []*apitype.Handle {
 	return s.handles
 }

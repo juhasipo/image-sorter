@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
@@ -44,14 +44,14 @@ type Caster struct {
 	sender                event.Sender
 	selectedDevice        string
 	path                  string
-	currentImage          *common.Handle
+	currentImage          *apitype.Handle
 	server                *http.Server
 	showBackground        bool
 	imageCache            api.ImageStore
 	alwaysStartHttpServer bool
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
-	imageQueue            *common.Handle
+	imageQueue            *apitype.Handle
 	imageQueueBroker      event.Broker
 }
 
@@ -138,7 +138,7 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	defer s.releaseImage()
 	imageHandle := s.currentImage
 	logger.Debug.Printf("Sending image '%s' to Chromecast", imageHandle.GetId())
-	img, err := s.imageCache.GetScaled(imageHandle, common.SizeOf(canvasWidth, canvasHeight))
+	img, err := s.imageCache.GetScaled(imageHandle, apitype.SizeOf(canvasWidth, canvasHeight))
 
 	if img != nil && err == nil {
 		writeImageToResponse(responseWriter, img, s.showBackground)
@@ -170,7 +170,7 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), &image.Uniform{C: black}, image.Point{}, draw.Src)
 
 	srcBounds := srcImage.Bounds().Size()
-	w, h := common.ScaleToFit(srcBounds.X, srcBounds.Y, canvasWidth, canvasHeight)
+	w, h := apitype.ScaleToFit(srcBounds.X, srcBounds.Y, canvasWidth, canvasHeight)
 
 	if blurBackground {
 		logger.Debug.Print("Blurring background...")
@@ -305,7 +305,7 @@ func (s *Caster) getLocalHost() string {
 	}
 }
 
-func (s *Caster) CastImage(handle *common.Handle) {
+func (s *Caster) CastImage(handle *apitype.Handle) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 	if handle.IsValid() && s.server != nil {
@@ -357,7 +357,7 @@ func (s *Caster) castImageFromQueue() {
 	}
 }
 
-func (s *Caster) getImageFromQueue() *common.Handle {
+func (s *Caster) getImageFromQueue() *apitype.Handle {
 	s.reserveImage()
 	defer s.releaseImage()
 	s.imageQueueMux.Lock()

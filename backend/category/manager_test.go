@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 func TestParse(t *testing.T) {
@@ -74,7 +74,7 @@ func TestWriteCategoriesToBuffer(t *testing.T) {
 	a := assert.New(t)
 
 	t.Run("Zero", func(t *testing.T) {
-		var categories []*common.Category
+		var categories []*apitype.Category
 
 		buf := bytes.NewBuffer([]byte{})
 		writer := bufio.NewWriter(buf)
@@ -84,8 +84,8 @@ func TestWriteCategoriesToBuffer(t *testing.T) {
 	})
 
 	t.Run("One", func(t *testing.T) {
-		categories := []*common.Category{
-			common.NewCategory("Name1", "Path1", "S"),
+		categories := []*apitype.Category{
+			apitype.NewCategory("Name1", "Path1", "S"),
 		}
 
 		buf := bytes.NewBuffer([]byte{})
@@ -96,9 +96,9 @@ func TestWriteCategoriesToBuffer(t *testing.T) {
 	})
 
 	t.Run("Multiple", func(t *testing.T) {
-		categories := []*common.Category{
-			common.NewCategory("Name1", "Path1", "S"),
-			common.NewCategory("Name2", "Path2", "S"),
+		categories := []*apitype.Category{
+			apitype.NewCategory("Name1", "Path1", "S"),
+			apitype.NewCategory("Name2", "Path2", "S"),
 		}
 
 		buf := bytes.NewBuffer([]byte{})

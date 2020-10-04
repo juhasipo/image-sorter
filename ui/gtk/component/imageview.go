@@ -4,7 +4,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 )
 
@@ -77,15 +77,15 @@ func (s *ImageView) UpdateCurrentImage() {
 	s.currentImage.UpdateCurrentImage()
 }
 
-func (s *ImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifData *common.ExifData) {
+func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageContainer, exifData *apitype.ExifData) {
 	s.currentImage.SetCurrentImage(imageContainer, exifData)
 }
 
-func (s *ImageView) AddImagesToNextStore(images []*common.ImageContainer) {
+func (s *ImageView) AddImagesToNextStore(images []*apitype.ImageContainer) {
 	s.nextImages.addImagesToStore(images)
 }
 
-func (s *ImageView) AddImagesToPrevStore(images []*common.ImageContainer) {
+func (s *ImageView) AddImagesToPrevStore(images []*apitype.ImageContainer) {
 	s.prevImages.addImagesToStore(images)
 }
 
@@ -111,6 +111,6 @@ func (s *ImageView) ZoomToFit() {
 	s.UpdateCurrentImage()
 }
 
-func (s *ImageView) GetCurrentHandle() *common.Handle {
+func (s *ImageView) GetCurrentHandle() *apitype.Handle {
 	return s.currentImage.image
 }

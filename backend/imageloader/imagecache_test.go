@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 func TestDefaultImageStore_Initialize(t *testing.T) {
@@ -17,9 +17,9 @@ func TestDefaultImageStore_Initialize(t *testing.T) {
 
 	a.Equal(uint64(0), cache.GetByteSize())
 
-	cache.Initialize([]*common.Handle{
-		common.NewHandle("../testassets", "horizontal.jpg"),
-		common.NewHandle("../testassets", "vertical.jpg"),
+	cache.Initialize([]*apitype.Handle{
+		apitype.NewHandle(testAssetsDir, "horizontal.jpg"),
+		apitype.NewHandle(testAssetsDir, "vertical.jpg"),
 	})
 
 	a.Equal(uint64(60000), cache.GetByteSize())
@@ -34,15 +34,15 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 
 	a.Equal(uint64(0), cache.GetByteSize())
 
-	handle1 := common.NewHandle("../testassets", "horizontal.jpg")
-	handle2 := common.NewHandle("../testassets", "vertical.jpg")
-	cache.Initialize([]*common.Handle{handle1, handle2})
+	handle1 := apitype.NewHandle(testAssetsDir, "horizontal.jpg")
+	handle2 := apitype.NewHandle(testAssetsDir, "vertical.jpg")
+	cache.Initialize([]*apitype.Handle{handle1, handle2})
 
 	a.Equal(uint64(60000), cache.GetByteSize())
 
 	_, _ = cache.GetFull(handle1)
 	_, _ = cache.GetFull(handle2)
-	size := common.SizeOf(100, 100)
+	size := apitype.SizeOf(100, 100)
 	_, _ = cache.GetScaled(handle1, size)
 	_, _ = cache.GetScaled(handle2, size)
 
@@ -60,21 +60,21 @@ func TestDefaultImageStore_GetFull(t *testing.T) {
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "horizontal.jpg")
+		handle := apitype.NewHandle(testAssetsDir, "horizontal.jpg")
 		img, err := cache.GetFull(handle)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		handle := apitype.NewHandle(testAssetsDir, "no-exif.jpg")
 		img, err := cache.GetFull(handle)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := common.NewHandle("", "")
+		handle := apitype.NewHandle("", "")
 		img, err := cache.GetFull(handle)
 
 		a.NotNil(err)
@@ -89,24 +89,24 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "horizontal.jpg")
-		size := common.SizeOf(400, 400)
+		handle := apitype.NewHandle(testAssetsDir, "horizontal.jpg")
+		size := apitype.SizeOf(400, 400)
 		img, err := cache.GetScaled(handle, size)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "no-exif.jpg")
-		size := common.SizeOf(400, 400)
+		handle := apitype.NewHandle(testAssetsDir, "no-exif.jpg")
+		size := apitype.SizeOf(400, 400)
 		img, err := cache.GetScaled(handle, size)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := common.NewHandle("", "")
-		size := common.SizeOf(400, 400)
+		handle := apitype.NewHandle("", "")
+		size := apitype.SizeOf(400, 400)
 		img, err := cache.GetScaled(handle, size)
 
 		a.NotNil(err)
@@ -121,21 +121,21 @@ func TestDefaultImageStore_GetThumbnail(t *testing.T) {
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "horizontal.jpg")
+		handle := apitype.NewHandle(testAssetsDir, "horizontal.jpg")
 		img, err := cache.GetThumbnail(handle)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		handle := apitype.NewHandle(testAssetsDir, "no-exif.jpg")
 		img, err := cache.GetThumbnail(handle)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := common.NewHandle("", "")
+		handle := apitype.NewHandle("", "")
 		img, err := cache.GetThumbnail(handle)
 
 		a.NotNil(err)
@@ -150,7 +150,7 @@ func TestDefaultImageStore_GetExifData(t *testing.T) {
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "vertical.jpg")
+		handle := apitype.NewHandle(testAssetsDir, "vertical.jpg")
 		exifData := cache.GetExifData(handle)
 
 		a.Equal(gdk.PixbufRotation(270), exifData.GetRotation())
@@ -166,7 +166,7 @@ func TestDefaultImageStore_GetExifData(t *testing.T) {
 		}
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle := common.NewHandle("../testassets", "no-exif.jpg")
+		handle := apitype.NewHandle(testAssetsDir, "no-exif.jpg")
 		exifData := cache.GetExifData(handle)
 
 		if a.NotNil(exifData) {
@@ -174,7 +174,7 @@ func TestDefaultImageStore_GetExifData(t *testing.T) {
 		}
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := common.NewHandle("", "")
+		handle := apitype.NewHandle("", "")
 		exifData := cache.GetExifData(handle)
 
 		a.Nil(exifData)

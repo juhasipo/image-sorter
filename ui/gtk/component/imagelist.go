@@ -2,17 +2,17 @@ package component
 
 import (
 	"github.com/gotk3/gotk3/gtk"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 type ImageList struct {
 	layout    *gtk.ScrolledWindow
 	component *gtk.IconView
 	model     *gtk.ListStore
-	images    []*common.ImageContainer
+	images    []*apitype.ImageContainer
 }
 
-func (s *ImageList) addImagesToStore(images []*common.ImageContainer) {
+func (s *ImageList) addImagesToStore(images []*apitype.ImageContainer) {
 	s.model.Clear()
 	for _, img := range images {
 		iter := s.model.Append()

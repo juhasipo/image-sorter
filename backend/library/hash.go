@@ -4,27 +4,27 @@ import (
 	"image"
 	"time"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/duplo"
 )
 
 type HashResult struct {
-	handle      *common.Handle
+	handle      *apitype.Handle
 	hash        *duplo.Hash
 	imageLoader api.ImageLoader
 }
 
-func ReturnResult(channel chan *HashResult, handle *common.Handle, hash *duplo.Hash) {
+func ReturnResult(channel chan *HashResult, handle *apitype.Handle, hash *duplo.Hash) {
 	channel <- &HashResult{
 		handle: handle,
 		hash:   hash,
 	}
 }
 
-var hashImageSize = common.SizeOf(duplo.ImageScale, duplo.ImageScale)
+var hashImageSize = apitype.SizeOf(duplo.ImageScale, duplo.ImageScale)
 
-func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel chan bool, imageLoader api.ImageLoader) {
+func hashImage(input chan *apitype.Handle, output chan *HashResult, quitChannel chan bool, imageLoader api.ImageLoader) {
 	for {
 		select {
 		case <-quitChannel:
@@ -43,7 +43,7 @@ func hashImage(input chan *common.Handle, output chan *HashResult, quitChannel c
 	}
 }
 
-func openImageForHashing(imageLoader api.ImageLoader, handle *common.Handle) (image.Image, error) {
+func openImageForHashing(imageLoader api.ImageLoader, handle *apitype.Handle) (image.Image, error) {
 	startTime := time.Now()
 	decodedImage, err := imageLoader.LoadImageScaled(handle, hashImageSize)
 	endTime := time.Now()
@@ -51,7 +51,7 @@ func openImageForHashing(imageLoader api.ImageLoader, handle *common.Handle) (im
 	return decodedImage, err
 }
 
-func generateHash(img image.Image, handle *common.Handle) duplo.Hash {
+func generateHash(img image.Image, handle *apitype.Handle) duplo.Hash {
 	startTime := time.Now()
 	hash, _ := duplo.CreateHash(img)
 	endTime := time.Now()

@@ -1,6 +1,8 @@
-package common
+package apitype
 
-import "image"
+import (
+	"image"
+)
 
 type ImageContainer struct {
 	handle *Handle

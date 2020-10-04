@@ -7,7 +7,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
@@ -21,7 +21,7 @@ type Ui struct {
 	application *gtk.Application
 	imageCache  api.ImageStore
 	sender      event.Sender
-	categories  []*common.Category
+	categories  []*apitype.Category
 	rootPath    string
 
 	// UI components
@@ -184,8 +184,8 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	return true
 }
 
-func (s *Ui) UpdateCategories(categories *api.CategoriesCommand) {
-	s.categories = make([]*common.Category, len(categories.GetCategories()))
+func (s *Ui) UpdateCategories(categories *apitype.CategoriesCommand) {
+	s.categories = make([]*apitype.Category, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
 	s.topActionView.UpdateCategories(categories, s.imageView.GetCurrentHandle())
@@ -196,7 +196,7 @@ func (s *Ui) UpdateCurrentImage() {
 	s.imageView.UpdateCurrentImage()
 }
 
-func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer) {
+func (s *Ui) SetImages(imageTarget event.Topic, handles []*apitype.ImageContainer) {
 	if imageTarget == event.ImageRequestNext {
 		s.imageView.AddImagesToNextStore(handles)
 	} else if imageTarget == event.ImageRequestPrev {
@@ -206,7 +206,7 @@ func (s *Ui) SetImages(imageTarget event.Topic, handles []*common.ImageContainer
 	}
 }
 
-func (s *Ui) SetCurrentImage(image *common.ImageContainer, index int, total int, title string, exifData *common.ExifData) {
+func (s *Ui) SetCurrentImage(image *apitype.ImageContainer, index int, total int, title string, exifData *apitype.ExifData) {
 	s.topActionView.SetCurrentStatus(index, total, title)
 	s.bottomActionView.SetShowOnlyCategory(title != "")
 	s.imageView.SetCurrentImage(image, exifData)
@@ -224,9 +224,9 @@ func (s *Ui) Run() {
 	s.application.Run([]string{})
 }
 
-func (s *Ui) SetImageCategory(commands []*api.CategorizeCommand) {
+func (s *Ui) SetImageCategory(commands []*apitype.CategorizeCommand) {
 	for _, button := range s.topActionView.GetCategoryButtons() {
-		button.SetStatus(common.NONE)
+		button.SetStatus(apitype.NONE)
 	}
 
 	for _, command := range commands {
@@ -298,7 +298,7 @@ func createFileChooser(numOfButtons int, parent gtk.IWindow) (*gtk.FileChooserDi
 }
 
 func (s *Ui) ShowEditCategoriesModal() {
-	categories := make([]*common.Category, len(s.categories))
+	categories := make([]*apitype.Category, len(s.categories))
 	copy(categories, s.categories)
 	s.editCategoriesModal.Show(s.application.GetActiveWindow(), categories)
 }

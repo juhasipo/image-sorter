@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/api"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/event"
@@ -17,8 +18,8 @@ import (
 
 type Manager struct {
 	commandLineCategories []string
-	categories            []*common.Category
-	categoriesById        map[string]*common.Category
+	categories            []*apitype.Category
+	categoriesById        map[string]*apitype.Category
 	sender                event.Sender
 	rootDir               string
 
@@ -49,8 +50,8 @@ func New(params *util.Params, sender event.Sender) api.CategoryManager {
 }
 
 func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir string) {
-	var loadedCategories []*common.Category
-	var categoriesByName = map[string]*common.Category{}
+	var loadedCategories []*apitype.Category
+	var categoriesByName = map[string]*apitype.Category{}
 	s.rootDir = filepath.Join(rootDir, constants.ImageSorterDir)
 
 	if len(defaultCategories) > 0 && defaultCategories[0] != "" {
@@ -68,21 +69,21 @@ func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir st
 	s.categoriesById = categoriesByName
 }
 
-func (s *Manager) GetCategories() []*common.Category {
+func (s *Manager) GetCategories() []*apitype.Category {
 	return s.categories
 }
 
 func (s *Manager) RequestCategories() {
-	s.sender.SendToTopicWithData(event.CategoriesUpdated, api.NewCategoriesCommand(s.categories))
+	s.sender.SendToTopicWithData(event.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
 }
 
-func (s *Manager) Save(categories []*common.Category) {
+func (s *Manager) Save(categories []*apitype.Category) {
 	s.resetCategories(categories)
 
 	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, categories)
-	s.sender.SendToTopicWithData(event.CategoriesUpdated, api.NewCategoriesCommand(s.categories))
+	s.sender.SendToTopicWithData(event.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
 }
-func (s *Manager) SaveDefault(categories []*common.Category) {
+func (s *Manager) SaveDefault(categories []*apitype.Category) {
 	s.resetCategories(categories)
 
 	if currentUser, err := user.Current(); err != nil {
@@ -91,11 +92,11 @@ func (s *Manager) SaveDefault(categories []*common.Category) {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
 		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
-		s.sender.SendToTopicWithData(event.CategoriesUpdated, api.NewCategoriesCommand(s.categories))
+		s.sender.SendToTopicWithData(event.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
 	}
 }
 
-func (s *Manager) resetCategories(categories []*common.Category) {
+func (s *Manager) resetCategories(categories []*apitype.Category) {
 	s.categories = categories
 	for _, category := range categories {
 		s.categoriesById[category.GetId()] = category
@@ -107,11 +108,11 @@ func (s *Manager) Close() {
 	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, s.categories)
 }
 
-func (s *Manager) GetCategoryById(id string) *common.Category {
+func (s *Manager) GetCategoryById(id string) *apitype.Category {
 	return s.categoriesById[id]
 }
 
-func saveCategoriesToFile(fileDir string, fileName string, categories []*common.Category) {
+func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) {
 	if _, err := os.Stat(fileDir); os.IsNotExist(err) {
 		os.Mkdir(fileDir, 0666)
 	}
@@ -129,11 +130,11 @@ func saveCategoriesToFile(fileDir string, fileName string, categories []*common.
 	writeCategoriesToBuffer(w, categories)
 }
 
-func fromCategoriesStrings(categories []string) []*common.Category {
-	var categoryEntries []*common.Category
+func fromCategoriesStrings(categories []string) []*apitype.Category {
+	var categoryEntries []*apitype.Category
 	for _, categoryName := range categories {
 		if len(categoryName) > 0 {
-			categoryEntries = append(categoryEntries, common.NewCategory(Parse(categoryName)))
+			categoryEntries = append(categoryEntries, apitype.NewCategory(Parse(categoryName)))
 		}
 	}
 	logger.Debug.Printf("Parsed %d categories", len(categoryEntries))
@@ -143,7 +144,7 @@ func fromCategoriesStrings(categories []string) []*common.Category {
 	return categoryEntries
 }
 
-func loadCategoriesFromFile(fileDir string) []*common.Category {
+func loadCategoriesFromFile(fileDir string) []*apitype.Category {
 	if currentUser, err := user.Current(); err == nil {
 		filePaths := []string{
 			filepath.Join(fileDir, constants.CategoriesFileName),
@@ -159,15 +160,15 @@ func loadCategoriesFromFile(fileDir string) []*common.Category {
 			return readCategoriesFromReader(f)
 		} else {
 			logger.Error.Println("Could not open file: "+filePath, err)
-			return []*common.Category{}
+			return []*apitype.Category{}
 		}
 	} else {
 		logger.Error.Println("Could not find current user", err)
-		return []*common.Category{}
+		return []*apitype.Category{}
 	}
 }
 
-func writeCategoriesToBuffer(w *bufio.Writer, categories []*common.Category) {
+func writeCategoriesToBuffer(w *bufio.Writer, categories []*apitype.Category) {
 	w.WriteString("#version:1")
 	w.WriteString("\n")
 	for _, category := range categories {
@@ -177,7 +178,7 @@ func writeCategoriesToBuffer(w *bufio.Writer, categories []*common.Category) {
 	w.Flush()
 }
 
-func readCategoriesFromReader(f io.Reader) []*common.Category {
+func readCategoriesFromReader(f io.Reader) []*apitype.Category {
 	var lines []string
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -187,7 +188,7 @@ func readCategoriesFromReader(f io.Reader) []*common.Category {
 	if lines != nil {
 		return fromCategoriesStrings(lines[1:])
 	} else {
-		return []*common.Category{}
+		return []*apitype.Category{}
 	}
 	return nil
 }

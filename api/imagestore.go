@@ -2,15 +2,15 @@ package api
 
 import (
 	"image"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 )
 
 type ImageStore interface {
-	Initialize([]*common.Handle)
-	GetFull(*common.Handle) (image.Image, error)
-	GetScaled(*common.Handle, common.Size) (image.Image, error)
-	GetThumbnail(*common.Handle) (image.Image, error)
-	GetExifData(handle *common.Handle) *common.ExifData
+	Initialize([]*apitype.Handle)
+	GetFull(*apitype.Handle) (image.Image, error)
+	GetScaled(*apitype.Handle, apitype.Size) (image.Image, error)
+	GetThumbnail(*apitype.Handle) (image.Image, error)
+	GetExifData(handle *apitype.Handle) *apitype.ExifData
 	GetByteSize() uint64
 	GetSizeInMB() float64
 	Purge()

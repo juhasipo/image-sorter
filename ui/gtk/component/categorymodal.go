@@ -4,6 +4,7 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"strings"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/event"
 )
@@ -228,7 +229,7 @@ func (s *CategoryModal) endAddOrEdit() {
 	s.editButton.SetSensitive(true)
 }
 
-func (s *CategoryModal) Show(parent gtk.IWindow, categories []*common.Category) {
+func (s *CategoryModal) Show(parent gtk.IWindow, categories []*apitype.Category) {
 	s.list.Show()
 	s.addEntryView.Hide()
 
@@ -263,11 +264,11 @@ func (s *CategoryModal) remove() {
 	}
 }
 
-func (s *CategoryModal) getCategoriesFromList() []*common.Category {
-	var categories []*common.Category
+func (s *CategoryModal) getCategoriesFromList() []*apitype.Category {
+	var categories []*apitype.Category
 	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
 		name, path, key := extractValuesFromModel(s.model, iter)
-		entry := common.NewCategory(name, path, key)
+		entry := apitype.NewCategory(name, path, key)
 
 		categories = append(categories, entry)
 	}

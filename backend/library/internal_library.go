@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
@@ -13,16 +13,16 @@ import (
 )
 
 var (
-	emptyHandles = []*common.ImageContainer{}
+	emptyHandles = []*apitype.ImageContainer{}
 )
 
-type ImageList func(number int) []*common.Handle
+type ImageList func(number int) []*apitype.Handle
 
 type internalManager struct {
 	rootDir                     string
-	imageList                   []*common.Handle
-	fullImageList               []*common.Handle
-	imageHandles                map[string]*common.Handle
+	imageList                   []*apitype.Handle
+	fullImageList               []*apitype.Handle
+	imageHandles                map[string]*apitype.Handle
 	imagesTitle                 string
 	index                       int
 	imageHash                   *duplo.Store
@@ -57,12 +57,12 @@ func (s *internalManager) InitializeFromDirectory(directory string) {
 	s.loadImagesFromRootDir()
 }
 
-func (s *internalManager) GetHandles() []*common.Handle {
+func (s *internalManager) GetHandles() []*apitype.Handle {
 	return s.imageList
 }
 
-func (s *internalManager) ShowOnlyImages(title string, handles []*common.Handle) {
-	s.imageList = make([]*common.Handle, len(handles))
+func (s *internalManager) ShowOnlyImages(title string, handles []*apitype.Handle) {
+	s.imageList = make([]*apitype.Handle, len(handles))
 	copy(s.imageList, handles)
 	sort.Slice(s.imageList, func(i, j int) bool {
 		return s.imageList[i].GetId() < s.imageList[j].GetId()
@@ -72,7 +72,7 @@ func (s *internalManager) ShowOnlyImages(title string, handles []*common.Handle)
 }
 
 func (s *internalManager) ShowAllImages() {
-	s.imageList = make([]*common.Handle, len(s.fullImageList))
+	s.imageList = make([]*apitype.Handle, len(s.fullImageList))
 	copy(s.imageList, s.fullImageList)
 	s.imagesTitle = ""
 }
@@ -92,7 +92,7 @@ func (s *internalManager) GenerateHashes(sender event.Sender) bool {
 		runtime.GOMAXPROCS(cpuCores)
 
 		s.stopChannel = make(chan bool)
-		inputChannel := make(chan *common.Handle, hashExpected)
+		inputChannel := make(chan *apitype.Handle, hashExpected)
 		s.outputChannel = make(chan *HashResult)
 
 		// Add images to input queue for goroutines
@@ -160,7 +160,7 @@ func (s *internalManager) StopHashes() {
 	}
 }
 
-func (s *internalManager) MoveToImage(handle *common.Handle) {
+func (s *internalManager) MoveToImage(handle *apitype.Handle) {
 	for i, c := range s.imageList {
 		if handle.GetId() == c.GetId() {
 			s.index = i
@@ -219,10 +219,10 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 	}
 }
 
-func (s *internalManager) AddHandles(imageList []*common.Handle) {
+func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.imageList = imageList
-	s.imageHandles = map[string]*common.Handle{}
-	s.fullImageList = make([]*common.Handle, len(s.imageList))
+	s.imageHandles = map[string]*apitype.Handle{}
+	s.fullImageList = make([]*apitype.Handle, len(s.imageList))
 	copy(s.fullImageList, s.imageList)
 
 	for _, handle := range s.imageList {
@@ -232,27 +232,27 @@ func (s *internalManager) AddHandles(imageList []*common.Handle) {
 	s.index = 0
 }
 
-func (s *internalManager) GetHandleById(handleId string) *common.Handle {
+func (s *internalManager) GetHandleById(handleId string) *apitype.Handle {
 	return s.imageHandles[handleId]
 }
 
-func (s *internalManager) GetMetaData(handle *common.Handle) *common.ExifData {
+func (s *internalManager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
 	return s.imageStore.GetExifData(handle)
 }
 
 // Private API
 
-func (s *internalManager) getCurrentImage() (*common.ImageContainer, int) {
+func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int) {
 	if s.index < len(s.imageList) {
 		handle := s.imageList[s.index]
 		if full, err := s.imageStore.GetFull(handle); err != nil {
 			logger.Error.Print("Error while loading full image", err)
-			return common.NewImageContainer(common.GetEmptyHandle(), nil), 0
+			return apitype.NewImageContainer(apitype.GetEmptyHandle(), nil), 0
 		} else {
-			return common.NewImageContainer(handle, full), s.index
+			return apitype.NewImageContainer(handle, full), s.index
 		}
 	} else {
-		return common.NewImageContainer(common.GetEmptyHandle(), nil), 0
+		return apitype.NewImageContainer(apitype.GetEmptyHandle(), nil), 0
 	}
 }
 func (s *internalManager) getTotalImages() int {
@@ -268,7 +268,7 @@ func (s *internalManager) getImageListSize() int {
 	return s.imageListSize
 }
 
-func (s *internalManager) getNextImages() []*common.ImageContainer {
+func (s *internalManager) getNextImages() []*apitype.ImageContainer {
 	startIndex := s.index + 1
 	endIndex := startIndex + s.imageListSize
 	if endIndex > len(s.imageList) {
@@ -280,30 +280,30 @@ func (s *internalManager) getNextImages() []*common.ImageContainer {
 	}
 
 	slice := s.imageList[startIndex:endIndex]
-	images := make([]*common.ImageContainer, len(slice))
+	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
 		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 		} else {
-			images[i] = common.NewImageContainer(handle, thumbnail)
+			images[i] = apitype.NewImageContainer(handle, thumbnail)
 		}
 	}
 
 	return images
 }
 
-func (s *internalManager) getPrevImages() []*common.ImageContainer {
+func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 	prevIndex := s.index - s.imageListSize
 	if prevIndex < 0 {
 		prevIndex = 0
 	}
 	slice := s.imageList[prevIndex:s.index]
-	images := make([]*common.ImageContainer, len(slice))
+	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
 		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 		} else {
-			images[i] = common.NewImageContainer(handle, thumbnail)
+			images[i] = apitype.NewImageContainer(handle, thumbnail)
 		}
 	}
 	util.Reverse(images)
@@ -311,7 +311,7 @@ func (s *internalManager) getPrevImages() []*common.ImageContainer {
 }
 
 func (s *internalManager) loadImagesFromRootDir() {
-	s.AddHandles(common.LoadImageHandles(s.rootDir))
+	s.AddHandles(apitype.LoadImageHandles(s.rootDir))
 }
 
 func (s *internalManager) getTreadCount() int {
@@ -319,21 +319,21 @@ func (s *internalManager) getTreadCount() int {
 	return cpuCores
 }
 
-func (s *internalManager) getSimilarImages(handle *common.Handle) ([]*common.ImageContainer, bool) {
+func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.ImageContainer, bool) {
 	if s.imageHash.Size() > 0 {
 		matches := s.imageHash.Query(*handle.GetHash())
 		sort.Sort(matches)
 
 		const maxImages = 10
-		images := make([]*common.ImageContainer, maxImages)
+		images := make([]*apitype.ImageContainer, maxImages)
 		i := 0
 		for _, match := range matches {
-			similar := match.ID.(*common.Handle)
+			similar := match.ID.(*apitype.Handle)
 			if handle.GetId() != similar.GetId() {
 				if thumbnail, err := s.imageStore.GetThumbnail(similar); err != nil {
 					logger.Error.Print("Error while loading thumbnail", err)
 				} else {
-					images[i] = common.NewImageContainer(similar, thumbnail)
+					images[i] = apitype.NewImageContainer(similar, thumbnail)
 				}
 				i++
 			}
@@ -344,6 +344,6 @@ func (s *internalManager) getSimilarImages(handle *common.Handle) ([]*common.Ima
 
 		return images, true
 	} else {
-		return []*common.ImageContainer{}, false
+		return []*apitype.ImageContainer{}, false
 	}
 }

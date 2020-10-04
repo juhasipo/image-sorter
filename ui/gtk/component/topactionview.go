@@ -5,7 +5,7 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"time"
-	"vincit.fi/image-sorter/api"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
@@ -15,13 +15,13 @@ type CategoryButton struct {
 	layout    *gtk.Box
 	toggle    *gtk.LevelBar
 	button    *gtk.Button
-	entry     *common.Category
-	operation common.Operation
+	entry     *apitype.Category
+	operation apitype.Operation
 }
 
-func (s *CategoryButton) SetStatus(operation common.Operation) {
+func (s *CategoryButton) SetStatus(operation apitype.Operation) {
 	s.operation = operation
-	if operation == common.MOVE {
+	if operation == apitype.MOVE {
 		s.toggle.SetValue(1.0)
 	} else {
 		s.toggle.SetValue(0.0)
@@ -69,21 +69,21 @@ func (v *TopActionView) SetNoDistractionMode(value bool) {
 	v.prevButton.SetVisible(value)
 }
 
-func (v *TopActionView) FindActionForShortcut(key uint, handle *common.Handle) *api.CategorizeCommand {
+func (v *TopActionView) FindActionForShortcut(key uint, handle *apitype.Handle) *apitype.CategorizeCommand {
 	for _, button := range v.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			return api.NewCategorizeCommand(
+			return apitype.NewCategorizeCommand(
 				handle, button.entry, button.operation.NextOperation())
 		}
 	}
 	return nil
 }
 
-func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCallback CategorizeCallback) {
+func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCallback CategorizeCallback) {
 	layout, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
 	button, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("%s (%s)", entry.GetName(), entry.GetShortcutAsString()))
 	toggle, _ := gtk.LevelBarNew()
@@ -93,7 +93,7 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 		button:    button,
 		toggle:    toggle,
 		entry:     entry,
-		operation: common.NONE,
+		operation: apitype.NONE,
 	}
 	s.categoryButtons[entry.GetId()] = categoryButton
 
@@ -176,13 +176,13 @@ func (s *TopActionView) addCategoryButton(entry *common.Category, categorizeCall
 	s.categoriesView.Add(layout)
 }
 
-type CategorizeCallback func(*common.Category, common.Operation, bool, bool)
+type CategorizeCallback func(*apitype.Category, apitype.Operation, bool, bool)
 
 func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, categoizeCB CategorizeCallback) func(bool, bool) {
 	return func(stayOnSameImage bool, forceToCategory bool) {
 		logger.Debug.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
 		if forceToCategory {
-			categoizeCB(categoryButton.entry, common.MOVE, stayOnSameImage, forceToCategory)
+			categoizeCB(categoryButton.entry, apitype.MOVE, stayOnSameImage, forceToCategory)
 		} else {
 			categoizeCB(categoryButton.entry, categoryButton.operation.NextOperation(), stayOnSameImage, forceToCategory)
 		}
@@ -204,7 +204,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	}
 }
 
-func (s *TopActionView) UpdateCategories(categories *api.CategoriesCommand, currentImageHandle *common.Handle) {
+func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand, currentImageHandle *apitype.Handle) {
 	s.categoryButtons = map[string]*CategoryButton{}
 	children := s.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
@@ -212,8 +212,8 @@ func (s *TopActionView) UpdateCategories(categories *api.CategoriesCommand, curr
 	})
 
 	for _, entry := range categories.GetCategories() {
-		s.addCategoryButton(entry, func(entry *common.Category, operation common.Operation, stayOnSameImage bool, forceToCategory bool) {
-			command := api.NewCategorizeCommand(currentImageHandle, entry, operation)
+		s.addCategoryButton(entry, func(entry *apitype.Category, operation apitype.Operation, stayOnSameImage bool, forceToCategory bool) {
+			command := apitype.NewCategorizeCommand(currentImageHandle, entry, operation)
 			command.SetForceToCategory(forceToCategory)
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetNextImageDelay(200 * time.Millisecond)

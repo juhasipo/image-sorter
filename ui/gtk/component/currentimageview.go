@@ -6,7 +6,7 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"image"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -17,7 +17,7 @@ var zoomLevels = []uint16{
 type CurrentImageView struct {
 	scrolledView     *gtk.ScrolledWindow
 	view             *gtk.Image
-	image            *common.Handle
+	image            *apitype.Handle
 	details          *gtk.TextView
 	zoomInButton     *gtk.Button
 	zoomOutButton    *gtk.Button
@@ -124,13 +124,13 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 	if s.imageInstance != nil {
 		fullSize := s.imageInstance.Bounds()
 		zoomPercent := s.getCurrentZoomLevel() / 100.0
-		var targetSize common.Size
+		var targetSize apitype.Size
 		if s.zoomToFixEnabled {
-			targetSize = common.SizeFromWindow(s.scrolledView, zoomPercent)
+			targetSize = apitype.SizeFromWindow(s.scrolledView, zoomPercent)
 		} else {
-			targetSize = common.SizeFromRectangle(fullSize, zoomPercent)
+			targetSize = apitype.SizeFromRectangle(fullSize, zoomPercent)
 		}
-		targetWidth, targetHeight := common.ScaleToFit(
+		targetWidth, targetHeight := apitype.ScaleToFit(
 			fullSize.Dx(), fullSize.Dy(),
 			targetSize.GetWidth(), targetSize.GetHeight())
 
@@ -153,7 +153,7 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 
 const showExifData = false
 
-func (s *CurrentImageView) SetCurrentImage(imageContainer *common.ImageContainer, exifData *common.ExifData) {
+func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContainer, exifData *apitype.ExifData) {
 	s.imageChanged = true
 	handle := imageContainer.GetHandle()
 	img := imageContainer.GetImage()
@@ -212,10 +212,10 @@ func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {
 	return nil
 }
 
-func getPixbufSize(pixbuf *gdk.Pixbuf) common.Size {
+func getPixbufSize(pixbuf *gdk.Pixbuf) apitype.Size {
 	if pixbuf != nil {
-		return common.SizeOf(pixbuf.GetWidth(), pixbuf.GetHeight())
+		return apitype.SizeOf(pixbuf.GetWidth(), pixbuf.GetHeight())
 	} else {
-		return common.SizeOf(0, 0)
+		return apitype.SizeOf(0, 0)
 	}
 }
