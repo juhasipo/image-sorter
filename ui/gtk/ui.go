@@ -161,7 +161,7 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.sender.SendToTopic(event.ImageRequestNext)
 		}
-	} else if command := s.topActionView.FindActionForShortcut(key, s.imageView.GetCurrentHandle()); command != nil {
+	} else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.GetCurrentHandle()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
 			s.sender.SendToTopicWithData(event.CategoriesShowOnly, command.GetEntry())

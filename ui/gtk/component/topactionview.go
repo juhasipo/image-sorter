@@ -56,21 +56,21 @@ func NewTopActions(builder *gtk.Builder, sender event.Sender) *TopActionView {
 	return topActionView
 }
 
-func (v *TopActionView) SetVisible(visible bool) {
-	v.categoriesView.SetVisible(visible)
-	v.nextButton.SetVisible(visible)
-	v.prevButton.SetVisible(visible)
-	v.currentImagesStatusLabel.SetVisible(visible)
+func (s *TopActionView) SetVisible(visible bool) {
+	s.categoriesView.SetVisible(visible)
+	s.nextButton.SetVisible(visible)
+	s.prevButton.SetVisible(visible)
+	s.currentImagesStatusLabel.SetVisible(visible)
 }
 
-func (v *TopActionView) SetNoDistractionMode(value bool) {
+func (s *TopActionView) SetNoDistractionMode(value bool) {
 	value = !value
-	v.nextButton.SetVisible(value)
-	v.prevButton.SetVisible(value)
+	s.nextButton.SetVisible(value)
+	s.prevButton.SetVisible(value)
 }
 
-func (v *TopActionView) FindActionForShortcut(key uint, handle *apitype.Handle) *apitype.CategorizeCommand {
-	for _, button := range v.categoryButtons {
+func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.Handle) *apitype.CategorizeCommand {
+	for _, button := range s.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {

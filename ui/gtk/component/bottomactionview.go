@@ -163,20 +163,20 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 	return bottomActionView
 }
 
-func (v *BottomActionView) SetVisible(visible bool) {
-	v.layout.SetVisible(visible)
+func (s *BottomActionView) SetVisible(visible bool) {
+	s.layout.SetVisible(visible)
 }
 
-func (v *BottomActionView) SetNoDistractionMode(value bool) {
+func (s *BottomActionView) SetNoDistractionMode(value bool) {
 	value = !value
-	v.layout.SetVisible(value)
+	s.layout.SetVisible(value)
 }
 
-func (v *BottomActionView) SetShowFullscreenButton(visible bool) {
-	v.fullscreenButton.SetVisible(visible)
-	v.exitFullscreenButton.SetVisible(!visible)
+func (s *BottomActionView) SetShowFullscreenButton(visible bool) {
+	s.fullscreenButton.SetVisible(visible)
+	s.exitFullscreenButton.SetVisible(!visible)
 }
 
-func (v *BottomActionView) SetShowOnlyCategory(status bool) {
-	v.showAllImagesButton.SetVisible(status)
+func (s *BottomActionView) SetShowOnlyCategory(status bool) {
+	s.showAllImagesButton.SetVisible(status)
 }
