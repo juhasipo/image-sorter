@@ -26,22 +26,29 @@ func applyZoom(value int, zoom float64) int {
 	return int(float64(value) * zoom)
 }
 
-func SizeFromWindow(widget *gtk.ScrolledWindow, zoom float64) Size {
+func ZoomedSizeFromWindow(widget *gtk.ScrolledWindow, zoom float64) Size {
 	return Size{
 		width:  applyZoom(widget.GetAllocatedWidth(), zoom),
 		height: applyZoom(widget.GetAllocatedHeight(), zoom),
 	}
 }
 
-func SizeFromRectangle(rectangle image.Rectangle, zoom float64) Size {
+func ZoomedSizeFromRectangle(rectangle image.Rectangle, zoom float64) Size {
 	return Size{
 		width:  applyZoom(rectangle.Dx(), zoom),
 		height: applyZoom(rectangle.Dy(), zoom),
 	}
 }
 
-// TODO: Implement via Size
-func ScaleToFit(sourceWidth int, sourceHeight int, targetWidth int, targetHeight int) (int, int) {
+func PointOfScaledToFit(source image.Point, target Size) Size {
+	return SizeOf(intSizeOfScaledToFit(source.X, source.Y, target.width, target.height))
+}
+
+func RectangleOfScaledToFit(source image.Rectangle, target Size) Size {
+	return SizeOf(intSizeOfScaledToFit(source.Dx(), source.Dy(), target.width, target.height))
+}
+
+func intSizeOfScaledToFit(sourceWidth int, sourceHeight int, targetWidth int, targetHeight int) (int, int) {
 	ratio := float32(sourceWidth) / float32(sourceHeight)
 	newWidth := int(float32(targetHeight) * ratio)
 	newHeight := targetHeight

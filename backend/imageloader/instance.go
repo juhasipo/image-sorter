@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	thumbnailSize = 100
+	thumbnailWidth  = 100
+	thumbnailHeight = thumbnailWidth
 )
 
 var (
 	emptyInstance = Instance{}
+	thumbnailSize = apitype.SizeOf(thumbnailWidth, thumbnailHeight)
 )
 
 type Instance struct {
@@ -85,14 +87,14 @@ func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 	}
 
 	fullSize := full.Bounds()
-	newWidth, newHeight := apitype.ScaleToFit(fullSize.Dx(), fullSize.Dy(), size.GetWidth(), size.GetHeight())
+	newSize := apitype.RectangleOfScaledToFit(fullSize, size)
 
 	if s.scaled == nil {
-		s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
+		s.scaled = imaging.Resize(full, newSize.GetWidth(), newSize.GetHeight(), imaging.Linear)
 	} else {
 		size := s.scaled.Bounds()
-		if newWidth != size.Dx() && newHeight != size.Dy() {
-			s.scaled = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
+		if newSize.GetWidth() != size.Dx() && newSize.GetHeight() != size.Dy() {
+			s.scaled = imaging.Resize(full, newSize.GetWidth(), newSize.GetHeight(), imaging.Linear)
 		} else {
 			logger.Trace.Print("Use cached scaled image")
 			// Use cached
@@ -116,9 +118,9 @@ func (s *Instance) GetThumbnail() (image.Image, error) {
 			return nil, err
 		} else {
 			fullSize := full.Bounds()
-			newWidth, newHeight := apitype.ScaleToFit(fullSize.Dx(), fullSize.Dy(), thumbnailSize, thumbnailSize)
+			newSize := apitype.RectangleOfScaledToFit(fullSize, thumbnailSize)
 
-			s.thumbnail = imaging.Resize(full, newWidth, newHeight, imaging.Linear)
+			s.thumbnail = imaging.Resize(full, newSize.GetWidth(), newSize.GetHeight(), imaging.Linear)
 		}
 	} else {
 		logger.Trace.Print("Use cached thumbnail")
@@ -188,8 +190,7 @@ func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
 	if s.thumbnail == nil {
 		startTime := time.Now()
 
-		size := apitype.SizeOf(thumbnailSize, thumbnailSize)
-		if thumbnail, err := s.loadFull(&size); err != nil {
+		if thumbnail, err := s.loadFull(&thumbnailSize); err != nil {
 			logger.Error.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
 			return nil, err
 		} else {

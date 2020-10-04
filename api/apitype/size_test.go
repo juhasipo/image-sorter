@@ -2,6 +2,7 @@ package apitype
 
 import (
 	"github.com/stretchr/testify/assert"
+	"image"
 	"testing"
 )
 
@@ -34,10 +35,22 @@ func TestScaleToFit(t *testing.T) {
 		{name: "40x30  ->400x100", args: args{sourceWidth: 40, sourceHeight: 30, targetWidth: 400, targetHeight: 100}, width: 133, height: 100},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w, h := ScaleToFit(tt.args.sourceWidth, tt.args.sourceHeight, tt.args.targetWidth, tt.args.targetHeight)
-			a.Equal(tt.width, w)
-			a.Equal(tt.height, h)
+		t.Run("RectangleOfScaledToFit: "+tt.name, func(t *testing.T) {
+			size := RectangleOfScaledToFit(
+				image.Rect(0, 0, tt.args.sourceWidth, tt.args.sourceHeight),
+				SizeOf(tt.args.targetWidth, tt.args.targetHeight),
+			)
+			a.Equal(tt.width, size.GetWidth())
+			a.Equal(tt.height, size.GetHeight())
+		})
+
+		t.Run("PointOfScaledToFit: "+tt.name, func(t *testing.T) {
+			size := PointOfScaledToFit(
+				image.Pt(tt.args.sourceWidth, tt.args.sourceHeight),
+				SizeOf(tt.args.targetWidth, tt.args.targetHeight),
+			)
+			a.Equal(tt.width, size.GetWidth())
+			a.Equal(tt.height, size.GetHeight())
 		})
 	}
 }
@@ -60,6 +73,38 @@ func TestSizeOf(t *testing.T) {
 			got := SizeOf(tt.args.width, tt.args.height)
 			a.Equal(tt.width, got.GetWidth())
 			a.Equal(tt.height, got.GetHeight())
+		})
+	}
+}
+
+func TestZoomedSizeFromRectangle(t *testing.T) {
+	a := assert.New(t)
+	type args struct {
+		sourceWidth  int
+		sourceHeight int
+		zoomFactor   float64
+	}
+	tests := []struct {
+		name   string
+		args   args
+		width  int
+		height int
+	}{
+		{name: "100x200:1.0->100x200", args: args{sourceWidth: 100, sourceHeight: 200, zoomFactor: 1.0}, width: 100, height: 200},
+		{name: "100x200:0.0->0x0", args: args{sourceWidth: 100, sourceHeight: 200, zoomFactor: 0.0}, width: 0, height: 0},
+		// Downscale
+		{name: "100x200:0.5->50x100", args: args{sourceWidth: 100, sourceHeight: 200, zoomFactor: 0.5}, width: 50, height: 100},
+		// Upscale
+		{name: "100x200:2.0->200x400", args: args{sourceWidth: 100, sourceHeight: 200, zoomFactor: 2.0}, width: 200, height: 400},
+	}
+	for _, tt := range tests {
+		t.Run("IntSizeOfScaledToFit: "+tt.name, func(t *testing.T) {
+			size := ZoomedSizeFromRectangle(
+				image.Rect(0, 0, tt.args.sourceWidth, tt.args.sourceHeight),
+				tt.args.zoomFactor,
+			)
+			a.Equal(tt.width, size.GetWidth())
+			a.Equal(tt.height, size.GetHeight())
 		})
 	}
 }

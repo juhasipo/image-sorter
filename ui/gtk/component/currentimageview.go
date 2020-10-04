@@ -126,20 +126,18 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 		zoomPercent := s.getCurrentZoomLevel() / 100.0
 		var targetSize apitype.Size
 		if s.zoomToFixEnabled {
-			targetSize = apitype.SizeFromWindow(s.scrolledView, zoomPercent)
+			targetSize = apitype.ZoomedSizeFromWindow(s.scrolledView, zoomPercent)
 		} else {
-			targetSize = apitype.SizeFromRectangle(fullSize, zoomPercent)
+			targetSize = apitype.ZoomedSizeFromRectangle(fullSize, zoomPercent)
 		}
-		targetWidth, targetHeight := apitype.ScaleToFit(
-			fullSize.Dx(), fullSize.Dy(),
-			targetSize.GetWidth(), targetSize.GetHeight())
+		targetFitSize := apitype.RectangleOfScaledToFit(fullSize, targetSize)
 
 		pixBufSize := getPixbufSize(gtkImage.GetPixbuf())
 		if s.imageChanged ||
-			(targetWidth != pixBufSize.GetWidth() &&
-				targetHeight != pixBufSize.GetHeight()) {
+			(targetFitSize.GetWidth() != pixBufSize.GetWidth() &&
+				targetFitSize.GetHeight() != pixBufSize.GetHeight()) {
 			s.imageChanged = false
-			scaled, err := asPixbuf(s.imageInstance).ScaleSimple(targetWidth, targetHeight, gdk.INTERP_TILES)
+			scaled, err := asPixbuf(s.imageInstance).ScaleSimple(targetFitSize.GetWidth(), targetFitSize.GetHeight(), gdk.INTERP_TILES)
 			if err != nil {
 				logger.Error.Print("Could not load Pixbuf", err)
 			}

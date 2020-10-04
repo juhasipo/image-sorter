@@ -37,6 +37,8 @@ const (
 	cast_image_event    = "caster-internal-cast-image"
 )
 
+var canvasSize = apitype.SizeOf(canvasWidth, canvasHeight)
+
 type Caster struct {
 	secret                string
 	port                  int
@@ -170,7 +172,7 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), &image.Uniform{C: black}, image.Point{}, draw.Src)
 
 	srcBounds := srcImage.Bounds().Size()
-	w, h := apitype.ScaleToFit(srcBounds.X, srcBounds.Y, canvasWidth, canvasHeight)
+	size := apitype.PointOfScaledToFit(srcBounds, canvasSize)
 
 	if blurBackground {
 		logger.Debug.Print("Blurring background...")
@@ -184,8 +186,8 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 		draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), background, image.Point{}, draw.Src)
 	}
 
-	srcImage = imaging.Resize(srcImage, w, h, imaging.Linear)
-	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (w - canvasWidth) / 2}, draw.Src)
+	srcImage = imaging.Resize(srcImage, size.GetWidth(), size.GetHeight(), imaging.Linear)
+	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (size.GetWidth() - canvasWidth) / 2}, draw.Src)
 
 	var img image.Image = fullHdCanvas
 	return img
