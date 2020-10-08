@@ -55,6 +55,8 @@ type Caster struct {
 	imageQueueMux         sync.Mutex
 	imageQueue            *apitype.Handle
 	imageQueueBroker      event.Broker
+
+	api.Caster
 }
 
 type DeviceEntry struct {
@@ -64,7 +66,7 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func NewCaster(params *util.Params, sender event.Sender, imageCache api.ImageStore) *Caster {
+func NewCaster(params *util.Params, sender event.Sender, imageCache api.ImageStore) api.Caster {
 	c := &Caster{
 		port:                  params.GetHttpPort(),
 		alwaysStartHttpServer: params.GetAlwaysStartHttpServer(),
