@@ -96,7 +96,7 @@ func (s *Ui) Init(directory string) {
 
 		s.similarImagesView = component.NewSimilarImagesView(builder, s.sender, s.imageCache)
 		s.imageView = component.NewImageView(builder, s.sender, s.imageCache)
-		s.topActionView = component.NewTopActions(builder, s.sender)
+		s.topActionView = component.NewTopActions(builder, s.imageView, s.sender)
 		s.bottomActionView = component.NewBottomActions(builder, s.application.GetActiveWindow(), s, s.sender)
 		s.progressView = component.NewProgressView(builder, s.sender)
 
@@ -186,7 +186,7 @@ func (s *Ui) UpdateCategories(categories *apitype.CategoriesCommand) {
 	s.categories = make([]*apitype.Category, len(categories.GetCategories()))
 	copy(s.categories, categories.GetCategories())
 
-	s.topActionView.UpdateCategories(categories, s.imageView.GetCurrentHandle())
+	s.topActionView.UpdateCategories(categories)
 	s.sender.SendToTopic(event.ImageRequestCurrent)
 }
 

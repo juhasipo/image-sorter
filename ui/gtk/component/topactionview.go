@@ -35,9 +35,10 @@ type TopActionView struct {
 	prevButton               *gtk.Button
 	currentImagesStatusLabel *gtk.Label
 	sender                   event.Sender
+	imageView                *ImageView
 }
 
-func NewTopActions(builder *gtk.Builder, sender event.Sender) *TopActionView {
+func NewTopActions(builder *gtk.Builder, imageView *ImageView, sender event.Sender) *TopActionView {
 	topActionView := &TopActionView{
 		categoriesView:           GetObjectOrPanic(builder, "categories").(*gtk.Box),
 		categoryButtons:          map[string]*CategoryButton{},
@@ -45,6 +46,7 @@ func NewTopActions(builder *gtk.Builder, sender event.Sender) *TopActionView {
 		prevButton:               GetObjectOrPanic(builder, "prev-button").(*gtk.Button),
 		currentImagesStatusLabel: GetObjectOrPanic(builder, "current-images-status-label").(*gtk.Label),
 		sender:                   sender,
+		imageView:                imageView,
 	}
 	topActionView.nextButton.Connect("clicked", func() {
 		sender.SendToTopic(event.ImageRequestNext)
@@ -204,7 +206,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	}
 }
 
-func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand, currentImageHandle *apitype.Handle) {
+func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand) {
 	s.categoryButtons = map[string]*CategoryButton{}
 	children := s.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
@@ -212,7 +214,12 @@ func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand, 
 	})
 
 	for _, entry := range categories.GetCategories() {
+		logger.Trace.Printf("Create categorization handler for entry '%s'", entry)
+
 		s.addCategoryButton(entry, func(entry *apitype.Category, operation apitype.Operation, stayOnSameImage bool, forceToCategory bool) {
+			currentImageHandle := s.imageView.GetCurrentHandle()
+			logger.Debug.Printf("Categorize handle '%s' to category '%s", currentImageHandle, entry)
+
 			command := apitype.NewCategorizeCommand(currentImageHandle, entry, operation)
 			command.SetForceToCategory(forceToCategory)
 			command.SetStayOfSameImage(stayOnSameImage)
