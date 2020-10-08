@@ -5,7 +5,6 @@ type Topic string
 const (
 	// General
 	ProcessStatusUpdated Topic = "process-status-updated"
-	UiReady              Topic = "ui-ready"
 	DirectoryChanged     Topic = "directory-changed"
 
 	// Image related

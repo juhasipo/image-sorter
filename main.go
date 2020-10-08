@@ -1,8 +1,6 @@
 package main
 
 import (
-	"runtime"
-	"time"
 	"vincit.fi/image-sorter/backend/caster"
 	"vincit.fi/image-sorter/backend/category"
 	"vincit.fi/image-sorter/backend/filter"
@@ -41,12 +39,11 @@ func main() {
 	gui := gtkUi.NewUi(params, broker, imageCache)
 
 	// Startup
-	broker.Subscribe(event.UiReady, func() {
-		categoryManager.RequestCategories()
-	})
 	broker.Subscribe(event.DirectoryChanged, func(directory string) {
+		logger.Info.Printf("Directory changed to '%s'", directory)
 		categoryManager.InitializeFromDirectory([]string{}, directory)
 		imageLibrary.InitializeFromDirectory(directory)
+
 		if len(imageLibrary.GetHandles()) > 0 {
 			imageCache.Initialize(imageLibrary.GetHandles()[:5])
 		}
@@ -104,18 +101,5 @@ func main() {
 	// Category -> UI
 	broker.ConnectToGui(event.CategoriesUpdated, gui.UpdateCategories)
 
-	StartBackgroundGC()
-
 	gui.Run()
-}
-
-func StartBackgroundGC() {
-	logger.Debug.Print("Start GC background process")
-	go func() {
-		for true {
-			logger.Trace.Printf("Running GC")
-			runtime.GC()
-			time.Sleep(30 * time.Second)
-		}
-	}()
 }
