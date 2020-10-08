@@ -37,6 +37,11 @@ type Ui struct {
 	component.CallbackApi
 }
 
+const (
+	defaultWindowWidth  = 800
+	defaultWindowHeight = 600
+)
+
 func NewUi(params *util.Params, broker event.Sender, imageCache api.ImageStore) api.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
@@ -86,7 +91,7 @@ func (s *Ui) Init(directory string) {
 
 		// Get the object with the id of "main_window".
 		s.win = component.GetObjectOrPanic(builder, "window").(*gtk.ApplicationWindow)
-		s.win.SetSizeRequest(800, 600)
+		s.win.SetSizeRequest(defaultWindowWidth, defaultWindowHeight)
 		s.win.Connect("key_press_event", s.handleKeyPress)
 
 		s.similarImagesView = component.NewSimilarImagesView(builder, s.sender, s.imageCache)
@@ -117,12 +122,7 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	keyEvent := gdk.EventKeyNewFromEvent(e)
 	key := keyEvent.KeyVal()
 
-	modifiers := gtk.AcceleratorGetDefaultModMask()
-	state := gdk.ModifierType(keyEvent.State())
-	modifierType := state & modifiers
-	shiftDown := modifierType&gdk.GDK_CONTROL_MASK > 0
-	controlDown := modifierType&gdk.GDK_CONTROL_MASK > 0
-	altDown := modifierType&gdk.GDK_MOD1_MASK > 0
+	shiftDown, controlDown, altDown := resolveModifierStatuses(keyEvent)
 
 	if key == gdk.KEY_F8 {
 		s.FindDevices()
@@ -166,10 +166,8 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		if switchToCategory {
 			s.sender.SendToTopicWithData(event.CategoriesShowOnly, command.GetEntry())
 		} else {
-			stayOnSameImage := shiftDown
-			forceToCategory := controlDown
-			command.SetStayOfSameImage(stayOnSameImage)
-			command.SetForceToCategory(forceToCategory)
+			command.SetStayOfSameImage(shiftDown)
+			command.SetForceToCategory(controlDown)
 			s.sender.SendToTopicWithData(event.CategorizeImage, command)
 		}
 	} else if key == gdk.KEY_plus || key == gdk.KEY_KP_Add {
@@ -342,4 +340,17 @@ func (s *Ui) ExitFullScreen() {
 func (s *Ui) FindDevices() {
 	s.castModal.StartSearch(s.application.GetActiveWindow())
 	s.sender.SendToTopic(event.CastDeviceSearch)
+}
+
+func resolveModifierStatuses(keyEvent *gdk.EventKey) (shiftDown bool, controlDown bool, altDown bool) {
+	modifiers := gtk.AcceleratorGetDefaultModMask()
+	state := gdk.ModifierType(keyEvent.State())
+	modifierType := state & modifiers
+
+	shiftDown = modifierType&gdk.GDK_SHIFT_MASK > 0
+	controlDown = modifierType&gdk.GDK_CONTROL_MASK > 0
+	altDown = modifierType&gdk.GDK_MOD1_MASK > 0
+
+	logger.Trace.Printf("Modifiers: Shift = %t, CTRL = %t, ALT = %t", shiftDown, controlDown, altDown)
+	return
 }
