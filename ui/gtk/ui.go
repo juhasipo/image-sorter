@@ -8,8 +8,8 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/common/util"
 	"vincit.fi/image-sorter/ui/gtk/component"
 )
 
@@ -41,7 +41,7 @@ const (
 	defaultWindowHeight = 600
 )
 
-func NewUi(params *util.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
+func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
 
 	// Create Gtk Application, change appID to your application domain name reversed.
 	const appID = "fi.vincit.imagesorter"

@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+/*
+These have to stay under common since
+* UI uses them to convert between GTK <-> Human
+* Backend uses to convert between Serialized <-> GTK
+*/
+
 func KeyvalName(keyval uint) string {
 	return C.GoString((*C.char)(C.gdk_keyval_name(C.guint(keyval))))
 }

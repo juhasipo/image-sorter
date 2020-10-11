@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"unsafe"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/common"
+	"vincit.fi/image-sorter/backend/util"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -52,7 +52,7 @@ func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Im
 		if err := jpeg.Encode(jpegBuffer, img, encodingOptions); err != nil {
 			logger.Error.Println("Could not encode image", err)
 			return img, exifData, err
-		} else if err := common.MakeDirectoriesIfNotExist(handle.GetDir(), s.dstPath); err != nil {
+		} else if err := util.MakeDirectoriesIfNotExist(handle.GetDir(), s.dstPath); err != nil {
 			return img, exifData, err
 		} else if destination, err := os.Create(dstFilePath); err != nil {
 			logger.Error.Println("Could not open file for writing", err)
@@ -64,7 +64,7 @@ func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Im
 		}
 	} else {
 		logger.Debug.Printf("Copy '%s' as is", handle.GetPath())
-		return img, exifData, common.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
+		return img, exifData, util.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
 	}
 }
 

@@ -24,9 +24,9 @@ import (
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/common/util"
 )
 
 const (
@@ -66,7 +66,7 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func NewCaster(params *util.Params, sender api.Sender, imageCache api.ImageStore) api.Caster {
+func NewCaster(params *common.Params, sender api.Sender, imageCache api.ImageStore) api.Caster {
 	c := &Caster{
 		port:                  params.GetHttpPort(),
 		alwaysStartHttpServer: params.GetAlwaysStartHttpServer(),

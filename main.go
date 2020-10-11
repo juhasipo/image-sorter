@@ -8,16 +8,16 @@ import (
 	"vincit.fi/image-sorter/backend/imagecategory"
 	"vincit.fi/image-sorter/backend/imageloader"
 	"vincit.fi/image-sorter/backend/library"
+	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/common/util"
 	gtkUi "vincit.fi/image-sorter/ui/gtk"
 )
 
 const EventBusQueueSize = 1000
 
 func main() {
-	params := util.ParseParams()
+	params := common.ParseParams()
 
 	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
 

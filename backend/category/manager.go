@@ -9,10 +9,10 @@ import (
 	"strings"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/util"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/common/util"
 )
 
 type Manager struct {
@@ -40,7 +40,7 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(params *util.Params, sender api.Sender) api.CategoryManager {
+func New(params *common.Params, sender api.Sender) api.CategoryManager {
 	manager := Manager{
 		sender:                sender,
 		commandLineCategories: params.GetCategories(),
@@ -150,7 +150,7 @@ func loadCategoriesFromFile(fileDir string) []*apitype.Category {
 			filepath.Join(currentUser.HomeDir, constants.ImageSorterDir, constants.CategoriesFileName),
 		}
 
-		filePath := common.GetFirstExistingFilePath(filePaths)
+		filePath := util.GetFirstExistingFilePath(filePaths)
 
 		logger.Info.Printf("Reading categories from file '%s'", filePath)
 

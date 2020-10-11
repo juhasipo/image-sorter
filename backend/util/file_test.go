@@ -1,4 +1,4 @@
-package common
+package util
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -13,7 +13,7 @@ func TestDoesFileExist_FileExists(t *testing.T) {
 	require.True(t, DoesFileExist("file_test.go"))
 }
 func TestDoesFileExist_DirExists(t *testing.T) {
-	require.True(t, DoesFileExist("../common"))
+	require.True(t, DoesFileExist("../util"))
 }
 func TestDoesFileExist_DoesntExist(t *testing.T) {
 	require.False(t, DoesFileExist("foobarfile"))
