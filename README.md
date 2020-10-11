@@ -54,3 +54,20 @@ The `<key>` means a shortcut set for a category.
 |ALT + Enter | Toggle full screen
 |CTRL + F11 | No distractions mode
 |F12 | Find similar images
+
+
+Development
+===========
+
+# Folder structure
+
+|Folder   | Description |
+|---------|-------------|
+| api     | Common interfaces and types
+| assets  | Images, icons etc.
+| backend | Business logic implementation
+| common  | Common implementations used by UI and backend
+| duplo   | Optiomized implementation of Duplo library
+| script  | Build scripts
+| testassets | Test asset files (e.g. JPEG images) used in unit tests
+| ui      | Graphical user interface implmentation
