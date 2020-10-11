@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/common/event"
 )
 
 type BottomActionView struct {
@@ -23,7 +23,7 @@ type BottomActionView struct {
 	aboutButton          *gtk.Button
 }
 
-func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks CallbackApi, sender event.Sender) *BottomActionView {
+func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks CallbackApi, sender api.Sender) *BottomActionView {
 	bottomActionView := &BottomActionView{
 		layout:               GetObjectOrPanic(builder, "bottom-actions-view").(*gtk.Box),
 		persistButton:        GetObjectOrPanic(builder, "persist-button").(*gtk.Button),
@@ -86,13 +86,13 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 
 		if response == gtk.RESPONSE_YES {
 			value := qualityScale.GetValue()
-			sender.SendToTopicWithData(event.CategoryPersistAll, apitype.NewPersistCategorizationCommand(
+			sender.SendToTopicWithData(api.CategoryPersistAll, apitype.NewPersistCategorizationCommand(
 				keepOriginalsCB.GetActive(), exifCorrect.GetActive(), int(value)))
 		}
 	})
 
 	bottomActionView.findSimilarButton.Connect("clicked", func() {
-		sender.SendToTopic(event.SimilarRequestSearch)
+		sender.SendToTopic(api.SimilarRequestSearch)
 	})
 	bottomActionView.findDevicesButton.Connect("clicked", callbacks.FindDevices)
 
@@ -140,7 +140,7 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 	})
 
 	bottomActionView.showAllImagesButton.Connect("clicked", func() {
-		sender.SendToTopic(event.ImageShowAll)
+		sender.SendToTopic(api.ImageShowAll)
 	})
 
 	bottomActionView.aboutButton.Connect("clicked", func() {

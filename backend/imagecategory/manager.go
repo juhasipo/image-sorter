@@ -10,7 +10,6 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/filter"
 	"vincit.fi/image-sorter/common/constants"
-	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -18,7 +17,7 @@ type Manager struct {
 	rootDir       string
 	settingDir    string
 	imageCategory map[string]map[string]*apitype.CategorizedImage
-	sender        event.Sender
+	sender        api.Sender
 	library       api.Library
 	filterManager *filter.Manager
 	imageLoader   api.ImageLoader
@@ -26,7 +25,7 @@ type Manager struct {
 	api.ImageCategoryManager
 }
 
-func NewImageCategoryManager(sender event.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader) api.ImageCategoryManager {
+func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader) api.ImageCategoryManager {
 	var manager = Manager{
 		imageCategory: map[string]map[string]*apitype.CategorizedImage{},
 		sender:        sender,
@@ -109,7 +108,7 @@ func (s *Manager) SetCategory(command *apitype.CategorizeCommand) {
 		} else {
 			s.sendCategories(handle)
 			time.Sleep(command.GetNextImageDelay())
-			s.sender.SendToTopic(event.ImageRequestNext)
+			s.sender.SendToTopic(api.ImageRequestNext)
 		}
 	}
 }
@@ -119,15 +118,15 @@ func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCo
 	operationsByImage := s.ResolveFileOperations(s.imageCategory, options)
 
 	total := len(operationsByImage)
-	s.sender.SendToTopicWithData(event.ProcessStatusUpdated, "categorize", 0, total)
+	s.sender.SendToTopicWithData(api.ProcessStatusUpdated, "categorize", 0, total)
 	for i, operationGroup := range operationsByImage {
 		err := operationGroup.Apply()
 		if err != nil {
 			logger.Error.Println("Error", err)
 		}
-		s.sender.SendToTopicWithData(event.ProcessStatusUpdated, "categorize", i+1, total)
+		s.sender.SendToTopicWithData(api.ProcessStatusUpdated, "categorize", i+1, total)
 	}
-	s.sender.SendToTopicWithData(event.DirectoryChanged, s.rootDir)
+	s.sender.SendToTopicWithData(api.DirectoryChanged, s.rootDir)
 }
 
 func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
@@ -188,7 +187,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *apitype.Category) {
 			handles = append(handles, handle)
 		}
 	}
-	s.sender.SendToTopicWithData(event.ImageShowOnly, cat.GetName(), handles)
+	s.sender.SendToTopicWithData(api.ImageShowOnly, cat.GetName(), handles)
 }
 
 func (s *Manager) LoadCategorization(handleManager api.Library, categoryManager api.CategoryManager) {
@@ -286,5 +285,5 @@ func (s *Manager) sendCategories(currentImage *apitype.Handle) {
 			commands = append(commands, apitype.NewCategorizeCommand(currentImage, image.GetEntry(), image.GetOperation()))
 		}
 	}
-	s.sender.SendToTopicWithData(event.CategoryImageUpdate, commands)
+	s.sender.SendToTopicWithData(api.CategoryImageUpdate, commands)
 }

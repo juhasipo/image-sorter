@@ -1,6 +1,4 @@
-package event
-
-type Command interface{}
+package api
 
 type Sender interface {
 	SendToTopic(topic Topic)

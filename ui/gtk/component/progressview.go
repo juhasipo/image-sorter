@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/gotk3/gotk3/gtk"
-	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/api"
 )
 
 type ProgressView struct {
@@ -12,14 +12,14 @@ type ProgressView struct {
 	stopButton  *gtk.Button
 }
 
-func NewProgressView(builder *gtk.Builder, sender event.Sender) *ProgressView {
+func NewProgressView(builder *gtk.Builder, sender api.Sender) *ProgressView {
 	progressView := &ProgressView{
 		view:        GetObjectOrPanic(builder, "progress-view").(*gtk.Box),
 		stopButton:  GetObjectOrPanic(builder, "stop-progress-button").(*gtk.Button),
 		progressbar: GetObjectOrPanic(builder, "progress-bar").(*gtk.ProgressBar),
 	}
 	progressView.stopButton.Connect("clicked", func() {
-		sender.SendToTopic(event.SimilarRequestStop)
+		sender.SendToTopic(api.SimilarRequestStop)
 	})
 
 	return progressView

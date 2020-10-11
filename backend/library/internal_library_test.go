@@ -8,11 +8,10 @@ import (
 	"testing"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/common/event"
 )
 
 type MockSender struct {
-	event.Sender
+	api.Sender
 	mock.Mock
 }
 

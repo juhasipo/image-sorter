@@ -43,7 +43,7 @@ type Caster struct {
 	secret                string
 	port                  int
 	devices               map[string]*DeviceEntry
-	sender                event.Sender
+	sender                api.Sender
 	selectedDevice        string
 	path                  string
 	currentImage          *apitype.Handle
@@ -66,7 +66,7 @@ type DeviceEntry struct {
 	localAddr    net.IP
 }
 
-func NewCaster(params *util.Params, sender event.Sender, imageCache api.ImageStore) api.Caster {
+func NewCaster(params *util.Params, sender api.Sender, imageCache api.ImageStore) api.Caster {
 	c := &Caster{
 		port:                  params.GetHttpPort(),
 		alwaysStartHttpServer: params.GetAlwaysStartHttpServer(),
@@ -223,7 +223,7 @@ func (s *Caster) FindDevices() {
 			}
 
 			s.devices[deviceName] = deviceEntry
-			s.sender.SendToTopicWithData(event.CastDeviceFound, deviceName)
+			s.sender.SendToTopicWithData(api.CastDeviceFound, deviceName)
 		}
 	}()
 
@@ -234,7 +234,7 @@ func (s *Caster) FindDevices() {
 			Timeout: deviceSearchTimeout,
 			Entries: entriesCh,
 		})
-		s.sender.SendToTopic(event.CastDevicesSearchDone)
+		s.sender.SendToTopic(api.CastDevicesSearchDone)
 		close(c)
 	}()
 
@@ -296,7 +296,7 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 
 		s.StartServer(s.port)
 
-		s.sender.SendToTopic(event.CastReady)
+		s.sender.SendToTopic(api.CastReady)
 	}
 }
 

@@ -3,7 +3,7 @@ package component
 import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"vincit.fi/image-sorter/common/event"
+	"vincit.fi/image-sorter/api"
 )
 
 type CastModal struct {
@@ -17,7 +17,7 @@ type CastModal struct {
 	showBackgroundCB *gtk.CheckButton
 }
 
-func NewCastModal(builder *gtk.Builder, ui CallbackApi, sender event.Sender) *CastModal {
+func NewCastModal(builder *gtk.Builder, ui CallbackApi, sender api.Sender) *CastModal {
 	modalDialog := GetObjectOrPanic(builder, "cast-dialog").(*gtk.Dialog)
 	deviceList := GetObjectOrPanic(builder, "cast-device-list").(*gtk.TreeView)
 
@@ -81,14 +81,14 @@ func (s *CastModal) GetDevices() []string {
 	return s.devices
 }
 
-func createDeviceList(castModal *CastModal, modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
+func createDeviceList(castModal *CastModal, modal *gtk.Dialog, view *gtk.TreeView, title string, sender api.Sender) *gtk.ListStore {
 	store, _ := gtk.ListStoreNew(glib.TYPE_STRING)
 	view.SetSizeRequest(100, -1)
 	view.Connect("row-activated", func(view *gtk.TreeView, path *gtk.TreePath, col *gtk.TreeViewColumn) {
 		iter, _ := store.GetIter(path)
 		value, _ := store.GetValue(iter, 0)
 		stringValue, _ := value.GetString()
-		sender.SendToTopicWithData(event.CastDeviceSelect, stringValue, castModal.showBackgroundCB.GetActive())
+		sender.SendToTopicWithData(api.CastDeviceSelect, stringValue, castModal.showBackgroundCB.GetActive())
 		modal.Hide()
 	})
 	view.SetModel(store)

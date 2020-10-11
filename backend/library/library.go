@@ -3,18 +3,17 @@ package library
 import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 )
 
 type Manager struct {
-	sender  event.Sender
+	sender  api.Sender
 	manager *internalManager
 
 	api.Library
 }
 
-func NewLibrary(sender event.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader) api.Library {
+func NewLibrary(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader) api.Library {
 	return &Manager{
 		sender:  sender,
 		manager: newLibrary(imageCache, imageLoader),
@@ -122,14 +121,14 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 	}
 
 	if sendCurrentImage {
-		s.sender.SendToTopicWithData(event.ImageCurrentUpdated,
+		s.sender.SendToTopicWithData(api.ImageCurrentUpdated,
 			currentImage, currentIndex, totalImages,
 			s.manager.getCurrentCategoryName(),
 			s.manager.GetMetaData(currentImage.GetHandle()))
 	}
 
-	s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestNext, s.manager.getNextImages())
-	s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestPrev, s.manager.getPrevImages())
+	s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestNext, s.manager.getNextImages())
+	s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestPrev, s.manager.getPrevImages())
 
 	if s.manager.shouldSendSimilarImages() {
 		s.sendSimilarImages(currentImage.GetHandle())
@@ -139,7 +138,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 func (s *Manager) sendSimilarImages(handle *apitype.Handle) {
 	images, shouldSend := s.manager.getSimilarImages(handle)
 	if shouldSend {
-		s.sender.SendToTopicWithData(event.ImageListUpdated, event.ImageRequestSimilar, images)
+		s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestSimilar, images)
 	}
 }
 

@@ -5,9 +5,9 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"time"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -34,11 +34,11 @@ type TopActionView struct {
 	nextButton               *gtk.Button
 	prevButton               *gtk.Button
 	currentImagesStatusLabel *gtk.Label
-	sender                   event.Sender
+	sender                   api.Sender
 	imageView                *ImageView
 }
 
-func NewTopActions(builder *gtk.Builder, imageView *ImageView, sender event.Sender) *TopActionView {
+func NewTopActions(builder *gtk.Builder, imageView *ImageView, sender api.Sender) *TopActionView {
 	topActionView := &TopActionView{
 		categoriesView:           GetObjectOrPanic(builder, "categories").(*gtk.Box),
 		categoryButtons:          map[string]*CategoryButton{},
@@ -49,10 +49,10 @@ func NewTopActions(builder *gtk.Builder, imageView *ImageView, sender event.Send
 		imageView:                imageView,
 	}
 	topActionView.nextButton.Connect("clicked", func() {
-		sender.SendToTopic(event.ImageRequestNext)
+		sender.SendToTopic(api.ImageRequestNext)
 	})
 	topActionView.prevButton.Connect("clicked", func() {
-		sender.SendToTopic(event.ImageRequestPrev)
+		sender.SendToTopic(api.ImageRequestPrev)
 	})
 
 	return topActionView
@@ -122,7 +122,7 @@ func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCal
 	browseButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Browse '%s' (ALT + %s)", entry.GetName(), entry.GetShortcutAsString()))
 	browseButton.SetRelief(gtk.RELIEF_NONE)
 	browseButton.Connect("clicked", func() {
-		s.sender.SendToTopicWithData(event.CategoriesShowOnly, entry)
+		s.sender.SendToTopicWithData(api.CategoriesShowOnly, entry)
 	})
 	menuBox.Add(browseButton)
 
@@ -225,7 +225,7 @@ func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand) 
 			command.SetStayOfSameImage(stayOnSameImage)
 			command.SetNextImageDelay(200 * time.Millisecond)
 			s.sender.SendToTopicWithData(
-				event.CategorizeImage,
+				api.CategorizeImage,
 				command)
 		})
 	}

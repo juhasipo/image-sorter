@@ -2,7 +2,6 @@ package api
 
 import (
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/common/event"
 )
 
 type Library interface {
@@ -34,7 +33,7 @@ type Library interface {
 
 type ImageCommand struct {
 	handles []*apitype.Handle
-	event.Command
+	apitype.Command
 }
 
 func (s *ImageCommand) GetHandles() []*apitype.Handle {

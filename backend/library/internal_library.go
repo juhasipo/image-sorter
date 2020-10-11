@@ -6,7 +6,6 @@ import (
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
 	"vincit.fi/image-sorter/duplo"
@@ -77,14 +76,14 @@ func (s *internalManager) ShowAllImages() {
 	s.imagesTitle = ""
 }
 
-func (s *internalManager) GenerateHashes(sender event.Sender) bool {
+func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	shouldSendSimilarImages := false
 	s.shouldSendSimilar = true
 	if s.shouldGenerateSimilarHashed {
 		startTime := time.Now()
 		hashExpected := len(s.imageList)
 		logger.Info.Printf("Generate hashes for %d images...", hashExpected)
-		sender.SendToTopicWithData(event.ProcessStatusUpdated, "hash", 0, hashExpected)
+		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, hashExpected)
 
 		// Just to make things consistent in case Go decides to change the default
 		cpuCores := s.getTreadCount()
@@ -113,7 +112,7 @@ func (s *internalManager) GenerateHashes(sender event.Sender) bool {
 			i++
 			result.handle.SetHash(result.hash)
 
-			sender.SendToTopicWithData(event.ProcessStatusUpdated, "hash", i, hashExpected)
+			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", i, hashExpected)
 			s.imageHash.Add(result.handle, *result.hash)
 
 			if i == hashExpected {
@@ -132,7 +131,7 @@ func (s *internalManager) GenerateHashes(sender event.Sender) bool {
 		logger.Info.Printf("  On average: %s/image", f.String())
 
 		// Always send 100% status even if cancelled so that the progress bar is hidden
-		sender.SendToTopicWithData(event.ProcessStatusUpdated, "hash", hashExpected, hashExpected)
+		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", hashExpected, hashExpected)
 		// Only send if not cancelled
 		if i == hashExpected {
 			shouldSendSimilarImages = true

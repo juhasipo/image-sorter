@@ -4,9 +4,9 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"strings"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/common/event"
 )
 
 type CategoryModal struct {
@@ -14,7 +14,7 @@ type CategoryModal struct {
 	list  *gtk.TreeView
 	model *gtk.ListStore
 
-	sender event.Sender
+	sender api.Sender
 
 	saveButton        *gtk.Button
 	saveMenuButton    *gtk.MenuButton
@@ -36,11 +36,11 @@ type CategoryModal struct {
 	addCancelButton    *gtk.Button
 }
 
-func NewCategoryModal(builder *gtk.Builder, sender event.Sender) *CategoryModal {
+func NewCategoryModal(builder *gtk.Builder, sender api.Sender) *CategoryModal {
 	modalDialog := GetObjectOrPanic(builder, "category-dialog").(*gtk.Dialog)
 	modalDialog.SetSizeRequest(400, 300)
 	deviceList := GetObjectOrPanic(builder, "category-list").(*gtk.TreeView)
-	model := createCategoryList(modalDialog, deviceList, "Categories", sender)
+	model := createCategoryList(deviceList, "Categories")
 
 	saveButton := GetObjectOrPanic(builder, "category-save-button").(*gtk.Button)
 	saveMenuButton := GetObjectOrPanic(builder, "category-save-menu-button").(*gtk.MenuButton)
@@ -247,11 +247,11 @@ func (s *CategoryModal) Show(parent gtk.IWindow, categories []*apitype.Category)
 }
 
 func (s *CategoryModal) save() {
-	s.sender.SendToTopicWithData(event.CategoriesSave, s.getCategoriesFromList())
+	s.sender.SendToTopicWithData(api.CategoriesSave, s.getCategoriesFromList())
 	s.modal.Hide()
 }
 func (s *CategoryModal) saveDefault() {
-	s.sender.SendToTopicWithData(event.CategoriesSaveDefault, s.getCategoriesFromList())
+	s.sender.SendToTopicWithData(api.CategoriesSaveDefault, s.getCategoriesFromList())
 	s.modal.Hide()
 }
 
@@ -286,7 +286,7 @@ func extractValuesFromModel(store *gtk.ListStore, iter *gtk.TreeIter) (string, s
 	return name, path, shortcut
 }
 
-func createCategoryList(modal *gtk.Dialog, view *gtk.TreeView, title string, sender event.Sender) *gtk.ListStore {
+func createCategoryList(view *gtk.TreeView, title string) *gtk.ListStore {
 	// Name, folder, shortcut key
 	store, _ := gtk.ListStoreNew(glib.TYPE_STRING, glib.TYPE_STRING, glib.TYPE_STRING)
 

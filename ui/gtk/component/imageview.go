@@ -5,7 +5,6 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/common/event"
 )
 
 type ImageView struct {
@@ -16,7 +15,7 @@ type ImageView struct {
 	imagesListImageCount int
 }
 
-func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache api.ImageStore) *ImageView {
+func NewImageView(builder *gtk.Builder, sender api.Sender, imageCache api.ImageStore) *ImageView {
 	nextImagesList := &ImageList{
 		layout:    GetObjectOrPanic(builder, "next-images-scrolled-view").(*gtk.ScrolledWindow),
 		component: GetObjectOrPanic(builder, "next-images").(*gtk.IconView),
@@ -44,7 +43,7 @@ func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache api.Imag
 		height := imageView.nextImages.component.GetAllocatedHeight() / 80
 		if imageView.imagesListImageCount != height {
 			imageView.imagesListImageCount = height
-			sender.SendToTopicWithData(event.ImageListSizeChanged, height)
+			sender.SendToTopicWithData(api.ImageListSizeChanged, height)
 		}
 	})
 
@@ -55,7 +54,7 @@ func NewImageView(builder *gtk.Builder, sender event.Sender, imageCache api.Imag
 	return imageView
 }
 
-func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
+func initializeStore(imageList *ImageList, layout Layout, sender api.Sender) {
 	const requestedSize = 102
 	if layout == HORIZONTAL {
 		imageList.component.SetSizeRequest(-1, requestedSize)
@@ -66,7 +65,7 @@ func initializeStore(imageList *ImageList, layout Layout, sender event.Sender) {
 	imageList.component.Connect("item-activated", func(view *gtk.IconView, path *gtk.TreePath) {
 		index := path.GetIndices()[0]
 		handle := imageList.images[index].GetHandle()
-		sender.SendToTopicWithData(event.ImageRequest, handle)
+		sender.SendToTopicWithData(api.ImageRequest, handle)
 	})
 	imageList.model, _ = gtk.ListStoreNew(PixbufGetType(), glib.TYPE_STRING)
 	imageList.component.SetModel(imageList.model)

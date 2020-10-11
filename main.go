@@ -1,6 +1,7 @@
 package main
 
 import (
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/backend/caster"
 	"vincit.fi/image-sorter/backend/category"
 	"vincit.fi/image-sorter/backend/filter"
@@ -39,7 +40,7 @@ func main() {
 	gui := gtkUi.NewUi(params, broker, imageCache)
 
 	// Startup
-	broker.Subscribe(event.DirectoryChanged, func(directory string) {
+	broker.Subscribe(api.DirectoryChanged, func(directory string) {
 		logger.Info.Printf("Directory changed to '%s'", directory)
 		categoryManager.InitializeFromDirectory([]string{}, directory)
 		imageLibrary.InitializeFromDirectory(directory)
@@ -55,51 +56,51 @@ func main() {
 	})
 
 	// UI -> Library
-	broker.Subscribe(event.ImageRequestNext, imageLibrary.RequestNextImage)
-	broker.Subscribe(event.ImageRequestNextOffset, imageLibrary.RequestNextImageWithOffset)
-	broker.Subscribe(event.ImageRequestPrev, imageLibrary.RequestPrevImage)
-	broker.Subscribe(event.ImageRequestPrevOffset, imageLibrary.RequestPrevImageWithOffset)
-	broker.Subscribe(event.ImageRequestCurrent, imageLibrary.RequestImages)
-	broker.Subscribe(event.ImageRequest, imageLibrary.RequestImage)
-	broker.Subscribe(event.ImageRequestAtIndex, imageLibrary.RequestImageAt)
-	broker.Subscribe(event.ImageListSizeChanged, imageLibrary.SetImageListSize)
-	broker.Subscribe(event.ImageShowAll, imageLibrary.ShowAllImages)
-	broker.Subscribe(event.ImageShowOnly, imageLibrary.ShowOnlyImages)
+	broker.Subscribe(api.ImageRequestNext, imageLibrary.RequestNextImage)
+	broker.Subscribe(api.ImageRequestNextOffset, imageLibrary.RequestNextImageWithOffset)
+	broker.Subscribe(api.ImageRequestPrev, imageLibrary.RequestPrevImage)
+	broker.Subscribe(api.ImageRequestPrevOffset, imageLibrary.RequestPrevImageWithOffset)
+	broker.Subscribe(api.ImageRequestCurrent, imageLibrary.RequestImages)
+	broker.Subscribe(api.ImageRequest, imageLibrary.RequestImage)
+	broker.Subscribe(api.ImageRequestAtIndex, imageLibrary.RequestImageAt)
+	broker.Subscribe(api.ImageListSizeChanged, imageLibrary.SetImageListSize)
+	broker.Subscribe(api.ImageShowAll, imageLibrary.ShowAllImages)
+	broker.Subscribe(api.ImageShowOnly, imageLibrary.ShowOnlyImages)
 
-	broker.Subscribe(event.SimilarRequestSearch, imageLibrary.RequestGenerateHashes)
-	broker.Subscribe(event.SimilarRequestStop, imageLibrary.RequestStopHashes)
-	broker.Subscribe(event.SimilarSetShowImages, imageLibrary.SetSendSimilarImages)
+	broker.Subscribe(api.SimilarRequestSearch, imageLibrary.RequestGenerateHashes)
+	broker.Subscribe(api.SimilarRequestStop, imageLibrary.RequestStopHashes)
+	broker.Subscribe(api.SimilarSetShowImages, imageLibrary.SetSendSimilarImages)
 
 	// Library -> UI
-	broker.ConnectToGui(event.ImageListUpdated, gui.SetImages)
-	broker.ConnectToGui(event.ImageCurrentUpdated, gui.SetCurrentImage)
-	broker.ConnectToGui(event.ProcessStatusUpdated, gui.UpdateProgress)
+	broker.ConnectToGui(api.ImageListUpdated, gui.SetImages)
+	broker.ConnectToGui(api.ImageCurrentUpdated, gui.SetCurrentImage)
+	broker.ConnectToGui(api.ProcessStatusUpdated, gui.UpdateProgress)
 
 	// UI -> Image Categorization
-	broker.Subscribe(event.CategorizeImage, imageCategoryManager.SetCategory)
-	broker.Subscribe(event.CategoryPersistAll, imageCategoryManager.PersistImageCategories)
-	broker.Subscribe(event.ImageChanged, imageCategoryManager.RequestCategory)
-	broker.Subscribe(event.CategoriesShowOnly, imageCategoryManager.ShowOnlyCategoryImages)
+	broker.Subscribe(api.CategorizeImage, imageCategoryManager.SetCategory)
+	broker.Subscribe(api.CategoryPersistAll, imageCategoryManager.PersistImageCategories)
+	broker.Subscribe(api.ImageChanged, imageCategoryManager.RequestCategory)
+	broker.Subscribe(api.CategoriesShowOnly, imageCategoryManager.ShowOnlyCategoryImages)
 
 	// Image Categorization -> UI
-	broker.ConnectToGui(event.CategoryImageUpdate, gui.SetImageCategory)
+	broker.ConnectToGui(api.CategoryImageUpdate, gui.SetImageCategory)
 
 	// UI -> Caster
-	broker.Subscribe(event.CastDeviceSearch, casterInstance.FindDevices)
-	broker.Subscribe(event.CastDeviceSelect, casterInstance.SelectDevice)
-	broker.Subscribe(event.ImageChanged, casterInstance.CastImage)
+	broker.Subscribe(api.CastDeviceSearch, casterInstance.FindDevices)
+	broker.Subscribe(api.CastDeviceSelect, casterInstance.SelectDevice)
+	broker.Subscribe(api.ImageChanged, casterInstance.CastImage)
 
 	// Caster -> UI
-	broker.ConnectToGui(event.CastDeviceFound, gui.DeviceFound)
-	broker.ConnectToGui(event.CastReady, gui.CastReady)
-	broker.ConnectToGui(event.CastDevicesSearchDone, gui.CastFindDone)
+	broker.ConnectToGui(api.CastDeviceFound, gui.DeviceFound)
+	broker.ConnectToGui(api.CastReady, gui.CastReady)
+	broker.ConnectToGui(api.CastDevicesSearchDone, gui.CastFindDone)
 
 	// UI -> Category
-	broker.Subscribe(event.CategoriesSave, categoryManager.Save)
-	broker.Subscribe(event.CategoriesSaveDefault, categoryManager.SaveDefault)
+	broker.Subscribe(api.CategoriesSave, categoryManager.Save)
+	broker.Subscribe(api.CategoriesSaveDefault, categoryManager.SaveDefault)
 
 	// Category -> UI
-	broker.ConnectToGui(event.CategoriesUpdated, gui.UpdateCategories)
+	broker.ConnectToGui(api.CategoriesUpdated, gui.UpdateCategories)
 
 	gui.Run()
 }

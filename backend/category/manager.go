@@ -11,7 +11,6 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/constants"
-	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
 )
@@ -20,7 +19,7 @@ type Manager struct {
 	commandLineCategories []string
 	categories            []*apitype.Category
 	categoriesById        map[string]*apitype.Category
-	sender                event.Sender
+	sender                api.Sender
 	rootDir               string
 
 	api.CategoryManager
@@ -41,7 +40,7 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(params *util.Params, sender event.Sender) api.CategoryManager {
+func New(params *util.Params, sender api.Sender) api.CategoryManager {
 	manager := Manager{
 		sender:                sender,
 		commandLineCategories: params.GetCategories(),
@@ -74,14 +73,14 @@ func (s *Manager) GetCategories() []*apitype.Category {
 }
 
 func (s *Manager) RequestCategories() {
-	s.sender.SendToTopicWithData(event.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
+	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
 }
 
 func (s *Manager) Save(categories []*apitype.Category) {
 	s.resetCategories(categories)
 
 	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, categories)
-	s.sender.SendToTopicWithData(event.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
+	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
 }
 func (s *Manager) SaveDefault(categories []*apitype.Category) {
 	s.resetCategories(categories)
@@ -92,7 +91,7 @@ func (s *Manager) SaveDefault(categories []*apitype.Category) {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
 		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
-		s.sender.SendToTopicWithData(event.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
+		s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
 	}
 }
 

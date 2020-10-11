@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/common/event"
 )
 
 type Category struct {
@@ -65,13 +64,13 @@ type CategorizeCommand struct {
 	nextImageDelay  time.Duration
 	forceToCategory bool
 
-	event.Command
+	Command
 }
 
 type CategoriesCommand struct {
 	categories []*Category
 
-	event.Command
+	Command
 }
 
 func NewCategoriesCommand(categories []*Category) *CategoriesCommand {
