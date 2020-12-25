@@ -4,6 +4,7 @@ import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/backend/caster"
 	"vincit.fi/image-sorter/backend/category"
+	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/backend/filter"
 	"vincit.fi/image-sorter/backend/imagecategory"
 	"vincit.fi/image-sorter/backend/imageloader"
@@ -20,6 +21,10 @@ func main() {
 	params := common.ParseParams()
 
 	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
+
+	db := database.NewDatabase("image-sorter.db")
+	db.Migrate()
+	defer db.Close()
 
 	broker := event.InitBus(EventBusQueueSize)
 

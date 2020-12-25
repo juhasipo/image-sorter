@@ -12,6 +12,7 @@ require (
 	github.com/hashicorp/mdns v1.0.3
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/imroc/req v0.3.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.5
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pixiv/go-libjpeg v0.0.0-20190822045933-3da21a74767d
 	// Using customized version. Leaving this here to make sure the
