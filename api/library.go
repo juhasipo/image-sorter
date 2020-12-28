@@ -20,7 +20,7 @@ type Library interface {
 
 	GetHandles() []*apitype.Handle
 	AddHandles(imageList []*apitype.Handle)
-	GetHandleById(handleId string) *apitype.Handle
+	GetHandleById(handleId int64) *apitype.Handle
 
 	ShowAllImages()
 	ShowOnlyImages(string, []*apitype.Handle)

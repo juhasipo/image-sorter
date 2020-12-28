@@ -26,12 +26,14 @@ func main() {
 	db.Migrate()
 	defer db.Close()
 
+	store := database.NewStore(db)
+
 	broker := event.InitBus(EventBusQueueSize)
 
 	categoryManager := category.New(params, broker)
 	imageLoader := imageloader.NewImageLoader()
 	imageCache := imageloader.NewImageCache(imageLoader)
-	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader)
+	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader, store)
 	filterManager := filter.NewFilterManager()
 	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader)
 

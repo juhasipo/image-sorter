@@ -3,13 +3,14 @@ package apitype
 import (
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/duplo"
 )
 
 type Handle struct {
-	id        string
+	id        int64
 	directory string
 	filename  string
 	path      string
@@ -18,17 +19,17 @@ type Handle struct {
 }
 
 func (s *Handle) IsValid() bool {
-	return s != nil && s.id != ""
+	return s != nil && s.id != -1
 }
 
 var (
-	EmptyHandle          = Handle{id: "", path: ""}
+	EmptyHandle          = Handle{id: -1, path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewHandle(fileDir string, fileName string) *Handle {
+func NewHandle(id int64, fileDir string, fileName string) *Handle {
 	return &Handle{
-		id:        fileName,
+		id:        id,
 		directory: fileDir,
 		filename:  fileName,
 		path:      filepath.Join(fileDir, fileName),
@@ -40,18 +41,18 @@ func GetEmptyHandle() *Handle {
 	return &EmptyHandle
 }
 
-func (s *Handle) GetId() string {
+func (s *Handle) GetId() int64 {
 	if s != nil {
 		return s.id
 	} else {
-		return ""
+		return -1
 	}
 }
 
 func (s *Handle) String() string {
 	if s != nil {
 		if s.IsValid() {
-			return "Handle{" + s.id + "}"
+			return "Handle{" + strconv.FormatInt(s.id, 10) + "}"
 		} else {
 			return "Handle<invalid>"
 		}
@@ -122,7 +123,7 @@ func LoadImageHandles(dir string) []*Handle {
 	for _, file := range files {
 		extension := filepath.Ext(file.Name())
 		if isSupported(extension) {
-			handles = append(handles, NewHandle(dir, file.Name()))
+			handles = append(handles, NewHandle(-1, dir, file.Name()))
 		}
 	}
 	logger.Debug.Printf("Found %d images", len(handles))

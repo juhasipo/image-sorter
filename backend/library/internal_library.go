@@ -6,6 +6,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
 	"vincit.fi/image-sorter/duplo"
@@ -21,7 +22,7 @@ type internalManager struct {
 	rootDir                     string
 	imageList                   []*apitype.Handle
 	fullImageList               []*apitype.Handle
-	imageHandles                map[string]*apitype.Handle
+	imageHandles                map[int64]*apitype.Handle
 	imagesTitle                 string
 	index                       int
 	imageHash                   *duplo.Store
@@ -31,12 +32,13 @@ type internalManager struct {
 	imageListSize               int
 	imageStore                  api.ImageStore
 	imageLoader                 api.ImageLoader
+	store                       *database.Store
 
 	stopChannel   chan bool
 	outputChannel chan *HashResult
 }
 
-func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader) *internalManager {
+func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader, store *database.Store) *internalManager {
 	var manager = internalManager{
 		index:                       0,
 		imageHash:                   duplo.New(),
@@ -44,6 +46,7 @@ func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader) *interna
 		imageListSize:               0,
 		imageStore:                  imageCache,
 		imageLoader:                 imageLoader,
+		store:                       store,
 	}
 	return &manager
 }
@@ -220,7 +223,7 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 
 func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.imageList = imageList
-	s.imageHandles = map[string]*apitype.Handle{}
+	s.imageHandles = map[int64]*apitype.Handle{}
 	s.fullImageList = make([]*apitype.Handle, len(s.imageList))
 	copy(s.fullImageList, s.imageList)
 
@@ -231,7 +234,7 @@ func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.index = 0
 }
 
-func (s *internalManager) GetHandleById(handleId string) *apitype.Handle {
+func (s *internalManager) GetHandleById(handleId int64) *apitype.Handle {
 	return s.imageHandles[handleId]
 }
 
@@ -278,7 +281,7 @@ func (s *internalManager) getNextImages() []*apitype.ImageContainer {
 		return emptyHandles
 	}
 
-	slice := s.imageList[startIndex:endIndex]
+	slice, _ := s.store.GetImages(s.imageListSize, startIndex)
 	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
 		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
@@ -296,7 +299,8 @@ func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 	if prevIndex < 0 {
 		prevIndex = 0
 	}
-	slice := s.imageList[prevIndex:s.index]
+	size := s.index - prevIndex
+	slice, _ := s.store.GetImages(size, prevIndex)
 	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
 		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
@@ -310,7 +314,12 @@ func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 }
 
 func (s *internalManager) loadImagesFromRootDir() {
-	s.AddHandles(apitype.LoadImageHandles(s.rootDir))
+	handles := apitype.LoadImageHandles(s.rootDir)
+	persistedHandles, err := s.store.AddImages(handles)
+	if err != nil {
+		logger.Error.Fatal("Error while persisting images", err)
+	}
+	s.AddHandles(persistedHandles)
 }
 
 func (s *internalManager) getTreadCount() int {

@@ -3,6 +3,7 @@ package library
 import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -13,10 +14,10 @@ type Manager struct {
 	api.Library
 }
 
-func NewLibrary(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader) api.Library {
+func NewLibrary(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, store *database.Store) api.Library {
 	return &Manager{
 		sender:  sender,
-		manager: newLibrary(imageCache, imageLoader),
+		manager: newLibrary(imageCache, imageLoader, store),
 	}
 }
 
@@ -103,7 +104,7 @@ func (s *Manager) AddHandles(imageList []*apitype.Handle) {
 	s.manager.AddHandles(imageList)
 }
 
-func (s *Manager) GetHandleById(handleId string) *apitype.Handle {
+func (s *Manager) GetHandleById(handleId int64) *apitype.Handle {
 	return s.manager.GetHandleById(handleId)
 }
 

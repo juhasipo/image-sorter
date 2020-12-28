@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"vincit.fi/image-sorter/api"
@@ -16,7 +17,7 @@ import (
 type Manager struct {
 	rootDir       string
 	settingDir    string
-	imageCategory map[string]map[string]*apitype.CategorizedImage
+	imageCategory map[int64]map[string]*apitype.CategorizedImage
 	sender        api.Sender
 	library       api.Library
 	filterManager *filter.Manager
@@ -27,7 +28,7 @@ type Manager struct {
 
 func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader) api.ImageCategoryManager {
 	var manager = Manager{
-		imageCategory: map[string]map[string]*apitype.CategorizedImage{},
+		imageCategory: map[int64]map[string]*apitype.CategorizedImage{},
 		sender:        sender,
 		library:       lib,
 		filterManager: filterManager,
@@ -39,7 +40,7 @@ func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *
 func (s *Manager) InitializeForDirectory(directory string) {
 	s.rootDir = directory
 	s.settingDir = filepath.Join(directory, constants.ImageSorterDir)
-	s.imageCategory = map[string]map[string]*apitype.CategorizedImage{}
+	s.imageCategory = map[int64]map[string]*apitype.CategorizedImage{}
 }
 
 func (s *Manager) RequestCategory(handle *apitype.Handle) {
@@ -129,7 +130,7 @@ func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCo
 	s.sender.SendToTopicWithData(api.DirectoryChanged, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(imageCategory map[string]map[string]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
+func (s *Manager) ResolveFileOperations(imageCategory map[int64]map[string]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
@@ -211,7 +212,8 @@ func (s *Manager) LoadCategorization(handleManager api.Library, categoryManager 
 
 	for _, line := range lines {
 		parts := strings.Split(line, ";")
-		handle := handleManager.GetHandleById(parts[0])
+		atoi, _ := strconv.ParseInt(parts[0], 10, 64)
+		handle := handleManager.GetHandleById(atoi)
 		categories := parts[1:]
 
 		if !handle.IsValid() {
@@ -249,8 +251,8 @@ func (s *Manager) PersistCategorization() {
 	_, _ = w.WriteString("#version:1")
 	_, _ = w.WriteString("\n")
 	for handleId, categorization := range s.imageCategory {
-		if handleId != "" {
-			_, _ = w.WriteString(handleId)
+		if handleId != -1 {
+			_, _ = w.WriteString(strconv.FormatInt(handleId, 10))
 			_, _ = w.WriteString(";")
 			for entry, categorizedImage := range categorization {
 				if categorizedImage.GetOperation() == apitype.MOVE {

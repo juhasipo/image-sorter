@@ -17,7 +17,7 @@ type ImageCategoryManager interface {
 
 	ShowOnlyCategoryImages(*apitype.Category)
 
-	ResolveFileOperations(map[string]map[string]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup
+	ResolveFileOperations(map[int64]map[string]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup
 	ResolveOperationsForGroup(*apitype.Handle, map[string]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()

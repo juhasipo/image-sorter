@@ -13,7 +13,7 @@ type CacheContainer struct {
 }
 
 type DefaultImageStore struct {
-	imageCache  map[string]*Instance
+	imageCache  map[int64]*Instance
 	mux         sync.Mutex
 	imageLoader api.ImageLoader
 
@@ -23,7 +23,7 @@ type DefaultImageStore struct {
 func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	s.imageCache = map[string]*Instance{}
+	s.imageCache = map[int64]*Instance{}
 	for _, handle := range handles {
 		s.imageCache[handle.GetId()] = NewInstance(handle, s.imageLoader)
 	}
@@ -32,7 +32,7 @@ func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
 
 func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
 	return &DefaultImageStore{
-		imageCache:  map[string]*Instance{},
+		imageCache:  map[int64]*Instance{},
 		mux:         sync.Mutex{},
 		imageLoader: imageLoader,
 	}
