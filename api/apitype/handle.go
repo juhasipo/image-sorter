@@ -8,8 +8,10 @@ import (
 	"vincit.fi/image-sorter/duplo"
 )
 
+type HandleId int64
+
 type Handle struct {
-	id        int64
+	id        HandleId
 	directory string
 	filename  string
 	path      string
@@ -26,7 +28,17 @@ var (
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewHandle(id int64, fileDir string, fileName string) *Handle {
+func NewPersistedHandle(id HandleId, handle *Handle) *Handle {
+	return &Handle{
+		id:        id,
+		directory: handle.directory,
+		filename:  handle.filename,
+		path:      handle.path,
+		hash:      handle.hash,
+	}
+}
+
+func NewHandleWithId(id HandleId, fileDir string, fileName string) *Handle {
 	return &Handle{
 		id:        id,
 		directory: fileDir,
@@ -36,11 +48,15 @@ func NewHandle(id int64, fileDir string, fileName string) *Handle {
 	}
 }
 
+func NewHandle(fileDir string, fileName string) *Handle {
+	return NewHandleWithId(-1, fileDir, fileName)
+}
+
 func GetEmptyHandle() *Handle {
 	return &EmptyHandle
 }
 
-func (s *Handle) GetId() int64 {
+func (s *Handle) GetId() HandleId {
 	if s != nil {
 		return s.id
 	} else {
@@ -122,7 +138,7 @@ func LoadImageHandles(dir string) []*Handle {
 	for _, file := range files {
 		extension := filepath.Ext(file.Name())
 		if isSupported(extension) {
-			handles = append(handles, NewHandle(-1, dir, file.Name()))
+			handles = append(handles, NewHandle(dir, file.Name()))
 		}
 	}
 	logger.Debug.Printf("Found %d images", len(handles))

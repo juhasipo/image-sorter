@@ -57,17 +57,12 @@ func (s *Store) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {
 		Directory: handle.GetDir(),
 		ByteSize:  handle.GetByteSize(),
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	var image Image
-	err = s.imageCollection.Find("id", result.ID()).One(&image)
-	if err != nil {
-		return nil, err
-	}
-
-	return apitype.NewHandle(image.Id, image.Directory, image.FileName), err
+	return apitype.NewPersistedHandle(idToHandleId(result.ID()), handle), err
 }
 
 type Count struct {
@@ -131,14 +126,14 @@ func (s *Store) GetImagesInCategory(number int, offset int, categoryName string)
 	}
 }
 
-func (s *Store) RemoveImageCategories(imageId int64) error {
+func (s *Store) RemoveImageCategories(imageId apitype.HandleId) error {
 	_, err := s.database.Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ?
 		`, imageId)
 	return err
 }
 
-func (s *Store) CategorizeImage(imageId int64, categoryId int64, operation apitype.Operation) error {
+func (s *Store) CategorizeImage(imageId apitype.HandleId, categoryId int64, operation apitype.Operation) error {
 	if operation == apitype.NONE {
 		_, err := s.database.Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ? AND category_id = ?
@@ -220,7 +215,7 @@ func toApiCategory(category Category) *apitype.Category {
 	return apitype.NewCategory(category.Id, category.Name, category.SubPath, category.Shortcut)
 }
 
-func (s *Store) GetImagesCategories(imageId int64) ([]*apitype.CategorizedImage, error) {
+func (s *Store) GetImagesCategories(imageId apitype.HandleId) ([]*apitype.CategorizedImage, error) {
 	var categories []CategorizedImage
 	err := s.database.Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -284,7 +279,7 @@ func (s *Store) GetCategoryById(id int64) *apitype.Category {
 	}
 }
 
-func (s *Store) GetCategorizedImages() (map[int64]map[int64]*apitype.CategorizedImage, error) {
+func (s *Store) GetCategorizedImages() (map[apitype.HandleId]map[int64]*apitype.CategorizedImage, error) {
 	var categories []CategorizedImage
 	err := s.database.Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -302,7 +297,7 @@ func (s *Store) GetCategorizedImages() (map[int64]map[int64]*apitype.Categorized
 		return nil, err
 	}
 
-	var a = map[int64]map[int64]*apitype.CategorizedImage{}
+	var a = map[apitype.HandleId]map[int64]*apitype.CategorizedImage{}
 	for _, image := range categories {
 		var m map[int64]*apitype.CategorizedImage
 		if val, ok := a[image.ImageId]; ok {
@@ -317,7 +312,7 @@ func (s *Store) GetCategorizedImages() (map[int64]map[int64]*apitype.Categorized
 }
 
 func imageToHandle(image *Image) *apitype.Handle {
-	return apitype.NewHandle(
+	return apitype.NewHandleWithId(
 		image.Id, image.Directory, image.FileName,
 	)
 }

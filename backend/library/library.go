@@ -104,7 +104,7 @@ func (s *Manager) AddHandles(imageList []*apitype.Handle) {
 	s.manager.AddHandles(imageList)
 }
 
-func (s *Manager) GetHandleById(handleId int64) *apitype.Handle {
+func (s *Manager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
 	return s.manager.GetHandleById(handleId)
 }
 

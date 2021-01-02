@@ -12,7 +12,7 @@ const testAssetsDir = "../../testassets"
 func TestGenerateHash(t *testing.T) {
 	a := assert.New(t)
 	imageLoader := imageloader.NewImageLoader()
-	handle := apitype.NewHandle(-1, testAssetsDir, "vertical.jpg")
+	handle := apitype.NewHandle(testAssetsDir, "vertical.jpg")
 
 	if decodedImage, err := openImageForHashing(imageLoader, handle); err != nil {
 		a.Fail(err.Error())

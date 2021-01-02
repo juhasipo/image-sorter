@@ -98,7 +98,7 @@ func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCo
 	s.sender.SendToTopicWithData(api.DirectoryChanged, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(imageCategory map[int64]map[int64]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
+func (s *Manager) ResolveFileOperations(imageCategory map[apitype.HandleId]map[int64]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
