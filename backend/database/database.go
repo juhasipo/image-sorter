@@ -135,7 +135,8 @@ func (s *Database) migrate() error {
 			    operation INT,
 			    
 			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
-			    FOREIGN KEY(category_id) REFERENCES category(id) ON DELETE CASCADE
+			    FOREIGN KEY(category_id) REFERENCES category(id) ON DELETE CASCADE,
+			    UNIQUE (image_id, category_id)
 			);
 
 			CREATE TABLE image_hash (

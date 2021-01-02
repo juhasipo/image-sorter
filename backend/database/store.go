@@ -96,13 +96,29 @@ func (s *Store) GetImagesInCategories(number int, offset int, categories ...int6
 	}
 }
 
+func (s *Store) RemoveImageCategories(imageId int64) error {
+	_, err := s.database.Session().SQL().Exec(`
+			DELETE FROM image_category WHERE image_id = ?
+		`, imageId)
+	return err
+}
+
 func (s *Store) CategorizeImage(imageId int64, categoryId int64, operation apitype.Operation) error {
-	_, _ = s.imageCategoryCollection.Insert(ImageCategory{
-		ImageId:    imageId,
-		CategoryId: categoryId,
-		Operation:  operation.AsId(),
-	})
-	return nil
+	if operation == apitype.NONE {
+		_, err := s.database.Session().SQL().Exec(`
+			DELETE FROM image_category WHERE image_id = ? AND category_id = ?
+		`, imageId, categoryId)
+		return err
+	} else {
+		_, err := s.database.Session().SQL().Exec(`
+		INSERT INTO image_category (image_id, category_id, operation)
+		VALUES(?, ?, ?)
+		ON CONFLICT(image_id, category_id) DO 
+		UPDATE SET operation = ?
+		WHERE image_id = ? AND category_id = ?
+	`, imageId, categoryId, operation, operation, imageId, categoryId)
+		return err
+	}
 }
 
 func (s *Store) AddCategory(category *apitype.Category) (*apitype.Category, error) {
@@ -130,8 +146,6 @@ func (s *Store) AddCategory(category *apitype.Category) (*apitype.Category, erro
 	}
 
 	logger.Debug.Printf("Stored category %s (%d) to DB", cat.Name, cat.Id)
-
-	// TODO: Category shortcut
 	return apitype.NewCategory(cat.Id, cat.Name, cat.SubPath, cat.Shortcut), err
 }
 
@@ -174,7 +188,12 @@ func toApiCategory(category Category) *apitype.Category {
 func (s *Store) GetImagesCategories(imageId int64) ([]*apitype.CategorizedImage, error) {
 	var categories []CategorizedImage
 	err := s.database.Session().SQL().
-		Select("").
+		Select("image_category.image_id AS image_id",
+			"category.id AS category_id",
+			"category.name AS name",
+			"category.sub_path AS sub_path",
+			"category.shortcut AS shortcut",
+			"image_category.operation AS operation").
 		From("category").
 		Join("image_category").On("image_category.category_id = category.id").
 		Where("image_category.image_id", imageId).
@@ -191,14 +210,17 @@ func (s *Store) GetImagesCategories(imageId int64) ([]*apitype.CategorizedImage,
 func toApiCategorizedImages(categories []CategorizedImage) []*apitype.CategorizedImage {
 	cats := make([]*apitype.CategorizedImage, len(categories))
 	for i, category := range categories {
-		cats[i] = apitype.NewCategorizedImage(
-			// TODO: Shortcut
-			apitype.NewCategory(
-				category.Id, category.Name, category.Name, category.Shortcut),
-			apitype.OperationFromId(category.Operation),
-		)
+		cats[i] = toApiCategorizedImage(&category)
 	}
 	return cats
+}
+
+func toApiCategorizedImage(category *CategorizedImage) *apitype.CategorizedImage {
+	return apitype.NewCategorizedImage(
+		apitype.NewCategory(
+			category.CategoryId, category.Name, category.Name, category.Shortcut),
+		apitype.OperationFromId(category.Operation),
+	)
 }
 
 func (s *Store) FindByDirAndFile(directory string, fileName string) (*apitype.Handle, error) {
@@ -225,6 +247,38 @@ func (s *Store) GetCategoryById(id int64) *apitype.Category {
 	} else {
 		return nil
 	}
+}
+
+func (s *Store) GetCategorizedImages() (map[int64]map[int64]*apitype.CategorizedImage, error) {
+	var categories []CategorizedImage
+	err := s.database.Session().SQL().
+		Select("image_category.image_id AS image_id",
+			"category.id AS category_id",
+			"category.name AS name",
+			"category.sub_path AS sub_path",
+			"category.shortcut AS shortcut",
+			"image_category.operation AS operation").
+		From("category").
+		Join("image_category").On("image_category.category_id = category.id").
+		OrderBy("category.name").
+		All(&categories)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var a = map[int64]map[int64]*apitype.CategorizedImage{}
+	for _, image := range categories {
+		var m map[int64]*apitype.CategorizedImage
+		if val, ok := a[image.ImageId]; ok {
+			m = val
+		} else {
+			m = map[int64]*apitype.CategorizedImage{}
+			a[image.ImageId] = m
+		}
+		m[image.CategoryId] = toApiCategorizedImage(&image)
+	}
+	return a, nil
 }
 
 func imageToHandle(image *Image) *apitype.Handle {
