@@ -507,7 +507,7 @@ func TestShowOnlyImages(t *testing.T) {
 	}
 	sut.AddHandles(handles)
 	handles, _ = dbStore.GetImages(-1, 0)
-	category, _ := dbStore.AddCategory(apitype.NewCategory(-1, "category1", "cat", "C"))
+	category, _ := dbStore.AddCategory(apitype.NewCategory("category1", "cat", "C"))
 	sut.SetImageListSize(10)
 
 	_ = dbStore.CategorizeImage(handles[1].GetId(), category.GetId(), apitype.MOVE)

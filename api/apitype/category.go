@@ -7,14 +7,25 @@ import (
 	"vincit.fi/image-sorter/common"
 )
 
+type CategoryId int64
+
 type Category struct {
-	id       int64
+	id       CategoryId
 	name     string
 	subPath  string
 	shortcut uint
 }
 
-func NewCategory(id int64, name string, subPath string, shortcut string) *Category {
+func NewPersistedCategory(id CategoryId, category *Category) *Category {
+	return &Category{
+		id:       id,
+		name:     category.name,
+		subPath:  category.subPath,
+		shortcut: category.shortcut,
+	}
+}
+
+func NewCategoryWithId(id CategoryId, name string, subPath string, shortcut string) *Category {
 	return &Category{
 		id:       id,
 		name:     name,
@@ -23,7 +34,11 @@ func NewCategory(id int64, name string, subPath string, shortcut string) *Catego
 	}
 }
 
-func (s *Category) GetId() int64 {
+func NewCategory(name string, subPath string, shortcut string) *Category {
+	return NewCategoryWithId(-1, name, subPath, shortcut)
+}
+
+func (s *Category) GetId() CategoryId {
 	return s.id
 }
 

@@ -43,12 +43,12 @@ func (s *Manager) RequestCategory(handle *apitype.Handle) {
 	s.sendCategories(handle)
 }
 
-func (s *Manager) GetCategories(handle *apitype.Handle) map[int64]*apitype.CategorizedImage {
+func (s *Manager) GetCategories(handle *apitype.Handle) map[apitype.CategoryId]*apitype.CategorizedImage {
 	if categories, err := s.store.GetImagesCategories(handle.GetId()); err != nil {
 		logger.Error.Print("Error while fetching images's category", err)
-		return map[int64]*apitype.CategorizedImage{}
+		return map[apitype.CategoryId]*apitype.CategorizedImage{}
 	} else {
-		categorizedEntries := map[int64]*apitype.CategorizedImage{}
+		categorizedEntries := map[apitype.CategoryId]*apitype.CategorizedImage{}
 		for _, categorizedImage := range categories {
 			categorizedEntries[categorizedImage.GetEntry().GetId()] = categorizedImage
 		}
@@ -98,7 +98,7 @@ func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCo
 	s.sender.SendToTopicWithData(api.DirectoryChanged, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(imageCategory map[apitype.HandleId]map[int64]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
+func (s *Manager) ResolveFileOperations(imageCategory map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
@@ -112,7 +112,7 @@ func (s *Manager) ResolveFileOperations(imageCategory map[apitype.HandleId]map[i
 }
 
 func (s *Manager) ResolveOperationsForGroup(handle *apitype.Handle,
-	categoryEntries map[int64]*apitype.CategorizedImage,
+	categoryEntries map[apitype.CategoryId]*apitype.CategorizedImage,
 	options apitype.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
 	dir, file := filepath.Split(handle.GetPath())
 

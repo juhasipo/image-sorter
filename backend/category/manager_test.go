@@ -85,7 +85,7 @@ func TestWriteCategoriesToBuffer(t *testing.T) {
 
 	t.Run("One", func(t *testing.T) {
 		categories := []*apitype.Category{
-			apitype.NewCategory(1, "Name1", "Path1", "S"),
+			apitype.NewCategoryWithId(1, "Name1", "Path1", "S"),
 		}
 
 		buf := bytes.NewBuffer([]byte{})
@@ -97,8 +97,8 @@ func TestWriteCategoriesToBuffer(t *testing.T) {
 
 	t.Run("Multiple", func(t *testing.T) {
 		categories := []*apitype.Category{
-			apitype.NewCategory(1, "Name1", "Path1", "S"),
-			apitype.NewCategory(2, "Name2", "Path2", "S"),
+			apitype.NewCategoryWithId(1, "Name1", "Path1", "S"),
+			apitype.NewCategoryWithId(2, "Name2", "Path2", "S"),
 		}
 
 		buf := bytes.NewBuffer([]byte{})

@@ -268,7 +268,7 @@ func (s *CategoryModal) getCategoriesFromList() []*apitype.Category {
 	var categories []*apitype.Category
 	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
 		name, path, key := extractValuesFromModel(s.model, iter)
-		entry := apitype.NewCategory(-1, name, path, key)
+		entry := apitype.NewCategory(name, path, key)
 
 		categories = append(categories, entry)
 	}

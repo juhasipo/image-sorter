@@ -133,7 +133,7 @@ func (s *Store) RemoveImageCategories(imageId apitype.HandleId) error {
 	return err
 }
 
-func (s *Store) CategorizeImage(imageId apitype.HandleId, categoryId int64, operation apitype.Operation) error {
+func (s *Store) CategorizeImage(imageId apitype.HandleId, categoryId apitype.CategoryId, operation apitype.Operation) error {
 	if operation == apitype.NONE {
 		_, err := s.database.Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ? AND category_id = ?
@@ -165,18 +165,13 @@ func (s *Store) AddCategory(category *apitype.Category) (*apitype.Category, erro
 		SubPath:  category.GetSubPath(),
 		Shortcut: category.GetShortcutAsString(),
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	var cat Category
-	err = s.categoryCollection.Find("id", result.ID()).One(&cat)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Debug.Printf("Stored category %s (%d) to DB", cat.Name, cat.Id)
-	return apitype.NewCategory(cat.Id, cat.Name, cat.SubPath, cat.Shortcut), err
+	logger.Debug.Printf("Stored category %s (%d) to DB", category.GetName(), category.GetId())
+	return apitype.NewPersistedCategory(idToCategoryId(result.ID()), category), err
 }
 
 func (s *Store) ResetCategories(categories []*apitype.Category) error {
@@ -212,7 +207,7 @@ func toApiCategories(categories []Category) []*apitype.Category {
 }
 
 func toApiCategory(category Category) *apitype.Category {
-	return apitype.NewCategory(category.Id, category.Name, category.SubPath, category.Shortcut)
+	return apitype.NewCategoryWithId(category.Id, category.Name, category.SubPath, category.Shortcut)
 }
 
 func (s *Store) GetImagesCategories(imageId apitype.HandleId) ([]*apitype.CategorizedImage, error) {
@@ -247,7 +242,7 @@ func toApiCategorizedImages(categories []CategorizedImage) []*apitype.Categorize
 
 func toApiCategorizedImage(category *CategorizedImage) *apitype.CategorizedImage {
 	return apitype.NewCategorizedImage(
-		apitype.NewCategory(
+		apitype.NewCategoryWithId(
 			category.CategoryId, category.Name, category.SubPath, category.Shortcut),
 		apitype.OperationFromId(category.Operation),
 	)
@@ -270,7 +265,7 @@ func (s *Store) FindByDirAndFile(directory string, fileName string) (*apitype.Ha
 	}
 }
 
-func (s *Store) GetCategoryById(id int64) *apitype.Category {
+func (s *Store) GetCategoryById(id apitype.CategoryId) *apitype.Category {
 	var category Category
 	if err := s.categoryCollection.Find(db.Cond{"id": id}).One(&category); err != nil {
 		return toApiCategory(category)
@@ -279,7 +274,7 @@ func (s *Store) GetCategoryById(id int64) *apitype.Category {
 	}
 }
 
-func (s *Store) GetCategorizedImages() (map[apitype.HandleId]map[int64]*apitype.CategorizedImage, error) {
+func (s *Store) GetCategorizedImages() (map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage, error) {
 	var categories []CategorizedImage
 	err := s.database.Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -297,13 +292,13 @@ func (s *Store) GetCategorizedImages() (map[apitype.HandleId]map[int64]*apitype.
 		return nil, err
 	}
 
-	var a = map[apitype.HandleId]map[int64]*apitype.CategorizedImage{}
+	var a = map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage{}
 	for _, image := range categories {
-		var m map[int64]*apitype.CategorizedImage
+		var m map[apitype.CategoryId]*apitype.CategorizedImage
 		if val, ok := a[image.ImageId]; ok {
 			m = val
 		} else {
-			m = map[int64]*apitype.CategorizedImage{}
+			m = map[apitype.CategoryId]*apitype.CategorizedImage{}
 			a[image.ImageId] = m
 		}
 		m[image.CategoryId] = toApiCategorizedImage(&image)

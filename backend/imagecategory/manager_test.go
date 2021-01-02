@@ -67,7 +67,7 @@ func TestCategorizeOne(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cmd := apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE)
 	sut.SetCategory(cmd)
 
@@ -92,8 +92,8 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
-	cat2, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 2", "c2", "D"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	cmd1 := apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE)
 	cmd2 := apitype.NewCategorizeCommand(handle, cat2, apitype.MOVE)
 	sut.SetCategory(cmd1)
@@ -120,8 +120,8 @@ func TestCategorizeOneRemoveCategory(t *testing.T) {
 
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
-	cat2, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 2", "c2", "D"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat2, apitype.MOVE))
@@ -147,8 +147,8 @@ func TestCategorizeOneRemoveAll(t *testing.T) {
 
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
-	cat2, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 2", "c2", "D"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat2, apitype.MOVE))
@@ -176,9 +176,9 @@ func TestCategorizeForceToCategory(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
-	cat2, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 2", "c2", "D"))
-	cat3, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 3", "c3", "E"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
+	cat3, _ := store.AddCategory(apitype.NewCategory("Cat 3", "c3", "E"))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat2, apitype.MOVE))
 	command := apitype.NewCategorizeCommand(handle, cat3, apitype.MOVE)
@@ -207,8 +207,8 @@ func TestCategorizeForceToExistingCategory(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
-	cat2, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 2", "c2", "D"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE))
 	command := apitype.NewCategorizeCommand(handle, cat2, apitype.MOVE)
 	command.SetForceToCategory(true)
@@ -235,9 +235,9 @@ func TestCategorizeForceToCategory_None(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("/tmp", "foo"))
-	cat1, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 1", "c1", "C"))
-	cat2, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 2", "c2", "D"))
-	cat3, _ := store.AddCategory(apitype.NewCategory(-1, "Cat 3", "c3", "E"))
+	cat1, _ := store.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
+	cat3, _ := store.AddCategory(apitype.NewCategory("Cat 3", "c3", "E"))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat1, apitype.MOVE))
 	sut.SetCategory(apitype.NewCategorizeCommand(handle, cat2, apitype.MOVE))
 	command := apitype.NewCategorizeCommand(handle, cat3, apitype.NONE)
@@ -264,9 +264,9 @@ func TestResolveFileOperations(t *testing.T) {
 	handle, _ := store.AddImage(apitype.NewHandle("filepath", "filename"))
 	lib.AddHandles([]*apitype.Handle{handle})
 
-	var imageCategories = map[apitype.HandleId]map[int64]*apitype.CategorizedImage{
+	var imageCategories = map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage{
 		1: {
-			1: apitype.NewCategorizedImage(apitype.NewCategory(-1, "cat1", "cat_1", ""), apitype.MOVE),
+			1: apitype.NewCategorizedImage(apitype.NewCategory("cat1", "cat_1", ""), apitype.MOVE),
 		},
 	}
 	command := apitype.NewPersistCategorizationCommand(true, false, 100)
@@ -292,7 +292,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("filepath", "filename"))
-	cat, _ := store.AddCategory(apitype.NewCategory(-1, "cat1", "cat_1", ""))
+	cat, _ := store.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
 	_ = store.CategorizeImage(handle.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := store.GetCategorizedImages()
 
@@ -319,7 +319,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("filepath", "filename"))
-	cat, _ := store.AddCategory(apitype.NewCategory(-1, "cat1", "cat_1", ""))
+	cat, _ := store.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
 	_ = store.CategorizeImage(handle.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := store.GetCategorizedImages()
 
@@ -347,7 +347,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("filepath", "filename"))
-	cat, _ := store.AddCategory(apitype.NewCategory(-1, "cat1", "cat_1", ""))
+	cat, _ := store.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
 	_ = store.CategorizeImage(handle.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := store.GetCategorizedImages()
 
@@ -375,7 +375,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, store)
 
 	handle, _ := store.AddImage(apitype.NewHandle("filepath", "filename"))
-	cat, _ := store.AddCategory(apitype.NewCategory(-1, "cat1", "cat_1", ""))
+	cat, _ := store.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
 	_ = store.CategorizeImage(handle.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := store.GetCategorizedImages()
 

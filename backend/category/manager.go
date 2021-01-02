@@ -111,7 +111,7 @@ func (s *Manager) Close() {
 	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, s.GetCategories())
 }
 
-func (s *Manager) GetCategoryById(id int64) *apitype.Category {
+func (s *Manager) GetCategoryById(id apitype.CategoryId) *apitype.Category {
 	return s.store.GetCategoryById(id)
 }
 
@@ -138,7 +138,7 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 	for _, categoryName := range categories {
 		if len(categoryName) > 0 {
 			name, subPath, shorcut := Parse(categoryName)
-			categoryEntries = append(categoryEntries, apitype.NewCategory(-1, name, subPath, shorcut))
+			categoryEntries = append(categoryEntries, apitype.NewCategory(name, subPath, shorcut))
 		}
 	}
 	logger.Debug.Printf("Parsed %d categories", len(categoryEntries))
