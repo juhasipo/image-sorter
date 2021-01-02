@@ -63,11 +63,35 @@ func (s *Store) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {
 	return apitype.NewHandle(image.Id, image.Directory, image.FileName), err
 }
 
-func (s *Store) GetImages(number int, offset int) ([]*apitype.Handle, error) {
-	return s.GetImagesInCategories(number, offset)
+type Count struct {
+	Count int `db:"c"`
 }
 
-func (s *Store) GetImagesInCategories(number int, offset int, categories ...int64) ([]*apitype.Handle, error) {
+func (s *Store) GetImageCount(categoryName string) int {
+	res := s.database.Session().SQL().
+		Select(db.Raw("count(1) AS c")).
+		From("image")
+
+	if categoryName != "" {
+		res = res.
+			Join("image_category").On("image_category.image_id = image.id").
+			Join("category").On("image_category.category_id = category.id").
+			Where("category.name", categoryName)
+	}
+
+	var counter Count
+	if err := res.One(&counter); err != nil {
+		logger.Error.Fatal("Cannot resolve image count", err)
+	}
+
+	return counter.Count
+}
+
+func (s *Store) GetImages(number int, offset int) ([]*apitype.Handle, error) {
+	return s.GetImagesInCategory(number, offset, "")
+}
+
+func (s *Store) GetImagesInCategory(number int, offset int, categoryName string) ([]*apitype.Handle, error) {
 	if number == 0 {
 		return make([]*apitype.Handle, 0), nil
 	}
@@ -76,14 +100,18 @@ func (s *Store) GetImagesInCategories(number int, offset int, categories ...int6
 	res := s.database.Session().SQL().
 		SelectFrom("image")
 
-	if len(categories) > 0 {
+	if categoryName != "" {
 		res = res.
 			Join("image_category").On("image_category.image_id = image.id").
-			Where("image_category.category_id IN ", categories)
+			Join("category").On("image_category.category_id = category.id").
+			Where("category.name", categoryName)
 	}
-	res = res.Limit(number).
-		Offset(offset).
-		OrderBy("name")
+	if number >= 0 {
+		res = res.Limit(number).
+			Offset(offset)
+	}
+
+	res = res.OrderBy("name")
 
 	if err := res.All(&images); err != nil {
 		return nil, err
