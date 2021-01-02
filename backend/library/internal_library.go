@@ -157,9 +157,9 @@ func (s *internalManager) StopHashes() {
 
 func (s *internalManager) MoveToImage(handle *apitype.Handle) {
 	images, _ := s.store.GetImagesInCategory(-1, 0, s.imagesTitle)
-	for i, c := range images {
-		if handle.GetId() == c.GetId() {
-			s.index = i
+	for imageIndex, image := range images {
+		if handle.GetId() == image.GetId() {
+			s.index = imageIndex
 		}
 	}
 }
@@ -219,6 +219,9 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 
 func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.index = 0
+	if _, err := s.store.AddImages(imageList); err != nil {
+		logger.Error.Print("cannot add images", err)
+	}
 }
 
 func (s *internalManager) GetHandleById(handleId int64) *apitype.Handle {
@@ -271,7 +274,7 @@ func (s *internalManager) getNextImages() []*apitype.ImageContainer {
 		return emptyHandles
 	}
 
-	slice, _ := s.store.GetImages(s.imageListSize, startIndex)
+	slice, _ := s.store.GetImagesInCategory(s.imageListSize, startIndex, s.imagesTitle)
 	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
 		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
@@ -290,7 +293,7 @@ func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 		prevIndex = 0
 	}
 	size := s.index - prevIndex
-	slice, _ := s.store.GetImages(size, prevIndex)
+	slice, _ := s.store.GetImagesInCategory(size, prevIndex, s.imagesTitle)
 	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
 		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
@@ -305,11 +308,7 @@ func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 
 func (s *internalManager) loadImagesFromRootDir() {
 	handles := apitype.LoadImageHandles(s.rootDir)
-	persistedHandles, err := s.store.AddImages(handles)
-	if err != nil {
-		logger.Error.Fatal("Error while persisting images", err)
-	}
-	s.AddHandles(persistedHandles)
+	s.AddHandles(handles)
 }
 
 func (s *internalManager) getTreadCount() int {

@@ -10,6 +10,25 @@ type Database struct {
 	instance db.Session
 }
 
+func NewInMemoryDatabase() *Database {
+	logger.Info.Printf("Initializing in-memory database")
+	var settings = sqlite.ConnectionURL{
+		Database: "memory.db",
+		Options: map[string]string{
+			"mode": "memory",
+		},
+	}
+
+	session, err := sqlite.Open(settings)
+	if err != nil {
+		logger.Error.Fatal("Error opening database", err)
+	}
+
+	return &Database{
+		instance: session,
+	}
+}
+
 func NewDatabase(file string) *Database {
 	logger.Info.Printf("Initializing database %s", file)
 	var settings = sqlite.ConnectionURL{

@@ -116,7 +116,7 @@ func NewCategorizeCommand(handle *Handle, entry *Category, operation Operation) 
 }
 
 func (s *CategorizeCommand) String() string {
-	return fmt.Sprintf("CategorizeCommand{%s:%s:%d}",
+	return fmt.Sprintf("CategorizeCommand{%d:%s:%d}",
 		s.handle.GetId(), s.entry.GetName(), s.operation)
 }
 
@@ -153,7 +153,11 @@ func (s *CategorizedImage) SetOperation(operation Operation) {
 }
 
 func (s *CategorizedImage) GetEntry() *Category {
-	return s.category
+	if s != nil {
+		return s.category
+	} else {
+		return nil
+	}
 }
 
 func (s *CategorizeCommand) ToLabel() string {

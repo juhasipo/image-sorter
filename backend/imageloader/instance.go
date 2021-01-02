@@ -36,7 +36,7 @@ func NewInstance(handle *apitype.Handle, imageLoader api.ImageLoader) *Instance 
 	var instance *Instance
 	exifData, err := apitype.LoadExifData(handle)
 	if err != nil {
-		logger.Warn.Printf("Exif data not properly loaded for '%s'", handle.GetId())
+		logger.Warn.Printf("Exif data not properly loaded for '%d'", handle.GetId())
 	}
 
 	instance = &Instance{

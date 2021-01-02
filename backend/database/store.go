@@ -22,6 +22,13 @@ func NewStore(database *Database) *Store {
 	}
 }
 
+func NewInMemoryStore() *Store {
+	memoryDb := NewInMemoryDatabase()
+	memoryDb.Migrate()
+	memoryStore := NewStore(memoryDb)
+	return memoryStore
+}
+
 func (s *Store) AddImages(handles []*apitype.Handle) ([]*apitype.Handle, error) {
 	var persistedHandles []*apitype.Handle
 	for _, handle := range handles {
@@ -246,7 +253,7 @@ func toApiCategorizedImages(categories []CategorizedImage) []*apitype.Categorize
 func toApiCategorizedImage(category *CategorizedImage) *apitype.CategorizedImage {
 	return apitype.NewCategorizedImage(
 		apitype.NewCategory(
-			category.CategoryId, category.Name, category.Name, category.Shortcut),
+			category.CategoryId, category.Name, category.SubPath, category.Shortcut),
 		apitype.OperationFromId(category.Operation),
 	)
 }

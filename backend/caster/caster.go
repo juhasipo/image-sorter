@@ -141,7 +141,7 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	s.reserveImage()
 	defer s.releaseImage()
 	imageHandle := s.currentImage
-	logger.Debug.Printf("Sending image '%s' to Chromecast", imageHandle.GetId())
+	logger.Debug.Printf("Sending image '%d' to Chromecast", imageHandle.GetId())
 	img, err := s.imageCache.GetScaled(imageHandle, apitype.SizeOf(canvasWidth, canvasHeight))
 
 	if img != nil && err == nil {
@@ -313,7 +313,7 @@ func (s *Caster) CastImage(handle *apitype.Handle) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 	if handle.IsValid() && s.server != nil {
-		logger.Debug.Printf("Adding to cast queue: '%s'", handle.GetId())
+		logger.Debug.Printf("Adding to cast queue: '%d'", handle.GetId())
 		s.imageQueue = handle
 
 		s.imageQueueBroker.SendToTopic(cast_image_event)
@@ -369,7 +369,7 @@ func (s *Caster) getImageFromQueue() *apitype.Handle {
 
 	if s.imageQueue != nil {
 		img := s.imageQueue
-		logger.Debug.Printf("Getting from cast queue: '%s'", img.GetId())
+		logger.Debug.Printf("Getting from cast queue: '%d'", img.GetId())
 		s.imageQueue = nil
 		return img
 	} else {

@@ -3,7 +3,6 @@ package apitype
 import (
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/duplo"
@@ -52,7 +51,7 @@ func (s *Handle) GetId() int64 {
 func (s *Handle) String() string {
 	if s != nil {
 		if s.IsValid() {
-			return "Handle{" + strconv.FormatInt(s.id, 10) + "}"
+			return "Handle{" + s.filename + "}"
 		} else {
 			return "Handle<invalid>"
 		}

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 )
 
 type MockSender struct {
@@ -45,10 +46,11 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	sut    *internalManager
-	sender *MockSender
-	store  *MockImageStore
-	loader *MockImageLoader
+	sut     *internalManager
+	sender  *MockSender
+	store   *MockImageStore
+	loader  *MockImageLoader
+	dbStore *database.Store
 )
 
 func setup() {
@@ -59,7 +61,9 @@ func setup() {
 	store.On("GetFull", mock.Anything).Return(new(MockImage))
 	store.On("GetThumbnail", mock.Anything).Return(new(MockImage))
 
-	sut = newLibrary(store, loader)
+	dbStore = database.NewInMemoryStore()
+
+	sut = newLibrary(store, loader, dbStore)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
@@ -75,7 +79,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
 	}
 	sut.AddHandles(handles)
 
@@ -107,9 +111,9 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
 	}
 	sut.AddHandles(handles)
 
@@ -160,16 +164,16 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 
@@ -210,16 +214,16 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 
@@ -284,23 +288,24 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
 	}
 	sut.AddHandles(handles)
+	handles, _ = dbStore.GetImages(-1, 0)
 
 	t.Run("foo1", func(t *testing.T) {
-		sut.MoveToImage(apitype.NewHandle("/tmp", "foo1"))
+		sut.MoveToImage(handles[1])
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
 		a.Equal("foo1", img.GetHandle().GetFile())
 	})
 	t.Run("foo3", func(t *testing.T) {
-		sut.MoveToImage(apitype.NewHandle("/tmp", "foo3"))
+		sut.MoveToImage(handles[3])
 		img, index := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
@@ -320,16 +325,16 @@ func TestGetNextImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.SetImageListSize(5)
@@ -339,11 +344,11 @@ func TestGetNextImages(t *testing.T) {
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo1", imgList[0].GetHandle().GetId())
-			a.Equal("foo2", imgList[1].GetHandle().GetId())
-			a.Equal("foo3", imgList[2].GetHandle().GetId())
-			a.Equal("foo4", imgList[3].GetHandle().GetId())
-			a.Equal("foo5", imgList[4].GetHandle().GetId())
+			a.Equal("foo1", imgList[0].GetHandle().GetFile())
+			a.Equal("foo2", imgList[1].GetHandle().GetFile())
+			a.Equal("foo3", imgList[2].GetHandle().GetFile())
+			a.Equal("foo4", imgList[3].GetHandle().GetFile())
+			a.Equal("foo5", imgList[4].GetHandle().GetFile())
 		}
 	})
 
@@ -352,11 +357,11 @@ func TestGetNextImages(t *testing.T) {
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo2", imgList[0].GetHandle().GetId())
-			a.Equal("foo3", imgList[1].GetHandle().GetId())
-			a.Equal("foo4", imgList[2].GetHandle().GetId())
-			a.Equal("foo5", imgList[3].GetHandle().GetId())
-			a.Equal("foo6", imgList[4].GetHandle().GetId())
+			a.Equal("foo2", imgList[0].GetHandle().GetFile())
+			a.Equal("foo3", imgList[1].GetHandle().GetFile())
+			a.Equal("foo4", imgList[2].GetHandle().GetFile())
+			a.Equal("foo5", imgList[3].GetHandle().GetFile())
+			a.Equal("foo6", imgList[4].GetHandle().GetFile())
 		}
 	})
 
@@ -365,9 +370,9 @@ func TestGetNextImages(t *testing.T) {
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(3, len(imgList)) {
-			a.Equal("foo7", imgList[0].GetHandle().GetId())
-			a.Equal("foo8", imgList[1].GetHandle().GetId())
-			a.Equal("foo9", imgList[2].GetHandle().GetId())
+			a.Equal("foo7", imgList[0].GetHandle().GetFile())
+			a.Equal("foo8", imgList[1].GetHandle().GetFile())
+			a.Equal("foo9", imgList[2].GetHandle().GetFile())
 		}
 	})
 
@@ -376,7 +381,7 @@ func TestGetNextImages(t *testing.T) {
 		imgList := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
-			a.Equal("foo9", imgList[0].GetHandle().GetId())
+			a.Equal("foo9", imgList[0].GetHandle().GetFile())
 		}
 	})
 
@@ -393,16 +398,16 @@ func TestGetPrevImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.SetImageListSize(5)
@@ -419,7 +424,7 @@ func TestGetPrevImages(t *testing.T) {
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
-			a.Equal("foo0", imgList[0].GetHandle().GetId())
+			a.Equal("foo0", imgList[0].GetHandle().GetFile())
 		}
 	})
 
@@ -428,11 +433,11 @@ func TestGetPrevImages(t *testing.T) {
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo4", imgList[0].GetHandle().GetId())
-			a.Equal("foo3", imgList[1].GetHandle().GetId())
-			a.Equal("foo2", imgList[2].GetHandle().GetId())
-			a.Equal("foo1", imgList[3].GetHandle().GetId())
-			a.Equal("foo0", imgList[4].GetHandle().GetId())
+			a.Equal("foo4", imgList[0].GetHandle().GetFile())
+			a.Equal("foo3", imgList[1].GetHandle().GetFile())
+			a.Equal("foo2", imgList[2].GetHandle().GetFile())
+			a.Equal("foo1", imgList[3].GetHandle().GetFile())
+			a.Equal("foo0", imgList[4].GetHandle().GetFile())
 		}
 	})
 
@@ -441,11 +446,11 @@ func TestGetPrevImages(t *testing.T) {
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo7", imgList[0].GetHandle().GetId())
-			a.Equal("foo6", imgList[1].GetHandle().GetId())
-			a.Equal("foo5", imgList[2].GetHandle().GetId())
-			a.Equal("foo4", imgList[3].GetHandle().GetId())
-			a.Equal("foo3", imgList[4].GetHandle().GetId())
+			a.Equal("foo7", imgList[0].GetHandle().GetFile())
+			a.Equal("foo6", imgList[1].GetHandle().GetFile())
+			a.Equal("foo5", imgList[2].GetHandle().GetFile())
+			a.Equal("foo4", imgList[3].GetHandle().GetFile())
+			a.Equal("foo3", imgList[4].GetHandle().GetFile())
 		}
 	})
 
@@ -454,11 +459,11 @@ func TestGetPrevImages(t *testing.T) {
 		imgList := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo8", imgList[0].GetHandle().GetId())
-			a.Equal("foo7", imgList[1].GetHandle().GetId())
-			a.Equal("foo6", imgList[2].GetHandle().GetId())
-			a.Equal("foo5", imgList[3].GetHandle().GetId())
-			a.Equal("foo4", imgList[4].GetHandle().GetId())
+			a.Equal("foo8", imgList[0].GetHandle().GetFile())
+			a.Equal("foo7", imgList[1].GetHandle().GetFile())
+			a.Equal("foo6", imgList[2].GetHandle().GetFile())
+			a.Equal("foo5", imgList[3].GetHandle().GetFile())
+			a.Equal("foo4", imgList[4].GetHandle().GetFile())
 		}
 	})
 }
@@ -467,16 +472,16 @@ func TestGetTotalCount(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 
@@ -489,28 +494,28 @@ func TestShowOnlyImages(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
+	handles, _ = dbStore.GetImages(-1, 0)
+	category, _ := dbStore.AddCategory(apitype.NewCategory(-1, "category1", "cat", "C"))
 	sut.SetImageListSize(10)
 
-	categoryHandles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo9"),
-	}
-	sut.ShowOnlyImages("category1", categoryHandles)
+	_ = dbStore.CategorizeImage(handles[1].GetId(), category.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[2].GetId(), category.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[6].GetId(), category.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[7].GetId(), category.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[9].GetId(), category.GetId(), apitype.MOVE)
+	sut.ShowOnlyImages(category.GetName(), nil)
 
 	a.Equal(5, sut.getTotalImages())
 	a.Equal("category1", sut.getCurrentCategoryName())
@@ -520,10 +525,10 @@ func TestShowOnlyImages(t *testing.T) {
 		prevImages := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(4, len(nextImages)) {
-			a.Equal("foo2", nextImages[0].GetHandle().GetId())
-			a.Equal("foo6", nextImages[1].GetHandle().GetId())
-			a.Equal("foo7", nextImages[2].GetHandle().GetId())
-			a.Equal("foo9", nextImages[3].GetHandle().GetId())
+			a.Equal("foo2", nextImages[0].GetHandle().GetFile())
+			a.Equal("foo6", nextImages[1].GetHandle().GetFile())
+			a.Equal("foo7", nextImages[2].GetHandle().GetFile())
+			a.Equal("foo9", nextImages[3].GetHandle().GetFile())
 		}
 
 		a.NotNil(prevImages)
@@ -536,14 +541,14 @@ func TestShowOnlyImages(t *testing.T) {
 		prevImages := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(2, len(nextImages)) {
-			a.Equal("foo7", nextImages[0].GetHandle().GetId())
-			a.Equal("foo9", nextImages[1].GetHandle().GetId())
+			a.Equal("foo7", nextImages[0].GetHandle().GetFile())
+			a.Equal("foo9", nextImages[1].GetHandle().GetFile())
 		}
 
 		a.NotNil(prevImages)
 		if a.Equal(2, len(prevImages)) {
-			a.Equal("foo2", prevImages[0].GetHandle().GetId())
-			a.Equal("foo1", prevImages[1].GetHandle().GetId())
+			a.Equal("foo1", prevImages[1].GetHandle().GetFile())
+			a.Equal("foo2", prevImages[0].GetHandle().GetFile())
 		}
 	})
 }
@@ -552,26 +557,26 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	a := assert.New(t)
 
 	handles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo0"),
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo3"),
-		apitype.NewHandle("/tmp", "foo4"),
-		apitype.NewHandle("/tmp", "foo5"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo8"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo0"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo3"),
+		apitype.NewHandle(-1, "/tmp", "foo4"),
+		apitype.NewHandle(-1, "/tmp", "foo5"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo8"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
 	sut.SetImageListSize(10)
 
 	categoryHandles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo9"),
+		apitype.NewHandle(-1, "/tmp", "foo1"),
+		apitype.NewHandle(-1, "/tmp", "foo2"),
+		apitype.NewHandle(-1, "/tmp", "foo6"),
+		apitype.NewHandle(-1, "/tmp", "foo7"),
+		apitype.NewHandle(-1, "/tmp", "foo9"),
 	}
 	sut.ShowOnlyImages("category1", categoryHandles)
 
@@ -587,15 +592,15 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 		prevImages := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(9, len(nextImages)) {
-			a.Equal("foo1", nextImages[0].GetHandle().GetId())
-			a.Equal("foo2", nextImages[1].GetHandle().GetId())
-			a.Equal("foo3", nextImages[2].GetHandle().GetId())
-			a.Equal("foo4", nextImages[3].GetHandle().GetId())
-			a.Equal("foo5", nextImages[4].GetHandle().GetId())
-			a.Equal("foo6", nextImages[5].GetHandle().GetId())
-			a.Equal("foo7", nextImages[6].GetHandle().GetId())
-			a.Equal("foo8", nextImages[7].GetHandle().GetId())
-			a.Equal("foo9", nextImages[8].GetHandle().GetId())
+			a.Equal("foo1", nextImages[0].GetHandle().GetFile())
+			a.Equal("foo2", nextImages[1].GetHandle().GetFile())
+			a.Equal("foo3", nextImages[2].GetHandle().GetFile())
+			a.Equal("foo4", nextImages[3].GetHandle().GetFile())
+			a.Equal("foo5", nextImages[4].GetHandle().GetFile())
+			a.Equal("foo6", nextImages[5].GetHandle().GetFile())
+			a.Equal("foo7", nextImages[6].GetHandle().GetFile())
+			a.Equal("foo8", nextImages[7].GetHandle().GetFile())
+			a.Equal("foo9", nextImages[8].GetHandle().GetFile())
 		}
 
 		a.NotNil(prevImages)
