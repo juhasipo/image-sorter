@@ -9,6 +9,7 @@ import (
 	"strings"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/backend/util"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/constants"
@@ -17,10 +18,9 @@ import (
 
 type Manager struct {
 	commandLineCategories []string
-	categories            []*apitype.Category
-	categoriesById        map[string]*apitype.Category
 	sender                api.Sender
 	rootDir               string
+	store                 *database.Store
 
 	api.CategoryManager
 }
@@ -40,47 +40,52 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(params *common.Params, sender api.Sender) api.CategoryManager {
+func New(params *common.Params, sender api.Sender, store *database.Store) api.CategoryManager {
 	manager := Manager{
 		sender:                sender,
 		commandLineCategories: params.GetCategories(),
+		store:                 store,
 	}
 	return &manager
 }
 
 func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir string) {
 	var loadedCategories []*apitype.Category
-	var categoriesByName = map[string]*apitype.Category{}
 	s.rootDir = filepath.Join(rootDir, constants.ImageSorterDir)
 
 	if len(defaultCategories) > 0 && defaultCategories[0] != "" {
 		logger.Info.Printf("Reading from command line parameters")
 		loadedCategories = fromCategoriesStrings(defaultCategories)
 	} else {
-		loadedCategories = loadCategoriesFromFile(s.rootDir)
+		loadedCategories = loadCategoriesFromFile()
 	}
 
-	for _, category := range loadedCategories {
-		categoriesByName[category.GetName()] = category
+	for i, category := range loadedCategories {
+		if category, err := s.store.AddCategory(category); err != nil {
+			logger.Error.Fatal("Error while loading categories", err)
+		} else {
+			loadedCategories[i] = category
+		}
 	}
-
-	s.categories = loadedCategories
-	s.categoriesById = categoriesByName
 }
 
 func (s *Manager) GetCategories() []*apitype.Category {
-	return s.categories
+	if categories, err := s.store.GetCategories(); err != nil {
+		logger.Error.Fatal("Cannot get categories", err)
+		return nil
+	} else {
+		return categories
+	}
 }
 
 func (s *Manager) RequestCategories() {
-	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
+	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
 }
 
 func (s *Manager) Save(categories []*apitype.Category) {
 	s.resetCategories(categories)
 
-	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, categories)
-	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
+	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
 }
 func (s *Manager) SaveDefault(categories []*apitype.Category) {
 	s.resetCategories(categories)
@@ -91,24 +96,23 @@ func (s *Manager) SaveDefault(categories []*apitype.Category) {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
 		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
-		s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.categories))
+		s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
 	}
 }
 
 func (s *Manager) resetCategories(categories []*apitype.Category) {
-	s.categories = categories
-	for _, category := range categories {
-		s.categoriesById[category.GetId()] = category
+	if err := s.store.ResetCategories(categories); err != nil {
+		logger.Error.Printf("Error while reseting categories %s", err)
 	}
 }
 
 func (s *Manager) Close() {
 	logger.Info.Print("Shutting down category manager")
-	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, s.categories)
+	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, s.GetCategories())
 }
 
-func (s *Manager) GetCategoryById(id string) *apitype.Category {
-	return s.categoriesById[id]
+func (s *Manager) GetCategoryById(id int64) *apitype.Category {
+	return s.store.GetCategoryById(id)
 }
 
 func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) {
@@ -133,7 +137,8 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 	var categoryEntries []*apitype.Category
 	for _, categoryName := range categories {
 		if len(categoryName) > 0 {
-			categoryEntries = append(categoryEntries, apitype.NewCategory(Parse(categoryName)))
+			name, subPath, shorcut := Parse(categoryName)
+			categoryEntries = append(categoryEntries, apitype.NewCategory(-1, name, subPath, shorcut))
 		}
 	}
 	logger.Debug.Printf("Parsed %d categories", len(categoryEntries))
@@ -143,10 +148,9 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 	return categoryEntries
 }
 
-func loadCategoriesFromFile(fileDir string) []*apitype.Category {
+func loadCategoriesFromFile() []*apitype.Category {
 	if currentUser, err := user.Current(); err == nil {
 		filePaths := []string{
-			filepath.Join(fileDir, constants.CategoriesFileName),
 			filepath.Join(currentUser.HomeDir, constants.ImageSorterDir, constants.CategoriesFileName),
 		}
 

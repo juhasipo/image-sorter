@@ -9,6 +9,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/backend/filter"
 	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/logger"
@@ -17,22 +18,24 @@ import (
 type Manager struct {
 	rootDir       string
 	settingDir    string
-	imageCategory map[int64]map[string]*apitype.CategorizedImage
+	imageCategory map[int64]map[int64]*apitype.CategorizedImage
 	sender        api.Sender
 	library       api.Library
 	filterManager *filter.Manager
 	imageLoader   api.ImageLoader
+	store         *database.Store
 
 	api.ImageCategoryManager
 }
 
-func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader) api.ImageCategoryManager {
+func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader, store *database.Store) api.ImageCategoryManager {
 	var manager = Manager{
-		imageCategory: map[int64]map[string]*apitype.CategorizedImage{},
+		imageCategory: map[int64]map[int64]*apitype.CategorizedImage{},
 		sender:        sender,
 		library:       lib,
 		filterManager: filterManager,
 		imageLoader:   imageLoader,
+		store:         store,
 	}
 	return &manager
 }
@@ -40,22 +43,23 @@ func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *
 func (s *Manager) InitializeForDirectory(directory string) {
 	s.rootDir = directory
 	s.settingDir = filepath.Join(directory, constants.ImageSorterDir)
-	s.imageCategory = map[int64]map[string]*apitype.CategorizedImage{}
+	s.imageCategory = map[int64]map[int64]*apitype.CategorizedImage{}
 }
 
 func (s *Manager) RequestCategory(handle *apitype.Handle) {
 	s.sendCategories(handle)
 }
 
-func (s *Manager) GetCategories(handle *apitype.Handle) map[string]*apitype.CategorizedImage {
-	if categories, ok := s.imageCategory[handle.GetId()]; ok {
-		categorizedEntries := map[string]*apitype.CategorizedImage{}
+func (s *Manager) GetCategories(handle *apitype.Handle) map[int64]*apitype.CategorizedImage {
+	if categories, err := s.store.GetImagesCategories(handle.GetId()); err != nil {
+		logger.Error.Print("Error while fetching images's category", err)
+		return map[int64]*apitype.CategorizedImage{}
+	} else {
+		categorizedEntries := map[int64]*apitype.CategorizedImage{}
 		for _, categorizedImage := range categories {
 			categorizedEntries[categorizedImage.GetEntry().GetId()] = categorizedImage
 		}
 		return categorizedEntries
-	} else {
-		return map[string]*apitype.CategorizedImage{}
 	}
 }
 
@@ -69,7 +73,7 @@ func (s *Manager) SetCategory(command *apitype.CategorizeCommand) {
 	var categorizedImage *apitype.CategorizedImage = nil
 	if command.ShouldForceToCategory() {
 		logger.Debug.Printf("Force to category for '%s'", handle.GetPath())
-		image = map[string]*apitype.CategorizedImage{}
+		image = map[int64]*apitype.CategorizedImage{}
 		s.imageCategory[handle.GetId()] = image
 		if operation != apitype.NONE {
 			categorizedImage = apitype.NewCategorizedImage(categoryEntry, operation)
@@ -83,7 +87,7 @@ func (s *Manager) SetCategory(command *apitype.CategorizeCommand) {
 	if categorizedImage == nil && operation != apitype.NONE {
 		if image == nil {
 			logger.Debug.Printf("Create category entry for '%s'", handle.GetPath())
-			image = map[string]*apitype.CategorizedImage{}
+			image = map[int64]*apitype.CategorizedImage{}
 			s.imageCategory[handle.GetId()] = image
 		}
 		logger.Debug.Printf("Create category entry for '%s:%s'", handle.GetPath(), categoryEntry.GetName())
@@ -130,7 +134,7 @@ func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCo
 	s.sender.SendToTopicWithData(api.DirectoryChanged, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(imageCategory map[int64]map[string]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
+func (s *Manager) ResolveFileOperations(imageCategory map[int64]map[int64]*apitype.CategorizedImage, options apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
 	for handleId, categoryEntries := range imageCategory {
@@ -144,7 +148,7 @@ func (s *Manager) ResolveFileOperations(imageCategory map[int64]map[string]*apit
 }
 
 func (s *Manager) ResolveOperationsForGroup(handle *apitype.Handle,
-	categoryEntries map[string]*apitype.CategorizedImage,
+	categoryEntries map[int64]*apitype.CategorizedImage,
 	options apitype.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
 	dir, file := filepath.Split(handle.GetPath())
 
@@ -214,7 +218,11 @@ func (s *Manager) LoadCategorization(handleManager api.Library, categoryManager 
 		parts := strings.Split(line, ";")
 		atoi, _ := strconv.ParseInt(parts[0], 10, 64)
 		handle := handleManager.GetHandleById(atoi)
-		categories := parts[1:]
+		categoriesStr := parts[1:]
+		categories := make([]int64, len(categoriesStr))
+		for i, s := range categoriesStr {
+			categories[i], _ = strconv.ParseInt(s, 10, 64)
+		}
 
 		if !handle.IsValid() {
 			continue
@@ -222,12 +230,12 @@ func (s *Manager) LoadCategorization(handleManager api.Library, categoryManager 
 
 		categoryMap := s.imageCategory[handle.GetId()]
 		if categoryMap == nil {
-			s.imageCategory[handle.GetId()] = map[string]*apitype.CategorizedImage{}
+			s.imageCategory[handle.GetId()] = map[int64]*apitype.CategorizedImage{}
 			categoryMap = s.imageCategory[handle.GetId()]
 		}
 
 		for _, c := range categories {
-			if c != "" {
+			if c != -1 {
 				entry := categoryManager.GetCategoryById(c)
 				if entry != nil {
 					categoryMap[entry.GetId()] = apitype.NewCategorizedImage(entry, apitype.MOVE)
@@ -256,7 +264,7 @@ func (s *Manager) PersistCategorization() {
 			_, _ = w.WriteString(";")
 			for entry, categorizedImage := range categorization {
 				if categorizedImage.GetOperation() == apitype.MOVE {
-					_, _ = w.WriteString(entry)
+					_, _ = w.WriteString(strconv.FormatInt(entry, 10))
 					_, _ = w.WriteString(";")
 				}
 			}

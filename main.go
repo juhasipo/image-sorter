@@ -23,19 +23,19 @@ func main() {
 	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
 
 	db := database.NewDatabase("image-sorter.db")
-	db.Migrate()
+	tableExist := db.Migrate()
 	defer db.Close()
 
 	store := database.NewStore(db)
 
 	broker := event.InitBus(EventBusQueueSize)
 
-	categoryManager := category.New(params, broker)
+	categoryManager := category.New(params, broker, store)
 	imageLoader := imageloader.NewImageLoader()
 	imageCache := imageloader.NewImageCache(imageLoader)
 	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader, store)
 	filterManager := filter.NewFilterManager()
-	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader)
+	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader, store)
 
 	casterInstance := caster.NewCaster(params, broker, imageCache)
 
@@ -49,7 +49,9 @@ func main() {
 	// Startup
 	broker.Subscribe(api.DirectoryChanged, func(directory string) {
 		logger.Info.Printf("Directory changed to '%s'", directory)
-		categoryManager.InitializeFromDirectory([]string{}, directory)
+		if tableExist == database.TableNotExist {
+			categoryManager.InitializeFromDirectory([]string{}, directory)
+		}
 		imageLibrary.InitializeFromDirectory(directory)
 
 		if len(imageLibrary.GetHandles()) > 0 {

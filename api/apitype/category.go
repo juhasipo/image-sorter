@@ -8,22 +8,22 @@ import (
 )
 
 type Category struct {
-	id       string
+	id       int64
 	name     string
 	subPath  string
 	shortcut uint
 }
 
-func NewCategory(name string, subPath string, shortcut string) *Category {
+func NewCategory(id int64, name string, subPath string, shortcut string) *Category {
 	return &Category{
-		id:       name,
+		id:       id,
 		name:     name,
 		subPath:  subPath,
 		shortcut: common.KeyToUint(shortcut),
 	}
 }
 
-func (s *Category) GetId() string {
+func (s *Category) GetId() int64 {
 	return s.id
 }
 

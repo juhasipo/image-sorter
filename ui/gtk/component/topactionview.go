@@ -30,7 +30,7 @@ func (s *CategoryButton) SetStatus(operation apitype.Operation) {
 
 type TopActionView struct {
 	categoriesView           *gtk.Box
-	categoryButtons          map[string]*CategoryButton
+	categoryButtons          map[int64]*CategoryButton
 	nextButton               *gtk.Button
 	prevButton               *gtk.Button
 	currentImagesStatusLabel *gtk.Label
@@ -41,7 +41,7 @@ type TopActionView struct {
 func NewTopActions(builder *gtk.Builder, imageView *ImageView, sender api.Sender) *TopActionView {
 	topActionView := &TopActionView{
 		categoriesView:           GetObjectOrPanic(builder, "categories").(*gtk.Box),
-		categoryButtons:          map[string]*CategoryButton{},
+		categoryButtons:          map[int64]*CategoryButton{},
 		nextButton:               GetObjectOrPanic(builder, "next-button").(*gtk.Button),
 		prevButton:               GetObjectOrPanic(builder, "prev-button").(*gtk.Button),
 		currentImagesStatusLabel: GetObjectOrPanic(builder, "current-images-status-label").(*gtk.Label),
@@ -207,7 +207,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 }
 
 func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand) {
-	s.categoryButtons = map[string]*CategoryButton{}
+	s.categoryButtons = map[int64]*CategoryButton{}
 	children := s.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
 		s.categoriesView.Remove(item.(gtk.IWidget))
@@ -233,11 +233,11 @@ func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand) 
 	s.categoriesView.ShowAll()
 }
 
-func (s *TopActionView) GetCategoryButtons() map[string]*CategoryButton {
+func (s *TopActionView) GetCategoryButtons() map[int64]*CategoryButton {
 	return s.categoryButtons
 }
 
-func (s *TopActionView) GetCategoryButton(id string) (*CategoryButton, bool) {
+func (s *TopActionView) GetCategoryButton(id int64) (*CategoryButton, bool) {
 	button, ok := s.categoryButtons[id]
 	return button, ok
 }

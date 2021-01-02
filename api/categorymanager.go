@@ -9,5 +9,5 @@ type CategoryManager interface {
 	Save(categories []*apitype.Category)
 	SaveDefault(categories []*apitype.Category)
 	Close()
-	GetCategoryById(id string) *apitype.Category
+	GetCategoryById(id int64) *apitype.Category
 }

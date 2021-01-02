@@ -26,7 +26,14 @@ func NewDatabase(file string) *Database {
 	}
 }
 
-func (s *Database) Migrate() {
+type TableExist bool
+
+const (
+	TableNotExist TableExist = false
+	TableExists   TableExist = true
+)
+
+func (s *Database) Migrate() TableExist {
 	logger.Info.Printf("Running migrations")
 	// TODO: Actually migrate rather than just creating database
 	tablesExists := s.doesTablesExists()
@@ -49,6 +56,12 @@ func (s *Database) Migrate() {
 		logger.Error.Fatal("Error while running migrations", err)
 	}
 	logger.Info.Print("All migrations done")
+
+	if tablesExists {
+		return TableExists
+	} else {
+		return TableNotExist
+	}
 }
 
 func (s *Database) doesTablesExists() bool {
@@ -111,12 +124,15 @@ func (s *Database) migrate() error {
 			    id INTEGER PRIMARY KEY,
 			    name TEXT,
 				sub_path TEXT,
-				shortcut INTEGER
+				shortcut INTEGER,
+				
+				UNIQUE (name)
 			);
 
 			CREATE TABLE image_category (
 			    image_id INTEGER,
 			    category_id INTEGER,
+			    operation INT,
 			    
 			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
 			    FOREIGN KEY(category_id) REFERENCES category(id) ON DELETE CASCADE
