@@ -10,19 +10,11 @@ type Image struct {
 	ByteSize  int64            `db:"byte_size"`
 }
 
-func idToHandleId(id interface{}) apitype.HandleId {
-	return apitype.HandleId(id.(int64))
-}
-
 type Category struct {
 	Id       apitype.CategoryId `db:"id,omitempty"`
 	Name     string             `db:"name"`
 	SubPath  string             `db:"sub_path"`
 	Shortcut string             `db:"shortcut"`
-}
-
-func idToCategoryId(id interface{}) apitype.CategoryId {
-	return apitype.CategoryId(id.(int64))
 }
 
 type ImageCategory struct {
@@ -42,4 +34,8 @@ type CategorizedImage struct {
 
 type ImageHash struct {
 	ImageId int64 `db:"image_id"`
+}
+
+type Count struct {
+	Count int `db:"c"`
 }
