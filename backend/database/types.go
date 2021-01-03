@@ -32,8 +32,11 @@ type CategorizedImage struct {
 	Operation  int64              `db:"operation"`
 }
 
-type ImageHash struct {
-	ImageId int64 `db:"image_id"`
+type ImageSimilar struct {
+	ImageId        apitype.HandleId `db:"image_id"`
+	SimilarImageId apitype.HandleId `db:"similar_image_id"`
+	Rank           int              `db:"rank"`
+	Score          float64          `db:"rank"`
 }
 
 type Count struct {

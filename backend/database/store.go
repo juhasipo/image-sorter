@@ -11,6 +11,7 @@ type Store struct {
 	imageCollection         db.Collection
 	categoryCollection      db.Collection
 	imageCategoryCollection db.Collection
+	imageSimilarCollection  db.Collection
 }
 
 func NewStore(database *Database) *Store {
@@ -19,6 +20,7 @@ func NewStore(database *Database) *Store {
 		imageCollection:         database.Session().Collection("image"),
 		categoryCollection:      database.Session().Collection("category"),
 		imageCategoryCollection: database.Session().Collection("image_category"),
+		imageSimilarCollection:  database.Session().Collection("image_similar"),
 	}
 }
 
@@ -41,6 +43,38 @@ func (s *Store) AddImages(handles []*apitype.Handle) ([]*apitype.Handle, error) 
 	}
 
 	return persistedHandles, nil
+}
+
+func (s *Store) ClearSimilarImages() error {
+	return s.imageSimilarCollection.Truncate()
+}
+
+func (s *Store) AddSimilarImage(imageId apitype.HandleId, similarId apitype.HandleId, rank int, score float64) error {
+	_, err := s.imageSimilarCollection.Insert(&ImageSimilar{
+		ImageId:        imageId,
+		SimilarImageId: similarId,
+		Rank:           rank,
+		Score:          score,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Store) GetSimilarImages(imageId apitype.HandleId) []*apitype.Handle {
+	var images []Image
+	s.database.Session().SQL().
+		Select("image.*").
+		From("image").
+		Join("image_similar").On("image_similar.similar_image_id = image.id").
+		Where("image_similar.image_id", imageId).
+		OrderBy("image_similar.rank").
+		All(&images)
+
+	return toApiHandles(images)
 }
 
 func (s *Store) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {

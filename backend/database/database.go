@@ -162,10 +162,16 @@ func (s *Database) migrate() error {
 			    UNIQUE (image_id, category_id)
 			);
 
-			CREATE TABLE image_hash (
+			CREATE TABLE image_similar (
 			    image_id INTEGER,
+			    similar_image_id INTEGER,
+			    rank INTEGER,
+			    score REAL,
 			    
-			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE
+			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
+			    FOREIGN KEY(similar_image_id) REFERENCES image(id) ON DELETE CASCADE,
+			    
+			    UNIQUE (image_id, similar_image_id)
 			)
 		`
 

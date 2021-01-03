@@ -41,6 +41,7 @@ func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader, store *d
 		index:                       0,
 		imageHash:                   duplo.New(),
 		shouldGenerateSimilarHashed: true,
+		shouldSendSimilar:           true,
 		imageListSize:               0,
 		imageStore:                  imageCache,
 		imageLoader:                 imageLoader,
@@ -76,7 +77,7 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	s.shouldSendSimilar = true
 	if s.shouldGenerateSimilarHashed {
 		startTime := time.Now()
-		images, _ := s.store.GetImagesInCategory(-1, 0, s.imagesTitle)
+		images, _ := s.store.GetImages(-1, 0)
 		hashExpected := len(images)
 		logger.Info.Printf("Generate hashes for %d images...", hashExpected)
 		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, hashExpected)
@@ -125,6 +126,37 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		// Remember to take thread count otherwise the avg time is too small
 		f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
 		logger.Info.Printf("  On average: %s/image", f.String())
+
+		const maxSimilarImages = 10
+		logger.Info.Printf("Building similarity index for %d most similar images for each image", maxSimilarImages)
+
+		startTime = time.Now()
+		if err := s.store.ClearSimilarImages(); err != nil {
+			logger.Error.Print("Error while clearing similar images", err)
+		}
+		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, len(images))
+		for imageIndex, handle := range images {
+			matches := s.imageHash.Query(*handle.GetHash())
+			sort.Sort(matches)
+			i := 0
+			for _, match := range matches {
+				similar := match.ID.(*apitype.Handle)
+				if handle.GetId() != similar.GetId() {
+					if err := s.store.AddSimilarImage(handle.GetId(), similar.GetId(), i, match.Score); err != nil {
+						logger.Error.Print("Error while storing similar images", err)
+						break
+					}
+					i++
+				}
+				if i == maxSimilarImages {
+					break
+				}
+			}
+			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", imageIndex, len(images))
+		}
+		endTime = time.Now()
+		d = endTime.Sub(startTime)
+		logger.Info.Printf("Similarity index has been built in %s", d.String())
 
 		// Always send 100% status even if cancelled so that the progress bar is hidden
 		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", hashExpected, hashExpected)
@@ -317,29 +349,20 @@ func (s *internalManager) getTreadCount() int {
 }
 
 func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.ImageContainer, bool) {
-	if s.imageHash.Size() > 0 {
-		matches := s.imageHash.Query(*handle.GetHash())
-		sort.Sort(matches)
-
-		const maxImages = 10
-		images := make([]*apitype.ImageContainer, maxImages)
+	similarImages := s.store.GetSimilarImages(handle.GetId())
+	if len(similarImages) > 0 {
+		containers := make([]*apitype.ImageContainer, len(similarImages))
 		i := 0
-		for _, match := range matches {
-			similar := match.ID.(*apitype.Handle)
-			if handle.GetId() != similar.GetId() {
-				if thumbnail, err := s.imageStore.GetThumbnail(similar); err != nil {
-					logger.Error.Print("Error while loading thumbnail", err)
-				} else {
-					images[i] = apitype.NewImageContainer(similar, thumbnail)
-				}
-				i++
+		for _, similar := range similarImages {
+			if thumbnail, err := s.imageStore.GetThumbnail(similar); err != nil {
+				logger.Error.Print("Error while loading thumbnail", err)
+			} else {
+				containers[i] = apitype.NewImageContainer(similar, thumbnail)
 			}
-			if i == maxImages {
-				break
-			}
+			i++
 		}
 
-		return images, true
+		return containers, true
 	} else {
 		return []*apitype.ImageContainer{}, false
 	}
