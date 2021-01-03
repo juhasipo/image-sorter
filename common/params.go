@@ -14,6 +14,17 @@ type Params struct {
 	rootPath              string
 }
 
+func NewEmptyParams() *Params {
+	return &Params{
+		categories:            []string{},
+		httpPort:              0,
+		secret:                "",
+		alwaysStartHttpServer: false,
+		logLevel:              "",
+		rootPath:              "",
+	}
+}
+
 func ParseParams() *Params {
 	categories := flag.String("categories", "", "Comma separated categories. Each category in format <name>:<shortcut> e.g. Good:G")
 	categoryArr := strings.Split(*categories, ",")

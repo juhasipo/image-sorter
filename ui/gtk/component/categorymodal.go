@@ -3,6 +3,7 @@ package component
 import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+	"strconv"
 	"strings"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -118,7 +119,7 @@ func (s *CategoryModal) startEdit() {
 	s.editedCategoryIter = iter
 
 	if ok {
-		name, path, key := extractValuesFromModel(s.model, s.editedCategoryIter)
+		_, name, path, key := extractValuesFromModel(s.model, s.editedCategoryIter)
 
 		s.initAddEditView(name, path, key)
 	}
@@ -236,6 +237,7 @@ func (s *CategoryModal) Show(parent gtk.IWindow, categories []*apitype.Category)
 	s.model.Clear()
 	for _, entry := range categories {
 		iter := s.model.Append()
+		s.model.SetValue(iter, 3, entry.GetId())
 		s.model.SetValue(iter, 0, entry.GetName())
 		s.model.SetValue(iter, 1, entry.GetSubPath())
 		s.model.SetValue(iter, 2, entry.GetShortcutAsString())
@@ -267,8 +269,8 @@ func (s *CategoryModal) remove() {
 func (s *CategoryModal) getCategoriesFromList() []*apitype.Category {
 	var categories []*apitype.Category
 	for iter, _ := s.model.GetIterFirst(); s.model.IterIsValid(iter); s.model.IterNext(iter) {
-		name, path, key := extractValuesFromModel(s.model, iter)
-		entry := apitype.NewCategory(name, path, key)
+		id, name, path, key := extractValuesFromModel(s.model, iter)
+		entry := apitype.NewCategoryWithId(id, name, path, key)
 
 		categories = append(categories, entry)
 	}
@@ -276,19 +278,22 @@ func (s *CategoryModal) getCategoriesFromList() []*apitype.Category {
 	return categories
 }
 
-func extractValuesFromModel(store *gtk.ListStore, iter *gtk.TreeIter) (string, string, string) {
+func extractValuesFromModel(store *gtk.ListStore, iter *gtk.TreeIter) (apitype.CategoryId, string, string, string) {
 	nameValue, _ := store.GetValue(iter, 0)
 	pathValue, _ := store.GetValue(iter, 1)
 	keyValue, _ := store.GetValue(iter, 2)
+	idValue, _ := store.GetValue(iter, 3)
 	name, _ := nameValue.GetString()
 	path, _ := pathValue.GetString()
 	shortcut, _ := keyValue.GetString()
-	return name, path, shortcut
+	idStr, _ := idValue.GetString()
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+	return apitype.CategoryId(id), name, path, shortcut
 }
 
 func createCategoryList(view *gtk.TreeView, title string) *gtk.ListStore {
 	// Name, folder, shortcut key
-	store, _ := gtk.ListStoreNew(glib.TYPE_STRING, glib.TYPE_STRING, glib.TYPE_STRING)
+	store, _ := gtk.ListStoreNew(glib.TYPE_STRING, glib.TYPE_STRING, glib.TYPE_STRING, glib.TYPE_STRING)
 
 	view.SetModel(store)
 	renderer, _ := gtk.CellRendererTextNew()
@@ -298,6 +303,8 @@ func createCategoryList(view *gtk.TreeView, title string) *gtk.ListStore {
 	folderColumn.SetTitle("Path")
 	shortcutColumn, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 2)
 	shortcutColumn.SetTitle("Shortcut")
+	idColumn, _ := gtk.TreeViewColumnNewWithAttribute(title, renderer, "text", 3)
+	idColumn.SetTitle("ID")
 
 	view.AppendColumn(nameColumn)
 	view.AppendColumn(folderColumn)

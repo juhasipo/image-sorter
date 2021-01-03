@@ -145,15 +145,19 @@ func (s *Store) CategorizeImage(imageId apitype.HandleId, categoryId apitype.Cat
 }
 
 func (s *Store) AddCategory(category *apitype.Category) (*apitype.Category, error) {
+	return addCategory(s.categoryCollection, category)
+}
+
+func addCategory(collection db.Collection, category *apitype.Category) (*apitype.Category, error) {
 	var existing []Category
-	if err := s.categoryCollection.Find(db.Cond{"name": category.GetName()}).
+	if err := collection.Find(db.Cond{"name": category.GetName()}).
 		All(&existing); err != nil {
 		return nil, err
 	} else if len(existing) > 0 {
 		return toApiCategory(existing[0]), nil
 	}
 
-	result, err := s.categoryCollection.Insert(Category{
+	result, err := collection.Insert(Category{
 		Name:     category.GetName(),
 		SubPath:  category.GetSubPath(),
 		Shortcut: category.GetShortcutAsString(),
@@ -169,8 +173,33 @@ func (s *Store) AddCategory(category *apitype.Category) (*apitype.Category, erro
 
 func (s *Store) ResetCategories(categories []*apitype.Category) error {
 	return s.database.Session().Tx(func(sess db.Session) error {
+		collection := sess.Collection("category")
+		var persistedCategories []Category
+		if err := collection.Find().All(&persistedCategories); err != nil {
+			return err
+		}
+
+		var existingCategoriesById = map[apitype.CategoryId]*apitype.Category{}
+		for _, category := range persistedCategories {
+			existingCategoriesById[category.Id] = toApiCategory(category)
+		}
+
 		for _, category := range categories {
-			if _, err := s.AddCategory(category); err != nil {
+			categoryKey := category.GetId()
+			if _, ok := existingCategoriesById[categoryKey]; ok {
+				if err := updateCategory(collection, category); err != nil {
+					return err
+				}
+				delete(existingCategoriesById, categoryKey)
+			} else {
+				if _, err := addCategory(collection, category); err != nil {
+					return err
+				}
+			}
+		}
+
+		for _, category := range existingCategoriesById {
+			if err := removeCategory(collection, category.GetId()); err != nil {
 				return err
 			}
 		}
@@ -269,4 +298,17 @@ func (s *Store) GetCategorizedImages() (map[apitype.HandleId]map[apitype.Categor
 		categorizedImagesByCategoryId[categorizedImage.CategoryId] = toApiCategorizedImage(&categorizedImage)
 	}
 	return catImagesByHandleIdAndCategoryId, nil
+}
+
+func removeCategory(collection db.Collection, categoryId apitype.CategoryId) error {
+	return collection.Find(db.Cond{"id": categoryId}).Delete()
+}
+
+func updateCategory(collection db.Collection, category *apitype.Category) error {
+	return collection.Find(db.Cond{"id": category.GetId()}).Update(&Category{
+		Id:       category.GetId(),
+		Name:     category.GetName(),
+		SubPath:  category.GetSubPath(),
+		Shortcut: category.GetShortcutAsString(),
+	})
 }

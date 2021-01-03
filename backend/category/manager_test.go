@@ -4,9 +4,26 @@ import (
 	"bufio"
 	"bytes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"testing"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/common"
 )
+
+type MockSender struct {
+	api.Sender
+	mock.Mock
+}
+
+func (s *MockSender) SendToTopic(topic api.Topic) {
+	s.Called(topic)
+}
+
+func (s *MockSender) SendToTopicWithData(topic api.Topic, data ...interface{}) {
+	s.Called(topic, data)
+}
 
 func TestParse(t *testing.T) {
 	a := assert.New(t)
@@ -150,4 +167,36 @@ func TestReadCategoriesFromReader(t *testing.T) {
 		a.Equal("Path2", categories[1].GetSubPath())
 		a.Equal("S", categories[1].GetShortcutAsString())
 	})
+}
+
+func TestResetCategories(t *testing.T) {
+	a := assert.New(t)
+
+	params := common.NewEmptyParams()
+	sender := new(MockSender)
+	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
+
+	store := database.NewInMemoryStore()
+	sut := New(params, sender, store)
+
+	_, _ = store.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
+	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "C2", "2"))
+	_, _ = store.AddCategory(apitype.NewCategory("Cat 3", "C3", "3"))
+	cat4, _ := store.AddCategory(apitype.NewCategory("Cat 4", "C4", "4"))
+
+	sut.Save([]*apitype.Category{
+		apitype.NewCategoryWithId(cat2.GetId(), "Cat 2", "C2", "2"),
+		apitype.NewCategoryWithId(cat4.GetId(), "Cat 4_", "C4", "4"),
+		apitype.NewCategory("Cat 5", "C5", "5"),
+	})
+
+	categories, _ := store.GetCategories()
+
+	if a.Equal(3, len(categories)) {
+		a.Equal(categories[0].GetId(), cat2.GetId())
+		a.Equal(categories[0].GetName(), "Cat 2")
+		a.Equal(categories[1].GetId(), cat4.GetId())
+		a.Equal(categories[1].GetName(), "Cat 4_")
+		a.Equal(categories[2].GetName(), "Cat 5")
+	}
 }

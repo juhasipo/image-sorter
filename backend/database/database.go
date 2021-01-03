@@ -59,14 +59,18 @@ func (s *Database) Migrate() TableExist {
 
 	if !tablesExists {
 		logger.Info.Print("Initial databases don't exist. Creating...")
-		_, err := s.instance.SQL().Exec(`
-			CREATE TABLE migrations (
-				id TEXT PRIMARY KEY
-			)
-		`)
-		if err != nil {
-			logger.Error.Fatal("Error while creating migration table", err)
-		}
+		s.instance.Tx(func(session db.Session) error {
+			_, err := session.SQL().Exec(`
+				CREATE TABLE migrations (
+					id TEXT PRIMARY KEY
+				)
+			`)
+			if err != nil {
+				logger.Error.Fatal("Error while creating migration table", err)
+			}
+			return err
+		})
+
 	}
 
 	logger.Info.Print("Start migrations...")
