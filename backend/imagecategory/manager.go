@@ -148,15 +148,7 @@ func (s *Manager) Close() {
 }
 
 func (s *Manager) ShowOnlyCategoryImages(cat *apitype.Category) {
-	var handles []*apitype.Handle
-	categorizedImages, _ := s.store.GetCategorizedImages()
-	for key, img := range categorizedImages {
-		if _, ok := img[cat.GetId()]; ok {
-			handle := s.library.GetHandleById(key)
-			handles = append(handles, handle)
-		}
-	}
-	s.sender.SendToTopicWithData(api.ImageShowOnly, cat.GetName(), handles)
+	s.sender.SendToTopicWithData(api.ImageShowOnly, cat.GetName())
 }
 
 func (s *Manager) getCategories(image *apitype.Handle) []*apitype.CategorizedImage {

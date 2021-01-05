@@ -29,7 +29,7 @@ func (s *Manager) GetHandles() []*apitype.Handle {
 	return s.manager.GetHandles()
 }
 
-func (s *Manager) ShowOnlyImages(title string, handles []*apitype.Handle) {
+func (s *Manager) ShowOnlyImages(title string) {
 	s.manager.ShowOnlyImages(title)
 	s.RequestImages()
 }
