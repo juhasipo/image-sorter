@@ -12,6 +12,7 @@ type Store struct {
 	categoryCollection      db.Collection
 	imageCategoryCollection db.Collection
 	imageSimilarCollection  db.Collection
+	imageHandleConverter    ImageHandleConverter
 }
 
 func NewStore(database *Database) *Store {
@@ -21,6 +22,7 @@ func NewStore(database *Database) *Store {
 		categoryCollection:      database.Session().Collection("category"),
 		imageCategoryCollection: database.Session().Collection("image_category"),
 		imageSimilarCollection:  database.Session().Collection("image_similar"),
+		imageHandleConverter:    &FileSystemImageHandleConverter{},
 	}
 }
 
@@ -31,18 +33,19 @@ func NewInMemoryStore() *Store {
 	return memoryStore
 }
 
-func (s *Store) AddImages(handles []*apitype.Handle) ([]*apitype.Handle, error) {
-	var persistedHandles []*apitype.Handle
+func (s *Store) SetImageHandleConverter(imageHandleConverter ImageHandleConverter) {
+	s.imageHandleConverter = imageHandleConverter
+}
+
+func (s *Store) AddImages(handles []*apitype.Handle) error {
 	for _, handle := range handles {
-		persistedHandle, err := s.AddImage(handle)
-		if err != nil {
+		if _, err := s.AddImage(handle); err != nil {
 			logger.Error.Printf("Error while adding image '%s' to DB", handle.GetPath())
-			return nil, err
+			return err
 		}
-		persistedHandles = append(persistedHandles, persistedHandle)
 	}
 
-	return persistedHandles, nil
+	return nil
 }
 
 func (s *Store) ClearSimilarImages() error {
@@ -78,25 +81,31 @@ func (s *Store) GetSimilarImages(imageId apitype.HandleId) []*apitype.Handle {
 }
 
 func (s *Store) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {
-	if existing, err := s.FindByDirAndFile(handle.GetDir(), handle.GetFile()); err != nil {
+	if exists, err := s.Exists(handle); err != nil {
 		return nil, err
-	} else if existing != nil {
-		logger.Trace.Printf("Image %s/%s already in DB", handle.GetDir(), handle.GetFile())
-		return existing, nil
-	}
-
-	result, err := s.imageCollection.Insert(Image{
-		Name:      handle.GetFile(),
-		FileName:  handle.GetFile(),
-		Directory: handle.GetDir(),
-		ByteSize:  handle.GetByteSize(),
-	})
-
-	if err != nil {
+	} else if !exists {
+		logger.Debug.Printf("Adding image '%s' to DB", handle.String())
+		if image, err := s.imageHandleConverter.HandleToImage(handle); err != nil {
+			return nil, err
+		} else if _, err := s.imageCollection.Insert(image); err != nil {
+			return nil, err
+		} else {
+			return s.FindByDirAndFile(handle)
+		}
+	} else if modifiedId, err := s.FindModifiedId(handle); err != nil {
 		return nil, err
+	} else if modifiedId > 0 {
+		logger.Debug.Printf("Updating existing image '%s' in DB", handle.String())
+		if image, err := s.imageHandleConverter.HandleToImage(handle); err != nil {
+			return nil, err
+		} else if err := s.Update(modifiedId, image); err != nil {
+			return nil, err
+		} else {
+			return apitype.NewPersistedHandle(modifiedId, handle), nil
+		}
+	} else {
+		return s.FindByDirAndFile(handle)
 	}
-
-	return apitype.NewPersistedHandle(idToHandleId(result.ID()), handle), err
 }
 
 func (s *Store) GetImageCount(categoryName string) int {
@@ -143,7 +152,7 @@ func (s *Store) GetImagesInCategory(number int, offset int, categoryName string)
 			Offset(offset)
 	}
 
-	res = res.OrderBy("name")
+	res = res.OrderBy("image.name")
 
 	if err := res.All(&images); err != nil {
 		return nil, err
@@ -276,12 +285,12 @@ func (s *Store) GetImagesCategories(imageId apitype.HandleId) ([]*apitype.Catego
 	return toApiCategorizedImages(categories), nil
 }
 
-func (s *Store) FindByDirAndFile(directory string, fileName string) (*apitype.Handle, error) {
+func (s *Store) FindByDirAndFile(handle *apitype.Handle) (*apitype.Handle, error) {
 	var handles []Image
 	err := s.imageCollection.
 		Find(db.Cond{
-			"directory": directory,
-			"file_name": fileName,
+			"directory": handle.GetDir(),
+			"file_name": handle.GetFile(),
 		}).
 		All(&handles)
 	if err != nil {
@@ -332,6 +341,44 @@ func (s *Store) GetCategorizedImages() (map[apitype.HandleId]map[apitype.Categor
 		categorizedImagesByCategoryId[categorizedImage.CategoryId] = toApiCategorizedImage(&categorizedImage)
 	}
 	return catImagesByHandleIdAndCategoryId, nil
+}
+
+func (s *Store) Exists(handle *apitype.Handle) (bool, error) {
+	return s.imageCollection.
+		Find(db.Cond{
+			"directory": handle.GetDir(),
+			"file_name": handle.GetFile(),
+		}).
+		Exists()
+}
+
+func (s *Store) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, error) {
+	stat, err := getHandleFileStats(handle)
+	if err != nil {
+		return -1, err
+	}
+
+	var images []Image
+	err = s.imageCollection.
+		Find(db.Cond{
+			"directory":            handle.GetDir(),
+			"file_name":            handle.GetFile(),
+			"modified_timestamp <": stat.ModTime(),
+		}).All(&images)
+
+	if err != nil {
+		return -1, err
+	}
+
+	if len(images) > 0 {
+		return images[0].Id, nil
+	} else {
+		return -1, nil
+	}
+}
+
+func (s *Store) Update(id apitype.HandleId, image *Image) error {
+	return s.imageCollection.Find(db.Cond{"id": id}).Update(image)
 }
 
 func removeCategory(collection db.Collection, categoryId apitype.CategoryId) error {

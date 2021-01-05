@@ -6,6 +6,7 @@ import (
 	"image"
 	"os"
 	"testing"
+	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
@@ -39,6 +40,27 @@ type MockImageLoader struct {
 	mock.Mock
 }
 
+type StubImageHandleConverter struct {
+	database.ImageHandleConverter
+}
+
+func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*database.Image, error) {
+	return &database.Image{
+		Id:              0,
+		Name:            handle.GetFile(),
+		FileName:        handle.GetFile(),
+		Directory:       handle.GetDir(),
+		ByteSize:        1234,
+		ExifOrientation: 1,
+		ImageAngle:      90,
+		ImageFlip:       true,
+		CreatedTime:     time.Now(),
+		Width:           1024,
+		Height:          2048,
+		ModifiedTime:    time.Now(),
+	}, nil
+}
+
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
@@ -60,14 +82,19 @@ func setup() {
 
 	store.On("GetFull", mock.Anything).Return(new(MockImage))
 	store.On("GetThumbnail", mock.Anything).Return(new(MockImage))
+}
 
+func initializeSut() *internalManager {
 	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
 
-	sut = newLibrary(store, loader, dbStore)
+	return newLibrary(store, loader, dbStore)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
 	a := assert.New(t)
+
+	sut := initializeSut()
 
 	img, index := sut.getCurrentImage()
 	a.NotNil(img)
@@ -77,6 +104,11 @@ func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
 
 func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	a := assert.New(t)
+
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo1"),
@@ -109,6 +141,11 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 
 func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	a := assert.New(t)
+
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo1"),
@@ -163,6 +200,11 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	a := assert.New(t)
 
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
+
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
 		apitype.NewHandle("/tmp", "foo1"),
@@ -212,6 +254,11 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 
 func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	a := assert.New(t)
+
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -287,6 +334,11 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	a := assert.New(t)
 
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
+
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
 		apitype.NewHandle("/tmp", "foo1"),
@@ -323,6 +375,11 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 
 func TestGetNextImages(t *testing.T) {
 	a := assert.New(t)
+
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -396,6 +453,11 @@ func TestGetNextImages(t *testing.T) {
 
 func TestGetPrevImages(t *testing.T) {
 	a := assert.New(t)
+
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -471,6 +533,11 @@ func TestGetPrevImages(t *testing.T) {
 func TestGetTotalCount(t *testing.T) {
 	a := assert.New(t)
 
+	dbStore = database.NewInMemoryStore()
+	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+
+	sut = newLibrary(store, loader, dbStore)
+
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
 		apitype.NewHandle("/tmp", "foo1"),
@@ -492,6 +559,8 @@ func TestGetTotalCount(t *testing.T) {
 
 func TestShowOnlyImages(t *testing.T) {
 	a := assert.New(t)
+
+	sut := initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -515,7 +584,7 @@ func TestShowOnlyImages(t *testing.T) {
 	_ = dbStore.CategorizeImage(handles[6].GetId(), category.GetId(), apitype.MOVE)
 	_ = dbStore.CategorizeImage(handles[7].GetId(), category.GetId(), apitype.MOVE)
 	_ = dbStore.CategorizeImage(handles[9].GetId(), category.GetId(), apitype.MOVE)
-	sut.ShowOnlyImages(category.GetName(), nil)
+	sut.ShowOnlyImages(category.GetName())
 
 	a.Equal(5, sut.getTotalImages())
 	a.Equal("category1", sut.getCurrentCategoryName())
@@ -556,6 +625,8 @@ func TestShowOnlyImages(t *testing.T) {
 func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	a := assert.New(t)
 
+	sut := initializeSut()
+
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
 		apitype.NewHandle("/tmp", "foo1"),
@@ -571,14 +642,15 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	sut.AddHandles(handles)
 	sut.SetImageListSize(10)
 
-	categoryHandles := []*apitype.Handle{
-		apitype.NewHandle("/tmp", "foo1"),
-		apitype.NewHandle("/tmp", "foo2"),
-		apitype.NewHandle("/tmp", "foo6"),
-		apitype.NewHandle("/tmp", "foo7"),
-		apitype.NewHandle("/tmp", "foo9"),
-	}
-	sut.ShowOnlyImages("category1", categoryHandles)
+	handles, _ = dbStore.GetImages(-1, 0)
+	category1, _ := dbStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
+	_ = dbStore.CategorizeImage(handles[1].GetId(), category1.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[2].GetId(), category1.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[6].GetId(), category1.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[7].GetId(), category1.GetId(), apitype.MOVE)
+	_ = dbStore.CategorizeImage(handles[9].GetId(), category1.GetId(), apitype.MOVE)
+
+	sut.ShowOnlyImages("category1")
 
 	a.Equal(5, sut.getTotalImages())
 	a.Equal("category1", sut.getCurrentCategoryName())

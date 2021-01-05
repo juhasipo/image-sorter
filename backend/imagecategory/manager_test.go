@@ -8,6 +8,7 @@ import (
 	"image"
 	"path/filepath"
 	"testing"
+	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
@@ -33,6 +34,27 @@ type MockImageCache struct {
 type MockImageLoader struct {
 	api.ImageLoader
 	mock.Mock
+}
+
+type StubImageHandleConverter struct {
+	database.ImageHandleConverter
+}
+
+func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*database.Image, error) {
+	return &database.Image{
+		Id:              0,
+		Name:            handle.GetFile(),
+		FileName:        handle.GetFile(),
+		Directory:       handle.GetDir(),
+		ByteSize:        1234,
+		ExifOrientation: 1,
+		ImageAngle:      90,
+		ImageFlip:       true,
+		CreatedTime:     time.Now(),
+		Width:           1024,
+		Height:          2048,
+		ModifiedTime:    time.Now(),
+	}, nil
 }
 
 func (s *MockSender) SendToTopic(topic api.Topic) {
@@ -286,6 +308,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	store := database.NewInMemoryStore()
+	store.SetImageHandleConverter(&StubImageHandleConverter{})
 	lib := library.NewLibrary(sender, imageCache, imageLoader, store)
 	filterManager := filter.NewFilterManager()
 
@@ -313,6 +336,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	store := database.NewInMemoryStore()
+	store.SetImageHandleConverter(&StubImageHandleConverter{})
 	lib := library.NewLibrary(sender, imageCache, imageLoader, store)
 	filterManager := filter.NewFilterManager()
 
@@ -341,6 +365,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	store := database.NewInMemoryStore()
+	store.SetImageHandleConverter(&StubImageHandleConverter{})
 	lib := library.NewLibrary(sender, imageCache, imageLoader, store)
 	filterManager := filter.NewFilterManager()
 
@@ -369,6 +394,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	store := database.NewInMemoryStore()
+	store.SetImageHandleConverter(&StubImageHandleConverter{})
 	lib := library.NewLibrary(sender, imageCache, imageLoader, store)
 	filterManager := filter.NewFilterManager()
 

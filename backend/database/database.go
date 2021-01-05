@@ -138,10 +138,20 @@ func (s *Database) migrate() error {
 			    file_name TEXT,
 				directory TEXT,
 				byte_size INT,
+				exif_orientation INT,
+				image_angle INT,
+				image_flip INT,
+				width INT,
+				height INT,
+				created_timestamp DATETIME,
+				modified_timestamp DATETIME,
 				
 				UNIQUE (directory, file_name),
 				UNIQUE (name)
 			);
+
+			CREATE INDEX image_created_timestamp_idx ON image (created_timestamp);
+			CREATE INDEX image_byte_size_idx ON image (byte_size);
 
 			CREATE TABLE category (
 			    id INTEGER PRIMARY KEY,

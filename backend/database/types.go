@@ -1,13 +1,23 @@
 package database
 
-import "vincit.fi/image-sorter/api/apitype"
+import (
+	"time"
+	"vincit.fi/image-sorter/api/apitype"
+)
 
 type Image struct {
-	Id        apitype.HandleId `db:"id,omitempty"`
-	Name      string           `db:"name"`
-	FileName  string           `db:"file_name"`
-	Directory string           `db:"directory"`
-	ByteSize  int64            `db:"byte_size"`
+	Id              apitype.HandleId `db:"id,omitempty"`
+	Name            string           `db:"name"`
+	FileName        string           `db:"file_name"`
+	Directory       string           `db:"directory"`
+	ByteSize        int64            `db:"byte_size"`
+	ExifOrientation uint8            `db:"exif_orientation"`
+	ImageAngle      int              `db:"image_angle"`
+	ImageFlip       bool             `db:"image_flip"`
+	CreatedTime     time.Time        `db:"created_timestamp"`
+	Width           uint             `db:"width"`
+	Height          uint             `db:"height"`
+	ModifiedTime    time.Time        `db:"modified_timestamp"`
 }
 
 type Category struct {

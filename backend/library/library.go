@@ -30,7 +30,7 @@ func (s *Manager) GetHandles() []*apitype.Handle {
 }
 
 func (s *Manager) ShowOnlyImages(title string, handles []*apitype.Handle) {
-	s.manager.ShowOnlyImages(title, handles)
+	s.manager.ShowOnlyImages(title)
 	s.RequestImages()
 }
 

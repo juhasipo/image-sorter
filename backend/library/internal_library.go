@@ -63,7 +63,7 @@ func (s *internalManager) GetHandles() []*apitype.Handle {
 	return images
 }
 
-func (s *internalManager) ShowOnlyImages(categoryName string, handles []*apitype.Handle) {
+func (s *internalManager) ShowOnlyImages(categoryName string) {
 	s.imagesTitle = categoryName
 	s.index = 0
 }
@@ -251,7 +251,7 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 
 func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.index = 0
-	if _, err := s.store.AddImages(imageList); err != nil {
+	if err := s.store.AddImages(imageList); err != nil {
 		logger.Error.Print("cannot add images", err)
 	}
 }

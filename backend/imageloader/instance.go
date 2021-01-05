@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/disintegration/imaging"
 	"image"
-	"os"
 	"sync"
 	"time"
 	"vincit.fi/image-sorter/api"
@@ -173,12 +172,6 @@ func (s *Instance) loadImageWithExifCorrection(size *apitype.Size) (image.Image,
 	if err != nil {
 		logger.Error.Print(err)
 		return nil, err
-	}
-
-	if fileStat, err := os.Stat(s.handle.GetPath()); err == nil {
-		s.handle.SetByteSize(fileStat.Size())
-	} else {
-		logger.Error.Println("Could not load statistic for " + s.handle.GetPath())
 	}
 
 	return apitype.ExifRotateImage(loadedImage, s.exifData)

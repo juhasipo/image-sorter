@@ -20,7 +20,7 @@ type Handle struct {
 }
 
 func (s *Handle) IsValid() bool {
-	return s != nil && s.id != -1
+	return s != nil && s.path != ""
 }
 
 var (
@@ -34,6 +34,7 @@ func NewPersistedHandle(id HandleId, handle *Handle) *Handle {
 		directory: handle.directory,
 		filename:  handle.filename,
 		path:      handle.path,
+		byteSize:  handle.byteSize,
 		hash:      handle.hash,
 	}
 }

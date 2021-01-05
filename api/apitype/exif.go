@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"time"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -18,6 +19,7 @@ type ExifData struct {
 	rotation    gdk.PixbufRotation
 	flipped     bool
 	raw         *exif.Exif
+	created     time.Time
 }
 
 const exifUnchangedOrientation = 1
@@ -75,12 +77,20 @@ func find(exifData []byte, s []byte) (int, error) {
 	}
 }
 
+func (s *ExifData) GetExifOrientation() uint8 {
+	return s.orientation
+}
+
 func (s *ExifData) GetRotation() gdk.PixbufRotation {
 	return s.rotation
 }
 
 func (s *ExifData) IsFlipped() bool {
 	return s.flipped
+}
+
+func (s *ExifData) GetCreatedTime() time.Time {
+	return s.created
 }
 
 func (s *ExifData) GetRaw() []byte {
@@ -103,21 +113,54 @@ func (s *ExifData) GetRawLength() uint16 {
 	return uint16(len(s.raw.Raw))
 }
 
+func GetInt(decodedExif *exif.Exif, tagName exif.FieldName) (int, error) {
+	if tag, err := decodedExif.Get(tagName); err != nil {
+		return 0, err
+	} else {
+		return tag.Int(0)
+	}
+}
+
+func GetUInt(decodedExif *exif.Exif, tagName exif.FieldName) (uint, error) {
+	if tag, err := decodedExif.Get(tagName); err != nil {
+		return 0, err
+	} else if intVal, err := tag.Int(0); err != nil {
+		return 0, err
+	} else {
+		return uint(intVal), err
+	}
+}
+
+func GetString(decodedExif *exif.Exif, tagName exif.FieldName) (string, error) {
+	if tag, err := decodedExif.Get(tagName); err != nil {
+		return "", err
+	} else {
+		return tag.StringVal()
+	}
+}
+
+func GetTime(decodedExif *exif.Exif, tagName exif.FieldName) (time.Time, error) {
+	if stringVal, err := GetString(decodedExif, tagName); err != nil {
+		return time.Unix(0, 0), err
+	} else {
+		return time.Parse("2006:01:02 15:04:05", stringVal)
+	}
+}
+
 func LoadExifData(handle *Handle) (*ExifData, error) {
 	fileForExif, err := os.Open(handle.GetPath())
 	if fileForExif != nil && err == nil {
 		defer fileForExif.Close()
 
-		orientation := 0
 		if decodedExif, err := exif.Decode(fileForExif); err != nil {
 			logger.Error.Print("Could not decode Exif data", err)
 			return nil, err
-		} else if orientationTag, err := decodedExif.Get(exif.Orientation); err != nil {
-			logger.Warn.Print("Could not resolve orientation flag", err)
-			return &ExifData{1, 0, false, decodedExif}, err
-		} else if orientation, err = orientationTag.Int(0); err != nil {
-			logger.Warn.Print("Could not resolve orientation value", err)
-			return &ExifData{1, 0, false, decodedExif}, err
+		} else if orientation, err := GetInt(decodedExif, exif.Orientation); err != nil {
+			logger.Warn.Print("Could not resolve orientation", err)
+			return getInvalidExifData(decodedExif), err
+		} else if timeValue, err := GetTime(decodedExif, exif.DateTimeOriginal); err != nil {
+			logger.Warn.Print("Could not resolve created value", err)
+			return getInvalidExifData(decodedExif), err
 		} else {
 			angle, flip := ExifOrientationToAngleAndFlip(orientation)
 			return &ExifData{
@@ -125,11 +168,16 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 				rotation:    angle,
 				flipped:     flip,
 				raw:         decodedExif,
+				created:     timeValue,
 			}, nil
 		}
 	} else {
-		return &ExifData{1, 0, false, nil}, err
+		return &ExifData{1, 0, false, nil, time.Unix(0, 0)}, err
 	}
+}
+
+func getInvalidExifData(decodedExif *exif.Exif) *ExifData {
+	return &ExifData{1, 0, false, decodedExif, time.Unix(0, 0)}
 }
 
 const (
