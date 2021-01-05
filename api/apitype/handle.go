@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/duplo"
 )
 
 type HandleId int64
@@ -15,7 +14,6 @@ type Handle struct {
 	directory string
 	filename  string
 	path      string
-	hash      *duplo.Hash
 	byteSize  int64
 }
 
@@ -35,7 +33,6 @@ func NewPersistedHandle(id HandleId, handle *Handle) *Handle {
 		filename:  handle.filename,
 		path:      handle.path,
 		byteSize:  handle.byteSize,
-		hash:      handle.hash,
 	}
 }
 
@@ -45,7 +42,6 @@ func NewHandleWithId(id HandleId, fileDir string, fileName string) *Handle {
 		directory: fileDir,
 		filename:  fileName,
 		path:      filepath.Join(fileDir, fileName),
-		hash:      nil,
 	}
 }
 
@@ -99,13 +95,6 @@ func (s *Handle) GetFile() string {
 	} else {
 		return ""
 	}
-}
-
-func (s *Handle) SetHash(hash *duplo.Hash) {
-	s.hash = hash
-}
-func (s *Handle) GetHash() *duplo.Hash {
-	return s.hash
 }
 
 func (s *Handle) SetByteSize(length int64) {

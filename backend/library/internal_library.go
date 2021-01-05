@@ -3,6 +3,7 @@ package library
 import (
 	"runtime"
 	"sort"
+	"sync"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -90,6 +91,8 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		inputChannel := make(chan *apitype.Handle, hashExpected)
 		s.outputChannel = make(chan *HashResult)
 
+		hashes := map[apitype.HandleId]*duplo.Hash{}
+
 		// Add images to input queue for goroutines
 		for _, handle := range images {
 			inputChannel <- handle
@@ -103,10 +106,14 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 			go hashImage(inputChannel, s.outputChannel, s.stopChannel, s.imageLoader)
 		}
 
+		var mux sync.Mutex
+
 		var i = 0
 		for result := range s.outputChannel {
 			i++
-			result.handle.SetHash(result.hash)
+			mux.Lock()
+			hashes[result.handle.GetId()] = result.hash
+			mux.Unlock()
 
 			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", i, hashExpected)
 			s.imageHash.Add(result.handle, *result.hash)
@@ -135,7 +142,8 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		}
 		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, len(images))
 		for imageIndex, handle := range images {
-			matches := s.imageHash.Query(*handle.GetHash())
+			hash := hashes[handle.GetId()]
+			matches := s.imageHash.Query(*hash)
 			sort.Sort(matches)
 			i := 0
 			for _, match := range matches {
