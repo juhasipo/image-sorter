@@ -381,6 +381,18 @@ func (s *Store) Update(id apitype.HandleId, image *Image) error {
 	return s.imageCollection.Find(db.Cond{"id": id}).Update(image)
 }
 
+func (s *Store) GetImageById(id apitype.HandleId) *apitype.Handle {
+	var image Image
+	err := s.imageCollection.Find(db.Cond{"id": id}).One(&image)
+
+	if err != nil {
+		logger.Error.Print("Could not find image ", err)
+	}
+
+	return toApiHandle(&image)
+
+}
+
 func removeCategory(collection db.Collection, categoryId apitype.CategoryId) error {
 	return collection.Find(db.Cond{"id": categoryId}).Delete()
 }

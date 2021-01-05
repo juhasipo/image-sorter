@@ -20,7 +20,6 @@ type ImageList func(number int) []*apitype.Handle
 
 type internalManager struct {
 	rootDir                     string
-	imageHandles                map[apitype.HandleId]*apitype.Handle
 	imagesTitle                 string
 	index                       int
 	imageHash                   *duplo.Store
@@ -257,7 +256,7 @@ func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 }
 
 func (s *internalManager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
-	return s.imageHandles[handleId]
+	return s.store.GetImageById(handleId)
 }
 
 func (s *internalManager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
