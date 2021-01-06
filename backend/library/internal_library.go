@@ -31,24 +31,27 @@ type internalManager struct {
 	shouldGenerateSimilarHashed bool
 	categoryManager             api.CategoryManager
 	imageListSize               int
-	imageStore                  api.ImageStore
+	imageCache                  api.ImageStore
 	imageLoader                 api.ImageLoader
-	store                       *database.Store
+	similarityIndex             *database.SimilarityIndex
+	imageStore                  *database.ImageStore
 
 	stopChannel   chan bool
 	outputChannel chan *HashResult
 }
 
-func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader, store *database.Store) *internalManager {
+func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
+	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) *internalManager {
 	var manager = internalManager{
 		index:                       0,
 		imageHash:                   duplo.New(),
 		shouldGenerateSimilarHashed: true,
 		shouldSendSimilar:           true,
 		imageListSize:               0,
-		imageStore:                  imageCache,
+		imageCache:                  imageCache,
 		imageLoader:                 imageLoader,
-		store:                       store,
+		similarityIndex:             similarityIndex,
+		imageStore:                  imageStore,
 	}
 	return &manager
 }
@@ -62,7 +65,7 @@ func (s *internalManager) InitializeFromDirectory(directory string) {
 }
 
 func (s *internalManager) GetHandles() []*apitype.Handle {
-	images, _ := s.store.GetImages(-1, 0)
+	images, _ := s.imageStore.GetImages(-1, 0)
 	return images
 }
 
@@ -80,7 +83,7 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	s.shouldSendSimilar = true
 	if s.shouldGenerateSimilarHashed {
 		startTime := time.Now()
-		images, _ := s.store.GetImages(-1, 0)
+		images, _ := s.imageStore.GetImages(-1, 0)
 		hashExpected := len(images)
 		logger.Info.Printf("Generate hashes for %d images...", hashExpected)
 		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, hashExpected)
@@ -138,9 +141,8 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 
 		startTime = time.Now()
 
-		s.store.DoInTransaction(func(session db.Session) error {
-			si := database.NewSimilarityIndex(s.store, session)
-			if err := si.StartRecreateSimilarImageIndex(); err != nil {
+		s.similarityIndex.DoInTransaction(func(session db.Session) error {
+			if err := s.similarityIndex.StartRecreateSimilarImageIndex(session); err != nil {
 				logger.Error.Print("Error while clearing similar images", err)
 				return err
 			}
@@ -160,7 +162,8 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 				for _, match := range matches {
 					similar := match.ID.(*apitype.Handle)
 					if handle.GetId() != similar.GetId() {
-						if err := si.AddSimilarImage(handle.GetId(), similar.GetId(), i, match.Score); err != nil {
+						if err := s.similarityIndex.
+							AddSimilarImage(handle.GetId(), similar.GetId(), i, match.Score); err != nil {
 							logger.Error.Print("Error while storing similar images", err)
 							return err
 						}
@@ -180,7 +183,7 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 				logger.Debug.Printf(" -       Add: %s", addEnd.Sub(addStart))
 				logger.Debug.Printf(" - Add/image: %s", addEnd.Sub(addStart)/maxSimilarImages)
 			}
-			if err := si.EndRecreateSimilarImageIndex(); err != nil {
+			if err := s.similarityIndex.EndRecreateSimilarImageIndex(); err != nil {
 				logger.Error.Print("Error while finishing similar images index", err)
 				return err
 			}
@@ -227,7 +230,7 @@ func (s *internalManager) StopHashes() {
 }
 
 func (s *internalManager) MoveToImage(handle *apitype.Handle) {
-	images, _ := s.store.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
 	for imageIndex, image := range images {
 		if handle.GetId() == image.GetId() {
 			s.index = imageIndex
@@ -236,7 +239,7 @@ func (s *internalManager) MoveToImage(handle *apitype.Handle) {
 }
 
 func (s *internalManager) MoveToImageAt(index int) {
-	images, _ := s.store.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
 	if index >= 0 {
 		s.index = index
 	} else {
@@ -270,7 +273,7 @@ func (s *internalManager) MoveToPrevImageWithOffset(offset int) {
 func (s *internalManager) requestImageWithOffset(offset int) {
 	s.index += offset
 
-	images, _ := s.store.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
 	if s.index >= len(images) {
 		s.index = len(images) - 1
 	}
@@ -290,26 +293,26 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 
 func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.index = 0
-	if err := s.store.AddImages(imageList); err != nil {
+	if err := s.imageStore.AddImages(imageList); err != nil {
 		logger.Error.Print("cannot add images", err)
 	}
 }
 
 func (s *internalManager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
-	return s.store.GetImageById(handleId)
+	return s.imageStore.GetImageById(handleId)
 }
 
 func (s *internalManager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
-	return s.imageStore.GetExifData(handle)
+	return s.imageCache.GetExifData(handle)
 }
 
 // Private API
 
 func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int) {
-	images, _ := s.store.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
 	if s.index < len(images) {
 		handle := images[s.index]
-		if full, err := s.imageStore.GetFull(handle); err != nil {
+		if full, err := s.imageCache.GetFull(handle); err != nil {
 			logger.Error.Print("Error while loading full image", err)
 			return apitype.NewImageContainer(apitype.GetEmptyHandle(), nil), 0
 		} else {
@@ -321,7 +324,7 @@ func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int) {
 }
 
 func (s *internalManager) getTotalImages() int {
-	return s.store.GetImageCount(s.imagesTitle)
+	return s.imageStore.GetImageCount(s.imagesTitle)
 }
 func (s *internalManager) getCurrentCategoryName() string {
 	return s.imagesTitle
@@ -334,7 +337,7 @@ func (s *internalManager) getImageListSize() int {
 }
 
 func (s *internalManager) getNextImages() []*apitype.ImageContainer {
-	imageCount := s.store.GetImageCount(s.imagesTitle)
+	imageCount := s.imageStore.GetImageCount(s.imagesTitle)
 	startIndex := s.index + 1
 	endIndex := startIndex + s.imageListSize
 	if endIndex > imageCount {
@@ -345,10 +348,10 @@ func (s *internalManager) getNextImages() []*apitype.ImageContainer {
 		return emptyHandles
 	}
 
-	slice, _ := s.store.GetImagesInCategory(s.imageListSize, startIndex, s.imagesTitle)
+	slice, _ := s.imageStore.GetImagesInCategory(s.imageListSize, startIndex, s.imagesTitle)
 	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
-		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
+		if thumbnail, err := s.imageCache.GetThumbnail(handle); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 		} else {
 			images[i] = apitype.NewImageContainer(handle, thumbnail)
@@ -364,10 +367,10 @@ func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 		prevIndex = 0
 	}
 	size := s.index - prevIndex
-	slice, _ := s.store.GetImagesInCategory(size, prevIndex, s.imagesTitle)
+	slice, _ := s.imageStore.GetImagesInCategory(size, prevIndex, s.imagesTitle)
 	images := make([]*apitype.ImageContainer, len(slice))
 	for i, handle := range slice {
-		if thumbnail, err := s.imageStore.GetThumbnail(handle); err != nil {
+		if thumbnail, err := s.imageCache.GetThumbnail(handle); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 		} else {
 			images[i] = apitype.NewImageContainer(handle, thumbnail)
@@ -388,12 +391,12 @@ func (s *internalManager) getTreadCount() int {
 }
 
 func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.ImageContainer, bool) {
-	similarImages := s.store.GetSimilarImages(handle.GetId())
+	similarImages := s.similarityIndex.GetSimilarImages(handle.GetId())
 	if len(similarImages) > 0 {
 		containers := make([]*apitype.ImageContainer, len(similarImages))
 		i := 0
 		for _, similar := range similarImages {
-			if thumbnail, err := s.imageStore.GetThumbnail(similar); err != nil {
+			if thumbnail, err := s.imageCache.GetThumbnail(similar); err != nil {
 				logger.Error.Print("Error while loading thumbnail", err)
 			} else {
 				containers[i] = apitype.NewImageContainer(similar, thumbnail)

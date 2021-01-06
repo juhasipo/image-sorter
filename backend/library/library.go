@@ -14,10 +14,10 @@ type Manager struct {
 	api.Library
 }
 
-func NewLibrary(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, store *database.Store) api.Library {
+func NewLibrary(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) api.Library {
 	return &Manager{
 		sender:  sender,
-		manager: newLibrary(imageCache, imageLoader, store),
+		manager: newLibrary(imageCache, imageLoader, similarityIndex, imageStore),
 	}
 }
 

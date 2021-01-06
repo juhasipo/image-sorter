@@ -27,13 +27,15 @@ func main() {
 	defer db.Close()
 
 	store := database.NewStore(db)
+	imageStore := database.NewImageStore(store, &database.FileSystemImageHandleConverter{})
+	similarityIndex := database.NewSimilarityIndex(store)
 
 	broker := event.InitBus(EventBusQueueSize)
 
 	categoryManager := category.New(params, broker, store)
 	imageLoader := imageloader.NewImageLoader()
 	imageCache := imageloader.NewImageCache(imageLoader)
-	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader, store)
+	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader, similarityIndex, imageStore)
 	filterManager := filter.NewFilterManager()
 	imageCategoryManager := imagecategory.NewImageCategoryManager(broker, imageLibrary, filterManager, imageLoader, store)
 
@@ -59,7 +61,7 @@ func main() {
 		}
 
 		imageCategoryManager.InitializeForDirectory(directory)
-		
+
 		categoryManager.RequestCategories()
 	})
 

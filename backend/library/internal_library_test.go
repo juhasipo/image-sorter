@@ -68,11 +68,12 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	sut     *internalManager
-	sender  *MockSender
-	store   *MockImageStore
-	loader  *MockImageLoader
-	dbStore *database.Store
+	sut        *internalManager
+	sender     *MockSender
+	store      *MockImageStore
+	loader     *MockImageLoader
+	dbStore    *database.Store
+	imageStore *database.ImageStore
 )
 
 func setup() {
@@ -86,9 +87,9 @@ func setup() {
 
 func initializeSut() *internalManager {
 	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
+	imageStore = database.NewImageStore(dbStore, &StubImageHandleConverter{})
 
-	return newLibrary(store, loader, dbStore)
+	return newLibrary(store, loader, nil, imageStore)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
@@ -105,10 +106,7 @@ func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
 func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo1"),
@@ -142,10 +140,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo1"),
@@ -200,10 +195,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -255,10 +247,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -334,10 +323,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -347,7 +333,7 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 		apitype.NewHandle("/tmp", "foo4"),
 	}
 	sut.AddHandles(handles)
-	handles, _ = dbStore.GetImages(-1, 0)
+	handles, _ = imageStore.GetImages(-1, 0)
 
 	t.Run("foo1", func(t *testing.T) {
 		sut.MoveToImage(handles[1])
@@ -376,10 +362,7 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 func TestGetNextImages(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -454,10 +437,7 @@ func TestGetNextImages(t *testing.T) {
 func TestGetPrevImages(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -533,10 +513,7 @@ func TestGetPrevImages(t *testing.T) {
 func TestGetTotalCount(t *testing.T) {
 	a := assert.New(t)
 
-	dbStore = database.NewInMemoryStore()
-	dbStore.SetImageHandleConverter(&StubImageHandleConverter{})
-
-	sut = newLibrary(store, loader, dbStore)
+	sut = initializeSut()
 
 	handles := []*apitype.Handle{
 		apitype.NewHandle("/tmp", "foo0"),
@@ -575,7 +552,7 @@ func TestShowOnlyImages(t *testing.T) {
 		apitype.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
-	handles, _ = dbStore.GetImages(-1, 0)
+	handles, _ = imageStore.GetImages(-1, 0)
 	category, _ := dbStore.AddCategory(apitype.NewCategory("category1", "cat", "C"))
 	sut.SetImageListSize(10)
 
@@ -642,7 +619,7 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	sut.AddHandles(handles)
 	sut.SetImageListSize(10)
 
-	handles, _ = dbStore.GetImages(-1, 0)
+	handles, _ = imageStore.GetImages(-1, 0)
 	category1, _ := dbStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
 	_ = dbStore.CategorizeImage(handles[1].GetId(), category1.GetId(), apitype.MOVE)
 	_ = dbStore.CategorizeImage(handles[2].GetId(), category1.GetId(), apitype.MOVE)
