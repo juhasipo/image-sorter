@@ -37,7 +37,9 @@ mkdir -p ${TAR_RESOURCE_DST_DIR}
 
 # Copy binaries and resources
 echo "Copy binaries and resources..."
+sed -i "s/__IMAGE_SORTER_VERSION__/${VERSION}/g" script/control-template
 cp script/control-template ${DEB_CONTROL_DIR}/control
+sed -i "s/${VERSION}/__IMAGE_SORTER_VERSION__/g" script/control-template
 cp ${BIN_SRC_DIR}/image-sorter ${DEB_BIN_DST_DIR}/${APP_NAME}
 cp ${RESOURCE_SRC_DIR}/main-view.glade ${DEB_RESOURCE_DST_DIR}
 cp ${RESOURCE_SRC_DIR}/style.css ${DEB_RESOURCE_DST_DIR}

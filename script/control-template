@@ -1,9 +1,9 @@
 Package: image-sorter
-Version: 0.1-1
+Version: __IMAGE_SORTER_VERSION__-1
 Section: base
 Priority: optional
 Architecture: amd64
-Depends: libgtk-3-0 (>= 3.22.0)
+Depends: libgtk-3-0 (>= 3.22.0), sqlite3 (>= 3.31.0)
 Maintainer: Juha Siponen <juha.siponen@vincit.fi>
 Description: Image Sorter
  Simple application for sorting images to different
