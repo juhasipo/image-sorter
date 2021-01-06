@@ -240,3 +240,7 @@ func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
 	return toApiHandle(&image)
 
 }
+
+func (s *ImageStore) RemoveImage(handleId apitype.HandleId) error {
+	return s.collection.Find(db.Cond{"id": handleId}).Delete()
+}

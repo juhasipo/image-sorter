@@ -61,7 +61,7 @@ func (s *internalManager) InitializeFromDirectory(directory string) {
 	s.index = 0
 	s.imageHash = duplo.New()
 	s.shouldGenerateSimilarHashed = true
-	s.loadImagesFromRootDir()
+	s.updateImages()
 }
 
 func (s *internalManager) GetHandles() []*apitype.Handle {
@@ -387,9 +387,10 @@ func (s *internalManager) getPrevImages() []*apitype.ImageContainer {
 	return images
 }
 
-func (s *internalManager) loadImagesFromRootDir() {
+func (s *internalManager) updateImages() {
 	handles := apitype.LoadImageHandles(s.rootDir)
 	s.AddHandles(handles)
+	s.removeMissingImages(handles)
 }
 
 func (s *internalManager) getTreadCount() int {
@@ -414,5 +415,32 @@ func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.I
 		return containers, true
 	} else {
 		return []*apitype.ImageContainer{}, false
+	}
+}
+
+func (s *internalManager) removeMissingImages(handles []*apitype.Handle) {
+	if images, err := s.imageStore.GetImages(-1, 0); err != nil {
+		logger.Error.Print("Error while loading images", err)
+	} else {
+		var existing = map[string]int{}
+		var toRemove = map[apitype.HandleId]*apitype.Handle{}
+
+		for _, handle := range handles {
+			existing[handle.GetFile()] = 1
+		}
+
+		for _, image := range images {
+			if _, ok := existing[image.GetFile()]; !ok {
+				toRemove[image.GetId()] = image
+			}
+		}
+		logger.Debug.Printf("Found %d images that don't exist anymore", len(toRemove))
+
+		for handleId, image := range toRemove {
+			logger.Trace.Printf("Removing image %s because it doesn't exist", image.String())
+			if err := s.imageStore.RemoveImage(handleId); err != nil {
+				logger.Error.Print("Can't remove", err)
+			}
+		}
 	}
 }

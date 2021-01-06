@@ -144,5 +144,5 @@ func (s *Manager) sendSimilarImages(handle *apitype.Handle) {
 }
 
 func (s *Manager) loadImagesFromRootDir() {
-	s.manager.loadImagesFromRootDir()
+	s.manager.updateImages()
 }
