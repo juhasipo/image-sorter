@@ -95,9 +95,9 @@ func (s *CategoryStore) GetCategories() ([]*apitype.Category, error) {
 func (s *CategoryStore) GetCategoryById(id apitype.CategoryId) *apitype.Category {
 	var category Category
 	if err := s.collection.Find(db.Cond{"id": id}).One(&category); err != nil {
-		return toApiCategory(category)
-	} else {
 		return nil
+	} else {
+		return toApiCategory(category)
 	}
 }
 
