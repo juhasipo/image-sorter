@@ -20,6 +20,8 @@ type ExifData struct {
 	flipped     bool
 	raw         *exif.Exif
 	created     time.Time
+	width       uint32
+	height      uint32
 }
 
 const exifUnchangedOrientation = 1
@@ -113,6 +115,14 @@ func (s *ExifData) GetRawLength() uint16 {
 	return uint16(len(s.raw.Raw))
 }
 
+func (s *ExifData) GetWidth() uint32 {
+	return s.width
+}
+
+func (s *ExifData) GetHeight() uint32 {
+	return s.height
+}
+
 func GetInt(decodedExif *exif.Exif, tagName exif.FieldName) (int, error) {
 	if tag, err := decodedExif.Get(tagName); err != nil {
 		return 0, err
@@ -121,13 +131,13 @@ func GetInt(decodedExif *exif.Exif, tagName exif.FieldName) (int, error) {
 	}
 }
 
-func GetUInt(decodedExif *exif.Exif, tagName exif.FieldName) (uint, error) {
+func GetUInt32(decodedExif *exif.Exif, tagName exif.FieldName) (uint32, error) {
 	if tag, err := decodedExif.Get(tagName); err != nil {
 		return 0, err
 	} else if intVal, err := tag.Int(0); err != nil {
 		return 0, err
 	} else {
-		return uint(intVal), err
+		return uint32(intVal), err
 	}
 }
 
@@ -161,6 +171,12 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 		} else if timeValue, err := GetTime(decodedExif, exif.DateTimeOriginal); err != nil {
 			logger.Warn.Print("Could not resolve created value", err)
 			return getInvalidExifData(decodedExif), err
+		} else if width, err := GetUInt32(decodedExif, exif.PixelXDimension); err != nil {
+			logger.Warn.Print("Could not resolve created value", err)
+			return getInvalidExifData(decodedExif), err
+		} else if height, err := GetUInt32(decodedExif, exif.PixelYDimension); err != nil {
+			logger.Warn.Print("Could not resolve created value", err)
+			return getInvalidExifData(decodedExif), err
 		} else {
 			angle, flip := ExifOrientationToAngleAndFlip(orientation)
 			return &ExifData{
@@ -169,15 +185,17 @@ func LoadExifData(handle *Handle) (*ExifData, error) {
 				flipped:     flip,
 				raw:         decodedExif,
 				created:     timeValue,
+				width:       width,
+				height:      height,
 			}, nil
 		}
 	} else {
-		return &ExifData{1, 0, false, nil, time.Unix(0, 0)}, err
+		return &ExifData{1, 0, false, nil, time.Unix(0, 0), 0, 0}, err
 	}
 }
 
 func getInvalidExifData(decodedExif *exif.Exif) *ExifData {
-	return &ExifData{1, 0, false, decodedExif, time.Unix(0, 0)}
+	return &ExifData{1, 0, false, decodedExif, time.Unix(0, 0), 0, 0}
 }
 
 const (

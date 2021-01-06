@@ -15,8 +15,8 @@ type Image struct {
 	ImageAngle      int              `db:"image_angle"`
 	ImageFlip       bool             `db:"image_flip"`
 	CreatedTime     time.Time        `db:"created_timestamp"`
-	Width           uint             `db:"width"`
-	Height          uint             `db:"height"`
+	Width           uint32           `db:"width"`
+	Height          uint32           `db:"height"`
 	ModifiedTime    time.Time        `db:"modified_timestamp"`
 }
 

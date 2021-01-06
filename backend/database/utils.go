@@ -2,8 +2,8 @@ package database
 
 import (
 	"os"
+	"time"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/imageloader"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -68,22 +68,23 @@ type FileSystemImageHandleConverter struct {
 }
 
 func (s *FileSystemImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image, error) {
+
+	exifLoadStart := time.Now()
 	exifData, err := apitype.LoadExifData(handle)
 	if err != nil {
 		logger.Warn.Printf("Exif data not properly loaded for '%d'", handle.GetId())
 		return nil, err
 	}
+	exifLoadEnd := time.Now()
+	logger.Trace.Printf(" - Loaded exif data in %s", exifLoadEnd.Sub(exifLoadStart))
 
+	fileStatStart := time.Now()
 	fileStat, err := getHandleFileStats(handle)
 	if err != nil {
 		return nil, err
 	}
-
-	image, err := imageloader.NewImageLoader().LoadImage(handle)
-	if err != nil {
-		logger.Error.Println("Could not load image"+handle.GetPath(), err)
-		return nil, err
-	}
+	fileStatEnd := time.Now()
+	logger.Trace.Printf(" - Loaded file info in %s", fileStatEnd.Sub(fileStatStart))
 
 	return &Image{
 		Name:            handle.GetFile(),
@@ -93,8 +94,8 @@ func (s *FileSystemImageHandleConverter) HandleToImage(handle *apitype.Handle) (
 		ExifOrientation: exifData.GetExifOrientation(),
 		ImageAngle:      int(exifData.GetRotation()),
 		CreatedTime:     exifData.GetCreatedTime(),
-		Width:           uint(image.Bounds().Dx()),
-		Height:          uint(image.Bounds().Dy()),
+		Width:           exifData.GetWidth(),
+		Height:          exifData.GetHeight(),
 		ModifiedTime:    fileStat.ModTime(),
 	}, nil
 }

@@ -293,9 +293,16 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 
 func (s *internalManager) AddHandles(imageList []*apitype.Handle) {
 	s.index = 0
+	start := time.Now()
 	if err := s.imageStore.AddImages(imageList); err != nil {
 		logger.Error.Print("cannot add images", err)
 	}
+	end := time.Now()
+
+	imageCount := len(imageList)
+	duration := end.Sub(start)
+	avg := duration / time.Duration(imageCount)
+	logger.Debug.Printf("Added %d images in %s (avg. %s/image)", imageCount, duration, avg)
 }
 
 func (s *internalManager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {

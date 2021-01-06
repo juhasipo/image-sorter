@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/upper/db/v4"
+	"time"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -23,41 +24,82 @@ func (s *ImageStore) SetImageHandleConverter(imageHandleConverter ImageHandleCon
 }
 
 func (s *ImageStore) AddImages(handles []*apitype.Handle) error {
-	for _, handle := range handles {
-		if _, err := s.AddImage(handle); err != nil {
-			logger.Error.Printf("Error while adding image '%s' to DB", handle.GetPath())
-			return err
+	return s.collection.Session().Tx(func(sess db.Session) error {
+		for _, handle := range handles {
+			if _, err := s.addImage(sess, handle); err != nil {
+				logger.Error.Printf("Error while adding image '%s' to DB", handle.GetPath())
+				return err
+			}
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (s *ImageStore) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {
-	if exists, err := s.Exists(handle); err != nil {
+	return s.addImage(s.collection.Session(), handle)
+}
+
+func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apitype.Handle, error) {
+	collection := s.getCollectionForSession(session)
+
+	logger.Trace.Printf("Adding image '%s'", handle.String())
+
+	existStart := time.Now()
+	exists, err := s.exists(collection, handle)
+	if err != nil {
 		return nil, err
-	} else if !exists {
-		logger.Debug.Printf("Adding image '%s' to DB", handle.String())
-		if image, err := s.imageHandleConverter.HandleToImage(handle); err != nil {
+	}
+	existsEnd := time.Now()
+	logger.Trace.Printf(" - Checked if image exists %s", existsEnd.Sub(existStart))
+
+	if !exists {
+		handleToImageStart := time.Now()
+		image, err := s.imageHandleConverter.HandleToImage(handle)
+		if err != nil {
 			return nil, err
-		} else if _, err := s.collection.Insert(image); err != nil {
-			return nil, err
-		} else {
-			return s.FindByDirAndFile(handle)
 		}
-	} else if modifiedId, err := s.FindModifiedId(handle); err != nil {
+
+		handleToImageEnd := time.Now()
+		logger.Trace.Printf(" - Loaded image meta data in %s", handleToImageEnd.Sub(handleToImageStart))
+
+		insertStart := time.Now()
+		if _, err := collection.Insert(image); err != nil {
+			return nil, err
+		}
+		insertEnd := time.Now()
+		logger.Trace.Printf(" - Added image to DB in %s", insertEnd.Sub(insertStart))
+
+		return s.findByDirAndFile(collection, handle)
+	}
+
+	modifiedId, err := s.findModifiedId(collection, handle)
+	if err != nil {
 		return nil, err
-	} else if modifiedId > 0 {
-		logger.Debug.Printf("Updating existing image '%s' in DB", handle.String())
-		if image, err := s.imageHandleConverter.HandleToImage(handle); err != nil {
+	}
+
+	if modifiedId > 0 {
+		logger.Trace.Printf(" - Image exists with ID %d but is modified", modifiedId)
+
+		handleToImageStart := time.Now()
+		image, err := s.imageHandleConverter.HandleToImage(handle)
+		if err != nil {
 			return nil, err
-		} else if err := s.Update(modifiedId, image); err != nil {
-			return nil, err
-		} else {
-			return apitype.NewPersistedHandle(modifiedId, handle), nil
 		}
+
+		handleToImageEnd := time.Now()
+		logger.Trace.Printf(" - Loaded image meta data in %s", handleToImageEnd.Sub(handleToImageStart))
+
+		updateStart := time.Now()
+		err = s.update(collection, modifiedId, image)
+		if err != nil {
+			return nil, err
+		}
+		updateEnd := time.Now()
+		logger.Trace.Printf(" - Image meta data updated %s", updateEnd.Sub(updateStart))
+
+		return apitype.NewPersistedHandle(modifiedId, handle), nil
 	} else {
-		return s.FindByDirAndFile(handle)
+		return s.findByDirAndFile(collection, handle)
 	}
 }
 
@@ -116,8 +158,12 @@ func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName st
 }
 
 func (s *ImageStore) FindByDirAndFile(handle *apitype.Handle) (*apitype.Handle, error) {
+	return s.findByDirAndFile(s.collection, handle)
+}
+
+func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.Handle) (*apitype.Handle, error) {
 	var handles []Image
-	err := s.collection.
+	err := collection.
 		Find(db.Cond{
 			"directory": handle.GetDir(),
 			"file_name": handle.GetFile(),
@@ -133,7 +179,11 @@ func (s *ImageStore) FindByDirAndFile(handle *apitype.Handle) (*apitype.Handle, 
 }
 
 func (s *ImageStore) Exists(handle *apitype.Handle) (bool, error) {
-	return s.collection.
+	return s.exists(s.collection, handle)
+}
+
+func (s *ImageStore) exists(collection db.Collection, handle *apitype.Handle) (bool, error) {
+	return collection.
 		Find(db.Cond{
 			"directory": handle.GetDir(),
 			"file_name": handle.GetFile(),
@@ -141,14 +191,22 @@ func (s *ImageStore) Exists(handle *apitype.Handle) (bool, error) {
 		Exists()
 }
 
+func (s *ImageStore) getCollectionForSession(session db.Session) db.Collection {
+	return session.Collection(s.collection.Name())
+}
+
 func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, error) {
+	return s.findModifiedId(s.collection, handle)
+}
+
+func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.HandleId, error) {
 	stat, err := getHandleFileStats(handle)
 	if err != nil {
 		return -1, err
 	}
 
 	var images []Image
-	err = s.collection.
+	err = collection.
 		Find(db.Cond{
 			"directory":            handle.GetDir(),
 			"file_name":            handle.GetFile(),
@@ -166,8 +224,8 @@ func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, e
 	}
 }
 
-func (s *ImageStore) Update(id apitype.HandleId, image *Image) error {
-	return s.collection.Find(db.Cond{"id": id}).Update(image)
+func (s *ImageStore) update(collection db.Collection, id apitype.HandleId, image *Image) error {
+	return collection.Find(db.Cond{"id": id}).Update(image)
 }
 
 func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
