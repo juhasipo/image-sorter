@@ -196,7 +196,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 	if total == 0 {
 		progressText = "No images"
 	} else {
-		progressText = fmt.Sprintf("%d/%d", index, total)
+		progressText = fmt.Sprintf("%d/%d", index+1, total)
 	}
 
 	if title != "" {
