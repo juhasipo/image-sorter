@@ -179,9 +179,9 @@ func (s *Database) migrate() error {
 			    score REAL,
 			    
 			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
-			    FOREIGN KEY(similar_image_id) REFERENCES image(id) ON DELETE CASCADE,
-			    
-			    UNIQUE (image_id, similar_image_id)
+			    FOREIGN KEY(similar_image_id) REFERENCES image(id) ON DELETE CASCADE
+			
+				-- Required indices is created dynamically so that INSERT can be optimized
 			)
 		`
 

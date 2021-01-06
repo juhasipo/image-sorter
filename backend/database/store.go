@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/upper/db/v4"
+	"time"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -48,12 +49,47 @@ func (s *Store) AddImages(handles []*apitype.Handle) error {
 	return nil
 }
 
-func (s *Store) ClearSimilarImages() error {
-	return s.imageSimilarCollection.Truncate()
+type SimilarityIndex struct {
+	session db.Session
+	store   *Store
 }
 
-func (s *Store) AddSimilarImage(imageId apitype.HandleId, similarId apitype.HandleId, rank int, score float64) error {
-	_, err := s.imageSimilarCollection.Insert(&ImageSimilar{
+func NewSimilarityIndex(store *Store, session db.Session) *SimilarityIndex {
+	return &SimilarityIndex{
+		session: session,
+		store:   store,
+	}
+}
+
+func (s *SimilarityIndex) StartRecreateSimilarImageIndex() error {
+	logger.Debug.Print("Truncate similar image index")
+	if err := s.store.imageSimilarCollection.Truncate(); err != nil {
+		return err
+	}
+
+	logger.Debug.Print("Dropping index")
+	if _, err := s.session.SQL().Exec("DROP INDEX IF EXISTS image_similar_uq"); err != nil {
+		return err
+	} else {
+		return nil
+	}
+}
+
+func (s *SimilarityIndex) EndRecreateSimilarImageIndex() error {
+	start := time.Now()
+	logger.Debug.Print("Creating indices for similar images")
+	if _, err := s.session.SQL().Exec("CREATE UNIQUE INDEX image_similar_uq ON image_similar(image_id, similar_image_id)"); err != nil {
+		return err
+	}
+
+	end := time.Now()
+	logger.Debug.Printf(" - Creating index: %s", end.Sub(start))
+	return nil
+}
+
+func (s *SimilarityIndex) AddSimilarImage(imageId apitype.HandleId, similarId apitype.HandleId, rank int, score float64) error {
+	collection := s.session.Collection(s.store.imageSimilarCollection.Name())
+	_, err := collection.Insert(&ImageSimilar{
 		ImageId:        imageId,
 		SimilarImageId: similarId,
 		Rank:           rank,
@@ -391,6 +427,10 @@ func (s *Store) GetImageById(id apitype.HandleId) *apitype.Handle {
 
 	return toApiHandle(&image)
 
+}
+
+func (s *Store) DoInTransaction(fn func(session db.Session) error) error {
+	return s.database.Session().Tx(fn)
 }
 
 func removeCategory(collection db.Collection, categoryId apitype.CategoryId) error {

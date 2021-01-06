@@ -1,6 +1,7 @@
 package library
 
 import (
+	"github.com/upper/db/v4"
 	"runtime"
 	"sort"
 	"sync"
@@ -16,6 +17,8 @@ import (
 var (
 	emptyHandles = []*apitype.ImageContainer{}
 )
+
+const maxSimilarImages = 20
 
 type ImageList func(number int) []*apitype.Handle
 
@@ -111,9 +114,7 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		var i = 0
 		for result := range s.outputChannel {
 			i++
-			mux.Lock()
-			hashes[result.handle.GetId()] = result.hash
-			mux.Unlock()
+			s.addHashToMap(result, hashes, &mux)
 
 			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", i, hashExpected)
 			s.imageHash.Add(result.handle, *result.hash)
@@ -133,34 +134,59 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
 		logger.Info.Printf("  On average: %s/image", f.String())
 
-		const maxSimilarImages = 10
 		logger.Info.Printf("Building similarity index for %d most similar images for each image", maxSimilarImages)
 
 		startTime = time.Now()
-		if err := s.store.ClearSimilarImages(); err != nil {
-			logger.Error.Print("Error while clearing similar images", err)
-		}
-		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, len(images))
-		for imageIndex, handle := range images {
-			hash := hashes[handle.GetId()]
-			matches := s.imageHash.Query(*hash)
-			sort.Sort(matches)
-			i := 0
-			for _, match := range matches {
-				similar := match.ID.(*apitype.Handle)
-				if handle.GetId() != similar.GetId() {
-					if err := s.store.AddSimilarImage(handle.GetId(), similar.GetId(), i, match.Score); err != nil {
-						logger.Error.Print("Error while storing similar images", err)
+
+		s.store.DoInTransaction(func(session db.Session) error {
+			si := database.NewSimilarityIndex(s.store, session)
+			if err := si.StartRecreateSimilarImageIndex(); err != nil {
+				logger.Error.Print("Error while clearing similar images", err)
+				return err
+			}
+			sender.SendToTopicWithData(api.ProcessStatusUpdated, "similarity-index", 0, len(images))
+			for imageIndex, handle := range images {
+				hash := hashes[handle.GetId()]
+				searchStart := time.Now()
+				matches := s.imageHash.Query(*hash)
+				searchEnd := time.Now()
+
+				sortStart := time.Now()
+				sort.Sort(matches)
+				sortEnd := time.Now()
+
+				addStart := time.Now()
+				i := 0
+				for _, match := range matches {
+					similar := match.ID.(*apitype.Handle)
+					if handle.GetId() != similar.GetId() {
+						if err := si.AddSimilarImage(handle.GetId(), similar.GetId(), i, match.Score); err != nil {
+							logger.Error.Print("Error while storing similar images", err)
+							return err
+						}
+						i++
+					}
+					if i == maxSimilarImages {
 						break
 					}
-					i++
 				}
-				if i == maxSimilarImages {
-					break
-				}
+				addEnd := time.Now()
+
+				sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", imageIndex, len(images))
+
+				logger.Debug.Printf("Print added matches for image: %s", handle.String())
+				logger.Debug.Printf(" -    Search: %s", searchEnd.Sub(searchStart))
+				logger.Debug.Printf(" -      Sort: %s", sortEnd.Sub(sortStart))
+				logger.Debug.Printf(" -       Add: %s", addEnd.Sub(addStart))
+				logger.Debug.Printf(" - Add/image: %s", addEnd.Sub(addStart)/maxSimilarImages)
 			}
-			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", imageIndex, len(images))
-		}
+			if err := si.EndRecreateSimilarImageIndex(); err != nil {
+				logger.Error.Print("Error while finishing similar images index", err)
+				return err
+			}
+
+			return nil
+		})
 		endTime = time.Now()
 		d = endTime.Sub(startTime)
 		logger.Info.Printf("Similarity index has been built in %s", d.String())
@@ -177,6 +203,12 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	}
 
 	return shouldSendSimilarImages
+}
+
+func (s *internalManager) addHashToMap(result *HashResult, hashes map[apitype.HandleId]*duplo.Hash, mux *sync.Mutex) {
+	mux.Lock()
+	defer mux.Unlock()
+	hashes[result.handle.GetId()] = result.hash
 }
 
 func (s *internalManager) SetSimilarStatus(sendSimilarImages bool) {

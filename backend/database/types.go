@@ -46,7 +46,7 @@ type ImageSimilar struct {
 	ImageId        apitype.HandleId `db:"image_id"`
 	SimilarImageId apitype.HandleId `db:"similar_image_id"`
 	Rank           int              `db:"rank"`
-	Score          float64          `db:"rank"`
+	Score          float64          `db:"score"`
 }
 
 type Count struct {
