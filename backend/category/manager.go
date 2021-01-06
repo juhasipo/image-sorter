@@ -20,7 +20,7 @@ type Manager struct {
 	commandLineCategories []string
 	sender                api.Sender
 	rootDir               string
-	store                 *database.Store
+	categoryStore         *database.CategoryStore
 
 	api.CategoryManager
 }
@@ -40,11 +40,11 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(params *common.Params, sender api.Sender, store *database.Store) api.CategoryManager {
+func New(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) api.CategoryManager {
 	manager := Manager{
 		sender:                sender,
 		commandLineCategories: params.GetCategories(),
-		store:                 store,
+		categoryStore:         categoryStore,
 	}
 	return &manager
 }
@@ -61,7 +61,7 @@ func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir st
 	}
 
 	for i, category := range loadedCategories {
-		if category, err := s.store.AddCategory(category); err != nil {
+		if category, err := s.categoryStore.AddCategory(category); err != nil {
 			logger.Error.Fatal("Error while loading categories", err)
 		} else {
 			loadedCategories[i] = category
@@ -70,7 +70,7 @@ func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir st
 }
 
 func (s *Manager) GetCategories() []*apitype.Category {
-	if categories, err := s.store.GetCategories(); err != nil {
+	if categories, err := s.categoryStore.GetCategories(); err != nil {
 		logger.Error.Fatal("Cannot get categories", err)
 		return nil
 	} else {
@@ -101,7 +101,7 @@ func (s *Manager) SaveDefault(categories []*apitype.Category) {
 }
 
 func (s *Manager) resetCategories(categories []*apitype.Category) {
-	if err := s.store.ResetCategories(categories); err != nil {
+	if err := s.categoryStore.ResetCategories(categories); err != nil {
 		logger.Error.Printf("Error while reseting categories %s", err)
 	}
 }
@@ -112,7 +112,7 @@ func (s *Manager) Close() {
 }
 
 func (s *Manager) GetCategoryById(id apitype.CategoryId) *apitype.Category {
-	return s.store.GetCategoryById(id)
+	return s.categoryStore.GetCategoryById(id)
 }
 
 func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) {

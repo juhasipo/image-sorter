@@ -12,24 +12,24 @@ import (
 )
 
 type Manager struct {
-	rootDir       string
-	settingDir    string
-	sender        api.Sender
-	library       api.Library
-	filterManager *filter.Manager
-	imageLoader   api.ImageLoader
-	store         *database.Store
+	rootDir            string
+	settingDir         string
+	sender             api.Sender
+	library            api.Library
+	filterManager      *filter.Manager
+	imageLoader        api.ImageLoader
+	imageCategoryStore *database.ImageCategoryStore
 
 	api.ImageCategoryManager
 }
 
-func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader, store *database.Store) api.ImageCategoryManager {
+func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader, imageCategoryStore *database.ImageCategoryStore) api.ImageCategoryManager {
 	var manager = Manager{
-		sender:        sender,
-		library:       lib,
-		filterManager: filterManager,
-		imageLoader:   imageLoader,
-		store:         store,
+		sender:             sender,
+		library:            lib,
+		filterManager:      filterManager,
+		imageLoader:        imageLoader,
+		imageCategoryStore: imageCategoryStore,
 	}
 	return &manager
 }
@@ -44,7 +44,7 @@ func (s *Manager) RequestCategory(handle *apitype.Handle) {
 }
 
 func (s *Manager) GetCategories(handle *apitype.Handle) map[apitype.CategoryId]*apitype.CategorizedImage {
-	if categories, err := s.store.GetImagesCategories(handle.GetId()); err != nil {
+	if categories, err := s.imageCategoryStore.GetImagesCategories(handle.GetId()); err != nil {
 		logger.Error.Print("Error while fetching images's category", err)
 		return map[apitype.CategoryId]*apitype.CategorizedImage{}
 	} else {
@@ -63,12 +63,12 @@ func (s *Manager) SetCategory(command *apitype.CategorizeCommand) {
 
 	if command.ShouldForceToCategory() {
 		logger.Debug.Printf("Force to category for '%s'", handle.GetPath())
-		if err := s.store.RemoveImageCategories(handle.GetId()); err != nil {
+		if err := s.imageCategoryStore.RemoveImageCategories(handle.GetId()); err != nil {
 			logger.Error.Print("Error while removing image categories", err)
 		}
 	}
 
-	if err := s.store.CategorizeImage(handle.GetId(), categoryEntry.GetId(), operation); err != nil {
+	if err := s.imageCategoryStore.CategorizeImage(handle.GetId(), categoryEntry.GetId(), operation); err != nil {
 		logger.Error.Print("Error while setting category", err)
 	}
 
@@ -83,7 +83,7 @@ func (s *Manager) SetCategory(command *apitype.CategorizeCommand) {
 
 func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCommand) {
 	logger.Debug.Printf("Persisting files to categories")
-	imageCategory, _ := s.store.GetCategorizedImages()
+	imageCategory, _ := s.imageCategoryStore.GetCategorizedImages()
 	operationsByImage := s.ResolveFileOperations(imageCategory, options)
 
 	total := len(operationsByImage)
@@ -152,7 +152,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *apitype.Category) {
 }
 
 func (s *Manager) getCategories(image *apitype.Handle) []*apitype.CategorizedImage {
-	if cats, err := s.store.GetImagesCategories(image.GetId()); err != nil {
+	if cats, err := s.imageCategoryStore.GetImagesCategories(image.GetId()); err != nil {
 		logger.Error.Print("Error while fetching categories for image", err)
 		return []*apitype.CategorizedImage{}
 	} else {

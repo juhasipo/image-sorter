@@ -68,12 +68,13 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	sut        *internalManager
-	sender     *MockSender
-	store      *MockImageStore
-	loader     *MockImageLoader
-	dbStore    *database.Store
-	imageStore *database.ImageStore
+	sut                *internalManager
+	sender             *MockSender
+	store              *MockImageStore
+	loader             *MockImageLoader
+	imageStore         *database.ImageStore
+	categoryStore      *database.CategoryStore
+	imageCategoryStore *database.ImageCategoryStore
 )
 
 func setup() {
@@ -86,8 +87,10 @@ func setup() {
 }
 
 func initializeSut() *internalManager {
-	dbStore = database.NewInMemoryStore()
+	dbStore := database.NewInMemoryStore()
 	imageStore = database.NewImageStore(dbStore, &StubImageHandleConverter{})
+	categoryStore = database.NewCategoryStore(dbStore)
+	imageCategoryStore = database.NewImageCategoryStore(dbStore)
 
 	return newLibrary(store, loader, nil, imageStore)
 }
@@ -553,14 +556,14 @@ func TestShowOnlyImages(t *testing.T) {
 	}
 	sut.AddHandles(handles)
 	handles, _ = imageStore.GetImages(-1, 0)
-	category, _ := dbStore.AddCategory(apitype.NewCategory("category1", "cat", "C"))
+	category, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat", "C"))
 	sut.SetImageListSize(10)
 
-	_ = dbStore.CategorizeImage(handles[1].GetId(), category.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[2].GetId(), category.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[6].GetId(), category.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[7].GetId(), category.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[9].GetId(), category.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[1].GetId(), category.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[2].GetId(), category.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[6].GetId(), category.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[7].GetId(), category.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category.GetId(), apitype.MOVE)
 	sut.ShowOnlyImages(category.GetName())
 
 	a.Equal(5, sut.getTotalImages())
@@ -620,12 +623,12 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	sut.SetImageListSize(10)
 
 	handles, _ = imageStore.GetImages(-1, 0)
-	category1, _ := dbStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
-	_ = dbStore.CategorizeImage(handles[1].GetId(), category1.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[2].GetId(), category1.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[6].GetId(), category1.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[7].GetId(), category1.GetId(), apitype.MOVE)
-	_ = dbStore.CategorizeImage(handles[9].GetId(), category1.GetId(), apitype.MOVE)
+	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
+	_ = imageCategoryStore.CategorizeImage(handles[1].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[2].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[6].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[7].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category1.GetId(), apitype.MOVE)
 
 	sut.ShowOnlyImages("category1")
 

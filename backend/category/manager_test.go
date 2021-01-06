@@ -177,12 +177,13 @@ func TestResetCategories(t *testing.T) {
 	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
 
 	store := database.NewInMemoryStore()
-	sut := New(params, sender, store)
+	categoryStore := database.NewCategoryStore(store)
+	sut := New(params, sender, categoryStore)
 
-	_, _ = store.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
-	cat2, _ := store.AddCategory(apitype.NewCategory("Cat 2", "C2", "2"))
-	_, _ = store.AddCategory(apitype.NewCategory("Cat 3", "C3", "3"))
-	cat4, _ := store.AddCategory(apitype.NewCategory("Cat 4", "C4", "4"))
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
+	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "2"))
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 3", "C3", "3"))
+	cat4, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 4", "C4", "4"))
 
 	sut.Save([]*apitype.Category{
 		apitype.NewCategoryWithId(cat2.GetId(), "Cat 2", "C2", "2"),
@@ -190,7 +191,7 @@ func TestResetCategories(t *testing.T) {
 		apitype.NewCategory("Cat 5", "C5", "5"),
 	})
 
-	categories, _ := store.GetCategories()
+	categories, _ := categoryStore.GetCategories()
 
 	if a.Equal(3, len(categories)) {
 		a.Equal(categories[0].GetId(), cat2.GetId())
