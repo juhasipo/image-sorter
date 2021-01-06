@@ -3,6 +3,8 @@ package database
 import (
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/sqlite"
+	"path/filepath"
+	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -29,10 +31,11 @@ func NewInMemoryDatabase() *Database {
 	}
 }
 
-func NewDatabase(file string) *Database {
-	logger.Info.Printf("Initializing database %s", file)
+func NewDatabase(directory string, file string) *Database {
+	dbPath := filepath.Join(directory, constants.ImageSorterDir, file)
+	logger.Info.Printf("Initializing database %s", dbPath)
 	var settings = sqlite.ConnectionURL{
-		Database: file,
+		Database: dbPath,
 	}
 
 	session, err := sqlite.Open(settings)

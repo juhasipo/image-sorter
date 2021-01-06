@@ -22,7 +22,7 @@ func main() {
 
 	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
 
-	db := database.NewDatabase("image-sorter.db")
+	db := database.NewDatabase(params.GetRootPath(), "image-sorter.db")
 	tableExist := db.Migrate()
 	defer db.Close()
 

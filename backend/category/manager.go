@@ -108,7 +108,6 @@ func (s *Manager) resetCategories(categories []*apitype.Category) {
 
 func (s *Manager) Close() {
 	logger.Info.Print("Shutting down category manager")
-	saveCategoriesToFile(s.rootDir, constants.CategoriesFileName, s.GetCategories())
 }
 
 func (s *Manager) GetCategoryById(id apitype.CategoryId) *apitype.Category {
