@@ -556,15 +556,22 @@ func TestShowOnlyImages(t *testing.T) {
 	}
 	sut.AddHandles(handles)
 	handles, _ = imageStore.GetImages(-1, 0)
-	category, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat", "C"))
+	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))
+	category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))
 	sut.SetImageListSize(10)
 
-	_ = imageCategoryStore.CategorizeImage(handles[1].GetId(), category.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(handles[2].GetId(), category.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(handles[6].GetId(), category.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(handles[7].GetId(), category.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category.GetId(), apitype.MOVE)
-	sut.ShowOnlyImages(category.GetName())
+	_ = imageCategoryStore.CategorizeImage(handles[1].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[2].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[6].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[7].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category1.GetId(), apitype.MOVE)
+
+	_ = imageCategoryStore.CategorizeImage(handles[0].GetId(), category2.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[1].GetId(), category2.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[3].GetId(), category2.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category2.GetId(), apitype.MOVE)
+
+	sut.ShowOnlyImages(category1.GetName())
 
 	a.Equal(5, sut.getTotalImages())
 	a.Equal("category1", sut.getCurrentCategoryName())
@@ -574,9 +581,13 @@ func TestShowOnlyImages(t *testing.T) {
 		prevImages := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(4, len(nextImages)) {
+			a.Equal(handles[2].GetId(), nextImages[0].GetHandle().GetId())
 			a.Equal("foo2", nextImages[0].GetHandle().GetFile())
+			a.Equal(handles[6].GetId(), nextImages[1].GetHandle().GetId())
 			a.Equal("foo6", nextImages[1].GetHandle().GetFile())
+			a.Equal(handles[7].GetId(), nextImages[2].GetHandle().GetId())
 			a.Equal("foo7", nextImages[2].GetHandle().GetFile())
+			a.Equal(handles[9].GetId(), nextImages[3].GetHandle().GetId())
 			a.Equal("foo9", nextImages[3].GetHandle().GetFile())
 		}
 
@@ -590,13 +601,17 @@ func TestShowOnlyImages(t *testing.T) {
 		prevImages := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(2, len(nextImages)) {
+			a.Equal(handles[7].GetId(), nextImages[0].GetHandle().GetId())
 			a.Equal("foo7", nextImages[0].GetHandle().GetFile())
+			a.Equal(handles[9].GetId(), nextImages[1].GetHandle().GetId())
 			a.Equal("foo9", nextImages[1].GetHandle().GetFile())
 		}
 
 		a.NotNil(prevImages)
 		if a.Equal(2, len(prevImages)) {
+			a.Equal(handles[1].GetId(), prevImages[1].GetHandle().GetId())
 			a.Equal("foo1", prevImages[1].GetHandle().GetFile())
+			a.Equal(handles[2].GetId(), prevImages[0].GetHandle().GetId())
 			a.Equal("foo2", prevImages[0].GetHandle().GetFile())
 		}
 	})

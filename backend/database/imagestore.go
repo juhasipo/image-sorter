@@ -134,7 +134,8 @@ func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName st
 
 	var images []Image
 	res := s.collection.Session().SQL().
-		SelectFrom("image")
+		Select("image.*").
+		From("image")
 
 	if categoryName != "" {
 		res = res.
