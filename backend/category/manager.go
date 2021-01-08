@@ -2,6 +2,7 @@ package category
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/user"
@@ -95,14 +96,17 @@ func (s *Manager) SaveDefault(categories []*apitype.Category) {
 	} else {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
-		saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories)
-		s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
+		if err := saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories); err != nil {
+			// TODO: Send error to UI
+		} else {
+			s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
+		}
 	}
 }
 
 func (s *Manager) resetCategories(categories []*apitype.Category) {
 	if err := s.categoryStore.ResetCategories(categories); err != nil {
-		logger.Error.Printf("Error while reseting categories %s", err)
+		logger.Error.Printf("Error while resetting categories %s", err)
 	}
 }
 
@@ -114,22 +118,29 @@ func (s *Manager) GetCategoryById(id apitype.CategoryId) *apitype.Category {
 	return s.categoryStore.GetCategoryById(id)
 }
 
-func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) {
+func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) (err error) {
 	if _, err := os.Stat(fileDir); os.IsNotExist(err) {
-		os.Mkdir(fileDir, 0666)
+		return os.Mkdir(fileDir, 0666)
 	}
 
 	filePath := filepath.Join(fileDir, fileName)
 
 	logger.Info.Printf("Saving categories to file '%s'", filePath)
-	f, err := os.Create(filePath)
-	if err != nil {
+	if f, err := os.Create(filePath); err != nil {
 		logger.Error.Panic("Can't write file ", filePath, err)
-	}
-	defer f.Close()
-	w := bufio.NewWriter(f)
+	} else {
+		defer func() {
+			err = f.Close()
+		}()
 
-	writeCategoriesToBuffer(w, categories)
+		w := bufio.NewWriter(f)
+		if err = writeCategoriesToBuffer(w, categories); err != nil {
+			return err
+		} else if err := f.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func fromCategoriesStrings(categories []string) []*apitype.Category {
@@ -158,7 +169,10 @@ func loadCategoriesFromFile() []*apitype.Category {
 		logger.Info.Printf("Reading categories from file '%s'", filePath)
 
 		if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
-			defer f.Close()
+			defer func() {
+				_ = f.Close()
+			}()
+
 			return readCategoriesFromReader(f)
 		} else {
 			logger.Error.Println("Could not open file: "+filePath, err)
@@ -170,14 +184,16 @@ func loadCategoriesFromFile() []*apitype.Category {
 	}
 }
 
-func writeCategoriesToBuffer(w *bufio.Writer, categories []*apitype.Category) {
-	w.WriteString("#version:1")
-	w.WriteString("\n")
-	for _, category := range categories {
-		w.WriteString(category.Serialize())
-		w.WriteString("\n")
+func writeCategoriesToBuffer(w *bufio.Writer, categories []*apitype.Category) error {
+	if _, err := w.WriteString("#version:1\n"); err != nil {
+		return err
 	}
-	w.Flush()
+	for _, category := range categories {
+		if _, err := w.WriteString(fmt.Sprintf("%s\n", category.Serialize())); err != nil {
+			return err
+		}
+	}
+	return w.Flush()
 }
 
 func readCategoriesFromReader(f io.Reader) []*apitype.Category {
@@ -192,5 +208,4 @@ func readCategoriesFromReader(f io.Reader) []*apitype.Category {
 	} else {
 		return []*apitype.Category{}
 	}
-	return nil
 }

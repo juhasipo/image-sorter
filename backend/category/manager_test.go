@@ -95,9 +95,10 @@ func TestWriteCategoriesToBuffer(t *testing.T) {
 
 		buf := bytes.NewBuffer([]byte{})
 		writer := bufio.NewWriter(buf)
-		writeCategoriesToBuffer(writer, categories)
-
-		a.Equal("#version:1\n", buf.String())
+		err := writeCategoriesToBuffer(writer, categories)
+		if a.Nil(err) {
+			a.Equal("#version:1\n", buf.String())
+		}
 	})
 
 	t.Run("One", func(t *testing.T) {

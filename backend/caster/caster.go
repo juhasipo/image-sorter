@@ -34,7 +34,7 @@ const (
 	castService         = "_googlecast._tcp"
 	canvasWidth         = 1920
 	canvasHeight        = 1080
-	cast_image_event    = "caster-internal-cast-image"
+	castImageEvent      = "caster-internal-cast-image"
 )
 
 var canvasSize = apitype.SizeOf(canvasWidth, canvasHeight)
@@ -77,7 +77,7 @@ func NewCaster(params *common.Params, sender api.Sender, imageCache api.ImageSto
 		imageQueueBroker:      *event.InitBus(100),
 	}
 
-	c.imageQueueBroker.Subscribe(cast_image_event, c.castImageFromQueue)
+	c.imageQueueBroker.Subscribe(castImageEvent, c.castImageFromQueue)
 
 	if params.GetAlwaysStartHttpServer() {
 		c.StartServer(params.GetHttpPort())
@@ -316,7 +316,7 @@ func (s *Caster) CastImage(handle *apitype.Handle) {
 		logger.Debug.Printf("Adding to cast queue: '%d'", handle.GetId())
 		s.imageQueue = handle
 
-		s.imageQueueBroker.SendToTopic(cast_image_event)
+		s.imageQueueBroker.SendToTopic(castImageEvent)
 	}
 }
 
