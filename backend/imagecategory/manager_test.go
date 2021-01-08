@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"image"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -55,6 +56,20 @@ func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*datab
 		Height:          2048,
 		ModifiedTime:    time.Now(),
 	}, nil
+}
+
+func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {
+	return &StubFileInfo{modTime: time.Now()}, nil
+}
+
+type StubFileInfo struct {
+	os.FileInfo
+
+	modTime time.Time
+}
+
+func (s *StubFileInfo) ModTime() time.Time {
+	return s.modTime
 }
 
 func (s *MockSender) SendToTopic(topic api.Topic) {

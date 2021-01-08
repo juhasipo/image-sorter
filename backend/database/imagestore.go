@@ -77,7 +77,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 		return nil, err
 	}
 
-	if modifiedId > 0 {
+	if modifiedId > apitype.HandleId(0) {
 		logger.Trace.Printf(" - Image exists with ID %d but is modified", modifiedId)
 
 		handleToImageStart := time.Now()
@@ -121,6 +121,10 @@ func (s *ImageStore) GetImageCount(categoryName string) int {
 	}
 
 	return counter.Count
+}
+
+func (s *ImageStore) GetAllImages() ([]*apitype.Handle, error) {
+	return s.GetImagesInCategory(-1, 0, "")
 }
 
 func (s *ImageStore) GetImages(number int, offset int) ([]*apitype.Handle, error) {
@@ -201,7 +205,7 @@ func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, e
 }
 
 func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.HandleId, error) {
-	stat, err := getHandleFileStats(handle)
+	stat, err := s.imageHandleConverter.GetHandleFileStats(handle)
 	if err != nil {
 		return -1, err
 	}
@@ -215,13 +219,13 @@ func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Ha
 		}).All(&images)
 
 	if err != nil {
-		return -1, err
+		return apitype.HandleId(-1), err
 	}
 
 	if len(images) > 0 {
 		return images[0].Id, nil
 	} else {
-		return -1, nil
+		return apitype.HandleId(-1), nil
 	}
 }
 

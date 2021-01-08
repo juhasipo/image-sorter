@@ -61,6 +61,14 @@ func (s *Handle) GetId() HandleId {
 	}
 }
 
+func (s *Handle) IsPersisted() bool {
+	if s != nil {
+		return s.id > 0
+	} else {
+		return false
+	}
+}
+
 func (s *Handle) String() string {
 	if s != nil {
 		if s.IsValid() {

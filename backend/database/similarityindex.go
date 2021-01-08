@@ -24,9 +24,10 @@ func (s *SimilarityIndex) DoInTransaction(fn func(session db.Session) error) err
 
 func (s *SimilarityIndex) StartRecreateSimilarImageIndex(session db.Session) error {
 	s.session = session
+	collection := s.session.Collection(s.collection.Name())
 
 	logger.Debug.Print("Truncate similar image index")
-	if err := s.collection.Truncate(); err != nil {
+	if err := collection.Truncate(); err != nil {
 		return err
 	}
 

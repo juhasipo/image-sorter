@@ -65,7 +65,7 @@ func (s *internalManager) InitializeFromDirectory(directory string) {
 }
 
 func (s *internalManager) GetHandles() []*apitype.Handle {
-	images, _ := s.imageStore.GetImages(-1, 0)
+	images, _ := s.imageStore.GetAllImages()
 	return images
 }
 
@@ -419,7 +419,7 @@ func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.I
 }
 
 func (s *internalManager) removeMissingImages(handles []*apitype.Handle) {
-	if images, err := s.imageStore.GetImages(-1, 0); err != nil {
+	if images, err := s.imageStore.GetAllImages(); err != nil {
 		logger.Error.Print("Error while loading images", err)
 	} else {
 		var existing = map[string]int{}

@@ -336,7 +336,7 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 		apitype.NewHandle("/tmp", "foo4"),
 	}
 	sut.AddHandles(handles)
-	handles, _ = imageStore.GetImages(-1, 0)
+	handles, _ = imageStore.GetAllImages()
 
 	t.Run("foo1", func(t *testing.T) {
 		sut.MoveToImage(handles[1])
@@ -555,7 +555,7 @@ func TestShowOnlyImages(t *testing.T) {
 		apitype.NewHandle("/tmp", "foo9"),
 	}
 	sut.AddHandles(handles)
-	handles, _ = imageStore.GetImages(-1, 0)
+	handles, _ = imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))
 	category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))
 	sut.SetImageListSize(10)
@@ -637,7 +637,7 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	sut.AddHandles(handles)
 	sut.SetImageListSize(10)
 
-	handles, _ = imageStore.GetImages(-1, 0)
+	handles, _ = imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
 	_ = imageCategoryStore.CategorizeImage(handles[1].GetId(), category1.GetId(), apitype.MOVE)
 	_ = imageCategoryStore.CategorizeImage(handles[2].GetId(), category1.GetId(), apitype.MOVE)

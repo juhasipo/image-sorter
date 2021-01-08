@@ -55,16 +55,17 @@ func toApiCategory(category Category) *apitype.Category {
 	return apitype.NewCategoryWithId(category.Id, category.Name, category.SubPath, category.Shortcut)
 }
 
-func getHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {
-	return os.Stat(handle.GetPath())
-}
-
 type ImageHandleConverter interface {
 	HandleToImage(handle *apitype.Handle) (*Image, error)
+	GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error)
 }
 
 type FileSystemImageHandleConverter struct {
 	ImageHandleConverter
+}
+
+func (s *FileSystemImageHandleConverter) GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {
+	return os.Stat(handle.GetPath())
 }
 
 func (s *FileSystemImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image, error) {
@@ -79,7 +80,7 @@ func (s *FileSystemImageHandleConverter) HandleToImage(handle *apitype.Handle) (
 	logger.Trace.Printf(" - Loaded exif data in %s", exifLoadEnd.Sub(exifLoadStart))
 
 	fileStatStart := time.Now()
-	fileStat, err := getHandleFileStats(handle)
+	fileStat, err := s.GetHandleFileStats(handle)
 	if err != nil {
 		return nil, err
 	}
