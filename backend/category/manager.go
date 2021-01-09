@@ -166,6 +166,11 @@ func (s *Manager) loadCategoriesFromFile() []*apitype.Category {
 
 		filePath := util.GetFirstExistingFilePath(filePaths)
 
+		if filePath == "" {
+			logger.Warn.Printf("No category files found: %s", filePaths)
+			return []*apitype.Category{}
+		}
+
 		logger.Info.Printf("Reading categories from file '%s'", filePath)
 
 		if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
@@ -175,7 +180,7 @@ func (s *Manager) loadCategoriesFromFile() []*apitype.Category {
 
 			return readCategoriesFromReader(f)
 		} else {
-			s.sender.SendError("Could not open file", err)
+			s.sender.SendError(fmt.Sprintf("Could not open category file %s ", filePath), err)
 			return []*apitype.Category{}
 		}
 	} else {

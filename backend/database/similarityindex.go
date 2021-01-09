@@ -8,23 +8,31 @@ import (
 )
 
 type SimilarityIndex struct {
+	store      *Store
 	session    db.Session
 	collection db.Collection
 }
 
 func NewSimilarityIndex(store *Store) *SimilarityIndex {
 	return &SimilarityIndex{
-		collection: store.imageSimilarCollection,
+		store: store,
 	}
 }
 
+func (s *SimilarityIndex) getCollection() db.Collection {
+	if s.collection == nil {
+		s.collection = s.store.database.Session().Collection("image_similar")
+	}
+	return s.collection
+}
+
 func (s *SimilarityIndex) DoInTransaction(fn func(session db.Session) error) error {
-	return s.collection.Session().Tx(fn)
+	return s.getCollection().Session().Tx(fn)
 }
 
 func (s *SimilarityIndex) StartRecreateSimilarImageIndex(session db.Session) error {
 	s.session = session
-	collection := s.session.Collection(s.collection.Name())
+	collection := s.session.Collection(s.getCollection().Name())
 
 	logger.Debug.Print("Truncate similar image index")
 	if err := collection.Truncate(); err != nil {
@@ -56,7 +64,7 @@ func (s *SimilarityIndex) EndRecreateSimilarImageIndex() error {
 }
 
 func (s *SimilarityIndex) AddSimilarImage(imageId apitype.HandleId, similarId apitype.HandleId, rank int, score float64) error {
-	collection := s.session.Collection(s.collection.Name())
+	collection := s.session.Collection(s.getCollection().Name())
 	_, err := collection.Insert(&ImageSimilar{
 		ImageId:        imageId,
 		SimilarImageId: similarId,
@@ -73,7 +81,7 @@ func (s *SimilarityIndex) AddSimilarImage(imageId apitype.HandleId, similarId ap
 
 func (s *SimilarityIndex) GetSimilarImages(imageId apitype.HandleId) []*apitype.Handle {
 	var images []Image
-	s.collection.Session().SQL().
+	s.getCollection().Session().SQL().
 		Select("image.*").
 		From("image").
 		Join("image_similar").On("image_similar.similar_image_id = image.id").

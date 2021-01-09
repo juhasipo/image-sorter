@@ -8,13 +8,14 @@ import (
 )
 
 type ImageStore struct {
+	store                *Store
 	collection           db.Collection
 	imageHandleConverter ImageHandleConverter
 }
 
 func NewImageStore(store *Store, imageHandleConverter ImageHandleConverter) *ImageStore {
 	return &ImageStore{
-		collection:           store.imageCollection,
+		store: store,
 		imageHandleConverter: imageHandleConverter,
 	}
 }
@@ -23,8 +24,15 @@ func (s *ImageStore) SetImageHandleConverter(imageHandleConverter ImageHandleCon
 	s.imageHandleConverter = imageHandleConverter
 }
 
+func (s *ImageStore) getCollection() db.Collection {
+	if s.collection == nil {
+		s.collection = s.store.database.Session().Collection("image")
+	}
+	return s.collection
+}
+
 func (s *ImageStore) AddImages(handles []*apitype.Handle) error {
-	return s.collection.Session().Tx(func(sess db.Session) error {
+	return s.getCollection().Session().Tx(func(sess db.Session) error {
 		for _, handle := range handles {
 			if _, err := s.addImage(sess, handle); err != nil {
 				logger.Error.Printf("Error while adding image '%s' to DB", handle.GetPath())
@@ -36,7 +44,7 @@ func (s *ImageStore) AddImages(handles []*apitype.Handle) error {
 }
 
 func (s *ImageStore) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {
-	return s.addImage(s.collection.Session(), handle)
+	return s.addImage(s.getCollection().Session(), handle)
 }
 
 func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apitype.Handle, error) {
@@ -104,7 +112,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 }
 
 func (s *ImageStore) GetImageCount(categoryName string) int {
-	res := s.collection.Session().SQL().
+	res := s.getCollection().Session().SQL().
 		Select(db.Raw("count(1) AS c")).
 		From("image")
 
@@ -137,7 +145,7 @@ func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName st
 	}
 
 	var images []Image
-	res := s.collection.Session().SQL().
+	res := s.getCollection().Session().SQL().
 		Select("image.*").
 		From("image")
 
@@ -163,7 +171,7 @@ func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName st
 }
 
 func (s *ImageStore) FindByDirAndFile(handle *apitype.Handle) (*apitype.Handle, error) {
-	return s.findByDirAndFile(s.collection, handle)
+	return s.findByDirAndFile(s.getCollection(), handle)
 }
 
 func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.Handle) (*apitype.Handle, error) {
@@ -184,7 +192,7 @@ func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.
 }
 
 func (s *ImageStore) Exists(handle *apitype.Handle) (bool, error) {
-	return s.exists(s.collection, handle)
+	return s.exists(s.getCollection(), handle)
 }
 
 func (s *ImageStore) exists(collection db.Collection, handle *apitype.Handle) (bool, error) {
@@ -197,11 +205,11 @@ func (s *ImageStore) exists(collection db.Collection, handle *apitype.Handle) (b
 }
 
 func (s *ImageStore) getCollectionForSession(session db.Session) db.Collection {
-	return session.Collection(s.collection.Name())
+	return session.Collection(s.getCollection().Name())
 }
 
 func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, error) {
-	return s.findModifiedId(s.collection, handle)
+	return s.findModifiedId(s.getCollection(), handle)
 }
 
 func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.HandleId, error) {
@@ -235,7 +243,7 @@ func (s *ImageStore) update(collection db.Collection, id apitype.HandleId, image
 
 func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
 	var image Image
-	err := s.collection.Find(db.Cond{"id": id}).One(&image)
+	err := s.getCollection().Find(db.Cond{"id": id}).One(&image)
 
 	if err != nil {
 		logger.Error.Print("Could not find image ", err)
@@ -246,5 +254,5 @@ func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
 }
 
 func (s *ImageStore) RemoveImage(handleId apitype.HandleId) error {
-	return s.collection.Find(db.Cond{"id": handleId}).Delete()
+	return s.getCollection().Find(db.Cond{"id": handleId}).Delete()
 }

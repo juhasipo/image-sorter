@@ -7,17 +7,25 @@ import (
 )
 
 type CategoryStore struct {
+	store      *Store
 	collection db.Collection
 }
 
 func NewCategoryStore(store *Store) *CategoryStore {
 	return &CategoryStore{
-		collection: store.categoryCollection,
+		store: store,
 	}
 }
 
+func (s *CategoryStore) getCollection() db.Collection {
+	if s.collection == nil {
+		s.collection = s.store.database.Session().Collection("category")
+	}
+	return s.collection
+}
+
 func (s *CategoryStore) AddCategory(category *apitype.Category) (*apitype.Category, error) {
-	return addCategory(s.collection, category)
+	return addCategory(s.getCollection(), category)
 }
 
 func addCategory(collection db.Collection, category *apitype.Category) (*apitype.Category, error) {
@@ -44,7 +52,7 @@ func addCategory(collection db.Collection, category *apitype.Category) (*apitype
 }
 
 func (s *CategoryStore) ResetCategories(categories []*apitype.Category) error {
-	return s.collection.Session().Tx(func(sess db.Session) error {
+	return s.getCollection().Session().Tx(func(sess db.Session) error {
 		collection := sess.Collection("category")
 		var persistedCategories []Category
 		if err := collection.Find().All(&persistedCategories); err != nil {
@@ -81,7 +89,7 @@ func (s *CategoryStore) ResetCategories(categories []*apitype.Category) error {
 
 func (s *CategoryStore) GetCategories() ([]*apitype.Category, error) {
 	var categories []Category
-	err := s.collection.Find().
+	err := s.getCollection().Find().
 		OrderBy("name").
 		All(&categories)
 
@@ -94,7 +102,7 @@ func (s *CategoryStore) GetCategories() ([]*apitype.Category, error) {
 
 func (s *CategoryStore) GetCategoryById(id apitype.CategoryId) *apitype.Category {
 	var category Category
-	if err := s.collection.Find(db.Cond{"id": id}).One(&category); err != nil {
+	if err := s.getCollection().Find(db.Cond{"id": id}).One(&category); err != nil {
 		return nil
 	} else {
 		return toApiCategory(category)

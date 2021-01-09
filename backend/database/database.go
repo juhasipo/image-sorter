@@ -4,6 +4,7 @@ import (
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/sqlite"
 	"path/filepath"
+	"vincit.fi/image-sorter/backend/util"
 	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -31,7 +32,15 @@ func NewInMemoryDatabase() *Database {
 	}
 }
 
-func NewDatabase(directory string, file string) *Database {
+func NewDatabase() *Database {
+	return &Database{}
+}
+
+func (s *Database) InitializeForDirectory(directory string, file string) error {
+	if err := util.MakeDirectoriesIfNotExist(directory, filepath.Join(directory, constants.ImageSorterDir)); err != nil {
+		return err
+	}
+
 	dbPath := filepath.Join(directory, constants.ImageSorterDir, file)
 	logger.Info.Printf("Initializing database %s", dbPath)
 	var settings = sqlite.ConnectionURL{
@@ -40,12 +49,11 @@ func NewDatabase(directory string, file string) *Database {
 
 	session, err := sqlite.Open(settings)
 	if err != nil {
-		logger.Error.Fatal("Error opening database", err)
+		return err
 	}
 
-	return &Database{
-		instance: session,
-	}
+	s.instance = session
+	return nil
 }
 
 type TableExist bool
@@ -199,5 +207,10 @@ func (s *Database) migrate() error {
 
 func (s *Database) Close() error {
 	logger.Info.Printf("Closing database")
-	return s.instance.Close()
+	if s.instance != nil {
+		return s.instance.Close()
+	} else {
+		logger.Warn.Printf("No database instance to close")
+		return nil
+	}
 }

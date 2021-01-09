@@ -6,17 +6,25 @@ import (
 )
 
 type ImageCategoryStore struct {
+	store      *Store
 	collection db.Collection
 }
 
 func NewImageCategoryStore(store *Store) *ImageCategoryStore {
 	return &ImageCategoryStore{
-		collection: store.imageCategoryCollection,
+		store: store,
 	}
 }
 
+func (s *ImageCategoryStore) getCollection() db.Collection {
+	if s.collection == nil {
+		s.collection = s.store.database.Session().Collection("image_category")
+	}
+	return s.collection
+}
+
 func (s *ImageCategoryStore) RemoveImageCategories(imageId apitype.HandleId) error {
-	_, err := s.collection.Session().SQL().Exec(`
+	_, err := s.getCollection().Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ?
 		`, imageId)
 	return err
@@ -24,12 +32,12 @@ func (s *ImageCategoryStore) RemoveImageCategories(imageId apitype.HandleId) err
 
 func (s *ImageCategoryStore) CategorizeImage(imageId apitype.HandleId, categoryId apitype.CategoryId, operation apitype.Operation) error {
 	if operation == apitype.NONE {
-		_, err := s.collection.Session().SQL().Exec(`
+		_, err := s.getCollection().Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ? AND category_id = ?
 		`, imageId, categoryId)
 		return err
 	} else {
-		_, err := s.collection.Session().SQL().Exec(`
+		_, err := s.getCollection().Session().SQL().Exec(`
 		INSERT INTO image_category (image_id, category_id, operation)
 		VALUES(?, ?, ?)
 		ON CONFLICT(image_id, category_id) DO 
@@ -42,7 +50,7 @@ func (s *ImageCategoryStore) CategorizeImage(imageId apitype.HandleId, categoryI
 
 func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*apitype.CategorizedImage, error) {
 	var categories []CategorizedImage
-	err := s.collection.Session().SQL().
+	err := s.getCollection().Session().SQL().
 		Select("image_category.image_id AS image_id",
 			"category.id AS category_id",
 			"category.name AS name",
@@ -64,7 +72,7 @@ func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*a
 
 func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage, error) {
 	var categorizedImages []CategorizedImage
-	err := s.collection.Session().SQL().
+	err := s.getCollection().Session().SQL().
 		Select("image_category.image_id AS image_id",
 			"category.id AS category_id",
 			"category.name AS name",

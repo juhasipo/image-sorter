@@ -22,8 +22,7 @@ func main() {
 
 	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
 
-	db := database.NewDatabase(params.GetRootPath(), "image-sorter.db")
-	tableExist := db.Migrate()
+	db := database.NewDatabase()
 	defer db.Close()
 
 	store := database.NewStore(db)
@@ -53,18 +52,23 @@ func main() {
 	// Startup
 	broker.Subscribe(api.DirectoryChanged, func(directory string) {
 		logger.Info.Printf("Directory changed to '%s'", directory)
-		if tableExist == database.TableNotExist {
-			categoryManager.InitializeFromDirectory([]string{}, directory)
+
+		if err := db.InitializeForDirectory(directory, "image-sorter.db"); err != nil {
+			logger.Error.Fatal("Error opening database", err)
+		} else {
+			if tableExist := db.Migrate(); tableExist == database.TableNotExist {
+				categoryManager.InitializeFromDirectory([]string{}, directory)
+			}
+			imageLibrary.InitializeFromDirectory(directory)
+
+			if len(imageLibrary.GetHandles()) > 0 {
+				imageCache.Initialize(imageLibrary.GetHandles()[:5])
+			}
+
+			imageCategoryManager.InitializeForDirectory(directory)
+
+			categoryManager.RequestCategories()
 		}
-		imageLibrary.InitializeFromDirectory(directory)
-
-		if len(imageLibrary.GetHandles()) > 0 {
-			imageCache.Initialize(imageLibrary.GetHandles()[:5])
-		}
-
-		imageCategoryManager.InitializeForDirectory(directory)
-
-		categoryManager.RequestCategories()
 	})
 
 	// UI -> Library

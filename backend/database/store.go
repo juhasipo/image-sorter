@@ -6,19 +6,11 @@ import (
 
 type Store struct {
 	database                *Database
-	imageCollection         db.Collection
-	categoryCollection      db.Collection
-	imageCategoryCollection db.Collection
-	imageSimilarCollection  db.Collection
 }
 
 func NewStore(database *Database) *Store {
 	return &Store{
 		database:                database,
-		imageCollection:         database.Session().Collection("image"),
-		categoryCollection:      database.Session().Collection("category"),
-		imageCategoryCollection: database.Session().Collection("image_category"),
-		imageSimilarCollection:  database.Session().Collection("image_similar"),
 	}
 }
 
