@@ -31,6 +31,7 @@ import (
 
 const (
 	deviceSearchTimeout = time.Second * 30
+	imageSendTimeout    = time.Second * 1
 	castService         = "_googlecast._tcp"
 	canvasWidth         = 1920
 	canvasHeight        = 1080
@@ -354,8 +355,8 @@ func (s *Caster) castImageFromQueue() {
 		ip := device.localAddr.String()
 		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, cacheBusterStr)
 		logger.Debug.Printf("Casting image '%s'", imageUrl)
-		if _, err := device.device.MediaController.Load(imageUrl, "image/jpeg", time.Second*5); err != nil {
-			s.sender.SendError("Could not cast image", err)
+		if _, err := device.device.MediaController.Load(imageUrl, "image/jpeg", imageSendTimeout); err != nil {
+			logger.Warn.Print("Timed out while trying to cast image: ", err.Error())
 		} else {
 			logger.Debug.Printf("Casted image")
 		}
