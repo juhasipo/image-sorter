@@ -34,12 +34,12 @@ func (s *SimilarityIndex) StartRecreateSimilarImageIndex(session db.Session) err
 	s.session = session
 	collection := s.session.Collection(s.getCollection().Name())
 
-	logger.Debug.Print("Truncate similar image index")
+	logger.Trace.Print("Truncate similar image index")
 	if err := collection.Truncate(); err != nil {
 		return err
 	}
 
-	logger.Debug.Print("Dropping index")
+	logger.Trace.Print("Dropping index")
 	if _, err := s.session.SQL().Exec("DROP INDEX IF EXISTS image_similar_uq"); err != nil {
 		return err
 	} else {
@@ -53,13 +53,13 @@ func (s *SimilarityIndex) EndRecreateSimilarImageIndex() error {
 	}()
 
 	start := time.Now()
-	logger.Debug.Print("Creating indices for similar images")
+	logger.Trace.Print("Creating indices for similar images")
 	if _, err := s.session.SQL().Exec("CREATE UNIQUE INDEX image_similar_uq ON image_similar(image_id, similar_image_id)"); err != nil {
 		return err
 	}
 
 	end := time.Now()
-	logger.Debug.Printf(" - Creating index: %s", end.Sub(start))
+	logger.Trace.Printf(" - Creating index: %s", end.Sub(start))
 	return nil
 }
 

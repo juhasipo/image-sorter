@@ -177,11 +177,11 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 
 				sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", imageIndex, len(images))
 
-				logger.Debug.Printf("Print added matches for image: %s", handle.String())
-				logger.Debug.Printf(" -    Search: %s", searchEnd.Sub(searchStart))
-				logger.Debug.Printf(" -      Sort: %s", sortEnd.Sub(sortStart))
-				logger.Debug.Printf(" -       Add: %s", addEnd.Sub(addStart))
-				logger.Debug.Printf(" - Add/image: %s", addEnd.Sub(addStart)/maxSimilarImages)
+				logger.Trace.Printf("Print added matches for image: %s", handle.String())
+				logger.Trace.Printf(" -    Search: %s", searchEnd.Sub(searchStart))
+				logger.Trace.Printf(" -      Sort: %s", sortEnd.Sub(sortStart))
+				logger.Trace.Printf(" -       Add: %s", addEnd.Sub(addStart))
+				logger.Trace.Printf(" - Add/image: %s", addEnd.Sub(addStart)/maxSimilarImages)
 			}
 			if err := s.similarityIndex.EndRecreateSimilarImageIndex(); err != nil {
 				logger.Error.Print("Error while finishing similar images index", err)
