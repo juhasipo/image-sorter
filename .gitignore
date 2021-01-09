@@ -15,4 +15,5 @@
 # vendor/
 *.iml
 .idea
-
+deploy/**
+out/**
