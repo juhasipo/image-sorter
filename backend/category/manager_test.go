@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -201,4 +203,104 @@ func TestResetCategories(t *testing.T) {
 		a.Equal(categories[1].GetName(), "Cat 4_")
 		a.Equal(categories[2].GetName(), "Cat 5")
 	}
+}
+
+func TestSaveCategoriesToFile_AndLoadCategoriesFromFile(t *testing.T) {
+	a := assert.New(t)
+
+	params := common.NewEmptyParams()
+	sender := new(MockSender)
+	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
+
+	store := database.NewInMemoryStore()
+	categoryStore := database.NewCategoryStore(store)
+	sut := newManager(params, sender, categoryStore)
+
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "2"))
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 3", "C3", "3"))
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 4", "C4", "4"))
+
+	dir, err := ioutil.TempDir("", "test_dir")
+	file := ".categories"
+	err = sut.saveCategoriesToFile(dir, file, sut.GetCategories())
+
+	if a.Nil(err) {
+		categories := sut.loadCategoriesFromFile(filepath.Join(dir, file))
+		a.Equal(4, len(categories))
+		a.Equal("Cat 1", categories[0].GetName())
+		a.Equal("C1", categories[0].GetSubPath())
+		a.Equal(uint(0x31), categories[0].GetShortcut())
+
+		a.Equal("Cat 2", categories[1].GetName())
+		a.Equal("C2", categories[1].GetSubPath())
+		a.Equal(uint(0x32), categories[1].GetShortcut())
+
+		a.Equal("Cat 3", categories[2].GetName())
+		a.Equal("C3", categories[2].GetSubPath())
+		a.Equal(uint(0x33), categories[2].GetShortcut())
+
+		a.Equal("Cat 4", categories[3].GetName())
+		a.Equal("C4", categories[3].GetSubPath())
+		a.Equal(uint(0x34), categories[3].GetShortcut())
+	}
+}
+
+func TestSaveCategoriesToFile_AndLoadCategoriesFromFiles(t *testing.T) {
+	a := assert.New(t)
+
+	params := common.NewEmptyParams()
+	sender := new(MockSender)
+	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
+
+	store := database.NewInMemoryStore()
+	categoryStore := database.NewCategoryStore(store)
+	sut := newManager(params, sender, categoryStore)
+
+	t.Run("File doesn'r exist", func(t *testing.T) {
+		categories := sut.loadCategoriesFromFirstExistingLocation([]string{
+			filepath.Join("", "not-file-1"),
+			filepath.Join("", "not-file-2"),
+			filepath.Join("", "not-file-3"),
+			filepath.Join("", "not-file-4"),
+		})
+		a.Equal(0, len(categories))
+	})
+
+	t.Run("One file exists", func(t *testing.T) {
+
+		_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
+		_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "2"))
+		_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 3", "C3", "3"))
+		_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 4", "C4", "4"))
+
+		dir, err := ioutil.TempDir("", "test_dir")
+		file := ".categories"
+		err = sut.saveCategoriesToFile(dir, file, sut.GetCategories())
+
+		if a.Nil(err) {
+			categories := sut.loadCategoriesFromFirstExistingLocation([]string{
+				filepath.Join(dir, "not-file-1"),
+				filepath.Join(dir, "not-file-2"),
+				filepath.Join(dir, file),
+				filepath.Join(dir, "not-file-3"),
+			})
+			a.Equal(4, len(categories))
+			a.Equal("Cat 1", categories[0].GetName())
+			a.Equal("C1", categories[0].GetSubPath())
+			a.Equal(uint(0x31), categories[0].GetShortcut())
+
+			a.Equal("Cat 2", categories[1].GetName())
+			a.Equal("C2", categories[1].GetSubPath())
+			a.Equal(uint(0x32), categories[1].GetShortcut())
+
+			a.Equal("Cat 3", categories[2].GetName())
+			a.Equal("C3", categories[2].GetSubPath())
+			a.Equal(uint(0x33), categories[2].GetShortcut())
+
+			a.Equal("Cat 4", categories[3].GetName())
+			a.Equal("C4", categories[3].GetSubPath())
+			a.Equal(uint(0x34), categories[3].GetShortcut())
+		}
+	})
 }

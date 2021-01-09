@@ -42,6 +42,11 @@ func Parse(value string) (name string, path string, shortcut string) {
 }
 
 func New(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) api.CategoryManager {
+	return newManager(params, sender, categoryStore)
+}
+
+// For tests where some private methods are tested
+func newManager(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) *Manager {
 	manager := Manager{
 		sender:                sender,
 		commandLineCategories: params.GetCategories(),
@@ -58,7 +63,7 @@ func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir st
 		logger.Info.Printf("Reading from command line parameters")
 		loadedCategories = fromCategoriesStrings(defaultCategories)
 	} else {
-		loadedCategories = s.loadCategoriesFromFile()
+		loadedCategories = s.loadCategoriesFromDefaultLocations()
 	}
 
 	for i, category := range loadedCategories {
@@ -158,33 +163,41 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 	return categoryEntries
 }
 
-func (s *Manager) loadCategoriesFromFile() []*apitype.Category {
+func (s *Manager) loadCategoriesFromDefaultLocations() []*apitype.Category {
 	if currentUser, err := user.Current(); err == nil {
 		filePaths := []string{
 			filepath.Join(currentUser.HomeDir, constants.ImageSorterDir, constants.CategoriesFileName),
 		}
 
-		filePath := util.GetFirstExistingFilePath(filePaths)
-
-		if filePath == "" {
-			logger.Warn.Printf("No category files found: %s", filePaths)
-			return []*apitype.Category{}
-		}
-
-		logger.Info.Printf("Reading categories from file '%s'", filePath)
-
-		if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
-			defer func() {
-				_ = f.Close()
-			}()
-
-			return readCategoriesFromReader(f)
-		} else {
-			s.sender.SendError(fmt.Sprintf("Could not open category file %s ", filePath), err)
-			return []*apitype.Category{}
-		}
+		return s.loadCategoriesFromFirstExistingLocation(filePaths)
 	} else {
 		s.sender.SendError("Could not find current user", err)
+		return []*apitype.Category{}
+	}
+}
+
+func (s *Manager) loadCategoriesFromFirstExistingLocation(filePaths []string) []*apitype.Category {
+	filePath := util.GetFirstExistingFilePath(filePaths)
+
+	if filePath == "" {
+		logger.Warn.Printf("No category files found: %s", filePaths)
+		return []*apitype.Category{}
+	}
+
+	return s.loadCategoriesFromFile(filePath)
+}
+
+func (s *Manager) loadCategoriesFromFile(filePath string) []*apitype.Category {
+	logger.Info.Printf("Reading categories from file '%s'", filePath)
+
+	if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
+		defer func() {
+			_ = f.Close()
+		}()
+
+		return readCategoriesFromReader(f)
+	} else {
+		s.sender.SendError(fmt.Sprintf("Could not open category file %s ", filePath), err)
 		return []*apitype.Category{}
 	}
 }
