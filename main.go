@@ -87,6 +87,7 @@ func main() {
 	broker.ConnectToGui(api.ImageListUpdated, gui.SetImages)
 	broker.ConnectToGui(api.ImageCurrentUpdated, gui.SetCurrentImage)
 	broker.ConnectToGui(api.ProcessStatusUpdated, gui.UpdateProgress)
+	broker.ConnectToGui(api.ShowError, gui.ShowError)
 
 	// UI -> Image Categorization
 	broker.Subscribe(api.CategorizeImage, imageCategoryManager.SetCategory)

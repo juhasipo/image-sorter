@@ -6,6 +6,7 @@ const (
 	// General
 	ProcessStatusUpdated Topic = "process-status-updated"
 	DirectoryChanged     Topic = "directory-changed"
+	ShowError            Topic = "show-error"
 
 	// Image related
 	ImageRequest           Topic = "image-request"

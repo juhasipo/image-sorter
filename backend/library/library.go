@@ -41,8 +41,11 @@ func (s *Manager) ShowAllImages() {
 
 func (s *Manager) RequestGenerateHashes() {
 	if s.manager.GenerateHashes(s.sender) {
-		image, _ := s.manager.getCurrentImage()
-		s.sendSimilarImages(image.GetHandle())
+		if image, _, err := s.manager.getCurrentImage(); err != nil {
+			s.sender.SendError("Error while generating hashes", err)
+		} else {
+			s.sendSimilarImages(image.GetHandle())
+		}
 	}
 }
 
@@ -101,7 +104,9 @@ func (s *Manager) Close() {
 }
 
 func (s *Manager) AddHandles(imageList []*apitype.Handle) {
-	s.manager.AddHandles(imageList)
+	if err := s.manager.AddHandles(imageList); err != nil {
+		s.sender.SendError("Error while adding image", err)
+	}
 }
 
 func (s *Manager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
@@ -115,30 +120,40 @@ func (s *Manager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
 // Private API
 
 func (s *Manager) sendImages(sendCurrentImage bool) {
-	currentImage, currentIndex := s.manager.getCurrentImage()
-	totalImages := s.manager.getTotalImages()
-	if totalImages == 0 {
-		currentIndex = 0
-	}
+	if currentImage, currentIndex, err := s.manager.getCurrentImage(); err != nil {
+		s.sender.SendError("Error while fetching images", err)
+	} else {
+		totalImages := s.manager.getTotalImages()
+		if totalImages == 0 {
+			currentIndex = 0
+		}
 
-	if sendCurrentImage {
-		s.sender.SendToTopicWithData(api.ImageCurrentUpdated,
-			currentImage, currentIndex, totalImages,
-			s.manager.getCurrentCategoryName(),
-			s.manager.GetMetaData(currentImage.GetHandle()))
-	}
+		if sendCurrentImage {
+			s.sender.SendToTopicWithData(api.ImageCurrentUpdated,
+				currentImage, currentIndex, totalImages,
+				s.manager.getCurrentCategoryName(),
+				s.manager.GetMetaData(currentImage.GetHandle()))
+		}
 
-	s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestNext, s.manager.getNextImages())
-	s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestPrev, s.manager.getPrevImages())
+		if nextImages, err := s.manager.getNextImages(); err != nil {
+			s.sender.SendError("Error while fetching next images", err)
+		} else if prevImages, err := s.manager.getPrevImages(); err != nil {
+			s.sender.SendError("Error while fetching previous images", err)
+		} else {
+			s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestPrev, prevImages)
+			s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestNext, nextImages)
+		}
 
-	if s.manager.shouldSendSimilarImages() {
-		s.sendSimilarImages(currentImage.GetHandle())
+		if s.manager.shouldSendSimilarImages() {
+			s.sendSimilarImages(currentImage.GetHandle())
+		}
 	}
 }
 
 func (s *Manager) sendSimilarImages(handle *apitype.Handle) {
-	images, shouldSend := s.manager.getSimilarImages(handle)
-	if shouldSend {
+	if images, shouldSend, err := s.manager.getSimilarImages(handle); err != nil {
+		s.sender.SendError("Error while fetching similar images", err)
+	} else if shouldSend {
 		s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestSimilar, images)
 	}
 }

@@ -10,6 +10,7 @@ type Gui interface {
 	SetImages(Topic, []*apitype.ImageContainer)
 	UpdateCategories(categories *apitype.CategoriesCommand)
 	SetImageCategory(command []*apitype.CategorizeCommand)
+	ShowError(message string)
 	Run()
 
 	UpdateProgress(name string, status int, total int)

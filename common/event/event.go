@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/glib"
 	messagebus "github.com/vardius/message-bus"
 	"reflect"
@@ -31,14 +32,18 @@ type GuiCallback func(data ...interface{})
 
 func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
 	cb := func(params ...interface{}) {
-		glib.IdleAdd(func() {
+		sendFn := func() {
 			args := make([]reflect.Value, 0, len(params))
 			for _, param := range params {
 				args = append(args, reflect.ValueOf(param))
 			}
 			logger.Trace.Printf("Calling topic '%s' with %d arguments: %s", topic, len(args), params)
 			reflect.ValueOf(callback).Call(args)
-		})
+		}
+
+		if _, err := glib.IdleAdd(sendFn); err != nil {
+			s.SendError("Error sending internal message", err)
+		}
 	}
 	err := s.bus.Subscribe(string(topic), cb)
 	if err != nil {
@@ -53,4 +58,15 @@ func (s *Broker) SendToTopic(topic api.Topic) {
 func (s *Broker) SendToTopicWithData(topic api.Topic, data ...interface{}) {
 	logger.Trace.Printf("Sending to '%s' with %d arguments", topic, len(data))
 	s.bus.Publish(string(topic), data...)
+}
+
+func (s *Broker) SendError(message string, err error) {
+	formattedMessage := ""
+	if err != nil {
+		formattedMessage = fmt.Sprintf("%s\n%s", message, err.Error())
+	} else {
+		formattedMessage = message
+	}
+	logger.Error.Printf("Error: %s", formattedMessage)
+	s.SendToTopicWithData(api.ShowError, formattedMessage)
 }

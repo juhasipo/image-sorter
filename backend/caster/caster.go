@@ -113,7 +113,7 @@ func (s *Caster) StopServer() {
 		logger.Info.Println("Shutting down HTTP server")
 		err := s.server.Shutdown(context.Background())
 		if err != nil {
-			logger.Error.Println(err)
+			s.sender.SendError("Error while shutting down HTTP server", err)
 		}
 		s.server = nil
 	} else {
@@ -132,7 +132,7 @@ func (s *Caster) startServer(port int) {
 	address := ":" + strconv.Itoa(port)
 	s.server = &http.Server{Addr: address}
 	if err := s.server.ListenAndServe(); err != nil {
-		logger.Error.Println("Could not initialize server", err)
+		s.sender.SendError("Error while initializing HTTP server", err)
 		s.server = nil
 	}
 }
@@ -213,7 +213,7 @@ func (s *Caster) FindDevices() {
 			// because all the information is private in the connection objects
 			localAddr, err := s.resolveLocalAddress(entry)
 			if err != nil {
-				logger.Error.Println("Could not resolve local address", err)
+				s.sender.SendError("Could not resolve local address", err)
 				break
 			}
 
@@ -288,7 +288,7 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 	s.showBackground = showBackground
 	device := s.devices[s.selectedDevice]
 	if d, err := cast.NewDevice(device.serviceEntry.Addr, device.serviceEntry.Port); err != nil {
-		logger.Error.Println("Could not select device: '"+name+"'", err)
+		s.sender.SendError("Error while selecting device", err)
 	} else {
 		device.device = &d
 		appId := configs.MediaReceiverAppID
@@ -302,7 +302,7 @@ func (s *Caster) SelectDevice(name string, showBackground bool) {
 
 func (s *Caster) getLocalHost() string {
 	if hostname, err := os.Hostname(); err != nil {
-		logger.Error.Println("Could not get hostname", err)
+		s.sender.SendError("Could not resolve hostname", err)
 		return ""
 	} else {
 		return hostname
@@ -333,6 +333,7 @@ func (s *Caster) castImageFromQueue() {
 
 	if s.server == nil {
 		logger.Error.Print("Can't cast image, server not running")
+		s.sender.SendError("Can't cast image because server is not running", nil)
 		return
 	}
 
@@ -354,7 +355,7 @@ func (s *Caster) castImageFromQueue() {
 		imageUrl := fmt.Sprintf("http://%s:%d/%s/%s", ip, s.port, s.secret, cacheBusterStr)
 		logger.Debug.Printf("Casting image '%s'", imageUrl)
 		if _, err := device.device.MediaController.Load(imageUrl, "image/jpeg", time.Second*5); err != nil {
-			logger.Error.Print("Could not cast image", err)
+			s.sender.SendError("Could not cast image", err)
 		} else {
 			logger.Debug.Printf("Casted image")
 		}

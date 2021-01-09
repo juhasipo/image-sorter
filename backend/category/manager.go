@@ -58,12 +58,12 @@ func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir st
 		logger.Info.Printf("Reading from command line parameters")
 		loadedCategories = fromCategoriesStrings(defaultCategories)
 	} else {
-		loadedCategories = loadCategoriesFromFile()
+		loadedCategories = s.loadCategoriesFromFile()
 	}
 
 	for i, category := range loadedCategories {
 		if category, err := s.categoryStore.AddCategory(category); err != nil {
-			logger.Error.Fatal("Error while loading categories", err)
+			s.sender.SendError("Error while loading categories", err)
 		} else {
 			loadedCategories[i] = category
 		}
@@ -72,7 +72,7 @@ func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir st
 
 func (s *Manager) GetCategories() []*apitype.Category {
 	if categories, err := s.categoryStore.GetCategories(); err != nil {
-		logger.Error.Fatal("Cannot get categories", err)
+		s.sender.SendError("Cannot get categories", err)
 		return nil
 	} else {
 		return categories
@@ -92,12 +92,12 @@ func (s *Manager) SaveDefault(categories []*apitype.Category) {
 	s.resetCategories(categories)
 
 	if currentUser, err := user.Current(); err != nil {
-		logger.Error.Println("Could not find current user", err)
+		s.sender.SendError("Could not find current user", err)
 	} else {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
-		if err := saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories); err != nil {
-			// TODO: Send error to UI
+		if err := s.saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories); err != nil {
+			s.sender.SendError("Could not save categories", err)
 		} else {
 			s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
 		}
@@ -106,7 +106,7 @@ func (s *Manager) SaveDefault(categories []*apitype.Category) {
 
 func (s *Manager) resetCategories(categories []*apitype.Category) {
 	if err := s.categoryStore.ResetCategories(categories); err != nil {
-		logger.Error.Printf("Error while resetting categories %s", err)
+		s.sender.SendError("Error while resetting categories", err)
 	}
 }
 
@@ -118,7 +118,7 @@ func (s *Manager) GetCategoryById(id apitype.CategoryId) *apitype.Category {
 	return s.categoryStore.GetCategoryById(id)
 }
 
-func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) (err error) {
+func (s *Manager) saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) (err error) {
 	if _, err := os.Stat(fileDir); os.IsNotExist(err) {
 		return os.Mkdir(fileDir, 0666)
 	}
@@ -127,7 +127,7 @@ func saveCategoriesToFile(fileDir string, fileName string, categories []*apitype
 
 	logger.Info.Printf("Saving categories to file '%s'", filePath)
 	if f, err := os.Create(filePath); err != nil {
-		logger.Error.Panic("Can't write file ", filePath, err)
+		s.sender.SendError("Can't write to file", err)
 	} else {
 		defer func() {
 			err = f.Close()
@@ -158,7 +158,7 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 	return categoryEntries
 }
 
-func loadCategoriesFromFile() []*apitype.Category {
+func (s *Manager) loadCategoriesFromFile() []*apitype.Category {
 	if currentUser, err := user.Current(); err == nil {
 		filePaths := []string{
 			filepath.Join(currentUser.HomeDir, constants.ImageSorterDir, constants.CategoriesFileName),
@@ -175,11 +175,11 @@ func loadCategoriesFromFile() []*apitype.Category {
 
 			return readCategoriesFromReader(f)
 		} else {
-			logger.Error.Println("Could not open file: "+filePath, err)
+			s.sender.SendError("Could not open file", err)
 			return []*apitype.Category{}
 		}
 	} else {
-		logger.Error.Println("Could not find current user", err)
+		s.sender.SendError("Could not find current user", err)
 		return []*apitype.Category{}
 	}
 }

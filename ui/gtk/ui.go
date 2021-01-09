@@ -353,3 +353,11 @@ func resolveModifierStatuses(keyEvent *gdk.EventKey) (shiftDown bool, controlDow
 	logger.Trace.Printf("Modifiers: Shift = %t, CTRL = %t, ALT = %t", shiftDown, controlDown, altDown)
 	return
 }
+
+func (s *Ui) ShowError(message string) {
+	logger.Error.Printf("Error: %s", message)
+	errorDialog := gtk.MessageDialogNew(s.win, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+	errorDialog.SetTitle("Error")
+	errorDialog.Run()
+	errorDialog.Destroy()
+}

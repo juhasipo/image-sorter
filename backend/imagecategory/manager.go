@@ -45,7 +45,7 @@ func (s *Manager) RequestCategory(handle *apitype.Handle) {
 
 func (s *Manager) GetCategories(handle *apitype.Handle) map[apitype.CategoryId]*apitype.CategorizedImage {
 	if categories, err := s.imageCategoryStore.GetImagesCategories(handle.GetId()); err != nil {
-		logger.Error.Print("Error while fetching images's category", err)
+		s.sender.SendError("Error while fetching image's category", err)
 		return map[apitype.CategoryId]*apitype.CategorizedImage{}
 	} else {
 		categorizedEntries := map[apitype.CategoryId]*apitype.CategorizedImage{}
@@ -64,12 +64,12 @@ func (s *Manager) SetCategory(command *apitype.CategorizeCommand) {
 	if command.ShouldForceToCategory() {
 		logger.Debug.Printf("Force to category for '%s'", handle.GetPath())
 		if err := s.imageCategoryStore.RemoveImageCategories(handle.GetId()); err != nil {
-			logger.Error.Print("Error while removing image categories", err)
+			s.sender.SendError("Error while removing image categories", err)
 		}
 	}
 
 	if err := s.imageCategoryStore.CategorizeImage(handle.GetId(), categoryEntry.GetId(), operation); err != nil {
-		logger.Error.Print("Error while setting category", err)
+		s.sender.SendError("Error while setting category", err)
 	}
 
 	if command.ShouldStayOnSameImage() {
@@ -91,7 +91,7 @@ func (s *Manager) PersistImageCategories(options apitype.PersistCategorizationCo
 	for i, operationGroup := range operationsByImage {
 		err := operationGroup.Apply()
 		if err != nil {
-			logger.Error.Println("Error", err)
+			s.sender.SendError("Error while applying changes", err)
 		}
 		s.sender.SendToTopicWithData(api.ProcessStatusUpdated, "categorize", i+1, total)
 	}
@@ -133,10 +133,10 @@ func (s *Manager) ResolveOperationsForGroup(handle *apitype.Handle,
 	}
 
 	if fullImage, err := s.imageLoader.LoadImage(handle); err != nil {
-		logger.Error.Println("Could not load image", err)
+		s.sender.SendError("Could not load image", err)
 		return nil, err
 	} else if exifData, err := s.imageLoader.LoadExifData(handle); err != nil {
-		logger.Error.Println("Could not load exif data")
+		s.sender.SendError("Could not load exif data", err)
 		return nil, err
 	} else {
 		return apitype.NewImageOperationGroup(handle, fullImage, exifData, imageOperations), nil
@@ -153,7 +153,7 @@ func (s *Manager) ShowOnlyCategoryImages(cat *apitype.Category) {
 
 func (s *Manager) getCategories(image *apitype.Handle) []*apitype.CategorizedImage {
 	if cats, err := s.imageCategoryStore.GetImagesCategories(image.GetId()); err != nil {
-		logger.Error.Print("Error while fetching categories for image", err)
+		s.sender.SendError("Error while fetching categories for image", err)
 		return []*apitype.CategorizedImage{}
 	} else {
 		return cats
