@@ -152,11 +152,11 @@ func (s *Manager) ShowOnlyCategoryImages(cat *apitype.Category) {
 }
 
 func (s *Manager) getCategories(image *apitype.Handle) []*apitype.CategorizedImage {
-	if cats, err := s.imageCategoryStore.GetImagesCategories(image.GetId()); err != nil {
+	if categories, err := s.imageCategoryStore.GetImagesCategories(image.GetId()); err != nil {
 		s.sender.SendError("Error while fetching categories for image", err)
 		return []*apitype.CategorizedImage{}
 	} else {
-		return cats
+		return categories
 	}
 }
 

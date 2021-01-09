@@ -28,11 +28,11 @@ func toApiHandles(images []Image) []*apitype.Handle {
 }
 
 func toApiCategorizedImages(categories []CategorizedImage) []*apitype.CategorizedImage {
-	cats := make([]*apitype.CategorizedImage, len(categories))
+	apiTypeCategories := make([]*apitype.CategorizedImage, len(categories))
 	for i, category := range categories {
-		cats[i] = toApiCategorizedImage(&category)
+		apiTypeCategories[i] = toApiCategorizedImage(&category)
 	}
-	return cats
+	return apiTypeCategories
 }
 
 func toApiCategorizedImage(category *CategorizedImage) *apitype.CategorizedImage {
@@ -44,11 +44,11 @@ func toApiCategorizedImage(category *CategorizedImage) *apitype.CategorizedImage
 }
 
 func toApiCategories(categories []Category) []*apitype.Category {
-	cats := make([]*apitype.Category, len(categories))
+	apiTypeCategories := make([]*apitype.Category, len(categories))
 	for i, category := range categories {
-		cats[i] = toApiCategory(category)
+		apiTypeCategories[i] = toApiCategory(category)
 	}
-	return cats
+	return apiTypeCategories
 }
 
 func toApiCategory(category Category) *apitype.Category {
