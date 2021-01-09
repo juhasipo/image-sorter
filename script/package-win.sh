@@ -1,10 +1,21 @@
 #!/bin/bash
 
+APP_NAME="image-sorter"
+EXE_NAME="${APP_NAME}.exe"
+VERSION="$(cat VERSION)-$(git rev-parse --short HEAD)"
+
+BIN_SRC_DIR="out/windows"
 MSYS_DIR="/c/msys64/mingw64"
 DEPLOY_DIR_WIN="./deploy/windows"
 DEPLOY_DIR_WIN_BIN="${DEPLOY_DIR_WIN}/bin"
 DEPLOY_DIR_WIN_LIB="${DEPLOY_DIR_WIN}/lib"
 DEPLOY_DIR_WIN_ASSETS="${DEPLOY_DIR_WIN_BIN}/assets"
+ZIP_BASE_DIR="./deploy/windows"
+ZIP_DIR_NAME="${APP_NAME}"
+ZIP_FILE_NAME="${TAR_DIR_NAME}-${VERSION}.zip"
+
+# Copy binary the
+cp "${BIN_SRC_DIR}/${EXE_NAME}" ${DEPLOY_DIR_WIN_BIN}/${EXE_NAME}
 
 # Copy DLLs for Windows
 mkdir -p "${DEPLOY_DIR_WIN_BIN}"
@@ -43,3 +54,9 @@ cp main-view.glade ${DEPLOY_DIR_WIN_BIN}/main-view.glade
 # Icon
 mkdir -p "${DEPLOY_DIR_WIN_ASSETS}"
 cp assets/icon-*.png ${DEPLOY_DIR_WIN_ASSETS}
+
+
+cd ${ZIP_BASE_DIR}
+echo "Create zip..."
+zip -r  ${ZIP_FILE_NAME} ${ZIP_DIR_NAME}
+mv ${ZIP_FILE_NAME} ../artifacts/
