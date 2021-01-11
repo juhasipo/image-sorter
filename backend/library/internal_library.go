@@ -23,7 +23,7 @@ type ImageList func(number int) []*apitype.Handle
 
 type internalManager struct {
 	rootDir                     string
-	imagesTitle                 string
+	selectedCategoryId          apitype.CategoryId
 	index                       int
 	imageHash                   *duplo.Store
 	shouldSendSimilar           bool
@@ -51,6 +51,7 @@ func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 		imageLoader:                 imageLoader,
 		similarityIndex:             similarityIndex,
 		imageStore:                  imageStore,
+		selectedCategoryId:          apitype.NoCategory,
 	}
 	return &manager
 }
@@ -68,13 +69,13 @@ func (s *internalManager) GetHandles() []*apitype.Handle {
 	return images
 }
 
-func (s *internalManager) ShowOnlyImages(categoryName string) {
-	s.imagesTitle = categoryName
+func (s *internalManager) ShowOnlyImages(categoryId apitype.CategoryId) {
+	s.selectedCategoryId = categoryId
 	s.index = 0
 }
 
 func (s *internalManager) ShowAllImages() {
-	s.imagesTitle = ""
+	s.selectedCategoryId = apitype.NoCategory
 }
 
 func (s *internalManager) GenerateHashes(sender api.Sender) bool {
@@ -234,7 +235,7 @@ func (s *internalManager) StopHashes() {
 }
 
 func (s *internalManager) MoveToImage(handle *apitype.Handle) {
-	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	for imageIndex, image := range images {
 		if handle.GetId() == image.GetId() {
 			s.index = imageIndex
@@ -243,7 +244,7 @@ func (s *internalManager) MoveToImage(handle *apitype.Handle) {
 }
 
 func (s *internalManager) MoveToImageAt(index int) {
-	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if index >= 0 {
 		s.index = index
 	} else {
@@ -277,7 +278,7 @@ func (s *internalManager) MoveToPrevImageWithOffset(offset int) {
 func (s *internalManager) requestImageWithOffset(offset int) {
 	s.index += offset
 
-	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index >= len(images) {
 		s.index = len(images) - 1
 	}
@@ -322,7 +323,7 @@ func (s *internalManager) GetMetaData(handle *apitype.Handle) *apitype.ExifData 
 // Private API
 
 func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error) {
-	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.imagesTitle)
+	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
 		handle := images[s.index]
 		if full, err := s.imageCache.GetFull(handle); err != nil {
@@ -337,10 +338,10 @@ func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error
 }
 
 func (s *internalManager) getTotalImages() int {
-	return s.imageStore.GetImageCount(s.imagesTitle)
+	return s.imageStore.GetImageCount(s.selectedCategoryId)
 }
-func (s *internalManager) getCurrentCategoryName() string {
-	return s.imagesTitle
+func (s *internalManager) getSelectedCategoryId() apitype.CategoryId {
+	return s.selectedCategoryId
 }
 func (s *internalManager) shouldSendSimilarImages() bool {
 	return s.shouldSendSimilar
@@ -350,7 +351,7 @@ func (s *internalManager) getImageListSize() int {
 }
 
 func (s *internalManager) getNextImages() ([]*apitype.ImageContainer, error) {
-	if images, err := s.imageStore.GetNextImagesInCategory(s.imageListSize, s.index, s.imagesTitle); err != nil {
+	if images, err := s.imageStore.GetNextImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyHandles, err
 	} else {
 		return s.toImageContainers(images)
@@ -358,7 +359,7 @@ func (s *internalManager) getNextImages() ([]*apitype.ImageContainer, error) {
 }
 
 func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
-	if slice, err := s.imageStore.GetPreviousImagesInCategory(s.imageListSize, s.index, s.imagesTitle); err != nil {
+	if slice, err := s.imageStore.GetPreviousImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyHandles, err
 	} else if images, err := s.toImageContainers(slice); err != nil {
 		return emptyHandles, err

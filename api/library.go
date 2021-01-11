@@ -23,7 +23,7 @@ type Library interface {
 	GetHandleById(handleId apitype.HandleId) *apitype.Handle
 
 	ShowAllImages()
-	ShowOnlyImages(string)
+	ShowOnlyImages(apitype.CategoryId)
 
 	SetImageListSize(imageListSize int)
 	SetSendSimilarImages(sendSimilarImages bool)

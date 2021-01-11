@@ -148,7 +148,7 @@ func (s *Manager) Close() {
 }
 
 func (s *Manager) ShowOnlyCategoryImages(cat *apitype.Category) {
-	s.sender.SendToTopicWithData(api.ImageShowOnly, cat.GetName())
+	s.sender.SendToTopicWithData(api.ImageShowOnly, cat.GetId())
 }
 
 func (s *Manager) getCategories(image *apitype.Handle) []*apitype.CategorizedImage {

@@ -29,8 +29,8 @@ func (s *Manager) GetHandles() []*apitype.Handle {
 	return s.manager.GetHandles()
 }
 
-func (s *Manager) ShowOnlyImages(title string) {
-	s.manager.ShowOnlyImages(title)
+func (s *Manager) ShowOnlyImages(categoryId apitype.CategoryId) {
+	s.manager.ShowOnlyImages(categoryId)
 	s.RequestImages()
 }
 
@@ -131,7 +131,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		if sendCurrentImage {
 			s.sender.SendToTopicWithData(api.ImageCurrentUpdated,
 				currentImage, currentIndex, totalImages,
-				s.manager.getCurrentCategoryName(),
+				s.manager.getSelectedCategoryId(),
 				s.manager.GetMetaData(currentImage.GetHandle()))
 		}
 

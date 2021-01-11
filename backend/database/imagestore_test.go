@@ -90,7 +90,7 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 		sut := initImageStoreTest()
 
 		t.Run("Query ", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(5, 0, "")
+			images, err := sut.GetNextImagesInCategory(5, 0, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
@@ -111,7 +111,7 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 		a.Nil(err)
 
 		t.Run("Query less than max images", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(5, 0, "")
+			images, err := sut.GetNextImagesInCategory(5, 0, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(5, len(images)) {
 				a.Equal("image1", images[0].GetFile())
@@ -123,7 +123,7 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query more than max images", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(10, 0, "")
+			images, err := sut.GetNextImagesInCategory(10, 0, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(6, len(images)) {
 				a.Equal("image1", images[0].GetFile())
@@ -136,7 +136,7 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query less than max images with offset", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(4, 2, "")
+			images, err := sut.GetNextImagesInCategory(4, 2, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(4, len(images)) {
 				a.Equal("image3", images[0].GetFile())
@@ -147,7 +147,7 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query more than max images with offset", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(10, 2, "")
+			images, err := sut.GetNextImagesInCategory(10, 2, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(4, len(images)) {
 				a.Equal("image3", images[0].GetFile())
@@ -158,13 +158,13 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query beyond images", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(100, 100, "")
+			images, err := sut.GetNextImagesInCategory(100, 100, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
 
 		t.Run("Query negative offset", func(t *testing.T) {
-			images, err := sut.GetNextImagesInCategory(2, -1, "")
+			images, err := sut.GetNextImagesInCategory(2, -1, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(2, len(images)) {
 				a.Equal("image0", images[0].GetFile())
@@ -203,7 +203,7 @@ func TestImageStore_GetNextImagesInCategory_CategorySet(t *testing.T) {
 		_ = isImageCategoryStore.CategorizeImage(image7.GetId(), category2.GetId(), apitype.MOVE)
 		_ = isImageCategoryStore.CategorizeImage(image8.GetId(), category2.GetId(), apitype.MOVE)
 
-		const category = "Cat 1"
+		category := category1.GetId()
 
 		t.Run("Query less than max images", func(t *testing.T) {
 			images, err := sut.GetNextImagesInCategory(5, 0, category)
@@ -276,7 +276,7 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 		sut := initImageStoreTest()
 
 		t.Run("Query ", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(5, 0, "")
+			images, err := sut.GetPreviousImagesInCategory(5, 0, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
@@ -297,7 +297,7 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 		a.Nil(err)
 
 		t.Run("Query less than max images", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(5, 6, "")
+			images, err := sut.GetPreviousImagesInCategory(5, 6, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(5, len(images)) {
 				a.Equal("image5", images[0].GetFile())
@@ -309,13 +309,13 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query at start", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(5, 0, "")
+			images, err := sut.GetPreviousImagesInCategory(5, 0, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
 
 		t.Run("Query more than max images", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(10, 6, "")
+			images, err := sut.GetPreviousImagesInCategory(10, 6, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(6, len(images)) {
 				a.Equal("image5", images[0].GetFile())
@@ -328,7 +328,7 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query less than max images with offset", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(4, 5, "")
+			images, err := sut.GetPreviousImagesInCategory(4, 5, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(4, len(images)) {
 				a.Equal("image4", images[0].GetFile())
@@ -339,7 +339,7 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query more than max images with offset", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(10, 5, "")
+			images, err := sut.GetPreviousImagesInCategory(10, 5, apitype.NoCategory)
 			a.Nil(err)
 			if a.Equal(5, len(images)) {
 				a.Equal("image4", images[0].GetFile())
@@ -351,19 +351,19 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 		})
 
 		t.Run("Query beyond images beyond offset", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(100, 0, "")
+			images, err := sut.GetPreviousImagesInCategory(100, 0, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
 
 		t.Run("Query beyond images at start", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(10, 100, "")
+			images, err := sut.GetPreviousImagesInCategory(10, 100, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
 
 		t.Run("Query negative offset", func(t *testing.T) {
-			images, err := sut.GetPreviousImagesInCategory(2, -1, "")
+			images, err := sut.GetPreviousImagesInCategory(2, -1, apitype.NoCategory)
 			a.Nil(err)
 			a.Equal(0, len(images))
 		})
@@ -399,7 +399,7 @@ func TestImageStore_GetPreviousImagesInCategory_CategorySet(t *testing.T) {
 		_ = isImageCategoryStore.CategorizeImage(image7.GetId(), category2.GetId(), apitype.MOVE)
 		_ = isImageCategoryStore.CategorizeImage(image8.GetId(), category2.GetId(), apitype.MOVE)
 
-		const category = "Cat 1"
+		category := category1.GetId()
 
 		t.Run("Query less than max images", func(t *testing.T) {
 			images, err := sut.GetPreviousImagesInCategory(5, 6, category)
@@ -486,7 +486,7 @@ func TestImageStore_GetImages_NoImages(t *testing.T) {
 		a.Equal(0, len(images))
 	})
 	t.Run("GetImages", func(t *testing.T) {
-		images, err := sut.GetImagesInCategory(10, 0, "")
+		images, err := sut.GetImagesInCategory(10, 0, apitype.NoCategory)
 		a.Nil(err)
 		a.Equal(0, len(images))
 	})
@@ -532,7 +532,7 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		})
 
 		t.Run("Get first 2 images", func(t *testing.T) {
-			images, err := sut.GetImagesInCategory(2, 0, "")
+			images, err := sut.GetImagesInCategory(2, 0, apitype.NoCategory)
 
 			a.Nil(err)
 
@@ -545,7 +545,7 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		})
 
 		t.Run("Get next 2 images", func(t *testing.T) {
-			images, err := sut.GetImagesInCategory(2, 2, "")
+			images, err := sut.GetImagesInCategory(2, 2, apitype.NoCategory)
 
 			a.Nil(err)
 
@@ -558,7 +558,7 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		})
 
 		t.Run("Get last 10 images offset 3", func(t *testing.T) {
-			images, err := sut.GetImagesInCategory(100, 3, "")
+			images, err := sut.GetImagesInCategory(100, 3, apitype.NoCategory)
 
 			a.Nil(err)
 
@@ -573,7 +573,7 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		})
 
 		t.Run("Get first 10 images", func(t *testing.T) {
-			images, err := sut.GetImagesInCategory(100, 0, "")
+			images, err := sut.GetImagesInCategory(100, 0, apitype.NoCategory)
 
 			a.Nil(err)
 
@@ -619,7 +619,7 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		_ = isImageCategoryStore.CategorizeImage(image7.GetId(), category2.GetId(), apitype.MOVE)
 		_ = isImageCategoryStore.CategorizeImage(image8.GetId(), category2.GetId(), apitype.MOVE)
 
-		const category = "Cat 1"
+		category := category1.GetId()
 
 		t.Run("Get all images", func(t *testing.T) {
 			images, err := sut.GetAllImages()

@@ -191,7 +191,7 @@ func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, c
 	}
 }
 
-func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
+func (s *TopActionView) SetCurrentStatus(index int, total int, categoryId apitype.CategoryId) {
 	progressText := ""
 	if total == 0 {
 		progressText = "No images"
@@ -199,10 +199,12 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, title string) {
 		progressText = fmt.Sprintf("%d/%d", index+1, total)
 	}
 
-	if title != "" {
-		s.currentImagesStatusLabel.SetText(fmt.Sprintf("%s pictures (%s)", title, progressText))
-	} else {
+	if categoryId == apitype.NoCategory {
 		s.currentImagesStatusLabel.SetText(fmt.Sprintf("All pictures (%s)", progressText))
+	} else if c, ok := s.categoryButtons[categoryId]; ok {
+		s.currentImagesStatusLabel.SetText(fmt.Sprintf("%s pictures (%s)", c.entry.GetName(), progressText))
+	} else {
+		s.currentImagesStatusLabel.SetText("Unkown category")
 	}
 }
 

@@ -113,16 +113,16 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 	}
 }
 
-func (s *ImageStore) GetImageCount(categoryName string) int {
+func (s *ImageStore) GetImageCount(categoryId apitype.CategoryId) int {
 	res := s.getCollection().Session().SQL().
 		Select(db.Raw("count(1) AS c")).
 		From("image")
 
-	if categoryName != "" {
+	if categoryId != apitype.NoCategory {
 		res = res.
 			Join("image_category").On("image_category.image_id = image.id").
 			Join("category").On("image_category.category_id = category.id").
-			Where("category.name", categoryName)
+			Where("category.id", categoryId)
 	}
 
 	var counter Count
@@ -134,15 +134,15 @@ func (s *ImageStore) GetImageCount(categoryName string) int {
 }
 
 func (s *ImageStore) GetAllImages() ([]*apitype.Handle, error) {
-	return s.GetImagesInCategory(-1, 0, "")
+	return s.GetImagesInCategory(-1, 0, apitype.NoCategory)
 }
 
-func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, category string) ([]*apitype.Handle, error) {
+func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.Handle, error) {
 	startIndex := currentIndex + 1
-	return s.GetImagesInCategory(number, startIndex, category)
+	return s.GetImagesInCategory(number, startIndex, categoryId)
 }
 
-func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, category string) ([]*apitype.Handle, error) {
+func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.Handle, error) {
 	prevIndex := currentIndex - number
 	if prevIndex < 0 {
 		prevIndex = 0
@@ -151,7 +151,7 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 
 	if size < 0 {
 		return []*apitype.Handle{}, nil
-	} else if images, err := s.GetImagesInCategory(size, prevIndex, category); err != nil {
+	} else if images, err := s.GetImagesInCategory(size, prevIndex, categoryId); err != nil {
 		return nil, err
 	} else {
 		util.Reverse(images)
@@ -159,7 +159,7 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 	}
 }
 
-func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName string) ([]*apitype.Handle, error) {
+func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.Handle, error) {
 	if number == 0 {
 		return make([]*apitype.Handle, 0), nil
 	}
@@ -169,11 +169,11 @@ func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName st
 		Select("image.*").
 		From("image")
 
-	if categoryName != "" {
+	if categoryId != apitype.NoCategory {
 		res = res.
 			Join("image_category").On("image_category.image_id = image.id").
 			Join("category").On("image_category.category_id = category.id").
-			Where("category.name", categoryName)
+			Where("category.id", categoryId)
 	}
 	if number >= 0 {
 		res = res.Limit(number).

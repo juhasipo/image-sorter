@@ -9,6 +9,8 @@ import (
 
 type CategoryId int64
 
+const NoCategory = CategoryId(-1)
+
 type Category struct {
 	id       CategoryId
 	name     string
@@ -35,7 +37,7 @@ func NewCategoryWithId(id CategoryId, name string, subPath string, shortcut stri
 }
 
 func NewCategory(name string, subPath string, shortcut string) *Category {
-	return NewCategoryWithId(-1, name, subPath, shortcut)
+	return NewCategoryWithId(NoCategory, name, subPath, shortcut)
 }
 
 func (s *Category) GetId() CategoryId {

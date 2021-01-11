@@ -571,10 +571,10 @@ func TestShowOnlyImages(t *testing.T) {
 	_ = imageCategoryStore.CategorizeImage(handles[3].GetId(), category2.GetId(), apitype.MOVE)
 	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category2.GetId(), apitype.MOVE)
 
-	sut.ShowOnlyImages(category1.GetName())
+	sut.ShowOnlyImages(category1.GetId())
 
 	a.Equal(5, sut.getTotalImages())
-	a.Equal("category1", sut.getCurrentCategoryName())
+	a.Equal(category1.GetId(), sut.getSelectedCategoryId())
 
 	t.Run("Next and prev images", func(t *testing.T) {
 		nextImages, _ := sut.getNextImages()
@@ -645,14 +645,14 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	_ = imageCategoryStore.CategorizeImage(handles[7].GetId(), category1.GetId(), apitype.MOVE)
 	_ = imageCategoryStore.CategorizeImage(handles[9].GetId(), category1.GetId(), apitype.MOVE)
 
-	sut.ShowOnlyImages("category1")
+	sut.ShowOnlyImages(category1.GetId())
 
 	a.Equal(5, sut.getTotalImages())
-	a.Equal("category1", sut.getCurrentCategoryName())
+	a.Equal(category1.GetId(), sut.getSelectedCategoryId())
 
 	sut.ShowAllImages()
 	a.Equal(10, sut.getTotalImages())
-	a.Equal("", sut.getCurrentCategoryName())
+	a.Equal(apitype.NoCategory, sut.getSelectedCategoryId())
 
 	t.Run("Next and prev images", func(t *testing.T) {
 		nextImages, _ := sut.getNextImages()
