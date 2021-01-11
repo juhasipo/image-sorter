@@ -9,6 +9,8 @@ import (
 
 type HandleId int64
 
+const NoHandle = HandleId(-1)
+
 type Handle struct {
 	id        HandleId
 	directory string
@@ -22,7 +24,7 @@ func (s *Handle) IsValid() bool {
 }
 
 var (
-	EmptyHandle          = Handle{id: -1, path: ""}
+	EmptyHandle          = Handle{id: NoHandle, path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
@@ -46,7 +48,7 @@ func NewHandleWithId(id HandleId, fileDir string, fileName string) *Handle {
 }
 
 func NewHandle(fileDir string, fileName string) *Handle {
-	return NewHandleWithId(-1, fileDir, fileName)
+	return NewHandleWithId(NoHandle, fileDir, fileName)
 }
 
 func GetEmptyHandle() *Handle {
@@ -57,7 +59,7 @@ func (s *Handle) GetId() HandleId {
 	if s != nil {
 		return s.id
 	} else {
-		return -1
+		return NoHandle
 	}
 }
 

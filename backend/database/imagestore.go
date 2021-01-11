@@ -273,7 +273,7 @@ func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, e
 func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.HandleId, error) {
 	stat, err := s.imageHandleConverter.GetHandleFileStats(handle)
 	if err != nil {
-		return -1, err
+		return apitype.NoHandle, err
 	}
 
 	var images []Image
@@ -285,13 +285,13 @@ func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Ha
 		}).All(&images)
 
 	if err != nil {
-		return apitype.HandleId(-1), err
+		return apitype.NoHandle, err
 	}
 
 	if len(images) > 0 {
 		return images[0].Id, nil
 	} else {
-		return apitype.HandleId(-1), nil
+		return apitype.NoHandle, nil
 	}
 }
 

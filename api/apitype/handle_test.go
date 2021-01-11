@@ -45,13 +45,13 @@ func TestValidHandle(t *testing.T) {
 func TestInvalidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(-1, "", "")
+	handle := NewHandleWithId(NoHandle, "", "")
 
 	t.Run("Validity", func(t *testing.T) {
 		a.False(handle.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(HandleId(-1), handle.GetId())
+		a.Equal(NoHandle, handle.GetId())
 		a.Equal("", handle.GetFile())
 		a.Equal("", handle.GetDir())
 		a.Equal("", handle.GetPath())
@@ -69,7 +69,7 @@ func TestNilHandle(t *testing.T) {
 		a.False(handle.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(HandleId(-1), handle.GetId())
+		a.Equal(NoHandle, handle.GetId())
 		a.Equal("", handle.GetFile())
 		a.Equal("", handle.GetDir())
 		a.Equal("", handle.GetPath())
