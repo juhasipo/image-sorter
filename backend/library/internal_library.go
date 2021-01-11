@@ -10,7 +10,6 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/common/util"
 	"vincit.fi/image-sorter/duplo"
 )
 
@@ -83,7 +82,7 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	s.shouldSendSimilar = true
 	if s.shouldGenerateSimilarHashed {
 		startTime := time.Now()
-		images, _ := s.imageStore.GetImages(-1, 0)
+		images, _ := s.imageStore.GetAllImages()
 		hashExpected := len(images)
 		logger.Info.Printf("Generate hashes for %d images...", hashExpected)
 		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, hashExpected)
@@ -351,40 +350,26 @@ func (s *internalManager) getImageListSize() int {
 }
 
 func (s *internalManager) getNextImages() ([]*apitype.ImageContainer, error) {
-	imageCount := s.imageStore.GetImageCount(s.imagesTitle)
-	startIndex := s.index + 1
-	endIndex := startIndex + s.imageListSize
-	if endIndex > imageCount {
-		endIndex = imageCount
+	if images, err := s.imageStore.GetNextImagesInCategory(s.imageListSize, s.index, s.imagesTitle); err != nil {
+		return emptyHandles, err
+	} else {
+		return s.toImageContainers(images)
 	}
-
-	if startIndex >= imageCount {
-		return emptyHandles, nil
-	}
-
-	slice, _ := s.imageStore.GetImagesInCategory(s.imageListSize, startIndex, s.imagesTitle)
-	images := make([]*apitype.ImageContainer, len(slice))
-	for i, handle := range slice {
-		if thumbnail, err := s.imageCache.GetThumbnail(handle); err != nil {
-			logger.Error.Print("Error while loading thumbnail", err)
-			return emptyHandles, err
-		} else {
-			images[i] = apitype.NewImageContainer(handle, thumbnail)
-		}
-	}
-
-	return images, nil
 }
 
 func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
-	prevIndex := s.index - s.imageListSize
-	if prevIndex < 0 {
-		prevIndex = 0
+	if slice, err := s.imageStore.GetPreviousImagesInCategory(s.imageListSize, s.index, s.imagesTitle); err != nil {
+		return emptyHandles, err
+	} else if images, err := s.toImageContainers(slice); err != nil {
+		return emptyHandles, err
+	} else {
+		return images, nil
 	}
-	size := s.index - prevIndex
-	slice, _ := s.imageStore.GetImagesInCategory(size, prevIndex, s.imagesTitle)
-	images := make([]*apitype.ImageContainer, len(slice))
-	for i, handle := range slice {
+}
+
+func (s *internalManager) toImageContainers(nextImageHandles []*apitype.Handle) ([]*apitype.ImageContainer, error) {
+	images := make([]*apitype.ImageContainer, len(nextImageHandles))
+	for i, handle := range nextImageHandles {
 		if thumbnail, err := s.imageCache.GetThumbnail(handle); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 			return emptyHandles, err
@@ -392,14 +377,19 @@ func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
 			images[i] = apitype.NewImageContainer(handle, thumbnail)
 		}
 	}
-	util.Reverse(images)
+
 	return images, nil
 }
 
-func (s *internalManager) updateImages() {
+func (s *internalManager) updateImages() error {
 	handles := apitype.LoadImageHandles(s.rootDir)
-	s.AddHandles(handles)
-	s.removeMissingImages(handles)
+	if err := s.AddHandles(handles); err != nil {
+		return err
+	} else if err := s.removeMissingImages(handles); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 func (s *internalManager) getTreadCount() int {

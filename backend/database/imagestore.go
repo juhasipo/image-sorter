@@ -1,10 +1,12 @@
 package database
 
 import (
+	"fmt"
 	"github.com/upper/db/v4"
 	"time"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 )
 
 type ImageStore struct {
@@ -15,7 +17,7 @@ type ImageStore struct {
 
 func NewImageStore(store *Store, imageHandleConverter ImageHandleConverter) *ImageStore {
 	return &ImageStore{
-		store: store,
+		store:                store,
 		imageHandleConverter: imageHandleConverter,
 	}
 }
@@ -135,8 +137,26 @@ func (s *ImageStore) GetAllImages() ([]*apitype.Handle, error) {
 	return s.GetImagesInCategory(-1, 0, "")
 }
 
-func (s *ImageStore) GetImages(number int, offset int) ([]*apitype.Handle, error) {
-	return s.GetImagesInCategory(number, offset, "")
+func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, category string) ([]*apitype.Handle, error) {
+	startIndex := currentIndex + 1
+	return s.GetImagesInCategory(number, startIndex, category)
+}
+
+func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, category string) ([]*apitype.Handle, error) {
+	prevIndex := currentIndex - number
+	if prevIndex < 0 {
+		prevIndex = 0
+	}
+	size := currentIndex - prevIndex
+
+	if size < 0 {
+		return []*apitype.Handle{}, nil
+	} else if images, err := s.GetImagesInCategory(size, prevIndex, category); err != nil {
+		return nil, err
+	} else {
+		util.Reverse(images)
+		return images, nil
+	}
 }
 
 func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName string) ([]*apitype.Handle, error) {
@@ -161,6 +181,44 @@ func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryName st
 	}
 
 	res = res.OrderBy("image.name")
+
+	if err := res.All(&images); err != nil {
+		return nil, err
+	} else {
+		handles := toApiHandles(images)
+		return handles, nil
+	}
+}
+
+type sortDir string
+
+const (
+	asc  sortDir = "ASC"
+	desc sortDir = "DESC"
+)
+
+func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName string, sort sortDir) ([]*apitype.Handle, error) {
+	if number == 0 {
+		return make([]*apitype.Handle, 0), nil
+	}
+
+	var images []Image
+	res := s.getCollection().Session().SQL().
+		Select("image.*").
+		From("image")
+
+	if categoryName != "" {
+		res = res.
+			Join("image_category").On("image_category.image_id = image.id").
+			Join("category").On("image_category.category_id = category.id").
+			Where("category.name", categoryName)
+	}
+	if number >= 0 {
+		res = res.Limit(number).
+			Offset(offset)
+	}
+
+	res = res.OrderBy(fmt.Sprintf("image.name %s", sort))
 
 	if err := res.All(&images); err != nil {
 		return nil, err
