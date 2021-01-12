@@ -10,15 +10,15 @@ import (
 )
 
 type HashResult struct {
-	handle      *apitype.Handle
+	handleId    apitype.HandleId
 	hash        *duplo.Hash
 	imageLoader api.ImageLoader
 }
 
-func ReturnResult(channel chan *HashResult, handle *apitype.Handle, hash *duplo.Hash) {
+func ReturnResult(channel chan *HashResult, handleId apitype.HandleId, hash *duplo.Hash) {
 	channel <- &HashResult{
-		handle: handle,
-		hash:   hash,
+		handleId: handleId,
+		hash:     hash,
 	}
 }
 
@@ -33,10 +33,10 @@ func hashImage(input chan *apitype.Handle, output chan *HashResult, quitChannel 
 		case handle := <-input:
 			{
 				if decodedImage, err := openImageForHashing(imageLoader, handle); err != nil {
-					ReturnResult(output, handle, nil)
+					ReturnResult(output, handle.GetId(), nil)
 				} else {
 					hash := generateHash(decodedImage, handle)
-					ReturnResult(output, handle, &hash)
+					ReturnResult(output, handle.GetId(), &hash)
 				}
 			}
 		}

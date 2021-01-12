@@ -1,16 +1,12 @@
 package library
 
 import (
-	"github.com/upper/db/v4"
 	"runtime"
-	"sort"
-	"sync"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/duplo"
 )
 
 var (
@@ -25,7 +21,6 @@ type internalManager struct {
 	rootDir                     string
 	selectedCategoryId          apitype.CategoryId
 	index                       int
-	imageHash                   *duplo.Store
 	shouldSendSimilar           bool
 	shouldGenerateSimilarHashed bool
 	categoryManager             api.CategoryManager
@@ -34,16 +29,13 @@ type internalManager struct {
 	imageLoader                 api.ImageLoader
 	similarityIndex             *database.SimilarityIndex
 	imageStore                  *database.ImageStore
-
-	stopChannel   chan bool
-	outputChannel chan *HashResult
+	hashCalculator              *HashCalculator
 }
 
 func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) *internalManager {
 	var manager = internalManager{
 		index:                       0,
-		imageHash:                   duplo.New(),
 		shouldGenerateSimilarHashed: true,
 		shouldSendSimilar:           true,
 		imageListSize:               0,
@@ -59,7 +51,6 @@ func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 func (s *internalManager) InitializeFromDirectory(directory string) {
 	s.rootDir = directory
 	s.index = 0
-	s.imageHash = duplo.New()
 	s.shouldGenerateSimilarHashed = true
 	s.updateImages()
 }
@@ -79,130 +70,31 @@ func (s *internalManager) ShowAllImages() {
 }
 
 func (s *internalManager) GenerateHashes(sender api.Sender) bool {
+	s.hashCalculator = NewHashCalculator(s.similarityIndex, s.imageLoader, s.getThreadCount())
+
 	shouldSendSimilarImages := false
 	s.shouldSendSimilar = true
 	if s.shouldGenerateSimilarHashed {
-		startTime := time.Now()
 		images, _ := s.imageStore.GetAllImages()
-		hashExpected := len(images)
-		logger.Info.Printf("Generate hashes for %d images...", hashExpected)
-		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, hashExpected)
-
-		// Just to make things consistent in case Go decides to change the default
-		cpuCores := s.getTreadCount()
-		logger.Info.Printf(" * Using %d threads", cpuCores)
-		runtime.GOMAXPROCS(cpuCores)
-
-		s.stopChannel = make(chan bool)
-		inputChannel := make(chan *apitype.Handle, hashExpected)
-		s.outputChannel = make(chan *HashResult)
-
-		hashes := map[apitype.HandleId]*duplo.Hash{}
-
-		// Add images to input queue for goroutines
-		for _, handle := range images {
-			inputChannel <- handle
-		}
-
-		// Spin up goroutines which will process the data
-		// only same number as CPU cores so that we will only max X hashes are
-		// processed at once. Otherwise the goroutines might start processing
-		// all images at once which would use all available RAM
-		for i := 0; i < cpuCores; i++ {
-			go hashImage(inputChannel, s.outputChannel, s.stopChannel, s.imageLoader)
-		}
-
-		var mux sync.Mutex
-
-		var i = 0
-		for result := range s.outputChannel {
-			i++
-			s.addHashToMap(result, hashes, &mux)
-
-			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", i, hashExpected)
-			s.imageHash.Add(result.handle, *result.hash)
-
-			if i == hashExpected {
-				s.StopHashes()
-			}
-		}
-		close(inputChannel)
-
-		endTime := time.Now()
-		d := endTime.Sub(startTime)
-		logger.Info.Printf("%d hashes created in %s", hashExpected, d.String())
-
-		avg := d.Milliseconds() / int64(hashExpected)
-		// Remember to take thread count otherwise the avg time is too small
-		f := time.Millisecond * time.Duration(avg) * time.Duration(cpuCores)
-		logger.Info.Printf("  On average: %s/image", f.String())
-
-		logger.Info.Printf("Building similarity index for %d most similar images for each image", maxSimilarImages)
-
-		startTime = time.Now()
-
-		err := s.similarityIndex.DoInTransaction(func(session db.Session) error {
-			if err := s.similarityIndex.StartRecreateSimilarImageIndex(session); err != nil {
-				logger.Error.Print("Error while clearing similar images", err)
-				return err
-			}
-			sender.SendToTopicWithData(api.ProcessStatusUpdated, "similarity-index", 0, len(images))
-			for imageIndex, handle := range images {
-				hash := hashes[handle.GetId()]
-				searchStart := time.Now()
-				matches := s.imageHash.Query(*hash)
-				searchEnd := time.Now()
-
-				sortStart := time.Now()
-				sort.Sort(matches)
-				sortEnd := time.Now()
-
-				addStart := time.Now()
-				i := 0
-				for _, match := range matches {
-					similar := match.ID.(*apitype.Handle)
-					if handle.GetId() != similar.GetId() {
-						if err := s.similarityIndex.
-							AddSimilarImage(handle.GetId(), similar.GetId(), i, match.Score); err != nil {
-							logger.Error.Print("Error while storing similar images", err)
-							return err
-						}
-						i++
-					}
-					if i == maxSimilarImages {
-						break
-					}
-				}
-				addEnd := time.Now()
-
-				sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", imageIndex, len(images))
-
-				logger.Trace.Printf("Print added matches for image: %s", handle.String())
-				logger.Trace.Printf(" -    Search: %s", searchEnd.Sub(searchStart))
-				logger.Trace.Printf(" -      Sort: %s", sortEnd.Sub(sortStart))
-				logger.Trace.Printf(" -       Add: %s", addEnd.Sub(addStart))
-				logger.Trace.Printf(" - Add/image: %s", addEnd.Sub(addStart)/maxSimilarImages)
-			}
-			if err := s.similarityIndex.EndRecreateSimilarImageIndex(); err != nil {
-				logger.Error.Print("Error while finishing similar images index", err)
-				return err
-			}
-
-			return nil
+		hashes, err := s.hashCalculator.GenerateHashes(images, func(current int, total int) {
+			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", current, total)
 		})
+
+		if err == nil {
+			err = s.hashCalculator.BuildSimilarityIndex(hashes, func(current int, total int) {
+				sender.SendToTopicWithData(api.ProcessStatusUpdated, "similarity-index", current, total)
+			})
+		}
 
 		if err != nil {
 			sender.SendError("Error while saving hashes", err)
 		}
 
-		endTime = time.Now()
-		d = endTime.Sub(startTime)
-		logger.Info.Printf("Similarity index has been built in %s", d.String())
-
 		// Always send 100% status even if cancelled so that the progress bar is hidden
-		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", hashExpected, hashExpected)
-		// Only send if not cancelled
-		if i == hashExpected {
+		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, 0)
+
+		// Only send if not cancelled or no error
+		if err == nil {
 			shouldSendSimilarImages = true
 		}
 		s.shouldGenerateSimilarHashed = false
@@ -210,13 +102,8 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		shouldSendSimilarImages = true
 	}
 
+	s.hashCalculator = nil
 	return shouldSendSimilarImages
-}
-
-func (s *internalManager) addHashToMap(result *HashResult, hashes map[apitype.HandleId]*duplo.Hash, mux *sync.Mutex) {
-	mux.Lock()
-	defer mux.Unlock()
-	hashes[result.handle.GetId()] = result.hash
 }
 
 func (s *internalManager) SetSimilarStatus(sendSimilarImages bool) {
@@ -224,13 +111,8 @@ func (s *internalManager) SetSimilarStatus(sendSimilarImages bool) {
 }
 
 func (s *internalManager) StopHashes() {
-	if s.stopChannel != nil {
-		for i := 0; i < s.getTreadCount(); i++ {
-			s.stopChannel <- true
-		}
-		close(s.outputChannel)
-		close(s.stopChannel)
-		s.stopChannel = nil
+	if s.hashCalculator != nil {
+		s.hashCalculator.StopHashes()
 	}
 }
 
@@ -393,7 +275,7 @@ func (s *internalManager) updateImages() error {
 	}
 }
 
-func (s *internalManager) getTreadCount() int {
+func (s *internalManager) getThreadCount() int {
 	cpuCores := runtime.NumCPU()
 	return cpuCores
 }

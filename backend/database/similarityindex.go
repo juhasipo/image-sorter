@@ -91,3 +91,7 @@ func (s *SimilarityIndex) GetSimilarImages(imageId apitype.HandleId) []*apitype.
 
 	return toApiHandles(images)
 }
+
+func (s *SimilarityIndex) GetIndexSize() (uint64, error) {
+	return s.getCollection().Count()
+}
