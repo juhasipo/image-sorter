@@ -19,7 +19,7 @@ func (s *ImageList) addImagesToStore(images []*apitype.ImageContainer) {
 		if img != nil {
 			thumbnail := img.GetImage()
 			s.model.SetValue(iter, 0, asPixbuf(thumbnail))
-			s.model.SetValue(iter, 1, img.GetHandle().GetId())
+			s.model.SetValue(iter, 1, img.GetHandle().GetFile())
 		} else {
 			s.model.SetValue(iter, 0, nil)
 			s.model.SetValue(iter, 1, "")
