@@ -156,6 +156,8 @@ func (s *Database) migrate() error {
 				height INT,
 				created_timestamp DATETIME,
 				modified_timestamp DATETIME,
+
+				exif_data BLOB,
 				
 				UNIQUE (directory, file_name),
 				UNIQUE (name)

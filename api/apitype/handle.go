@@ -17,6 +17,7 @@ type Handle struct {
 	filename  string
 	path      string
 	byteSize  int64
+	metaData  map[string]string
 }
 
 func (s *Handle) IsValid() bool {
@@ -28,27 +29,33 @@ var (
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewPersistedHandle(id HandleId, handle *Handle) *Handle {
+func NewPersistedHandle(id HandleId, handle *Handle, metaData map[string]string) *Handle {
 	return &Handle{
 		id:        id,
 		directory: handle.directory,
 		filename:  handle.filename,
 		path:      handle.path,
 		byteSize:  handle.byteSize,
+		metaData:  metaData,
 	}
 }
 
-func NewHandleWithId(id HandleId, fileDir string, fileName string) *Handle {
+func NewHandleWithId(id HandleId, fileDir string, fileName string, metaData map[string]string) *Handle {
 	return &Handle{
 		id:        id,
 		directory: fileDir,
 		filename:  fileName,
 		path:      filepath.Join(fileDir, fileName),
+		metaData:  metaData,
 	}
 }
 
 func NewHandle(fileDir string, fileName string) *Handle {
-	return NewHandleWithId(NoHandle, fileDir, fileName)
+	return NewHandleWithId(NoHandle, fileDir, fileName, map[string]string{})
+}
+
+func NewHandleWithMetaData(fileDir string, fileName string, metaData map[string]string) *Handle {
+	return NewHandleWithId(NoHandle, fileDir, fileName, metaData)
 }
 
 func GetEmptyHandle() *Handle {
@@ -104,6 +111,14 @@ func (s *Handle) GetFile() string {
 		return s.filename
 	} else {
 		return ""
+	}
+}
+
+func (s *Handle) GetMetaData() map[string]string {
+	if s != nil {
+		return s.metaData
+	} else {
+		return map[string]string{}
 	}
 }
 

@@ -113,10 +113,6 @@ func (s *Manager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
 	return s.manager.GetHandleById(handleId)
 }
 
-func (s *Manager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
-	return s.manager.GetMetaData(handle)
-}
-
 // Private API
 
 func (s *Manager) sendImages(sendCurrentImage bool) {
@@ -131,8 +127,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		if sendCurrentImage {
 			s.sender.SendToTopicWithData(api.ImageCurrentUpdated,
 				currentImage, currentIndex, totalImages,
-				s.manager.getSelectedCategoryId(),
-				s.manager.GetMetaData(currentImage.GetHandle()))
+				s.manager.getSelectedCategoryId())
 		}
 
 		if nextImages, err := s.manager.getNextImages(); err != nil {

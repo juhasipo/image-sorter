@@ -5,8 +5,7 @@ import (
 )
 
 type Gui interface {
-	SetCurrentImage(*
-	apitype.ImageContainer, int, int, apitype.CategoryId, *apitype.ExifData)
+	SetCurrentImage(*apitype.ImageContainer, int, int, apitype.CategoryId)
 	SetImages(Topic, []*apitype.ImageContainer)
 	UpdateCategories(categories *apitype.CategoriesCommand)
 	SetImageCategory(command []*apitype.CategorizeCommand)

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/json"
 	"os"
 	"time"
 	"vincit.fi/image-sorter/api/apitype"
@@ -13,22 +14,28 @@ type StubImageHandleConverter struct {
 	currentTime             time.Time
 }
 
-func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image, error) {
+func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image, map[string]string, error) {
 	fileStat, _ := s.GetHandleFileStats(handle)
-	return &Image{
-		Id:              0,
-		Name:            handle.GetFile(),
-		FileName:        handle.GetFile(),
-		Directory:       handle.GetDir(),
-		ByteSize:        1234,
-		ExifOrientation: 1,
-		ImageAngle:      90,
-		ImageFlip:       true,
-		CreatedTime:     fileStat.ModTime(),
-		Width:           1024,
-		Height:          2048,
-		ModifiedTime:    fileStat.ModTime(),
-	}, nil
+	if jsonData, err := json.Marshal(handle.GetMetaData()); err != nil {
+		return nil, nil, err
+	} else {
+		return &Image{
+			Id:              0,
+			Name:            handle.GetFile(),
+			FileName:        handle.GetFile(),
+			Directory:       handle.GetDir(),
+			ByteSize:        1234,
+			ExifOrientation: 1,
+			ImageAngle:      90,
+			ImageFlip:       true,
+			CreatedTime:     fileStat.ModTime(),
+			Width:           1024,
+			Height:          2048,
+			ModifiedTime:    fileStat.ModTime(),
+
+			ExifData: jsonData,
+		}, map[string]string{}, nil
+	}
 }
 
 func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {

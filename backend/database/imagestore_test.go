@@ -27,8 +27,8 @@ func TestImageStore_AddImage_GetImageById(t *testing.T) {
 	t.Run("Add image and get it by ID", func(t *testing.T) {
 		sut := initImageStoreTest()
 
-		image1, err := sut.AddImage(apitype.NewHandle("images", "image1"))
-		_, err = sut.AddImage(apitype.NewHandle("images", "image2"))
+		image1, err := sut.AddImage(apitype.NewHandleWithMetaData("images", "image1", map[string]string{"foo": "bar1"}))
+		_, err = sut.AddImage(apitype.NewHandleWithMetaData("images", "image2", map[string]string{"foo": "bar2"}))
 
 		a.Nil(err)
 
@@ -39,6 +39,8 @@ func TestImageStore_AddImage_GetImageById(t *testing.T) {
 		a.Equal(image1.GetDir(), image.GetDir())
 		a.Equal(image1.GetByteSize(), image.GetByteSize())
 		a.Equal(image1.GetPath(), image.GetPath())
+		a.Equal(1, len(image.GetMetaData()))
+		a.Equal("bar1", image.GetMetaData()["foo"])
 	})
 
 	t.Run("Re-add same image not modified", func(t *testing.T) {

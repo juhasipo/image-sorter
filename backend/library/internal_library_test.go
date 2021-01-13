@@ -1,6 +1,7 @@
 package library
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"image"
@@ -44,21 +45,26 @@ type StubImageHandleConverter struct {
 	database.ImageHandleConverter
 }
 
-func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*database.Image, error) {
-	return &database.Image{
-		Id:              0,
-		Name:            handle.GetFile(),
-		FileName:        handle.GetFile(),
-		Directory:       handle.GetDir(),
-		ByteSize:        1234,
-		ExifOrientation: 1,
-		ImageAngle:      90,
-		ImageFlip:       true,
-		CreatedTime:     time.Now(),
-		Width:           1024,
-		Height:          2048,
-		ModifiedTime:    time.Now(),
-	}, nil
+func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*database.Image, map[string]string, error) {
+	if jsonData, err := json.Marshal(handle.GetMetaData()); err != nil {
+		return nil, nil, err
+	} else {
+		return &database.Image{
+			Id:              0,
+			Name:            handle.GetFile(),
+			FileName:        handle.GetFile(),
+			Directory:       handle.GetDir(),
+			ByteSize:        1234,
+			ExifOrientation: 1,
+			ImageAngle:      90,
+			ImageFlip:       true,
+			CreatedTime:     time.Now(),
+			Width:           1024,
+			Height:          2048,
+			ModifiedTime:    time.Now(),
+			ExifData:        jsonData,
+		}, handle.GetMetaData(), nil
+	}
 }
 
 func TestMain(m *testing.M) {

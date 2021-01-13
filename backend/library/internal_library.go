@@ -198,10 +198,6 @@ func (s *internalManager) GetHandleById(handleId apitype.HandleId) *apitype.Hand
 	return s.imageStore.GetImageById(handleId)
 }
 
-func (s *internalManager) GetMetaData(handle *apitype.Handle) *apitype.ExifData {
-	return s.imageCache.GetExifData(handle)
-}
-
 // Private API
 
 func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error) {

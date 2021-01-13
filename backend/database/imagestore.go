@@ -64,7 +64,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 
 	if !exists {
 		handleToImageStart := time.Now()
-		image, err := s.imageHandleConverter.HandleToImage(handle)
+		image, _, err := s.imageHandleConverter.HandleToImage(handle)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 		logger.Trace.Printf(" - Image exists with ID %d but is modified", modifiedId)
 
 		handleToImageStart := time.Now()
-		image, err := s.imageHandleConverter.HandleToImage(handle)
+		image, metaData, err := s.imageHandleConverter.HandleToImage(handle)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 		updateEnd := time.Now()
 		logger.Trace.Printf(" - Image meta data updated %s", updateEnd.Sub(updateStart))
 
-		return apitype.NewPersistedHandle(modifiedId, handle), nil
+		return apitype.NewPersistedHandle(modifiedId, handle, metaData), nil
 	} else {
 		return s.findByDirAndFile(collection, handle)
 	}
@@ -243,7 +243,7 @@ func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.
 	if err != nil {
 		return nil, err
 	} else if len(handles) == 1 {
-		return toApiHandle(&handles[0]), nil
+		return toApiHandle(&handles[0])
 	} else {
 		return nil, nil
 	}
@@ -307,7 +307,12 @@ func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
 		logger.Error.Print("Could not find image ", err)
 	}
 
-	return toApiHandle(&image)
+	handle, err := toApiHandle(&image)
+	if err != nil {
+		logger.Error.Print("Could not find image ", err)
+	}
+
+	return handle
 
 }
 

@@ -76,8 +76,8 @@ func (s *ImageView) UpdateCurrentImage() {
 	s.currentImage.UpdateCurrentImage()
 }
 
-func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageContainer, exifData *apitype.ExifData) {
-	s.currentImage.SetCurrentImage(imageContainer, exifData)
+func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageContainer) {
+	s.currentImage.SetCurrentImage(imageContainer)
 }
 
 func (s *ImageView) AddImagesToNextStore(images []*apitype.ImageContainer) {

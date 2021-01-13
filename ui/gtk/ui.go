@@ -203,10 +203,10 @@ func (s *Ui) SetImages(imageTarget api.Topic, handles []*apitype.ImageContainer)
 	}
 }
 
-func (s *Ui) SetCurrentImage(image *apitype.ImageContainer, index int, total int, categoryId apitype.CategoryId, exifData *apitype.ExifData) {
+func (s *Ui) SetCurrentImage(image *apitype.ImageContainer, index int, total int, categoryId apitype.CategoryId) {
 	s.topActionView.SetCurrentStatus(index, total, categoryId)
 	s.bottomActionView.SetShowOnlyCategory(categoryId != -1)
-	s.imageView.SetCurrentImage(image, exifData)
+	s.imageView.SetCurrentImage(image)
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
 
