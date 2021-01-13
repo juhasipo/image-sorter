@@ -13,9 +13,9 @@ var (
 )
 
 func initSimilarityIndexTest() {
-	store := NewInMemoryStore()
-	sut = NewSimilarityIndex(store)
-	imageStore = NewImageStore(store, &StubImageHandleConverter{})
+	database := NewInMemoryDatabase()
+	sut = NewSimilarityIndex(database)
+	imageStore = NewImageStore(database, &StubImageHandleConverter{})
 }
 
 func TestSimilarityIndex_AddAndGetSimilarImages(t *testing.T) {

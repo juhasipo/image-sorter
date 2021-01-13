@@ -93,10 +93,10 @@ func setup() {
 }
 
 func initializeSut() *internalManager {
-	dbStore := database.NewInMemoryStore()
-	imageStore = database.NewImageStore(dbStore, &StubImageHandleConverter{})
-	categoryStore = database.NewCategoryStore(dbStore)
-	imageCategoryStore = database.NewImageCategoryStore(dbStore)
+	memoryDatabase := database.NewInMemoryDatabase()
+	imageStore = database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
+	categoryStore = database.NewCategoryStore(memoryDatabase)
+	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
 
 	return newLibrary(store, loader, nil, imageStore)
 }

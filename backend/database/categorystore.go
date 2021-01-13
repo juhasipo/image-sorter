@@ -7,19 +7,19 @@ import (
 )
 
 type CategoryStore struct {
-	store      *Store
+	database   *Database
 	collection db.Collection
 }
 
-func NewCategoryStore(store *Store) *CategoryStore {
+func NewCategoryStore(database *Database) *CategoryStore {
 	return &CategoryStore{
-		store: store,
+		database: database,
 	}
 }
 
 func (s *CategoryStore) getCollection() db.Collection {
 	if s.collection == nil {
-		s.collection = s.store.database.Session().Collection("category")
+		s.collection = s.database.Session().Collection("category")
 	}
 	return s.collection
 }

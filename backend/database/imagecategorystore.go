@@ -6,19 +6,19 @@ import (
 )
 
 type ImageCategoryStore struct {
-	store      *Store
+	database   *Database
 	collection db.Collection
 }
 
-func NewImageCategoryStore(store *Store) *ImageCategoryStore {
+func NewImageCategoryStore(database *Database) *ImageCategoryStore {
 	return &ImageCategoryStore{
-		store: store,
+		database: database,
 	}
 }
 
 func (s *ImageCategoryStore) getCollection() db.Collection {
 	if s.collection == nil {
-		s.collection = s.store.database.Session().Collection("image_category")
+		s.collection = s.database.Session().Collection("image_category")
 	}
 	return s.collection
 }

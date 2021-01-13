@@ -14,11 +14,11 @@ var (
 )
 
 func initImageStoreTest() *ImageStore {
-	store := NewInMemoryStore()
+	database := NewInMemoryDatabase()
 	imageStoreImageHandleConverter = &StubImageHandleConverter{}
-	isCategoryStore = NewCategoryStore(store)
-	isImageCategoryStore = NewImageCategoryStore(store)
-	return NewImageStore(store, imageStoreImageHandleConverter)
+	isCategoryStore = NewCategoryStore(database)
+	isImageCategoryStore = NewImageCategoryStore(database)
+	return NewImageStore(database, imageStoreImageHandleConverter)
 }
 
 func TestImageStore_AddImage_GetImageById(t *testing.T) {

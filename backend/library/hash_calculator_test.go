@@ -11,9 +11,9 @@ import (
 func TestHashCalculator_GenerateHashes(t *testing.T) {
 	a := assert.New(t)
 
-	store := database.NewInMemoryStore()
-	similarityIndex := database.NewSimilarityIndex(store)
-	imageStore := database.NewImageStore(store, &StubImageHandleConverter{})
+	memoryDatabase := database.NewInMemoryDatabase()
+	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
+	imageStore := database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
 
 	imageLoader := imageloader.NewImageLoader()
 
@@ -72,9 +72,9 @@ func TestHashCalculator_StopHashes(t *testing.T) {
 func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 	a := assert.New(t)
 
-	store := database.NewInMemoryStore()
-	similarityIndex := database.NewSimilarityIndex(store)
-	imageStore := database.NewImageStore(store, &StubImageHandleConverter{})
+	memoryDatabase := database.NewInMemoryDatabase()
+	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
+	imageStore := database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
 
 	imageLoader := imageloader.NewImageLoader()
 

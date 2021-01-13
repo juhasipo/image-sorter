@@ -8,20 +8,20 @@ import (
 )
 
 type SimilarityIndex struct {
-	store      *Store
+	database   *Database
 	session    db.Session
 	collection db.Collection
 }
 
-func NewSimilarityIndex(store *Store) *SimilarityIndex {
+func NewSimilarityIndex(database *Database) *SimilarityIndex {
 	return &SimilarityIndex{
-		store: store,
+		database: database,
 	}
 }
 
 func (s *SimilarityIndex) getCollection() db.Collection {
 	if s.collection == nil {
-		s.collection = s.store.database.Session().Collection("image_similar")
+		s.collection = s.database.Session().Collection("image_similar")
 	}
 	return s.collection
 }

@@ -17,7 +17,7 @@ func TestDatabase_InitializeForDirectory(t *testing.T) {
 	err = sut.InitializeForDirectory(dir, "test.db")
 	a.Nil(err)
 
-	err = sut.instance.Ping()
+	err = sut.session.Ping()
 	a.Nil(err)
 
 	err = sut.Close()

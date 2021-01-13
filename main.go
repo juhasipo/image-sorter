@@ -25,11 +25,10 @@ func main() {
 	db := database.NewDatabase()
 	defer db.Close()
 
-	store := database.NewStore(db)
-	imageStore := database.NewImageStore(store, &database.FileSystemImageHandleConverter{})
-	similarityIndex := database.NewSimilarityIndex(store)
-	categoryStore := database.NewCategoryStore(store)
-	imageCategoryStore := database.NewImageCategoryStore(store)
+	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	similarityIndex := database.NewSimilarityIndex(db)
+	categoryStore := database.NewCategoryStore(db)
+	imageCategoryStore := database.NewImageCategoryStore(db)
 
 	broker := event.InitBus(EventBusQueueSize)
 

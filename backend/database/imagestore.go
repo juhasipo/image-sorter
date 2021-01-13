@@ -10,14 +10,14 @@ import (
 )
 
 type ImageStore struct {
-	store                *Store
+	database             *Database
 	collection           db.Collection
 	imageHandleConverter ImageHandleConverter
 }
 
-func NewImageStore(store *Store, imageHandleConverter ImageHandleConverter) *ImageStore {
+func NewImageStore(database *Database, imageHandleConverter ImageHandleConverter) *ImageStore {
 	return &ImageStore{
-		store:                store,
+		database:             database,
 		imageHandleConverter: imageHandleConverter,
 	}
 }
@@ -28,7 +28,7 @@ func (s *ImageStore) SetImageHandleConverter(imageHandleConverter ImageHandleCon
 
 func (s *ImageStore) getCollection() db.Collection {
 	if s.collection == nil {
-		s.collection = s.store.database.Session().Collection("image")
+		s.collection = s.database.Session().Collection("image")
 	}
 	return s.collection
 }

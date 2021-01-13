@@ -12,11 +12,11 @@ var (
 )
 
 func initImageCategoryStoreTest() *ImageCategoryStore {
-	store := NewInMemoryStore()
-	icsImageStore = NewImageStore(store, &StubImageHandleConverter{})
-	icsCategoryStore = NewCategoryStore(store)
+	database := NewInMemoryDatabase()
+	icsImageStore = NewImageStore(database, &StubImageHandleConverter{})
+	icsCategoryStore = NewCategoryStore(database)
 
-	return NewImageCategoryStore(store)
+	return NewImageCategoryStore(database)
 }
 
 func TestImageCategoryStore_CategorizeImage(t *testing.T) {

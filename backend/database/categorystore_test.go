@@ -7,7 +7,7 @@ import (
 )
 
 func initSUT() *CategoryStore {
-	return NewCategoryStore(NewInMemoryStore())
+	return NewCategoryStore(NewInMemoryDatabase())
 }
 
 func TestCategoryStore_AddCategory(t *testing.T) {

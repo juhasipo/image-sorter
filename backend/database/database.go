@@ -10,7 +10,7 @@ import (
 )
 
 type Database struct {
-	instance db.Session
+	session db.Session
 }
 
 func NewInMemoryDatabase() *Database {
@@ -27,9 +27,11 @@ func NewInMemoryDatabase() *Database {
 		logger.Error.Fatal("Error opening database", err)
 	}
 
-	return &Database{
-		instance: session,
-	}
+	database := Database{session: session}
+
+	database.Migrate()
+
+	return &database
 }
 
 func NewDatabase() *Database {
@@ -52,7 +54,7 @@ func (s *Database) InitializeForDirectory(directory string, file string) error {
 		return err
 	}
 
-	s.instance = session
+	s.session = session
 	return nil
 }
 
@@ -70,7 +72,7 @@ func (s *Database) Migrate() TableExist {
 
 	if !tablesExists {
 		logger.Info.Print("Initial databases don't exist. Creating...")
-		s.instance.Tx(func(session db.Session) error {
+		err := s.session.Tx(func(session db.Session) error {
 			_, err := session.SQL().Exec(`
 				CREATE TABLE migrations (
 					id TEXT PRIMARY KEY
@@ -81,6 +83,10 @@ func (s *Database) Migrate() TableExist {
 			}
 			return err
 		})
+
+		if err != nil {
+			logger.Error.Fatal("Error while running migrations", err)
+		}
 
 	}
 
@@ -99,7 +105,7 @@ func (s *Database) Migrate() TableExist {
 }
 
 func (s *Database) doesTablesExists() bool {
-	rows, err := s.instance.SQL().Query(`
+	rows, err := s.session.SQL().Query(`
 		SELECT name FROM sqlite_master WHERE type='table' AND name= 'migrations';
 	`)
 
@@ -112,11 +118,11 @@ func (s *Database) doesTablesExists() bool {
 }
 
 func (s *Database) Session() db.Session {
-	return s.instance
+	return s.session
 }
 
 func (s *Database) migrate() error {
-	return s.instance.Tx(func(session db.Session) error {
+	return s.session.Tx(func(session db.Session) error {
 		migrationId := "0001"
 		logger.Info.Printf("Prepare migration %s", migrationId)
 
@@ -209,8 +215,8 @@ func (s *Database) migrate() error {
 
 func (s *Database) Close() error {
 	logger.Info.Printf("Closing database")
-	if s.instance != nil {
-		return s.instance.Close()
+	if s.session != nil {
+		return s.session.Close()
 	} else {
 		logger.Warn.Printf("No database instance to close")
 		return nil

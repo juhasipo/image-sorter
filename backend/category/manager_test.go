@@ -179,8 +179,8 @@ func TestResetCategories(t *testing.T) {
 	sender := new(MockSender)
 	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
 
-	store := database.NewInMemoryStore()
-	categoryStore := database.NewCategoryStore(store)
+	memoryDatabase := database.NewInMemoryDatabase()
+	categoryStore := database.NewCategoryStore(memoryDatabase)
 	sut := New(params, sender, categoryStore)
 
 	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
@@ -212,8 +212,8 @@ func TestSaveCategoriesToFile_AndLoadCategoriesFromFile(t *testing.T) {
 	sender := new(MockSender)
 	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
 
-	store := database.NewInMemoryStore()
-	categoryStore := database.NewCategoryStore(store)
+	memoryDatabase := database.NewInMemoryDatabase()
+	categoryStore := database.NewCategoryStore(memoryDatabase)
 	sut := newManager(params, sender, categoryStore)
 
 	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
@@ -253,8 +253,8 @@ func TestSaveCategoriesToFile_AndLoadCategoriesFromFiles(t *testing.T) {
 	sender := new(MockSender)
 	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
 
-	store := database.NewInMemoryStore()
-	categoryStore := database.NewCategoryStore(store)
+	memoryDatabase := database.NewInMemoryDatabase()
+	categoryStore := database.NewCategoryStore(memoryDatabase)
 	sut := newManager(params, sender, categoryStore)
 
 	t.Run("File doesn'r exist", func(t *testing.T) {
