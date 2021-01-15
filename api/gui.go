@@ -4,17 +4,47 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 )
 
+type ErrorCommand struct {
+	Message string
+}
+
+type DeviceFoundCommand struct {
+	DeviceName string
+}
+
+type UpdateProgressCommand struct {
+	Name    string
+	Current int
+	Total   int
+}
+
+type UpdateCategoriesCommand struct {
+	Categories []*apitype.Category
+}
+
+type UpdateImageCommand struct {
+	Image      *apitype.ImageContainer
+	Index      int
+	Total      int
+	CategoryId apitype.CategoryId
+}
+
+type SetImagesCommand struct {
+	Topic  Topic
+	Images []*apitype.ImageContainer
+}
+
 type Gui interface {
-	SetCurrentImage(*apitype.ImageContainer, int, int, apitype.CategoryId)
-	SetImages(Topic, []*apitype.ImageContainer)
-	UpdateCategories(categories *apitype.CategoriesCommand)
-	SetImageCategory(command []*apitype.CategorizeCommand)
-	ShowError(message string)
+	SetCurrentImage(*UpdateImageCommand)
+	SetImages(*SetImagesCommand)
+	UpdateCategories(*UpdateCategoriesCommand)
+	SetImageCategory(*CategoriesCommand)
+	ShowError(*ErrorCommand)
 	Run()
 
-	UpdateProgress(name string, status int, total int)
+	UpdateProgress(*UpdateProgressCommand)
 
-	DeviceFound(name string)
+	DeviceFound(*DeviceFoundCommand)
 	CastReady()
 	CastFindDone()
 }

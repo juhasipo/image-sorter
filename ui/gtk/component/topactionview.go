@@ -71,15 +71,21 @@ func (s *TopActionView) SetNoDistractionMode(value bool) {
 	s.prevButton.SetVisible(value)
 }
 
-func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.Handle) *apitype.CategorizeCommand {
+func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.Handle) *api.CategorizeCommand {
 	for _, button := range s.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
-			return apitype.NewCategorizeCommand(
-				handle, button.entry, button.operation.NextOperation())
+			return &api.CategorizeCommand{
+				HandleId:        handle.GetId(),
+				CategoryId:      button.entry.GetId(),
+				Operation:       button.operation.NextOperation(),
+				StayOnSameImage: false,
+				NextImageDelay:  0,
+				ForceToCategory: false,
+			}
 		}
 	}
 	return nil
@@ -122,7 +128,7 @@ func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCal
 	browseButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Browse '%s' (ALT + %s)", entry.GetName(), entry.GetShortcutAsString()))
 	browseButton.SetRelief(gtk.RELIEF_NONE)
 	browseButton.Connect("clicked", func() {
-		s.sender.SendToTopicWithData(api.CategoriesShowOnly, entry)
+		s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: entry.GetId()})
 	})
 	menuBox.Add(browseButton)
 
@@ -208,25 +214,29 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, categoryId apityp
 	}
 }
 
-func (s *TopActionView) UpdateCategories(categories *apitype.CategoriesCommand) {
+func (s *TopActionView) UpdateCategories(categories *api.UpdateCategoriesCommand) {
 	s.categoryButtons = map[apitype.CategoryId]*CategoryButton{}
 	children := s.categoriesView.GetChildren()
 	children.Foreach(func(item interface{}) {
 		s.categoriesView.Remove(item.(gtk.IWidget))
 	})
 
-	for _, entry := range categories.GetCategories() {
+	for _, entry := range categories.Categories {
 		logger.Trace.Printf("Create categorization handler for entry '%s'", entry)
 
 		s.addCategoryButton(entry, func(entry *apitype.Category, operation apitype.Operation, stayOnSameImage bool, forceToCategory bool) {
 			currentImageHandle := s.imageView.GetCurrentHandle()
 			logger.Debug.Printf("Categorize handle '%s' to category '%s", currentImageHandle, entry)
 
-			command := apitype.NewCategorizeCommand(currentImageHandle, entry, operation)
-			command.SetForceToCategory(forceToCategory)
-			command.SetStayOfSameImage(stayOnSameImage)
-			command.SetNextImageDelay(200 * time.Millisecond)
-			s.sender.SendToTopicWithData(
+			command := &api.CategorizeCommand{
+				HandleId:        currentImageHandle.GetId(),
+				CategoryId:      entry.GetId(),
+				Operation:       operation,
+				StayOnSameImage: stayOnSameImage,
+				NextImageDelay:  200 * time.Millisecond,
+				ForceToCategory: forceToCategory,
+			}
+			s.sender.SendCommandToTopic(
 				api.CategorizeImage,
 				command)
 		})

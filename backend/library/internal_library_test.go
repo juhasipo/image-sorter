@@ -28,11 +28,11 @@ type MockImage struct {
 	mock.Mock
 }
 
-func (s *MockImageStore) GetFull(handle *apitype.Handle) (image.Image, error) {
+func (s *MockImageStore) GetFull(apitype.HandleId) (image.Image, error) {
 	return nil, nil
 }
 
-func (s *MockImageStore) GetThumbnail(handle *apitype.Handle) (image.Image, error) {
+func (s *MockImageStore) GetThumbnail(apitype.HandleId) (image.Image, error) {
 	return nil, nil
 }
 
@@ -345,22 +345,22 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 	handles, _ = imageStore.GetAllImages()
 
 	t.Run("foo1", func(t *testing.T) {
-		sut.MoveToImage(handles[1])
+		sut.MoveToImage(handles[1].GetId())
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
 		a.Equal("foo1", img.GetHandle().GetFile())
 	})
 	t.Run("foo3", func(t *testing.T) {
-		sut.MoveToImage(handles[3])
+		sut.MoveToImage(handles[3].GetId())
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
 		a.Equal("foo3", img.GetHandle().GetFile())
 	})
 
-	t.Run("Nil stays on the current image", func(t *testing.T) {
-		sut.MoveToImage(nil)
+	t.Run("NoHandle stays on the current image", func(t *testing.T) {
+		sut.MoveToImage(apitype.NoHandle)
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)

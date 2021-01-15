@@ -17,30 +17,24 @@ const (
 )
 
 var (
-	emptyInstance = Instance{}
+	emptyInstance = Instance{handleId: apitype.NoHandle}
 	thumbnailSize = apitype.SizeOf(thumbnailWidth, thumbnailHeight)
 )
 
 type Instance struct {
-	handle      *apitype.Handle
+	handleId    apitype.HandleId
 	full        image.Image
 	thumbnail   image.Image
 	scaled      image.Image
-	exifData    *apitype.ExifData
 	imageLoader api.ImageLoader
 	mux         sync.Mutex
 }
 
-func NewInstance(handle *apitype.Handle, imageLoader api.ImageLoader) *Instance {
+func NewInstance(handleId apitype.HandleId, imageLoader api.ImageLoader) *Instance {
 	var instance *Instance
-	exifData, err := apitype.LoadExifData(handle)
-	if err != nil {
-		logger.Warn.Printf("Exif data not properly loaded for '%d'", handle.GetId())
-	}
 
 	instance = &Instance{
-		handle:      handle,
-		exifData:    exifData,
+		handleId:    handleId,
 		imageLoader: imageLoader,
 	}
 
@@ -49,7 +43,7 @@ func NewInstance(handle *apitype.Handle, imageLoader api.ImageLoader) *Instance 
 }
 
 func (s *Instance) IsValid() bool {
-	return s.handle != nil
+	return s.handleId != apitype.NoHandle
 }
 
 func (s *Instance) GetFull() (image.Image, error) {
@@ -59,12 +53,12 @@ func (s *Instance) GetFull() (image.Image, error) {
 		startTime := time.Now()
 
 		if full, err := s.loadFull(nil); err != nil {
-			logger.Error.Println("Could not load full image: " + s.handle.GetPath())
+			logger.Error.Printf("Could not load full image: %d", s.handleId)
 			return nil, err
 		} else {
 			s.full = full
 			endTime := time.Now()
-			logger.Trace.Printf("'%s': Full loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+			logger.Trace.Printf("%d: Full loaded in %s", s.handleId, endTime.Sub(startTime).String())
 			return s.full, nil
 		}
 	} else {
@@ -100,13 +94,13 @@ func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 		}
 	}
 	endTime := time.Now()
-	logger.Trace.Printf("'%s': Scaled loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+	logger.Trace.Printf("%d: Scaled loaded in %s", s.handleId, endTime.Sub(startTime).String())
 
 	return s.scaled, err
 }
 
 func (s *Instance) GetThumbnail() (image.Image, error) {
-	if s.handle == nil || !s.handle.IsValid() {
+	if s.handleId == apitype.NoHandle {
 		return nil, errors.New("invalid handle")
 	}
 	var err error
@@ -125,7 +119,7 @@ func (s *Instance) GetThumbnail() (image.Image, error) {
 		logger.Trace.Print("Use cached thumbnail")
 	}
 	endTime := time.Now()
-	logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+	logger.Trace.Printf("%d: Thumbnail loaded in %s", s.handleId, endTime.Sub(startTime).String())
 	return s.thumbnail, err
 }
 
@@ -164,9 +158,9 @@ func (s *Instance) loadImageWithExifCorrection(size *apitype.Size) (image.Image,
 	var loadedImage image.Image
 	var err error
 	if size != nil {
-		loadedImage, err = s.imageLoader.LoadImageScaled(s.handle, *size)
+		loadedImage, err = s.imageLoader.LoadImageScaled(s.handleId, *size)
 	} else {
-		loadedImage, err = s.imageLoader.LoadImage(s.handle)
+		loadedImage, err = s.imageLoader.LoadImage(s.handleId)
 	}
 
 	if err != nil {
@@ -174,7 +168,7 @@ func (s *Instance) loadImageWithExifCorrection(size *apitype.Size) (image.Image,
 		return nil, err
 	}
 
-	return apitype.ExifRotateImage(loadedImage, s.exifData)
+	return loadedImage, nil
 }
 
 func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
@@ -184,12 +178,12 @@ func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
 		startTime := time.Now()
 
 		if thumbnail, err := s.loadFull(&thumbnailSize); err != nil {
-			logger.Error.Println("Could not load thumbnail: "+s.handle.GetPath(), err)
+			logger.Error.Printf("Could not load thumbnail: %d", s.handleId)
 			return nil, err
 		} else {
 			s.thumbnail = thumbnail
 			endTime := time.Now()
-			logger.Trace.Printf("'%s': Thumbnail loaded in %s", s.handle.GetPath(), endTime.Sub(startTime).String())
+			logger.Trace.Printf("%d: Thumbnail loaded in %s", s.handleId, endTime.Sub(startTime).String())
 			return s.thumbnail, nil
 		}
 	} else {

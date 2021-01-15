@@ -5,7 +5,6 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 )
 
@@ -86,8 +85,11 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 
 		if response == gtk.RESPONSE_YES {
 			value := qualityScale.GetValue()
-			sender.SendToTopicWithData(api.CategoryPersistAll, apitype.NewPersistCategorizationCommand(
-				keepOriginalsCB.GetActive(), exifCorrect.GetActive(), int(value)))
+			sender.SendCommandToTopic(api.CategoryPersistAll, &api.PersistCategorizationCommand{
+				KeepOriginals:  keepOriginalsCB.GetActive(),
+				FixOrientation: exifCorrect.GetActive(),
+				Quality:        int(value),
+			})
 		}
 	})
 

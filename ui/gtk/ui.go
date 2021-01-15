@@ -105,7 +105,7 @@ func (s *Ui) Init(directory string) {
 		if directory == "" {
 			s.OpenFolderChooser(1)
 		} else {
-			s.sender.SendToTopicWithData(api.DirectoryChanged, directory)
+			s.sender.SendCommandToTopic(api.DirectoryChanged, directory)
 		}
 
 		// Show the Window and all of its components.
@@ -141,33 +141,33 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	} else if key == gdk.KEY_F12 {
 		s.sender.SendToTopic(api.SimilarRequestSearch)
 	} else if key == gdk.KEY_Page_Up {
-		s.sender.SendToTopicWithData(api.ImageRequestPrevOffset, hugeJumpSize)
+		s.sender.SendCommandToTopic(api.ImageRequestPrevOffset, &api.ImageAtQuery{Index: hugeJumpSize})
 	} else if key == gdk.KEY_Page_Down {
-		s.sender.SendToTopicWithData(api.ImageRequestNextOffset, hugeJumpSize)
+		s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: hugeJumpSize})
 	} else if key == gdk.KEY_Home {
-		s.sender.SendToTopicWithData(api.ImageRequestAtIndex, 0)
+		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: 0})
 	} else if key == gdk.KEY_End {
-		s.sender.SendToTopicWithData(api.ImageRequestAtIndex, -1)
+		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: -1})
 	} else if key == gdk.KEY_Left {
 		if controlDown {
-			s.sender.SendToTopicWithData(api.ImageRequestPrevOffset, bigJumpSize)
+			s.sender.SendCommandToTopic(api.ImageRequestPrevOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
 			s.sender.SendToTopic(api.ImageRequestPrev)
 		}
 	} else if key == gdk.KEY_Right {
 		if controlDown {
-			s.sender.SendToTopicWithData(api.ImageRequestNextOffset, bigJumpSize)
+			s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}
 	} else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.GetCurrentHandle()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
-			s.sender.SendToTopicWithData(api.CategoriesShowOnly, command.GetEntry())
+			s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: command.CategoryId})
 		} else {
-			command.SetStayOfSameImage(shiftDown)
-			command.SetForceToCategory(controlDown)
-			s.sender.SendToTopicWithData(api.CategorizeImage, command)
+			command.StayOnSameImage = shiftDown
+			command.ForceToCategory = controlDown
+			s.sender.SendCommandToTopic(api.CategorizeImage, command)
 		}
 	} else if key == gdk.KEY_plus || key == gdk.KEY_KP_Add {
 		s.imageView.ZoomIn()
@@ -181,9 +181,9 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	return true
 }
 
-func (s *Ui) UpdateCategories(categories *apitype.CategoriesCommand) {
-	s.categories = make([]*apitype.Category, len(categories.GetCategories()))
-	copy(s.categories, categories.GetCategories())
+func (s *Ui) UpdateCategories(categories *api.UpdateCategoriesCommand) {
+	s.categories = make([]*apitype.Category, len(categories.Categories))
+	copy(s.categories, categories.Categories)
 
 	s.topActionView.UpdateCategories(categories)
 	s.sender.SendToTopic(api.ImageRequestCurrent)
@@ -193,20 +193,20 @@ func (s *Ui) UpdateCurrentImage() {
 	s.imageView.UpdateCurrentImage()
 }
 
-func (s *Ui) SetImages(imageTarget api.Topic, handles []*apitype.ImageContainer) {
-	if imageTarget == api.ImageRequestNext {
-		s.imageView.AddImagesToNextStore(handles)
-	} else if imageTarget == api.ImageRequestPrev {
-		s.imageView.AddImagesToPrevStore(handles)
-	} else if imageTarget == api.ImageRequestSimilar {
-		s.similarImagesView.SetImages(handles)
+func (s *Ui) SetImages(command *api.SetImagesCommand) {
+	if command.Topic == api.ImageRequestNext {
+		s.imageView.AddImagesToNextStore(command.Images)
+	} else if command.Topic == api.ImageRequestPrev {
+		s.imageView.AddImagesToPrevStore(command.Images)
+	} else if command.Topic == api.ImageRequestSimilar {
+		s.similarImagesView.SetImages(command.Images)
 	}
 }
 
-func (s *Ui) SetCurrentImage(image *apitype.ImageContainer, index int, total int, categoryId apitype.CategoryId) {
-	s.topActionView.SetCurrentStatus(index, total, categoryId)
-	s.bottomActionView.SetShowOnlyCategory(categoryId != -1)
-	s.imageView.SetCurrentImage(image)
+func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
+	s.topActionView.SetCurrentStatus(command.Index, command.Total, command.CategoryId)
+	s.bottomActionView.SetShowOnlyCategory(command.CategoryId != -1)
+	s.imageView.SetCurrentImage(command.Image)
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
 
@@ -214,45 +214,47 @@ func (s *Ui) SetCurrentImage(image *apitype.ImageContainer, index int, total int
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {
-	s.sender.SendToTopicWithData(api.ImageChanged, s.imageView.GetCurrentHandle())
+	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
+		HandleId: s.imageView.GetCurrentHandle().GetId(),
+	})
 }
 
 func (s *Ui) Run() {
 	s.application.Run([]string{})
 }
 
-func (s *Ui) SetImageCategory(commands []*apitype.CategorizeCommand) {
+func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 	for _, button := range s.topActionView.GetCategoryButtons() {
 		button.SetStatus(apitype.NONE)
 	}
 
-	for _, command := range commands {
-		logger.Debug.Printf("Marked image category: '%s':%d", command.GetEntry().GetName(), command.GetOperation())
+	for _, category := range command.Categories {
+		logger.Debug.Printf("Marked image category: '%s'", category.GetName())
 
-		if button, ok := s.topActionView.GetCategoryButton(command.GetEntry().GetId()); ok {
-			button.SetStatus(command.GetOperation())
+		if button, ok := s.topActionView.GetCategoryButton(category.GetId()); ok {
+			button.SetStatus(apitype.MOVE)
 		}
 	}
 }
 
-func (s *Ui) UpdateProgress(name string, status int, total int) {
-	if status == 0 {
+func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
+	if command.Current == 0 {
 		s.progressView.SetVisible(true)
 		s.topActionView.SetVisible(false)
 		s.bottomActionView.SetVisible(false)
 	}
 
-	if status == total {
+	if command.Current == command.Total {
 		s.progressView.SetVisible(false)
 		s.topActionView.SetVisible(true)
 		s.bottomActionView.SetVisible(true)
 	} else {
-		s.progressView.SetStatus(status, total)
+		s.progressView.SetStatus(command.Current, command.Total)
 	}
 }
 
-func (s *Ui) DeviceFound(name string) {
-	s.castModal.AddDevice(name)
+func (s *Ui) DeviceFound(command *api.DeviceFoundCommand) {
+	s.castModal.AddDevice(command.DeviceName)
 }
 
 func (s *Ui) CastReady() {
@@ -269,7 +271,7 @@ func runAndProcessFolderChooser(folderChooser *gtk.FileChooserDialog, sender api
 	response := folderChooser.Run()
 	if response == gtk.RESPONSE_ACCEPT {
 		folder := folderChooser.GetFilename()
-		sender.SendToTopicWithData(api.DirectoryChanged, folder)
+		sender.SendCommandToTopic(api.DirectoryChanged, folder)
 	}
 }
 
@@ -354,9 +356,9 @@ func resolveModifierStatuses(keyEvent *gdk.EventKey) (shiftDown bool, controlDow
 	return
 }
 
-func (s *Ui) ShowError(message string) {
-	logger.Error.Printf("Error: %s", message)
-	errorDialog := gtk.MessageDialogNew(s.win, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+func (s *Ui) ShowError(command *api.ErrorCommand) {
+	logger.Error.Printf("Error: %s", command.Message)
+	errorDialog := gtk.MessageDialogNew(s.win, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, command.Message)
 	errorDialog.SetTitle("Error")
 	errorDialog.Run()
 	errorDialog.Destroy()

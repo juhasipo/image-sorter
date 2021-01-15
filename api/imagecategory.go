@@ -1,24 +1,59 @@
 package api
 
-import "vincit.fi/image-sorter/api/apitype"
+import (
+	"time"
+	"vincit.fi/image-sorter/api/apitype"
+)
+
+type CategorizeCommand struct {
+	HandleId        apitype.HandleId
+	CategoryId      apitype.CategoryId
+	Operation       apitype.Operation
+	StayOnSameImage bool
+	NextImageDelay  time.Duration
+	ForceToCategory bool
+
+	apitype.Command
+}
+
+type CategoriesCommand struct {
+	Categories []*apitype.Category
+
+	apitype.Command
+}
+
+type CategorizedImage struct {
+	Category  *apitype.Category
+	Operation apitype.Operation
+}
+
+type ImageCategoryQuery struct {
+	HandleId apitype.HandleId
+}
+
+type PersistCategorizationCommand struct {
+	KeepOriginals  bool
+	FixOrientation bool
+	Quality        int
+}
 
 type ImageCategoryManager interface {
 	InitializeForDirectory(directory string)
 
-	RequestCategory(handle *apitype.Handle)
-	GetCategories(handle *apitype.Handle) map[apitype.CategoryId]*apitype.CategorizedImage
-	SetCategory(command *apitype.CategorizeCommand)
+	RequestCategory(*ImageCategoryQuery)
+	GetCategories(*ImageCategoryQuery) map[apitype.CategoryId]*CategorizedImage
+	SetCategory(*CategorizeCommand)
 
-	PersistImageCategories(apitype.PersistCategorizationCommand)
-	PersistImageCategory(handle *apitype.Handle, categories map[apitype.CategoryId]*apitype.CategorizedImage)
+	PersistImageCategories(*PersistCategorizationCommand)
+	PersistImageCategory(handle *apitype.Handle, categories map[apitype.CategoryId]*CategorizedImage)
 
 	PersistCategorization()
 	LoadCategorization(handleManager Library, categoryManager CategoryManager)
 
-	ShowOnlyCategoryImages(*apitype.Category)
+	ShowOnlyCategoryImages(*SelectCategoryCommand)
 
-	ResolveFileOperations(map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) []*apitype.ImageOperationGroup
-	ResolveOperationsForGroup(*apitype.Handle, map[apitype.CategoryId]*apitype.CategorizedImage, apitype.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
+	ResolveFileOperations(map[apitype.HandleId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) []*apitype.ImageOperationGroup
+	ResolveOperationsForGroup(*apitype.Handle, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()
 }

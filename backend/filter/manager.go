@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -37,10 +38,10 @@ func (s *Manager) AddFilter(filter *Filter) {
 	s.filters[filter.id] = filter
 }
 
-func (s *Manager) GetFilters(handle *apitype.Handle, options apitype.PersistCategorizationCommand) []*Filter {
+func (s *Manager) GetFilters(handle *apitype.Handle, options *api.PersistCategorizationCommand) []*Filter {
 	filtersToApply := s.getFiltersForHandle(handle)
 
-	if options.ShouldFixOrientation() {
+	if options.FixOrientation {
 		filtersToApply = append(filtersToApply, &Filter{
 			id:        "exifRotate",
 			operation: NewImageExifRotate(),

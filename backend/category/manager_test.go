@@ -23,8 +23,8 @@ func (s *MockSender) SendToTopic(topic api.Topic) {
 	s.Called(topic)
 }
 
-func (s *MockSender) SendToTopicWithData(topic api.Topic, data ...interface{}) {
-	s.Called(topic, data)
+func (s *MockSender) SendCommandToTopic(topic api.Topic, command apitype.Command) {
+	s.Called(topic, command)
 }
 
 func TestParse(t *testing.T) {
@@ -177,7 +177,7 @@ func TestResetCategories(t *testing.T) {
 
 	params := common.NewEmptyParams()
 	sender := new(MockSender)
-	sender.On("SendToTopicWithData", api.CategoriesUpdated, mock.Anything).Return()
+	sender.On("SendCommandToTopic", api.CategoriesUpdated, mock.Anything).Return()
 
 	memoryDatabase := database.NewInMemoryDatabase()
 	categoryStore := database.NewCategoryStore(memoryDatabase)
@@ -188,10 +188,12 @@ func TestResetCategories(t *testing.T) {
 	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 3", "C3", "3"))
 	cat4, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 4", "C4", "4"))
 
-	sut.Save([]*apitype.Category{
-		apitype.NewCategoryWithId(cat2.GetId(), "Cat 2", "C2", "2"),
-		apitype.NewCategoryWithId(cat4.GetId(), "Cat 4_", "C4", "4"),
-		apitype.NewCategory("Cat 5", "C5", "5"),
+	sut.Save(&api.SaveCategoriesCommand{
+		Categories: []*apitype.Category{
+			apitype.NewCategoryWithId(cat2.GetId(), "Cat 2", "C2", "2"),
+			apitype.NewCategoryWithId(cat4.GetId(), "Cat 4_", "C4", "4"),
+			apitype.NewCategory("Cat 5", "C5", "5"),
+		},
 	})
 
 	categories, _ := categoryStore.GetCategories()

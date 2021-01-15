@@ -45,7 +45,7 @@ func hashImage(input chan *apitype.Handle, output chan *HashResult, quitChannel 
 
 func openImageForHashing(imageLoader api.ImageLoader, handle *apitype.Handle) (image.Image, error) {
 	startTime := time.Now()
-	decodedImage, err := imageLoader.LoadImageScaled(handle, hashImageSize)
+	decodedImage, err := imageLoader.LoadImageScaled(handle.GetId(), hashImageSize)
 	endTime := time.Now()
 	logger.Trace.Printf("'%s': Image loaded in %s", handle.GetPath(), endTime.Sub(startTime).String())
 	return decodedImage, err

@@ -4,16 +4,44 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 )
 
+type ImagesQuery struct {
+	handles []*apitype.Handle
+	apitype.Command
+}
+
+type ImageQuery struct {
+	Id apitype.HandleId
+	apitype.Command
+}
+type ImageAtQuery struct {
+	Index int
+	apitype.Command
+}
+
+type SelectCategoryCommand struct {
+	CategoryId apitype.CategoryId
+	apitype.Command
+}
+
+type ImageListCommand struct {
+	ImageListSize int
+	apitype.Command
+}
+type SimilarImagesCommand struct {
+	SendSimilarImages bool
+	apitype.Command
+}
+
 type Library interface {
 	InitializeFromDirectory(directory string)
 
 	RequestImages()
 	RequestNextImage()
 	RequestPrevImage()
-	RequestNextImageWithOffset(int)
-	RequestPrevImageWithOffset(int)
-	RequestImage(*apitype.Handle)
-	RequestImageAt(int)
+	RequestNextImageWithOffset(*ImageAtQuery)
+	RequestPrevImageWithOffset(*ImageAtQuery)
+	RequestImage(*ImageQuery)
+	RequestImageAt(*ImageAtQuery)
 
 	RequestGenerateHashes()
 	RequestStopHashes()
@@ -23,19 +51,10 @@ type Library interface {
 	GetHandleById(handleId apitype.HandleId) *apitype.Handle
 
 	ShowAllImages()
-	ShowOnlyImages(apitype.CategoryId)
+	ShowOnlyImages(*SelectCategoryCommand)
 
-	SetImageListSize(imageListSize int)
-	SetSendSimilarImages(sendSimilarImages bool)
+	SetImageListSize(*ImageListCommand)
+	SetSendSimilarImages(*SimilarImagesCommand)
 
 	Close()
-}
-
-type ImageCommand struct {
-	handles []*apitype.Handle
-	apitype.Command
-}
-
-func (s *ImageCommand) GetHandles() []*apitype.Handle {
-	return s.handles
 }

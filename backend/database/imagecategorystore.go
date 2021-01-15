@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/upper/db/v4"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 )
 
@@ -48,7 +49,7 @@ func (s *ImageCategoryStore) CategorizeImage(imageId apitype.HandleId, categoryI
 	}
 }
 
-func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*apitype.CategorizedImage, error) {
+func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*api.CategorizedImage, error) {
 	var categories []CategorizedImage
 	err := s.getCollection().Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -70,7 +71,7 @@ func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*a
 	return toApiCategorizedImages(categories), nil
 }
 
-func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage, error) {
+func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.HandleId]map[apitype.CategoryId]*api.CategorizedImage, error) {
 	var categorizedImages []CategorizedImage
 	err := s.getCollection().Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -88,13 +89,13 @@ func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.HandleId]map[ap
 		return nil, err
 	}
 
-	var catImagesByHandleIdAndCategoryId = map[apitype.HandleId]map[apitype.CategoryId]*apitype.CategorizedImage{}
+	var catImagesByHandleIdAndCategoryId = map[apitype.HandleId]map[apitype.CategoryId]*api.CategorizedImage{}
 	for _, categorizedImage := range categorizedImages {
-		var categorizedImagesByCategoryId map[apitype.CategoryId]*apitype.CategorizedImage
+		var categorizedImagesByCategoryId map[apitype.CategoryId]*api.CategorizedImage
 		if val, ok := catImagesByHandleIdAndCategoryId[categorizedImage.ImageId]; ok {
 			categorizedImagesByCategoryId = val
 		} else {
-			categorizedImagesByCategoryId = map[apitype.CategoryId]*apitype.CategorizedImage{}
+			categorizedImagesByCategoryId = map[apitype.CategoryId]*api.CategorizedImage{}
 			catImagesByHandleIdAndCategoryId[categorizedImage.ImageId] = categorizedImagesByCategoryId
 		}
 		categorizedImagesByCategoryId[categorizedImage.CategoryId] = toApiCategorizedImage(&categorizedImage)

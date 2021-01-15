@@ -88,7 +88,10 @@ func createDeviceList(castModal *CastModal, modal *gtk.Dialog, view *gtk.TreeVie
 		iter, _ := store.GetIter(path)
 		value, _ := store.GetValue(iter, 0)
 		stringValue, _ := value.GetString()
-		sender.SendToTopicWithData(api.CastDeviceSelect, stringValue, castModal.showBackgroundCB.GetActive())
+		sender.SendCommandToTopic(api.CastDeviceSelect, &api.SelectDeviceCommand{
+			Name:           stringValue,
+			ShowBackground: castModal.showBackgroundCB.GetActive(),
+		})
 		modal.Hide()
 	})
 	view.SetModel(store)

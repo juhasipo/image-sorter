@@ -18,7 +18,8 @@ func (s *ImageExifRotate) Apply(operationGroup *apitype.ImageOperationGroup) (im
 	img := operationGroup.GetImage()
 	data := operationGroup.GetExifData()
 	logger.Debug.Printf("Exif rotate %s", handle.GetPath())
-	rotatedImage, err := apitype.ExifRotateImage(img, data)
+	rotation, flipped := handle.GetRotation()
+	rotatedImage, err := apitype.ExifRotateImage(img, rotation, flipped)
 	if err != nil {
 		return img, data, err
 	}

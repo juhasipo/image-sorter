@@ -25,7 +25,7 @@ func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
 	defer s.mux.Unlock()
 	s.imageCache = map[apitype.HandleId]*Instance{}
 	for _, handle := range handles {
-		s.imageCache[handle.GetId()] = NewInstance(handle, s.imageLoader)
+		s.imageCache[handle.GetId()] = NewInstance(handle.GetId(), s.imageLoader)
 	}
 	runtime.GC()
 }
@@ -38,26 +38,26 @@ func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
 	}
 }
 
-func (s *DefaultImageStore) GetFull(handle *apitype.Handle) (image.Image, error) {
-	return s.getImage(handle).GetFull()
+func (s *DefaultImageStore) GetFull(handleId apitype.HandleId) (image.Image, error) {
+	return s.getImage(handleId).GetFull()
 }
-func (s *DefaultImageStore) GetScaled(handle *apitype.Handle, size apitype.Size) (image.Image, error) {
-	return s.getImage(handle).GetScaled(size)
+func (s *DefaultImageStore) GetScaled(handleId apitype.HandleId, size apitype.Size) (image.Image, error) {
+	return s.getImage(handleId).GetScaled(size)
 }
-func (s *DefaultImageStore) GetThumbnail(handle *apitype.Handle) (image.Image, error) {
-	return s.getImage(handle).GetThumbnail()
+func (s *DefaultImageStore) GetThumbnail(handleId apitype.HandleId) (image.Image, error) {
+	return s.getImage(handleId).GetThumbnail()
 }
-func (s *DefaultImageStore) GetExifData(handle *apitype.Handle) *apitype.ExifData {
-	return s.getImage(handle).exifData
+func (s *DefaultImageStore) GetExifData(handleId apitype.HandleId) *apitype.ExifData {
+	return nil
 }
 
-func (s *DefaultImageStore) getImage(handle *apitype.Handle) *Instance {
+func (s *DefaultImageStore) getImage(handleId apitype.HandleId) *Instance {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	if handle.IsValid() {
-		if existingInstance, ok := s.imageCache[handle.GetId()]; !ok {
-			instance := NewInstance(handle, s.imageLoader)
-			s.imageCache[handle.GetId()] = instance
+	if handleId != apitype.NoHandle {
+		if existingInstance, ok := s.imageCache[handleId]; !ok {
+			instance := NewInstance(handleId, s.imageLoader)
+			s.imageCache[handleId] = instance
 			return instance
 		} else {
 			return existingInstance

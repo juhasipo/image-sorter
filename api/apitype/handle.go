@@ -17,6 +17,8 @@ type Handle struct {
 	filename  string
 	path      string
 	byteSize  int64
+	rotation  float64
+	flipped   bool
 	metaData  map[string]string
 }
 
@@ -40,22 +42,24 @@ func NewPersistedHandle(id HandleId, handle *Handle, metaData map[string]string)
 	}
 }
 
-func NewHandleWithId(id HandleId, fileDir string, fileName string, metaData map[string]string) *Handle {
+func NewHandleWithId(id HandleId, fileDir string, fileName string, rotation float64, flipped bool, metaData map[string]string) *Handle {
 	return &Handle{
 		id:        id,
 		directory: fileDir,
 		filename:  fileName,
 		path:      filepath.Join(fileDir, fileName),
 		metaData:  metaData,
+		rotation:  rotation,
+		flipped:   flipped,
 	}
 }
 
 func NewHandle(fileDir string, fileName string) *Handle {
-	return NewHandleWithId(NoHandle, fileDir, fileName, map[string]string{})
+	return NewHandleWithId(NoHandle, fileDir, fileName, 0, false, map[string]string{})
 }
 
 func NewHandleWithMetaData(fileDir string, fileName string, metaData map[string]string) *Handle {
-	return NewHandleWithId(NoHandle, fileDir, fileName, metaData)
+	return NewHandleWithId(NoHandle, fileDir, fileName, 0, false, metaData)
 }
 
 func GetEmptyHandle() *Handle {
@@ -140,6 +144,10 @@ func (s *Handle) GetByteSizeMB() float64 {
 	} else {
 		return 0.0
 	}
+}
+
+func (s *Handle) GetRotation() (float64, bool) {
+	return s.rotation, s.flipped
 }
 
 func LoadImageHandles(dir string) []*Handle {

@@ -6,7 +6,7 @@ import (
 )
 
 type ImageLoader interface {
-	LoadImage(*apitype.Handle) (image.Image, error)
-	LoadImageScaled(*apitype.Handle, apitype.Size) (image.Image, error)
-	LoadExifData(*apitype.Handle) (*apitype.ExifData, error)
+	LoadImage(apitype.HandleId) (image.Image, error)
+	LoadImageScaled(apitype.HandleId, apitype.Size) (image.Image, error)
+	LoadExifData(apitype.HandleId) (*apitype.ExifData, error)
 }

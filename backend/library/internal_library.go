@@ -77,12 +77,20 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	if s.shouldGenerateSimilarHashed {
 		images, _ := s.imageStore.GetAllImages()
 		hashes, err := s.hashCalculator.GenerateHashes(images, func(current int, total int) {
-			sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", current, total)
+			sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+				Name:    "hash",
+				Current: current,
+				Total:   total,
+			})
 		})
 
 		if err == nil {
 			err = s.hashCalculator.BuildSimilarityIndex(hashes, func(current int, total int) {
-				sender.SendToTopicWithData(api.ProcessStatusUpdated, "similarity-index", current, total)
+				sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+					Name:    "similarity-index",
+					Current: current,
+					Total:   total,
+				})
 			})
 		}
 
@@ -91,7 +99,11 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 		}
 
 		// Always send 100% status even if cancelled so that the progress bar is hidden
-		sender.SendToTopicWithData(api.ProcessStatusUpdated, "hash", 0, 0)
+		sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+			Name:    "hash",
+			Current: 0,
+			Total:   0,
+		})
 
 		// Only send if not cancelled or no error
 		if err == nil {
@@ -116,10 +128,10 @@ func (s *internalManager) StopHashes() {
 	}
 }
 
-func (s *internalManager) MoveToImage(handle *apitype.Handle) {
+func (s *internalManager) MoveToImage(handleId apitype.HandleId) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	for imageIndex, image := range images {
-		if handle.GetId() == image.GetId() {
+		if handleId == image.GetId() {
 			s.index = imageIndex
 		}
 	}
@@ -204,7 +216,7 @@ func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
 		handle := images[s.index]
-		if full, err := s.imageCache.GetFull(handle); err != nil {
+		if full, err := s.imageCache.GetFull(handle.GetId()); err != nil {
 			logger.Error.Print("Error while loading full image", err)
 			return apitype.NewImageContainer(apitype.GetEmptyHandle(), nil), 0, err
 		} else {
@@ -249,7 +261,7 @@ func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
 func (s *internalManager) toImageContainers(nextImageHandles []*apitype.Handle) ([]*apitype.ImageContainer, error) {
 	images := make([]*apitype.ImageContainer, len(nextImageHandles))
 	for i, handle := range nextImageHandles {
-		if thumbnail, err := s.imageCache.GetThumbnail(handle); err != nil {
+		if thumbnail, err := s.imageCache.GetThumbnail(handle.GetId()); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 			return emptyHandles, err
 		} else {
@@ -282,7 +294,7 @@ func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.I
 		containers := make([]*apitype.ImageContainer, len(similarImages))
 		i := 0
 		for _, similar := range similarImages {
-			if thumbnail, err := s.imageCache.GetThumbnail(similar); err != nil {
+			if thumbnail, err := s.imageCache.GetThumbnail(similar.GetId()); err != nil {
 				logger.Error.Print("Error while loading thumbnail", err)
 				return emptyHandles, false, err
 			} else {

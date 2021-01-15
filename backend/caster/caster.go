@@ -47,14 +47,14 @@ type Caster struct {
 	sender                api.Sender
 	selectedDevice        string
 	path                  string
-	currentImage          *apitype.Handle
+	currentImage          apitype.HandleId
 	server                *http.Server
 	showBackground        bool
 	imageCache            api.ImageStore
 	alwaysStartHttpServer bool
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
-	imageQueue            *apitype.Handle
+	imageQueue            apitype.HandleId
 	imageQueueBroker      event.Broker
 
 	api.Caster
@@ -142,7 +142,7 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	s.reserveImage()
 	defer s.releaseImage()
 	imageHandle := s.currentImage
-	logger.Debug.Printf("Sending image '%d' to Chromecast", imageHandle.GetId())
+	logger.Debug.Printf("Sending image '%d' to Chromecast", imageHandle)
 	img, err := s.imageCache.GetScaled(imageHandle, apitype.SizeOf(canvasWidth, canvasHeight))
 
 	if img != nil && err == nil {
@@ -224,7 +224,9 @@ func (s *Caster) FindDevices() {
 			}
 
 			s.devices[deviceName] = deviceEntry
-			s.sender.SendToTopicWithData(api.CastDeviceFound, deviceName)
+			s.sender.SendCommandToTopic(api.CastDeviceFound, &api.DeviceFoundCommand{
+				DeviceName: deviceName,
+			})
 		}
 	}()
 
@@ -283,10 +285,10 @@ func (s *Caster) resolveLocalAddress(entry *mdns.ServiceEntry) (net.IP, error) {
 	return addr, nil
 }
 
-func (s *Caster) SelectDevice(name string, showBackground bool) {
-	logger.Debug.Printf("Selected device '%s'", name)
-	s.selectedDevice = name
-	s.showBackground = showBackground
+func (s *Caster) SelectDevice(command *api.SelectDeviceCommand) {
+	logger.Debug.Printf("Selected device '%s'", command.Name)
+	s.selectedDevice = command.Name
+	s.showBackground = command.ShowBackground
 	device := s.devices[s.selectedDevice]
 	if d, err := cast.NewDevice(device.serviceEntry.Addr, device.serviceEntry.Port); err != nil {
 		s.sender.SendError("Error while selecting device", err)
@@ -310,12 +312,12 @@ func (s *Caster) getLocalHost() string {
 	}
 }
 
-func (s *Caster) CastImage(handle *apitype.Handle) {
+func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
-	if handle.IsValid() && s.server != nil {
-		logger.Debug.Printf("Adding to cast queue: '%d'", handle.GetId())
-		s.imageQueue = handle
+	if query.HandleId != apitype.NoHandle && s.server != nil {
+		logger.Debug.Printf("Adding to cast queue: '%d'", query.HandleId)
+		s.imageQueue = query.HandleId
 
 		s.imageQueueBroker.SendToTopic(castImageEvent)
 	}
@@ -323,7 +325,7 @@ func (s *Caster) CastImage(handle *apitype.Handle) {
 
 func (s *Caster) castImageFromQueue() {
 	img := s.getImageFromQueue()
-	if img != nil {
+	if img != apitype.NoHandle {
 		s.reserveImage()
 		s.currentImage = img
 		s.releaseImage()
@@ -363,19 +365,19 @@ func (s *Caster) castImageFromQueue() {
 	}
 }
 
-func (s *Caster) getImageFromQueue() *apitype.Handle {
+func (s *Caster) getImageFromQueue() apitype.HandleId {
 	s.reserveImage()
 	defer s.releaseImage()
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 
-	if s.imageQueue != nil {
+	if s.imageQueue != apitype.NoHandle {
 		img := s.imageQueue
-		logger.Debug.Printf("Getting from cast queue: '%d'", img.GetId())
-		s.imageQueue = nil
+		logger.Debug.Printf("Getting from cast queue: '%d'", img)
+		s.imageQueue = apitype.NoHandle
 		return img
 	} else {
-		return nil
+		return apitype.NoHandle
 	}
 }
 

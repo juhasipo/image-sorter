@@ -1,7 +1,9 @@
 package api
 
+import "vincit.fi/image-sorter/api/apitype"
+
 type Sender interface {
 	SendToTopic(topic Topic)
-	SendToTopicWithData(topic Topic, data ...interface{})
+	SendCommandToTopic(topic Topic, command apitype.Command)
 	SendError(message string, err error)
 }

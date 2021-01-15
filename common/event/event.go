@@ -6,6 +6,7 @@ import (
 	messagebus "github.com/vardius/message-bus"
 	"reflect"
 	"vincit.fi/image-sorter/api"
+	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -37,7 +38,7 @@ func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
 			for _, param := range params {
 				args = append(args, reflect.ValueOf(param))
 			}
-			logger.Trace.Printf("Calling topic '%s' with %d arguments: %s", topic, len(args), params)
+			logger.Debug.Printf("Calling topic '%s' with %d arguments: %s", topic, len(args), params)
 			reflect.ValueOf(callback).Call(args)
 		}
 
@@ -55,9 +56,10 @@ func (s *Broker) SendToTopic(topic api.Topic) {
 	logger.Trace.Printf("Sending to '%s'", topic)
 	s.bus.Publish(string(topic))
 }
-func (s *Broker) SendToTopicWithData(topic api.Topic, data ...interface{}) {
-	logger.Trace.Printf("Sending to '%s' with %d arguments", topic, len(data))
-	s.bus.Publish(string(topic), data...)
+
+func (s *Broker) SendCommandToTopic(topic api.Topic, command apitype.Command) {
+	logger.Trace.Printf("Sending command to '%s'", topic)
+	s.bus.Publish(string(topic), command)
 }
 
 func (s *Broker) SendError(message string, err error) {
@@ -68,5 +70,5 @@ func (s *Broker) SendError(message string, err error) {
 		formattedMessage = message
 	}
 	logger.Error.Printf("Error: %s", formattedMessage)
-	s.SendToTopicWithData(api.ShowError, formattedMessage)
+	s.SendCommandToTopic(api.ShowError, &api.ErrorCommand{Message: message})
 }

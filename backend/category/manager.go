@@ -85,26 +85,35 @@ func (s *Manager) GetCategories() []*apitype.Category {
 }
 
 func (s *Manager) RequestCategories() {
-	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
+	s.sender.SendCommandToTopic(
+		api.CategoriesUpdated,
+		&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
+	)
 }
 
-func (s *Manager) Save(categories []*apitype.Category) {
-	s.resetCategories(categories)
+func (s *Manager) Save(command *api.SaveCategoriesCommand) {
+	s.resetCategories(command.Categories)
 
-	s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
+	s.sender.SendCommandToTopic(
+		api.CategoriesUpdated,
+		&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
+	)
 }
-func (s *Manager) SaveDefault(categories []*apitype.Category) {
-	s.resetCategories(categories)
+func (s *Manager) SaveDefault(command *api.SaveCategoriesCommand) {
+	s.resetCategories(command.Categories)
 
 	if currentUser, err := user.Current(); err != nil {
 		s.sender.SendError("Could not find current user", err)
 	} else {
 		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
 
-		if err := s.saveCategoriesToFile(categoryFile, constants.CategoriesFileName, categories); err != nil {
+		if err := s.saveCategoriesToFile(categoryFile, constants.CategoriesFileName, command.Categories); err != nil {
 			s.sender.SendError("Could not save categories", err)
 		} else {
-			s.sender.SendToTopicWithData(api.CategoriesUpdated, apitype.NewCategoriesCommand(s.GetCategories()))
+			s.sender.SendCommandToTopic(
+				api.CategoriesUpdated,
+				&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
+			)
 		}
 	}
 }
@@ -119,8 +128,8 @@ func (s *Manager) Close() {
 	logger.Info.Print("Shutting down category manager")
 }
 
-func (s *Manager) GetCategoryById(id apitype.CategoryId) *apitype.Category {
-	return s.categoryStore.GetCategoryById(id)
+func (s *Manager) GetCategoryById(query *api.CategoryQuery) *apitype.Category {
+	return s.categoryStore.GetCategoryById(query.Id)
 }
 
 func (s *Manager) saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) (err error) {
@@ -226,4 +235,12 @@ func readCategoriesFromReader(f io.Reader) []*apitype.Category {
 	} else {
 		return []*apitype.Category{}
 	}
+}
+
+func toCategoryIds(categories []*apitype.Category) []apitype.CategoryId {
+	var categoryIds []apitype.CategoryId
+	for _, category := range categories {
+		categoryIds = append(categoryIds, category.GetId())
+	}
+	return categoryIds
 }

@@ -33,7 +33,9 @@ func NewSimilarImagesView(builder *gtk.Builder, sender api.Sender, imageCache ap
 
 	similarImagesView.closeButton.Connect("clicked", func() {
 		similarImagesView.view.SetVisible(false)
-		sender.SendToTopicWithData(api.SimilarSetShowImages, false)
+		sender.SendCommandToTopic(api.SimilarSetShowImages, &api.SimilarImagesCommand{
+			SendSimilarImages: false,
+		})
 	})
 
 	return similarImagesView
@@ -51,7 +53,9 @@ func (s *SimilarImagesView) createSimilarImage(handle *apitype.ImageContainer, s
 	imageWidget, _ := gtk.ImageNewFromPixbuf(asPixbuf(thumbnail))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
-		sender.SendToTopicWithData(api.ImageRequest, handle.GetHandle())
+		sender.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
+			Id: handle.GetHandle().GetId(),
+		})
 	})
 	return eventBox
 }

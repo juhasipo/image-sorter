@@ -8,6 +8,8 @@ import (
 	"vincit.fi/image-sorter/backend/imageloader"
 )
 
+const testAssetsDir = "../../testassets"
+
 func TestHashCalculator_GenerateHashes(t *testing.T) {
 	a := assert.New(t)
 
@@ -15,7 +17,7 @@ func TestHashCalculator_GenerateHashes(t *testing.T) {
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
 
-	imageLoader := imageloader.NewImageLoader()
+	imageLoader := imageloader.NewImageLoader(imageStore)
 
 	t.Run("No images in store", func(t *testing.T) {
 		sut := NewHashCalculator(similarityIndex, imageLoader, 1)
@@ -76,7 +78,7 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
 
-	imageLoader := imageloader.NewImageLoader()
+	imageLoader := imageloader.NewImageLoader(imageStore)
 
 	t.Run("No images in store", func(t *testing.T) {
 		sut := NewHashCalculator(similarityIndex, imageLoader, 1)

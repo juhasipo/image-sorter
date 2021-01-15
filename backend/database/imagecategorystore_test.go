@@ -41,8 +41,8 @@ func TestImageCategoryStore_CategorizeImage(t *testing.T) {
 			imagesCategories, err := sut.GetImagesCategories(images[0].GetId())
 			a.Nil(err)
 			a.Equal(1, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[0].GetId(), imagesCategories[0].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[0].GetId(), imagesCategories[0].Category.GetId())
 		})
 
 		t.Run("Many categories", func(t *testing.T) {
@@ -54,10 +54,10 @@ func TestImageCategoryStore_CategorizeImage(t *testing.T) {
 			imagesCategories, err := sut.GetImagesCategories(images[0].GetId())
 			a.Nil(err)
 			a.Equal(3, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[0].GetId(), imagesCategories[0].GetEntry().GetId())
-			a.Equal(categories[1].GetId(), imagesCategories[1].GetEntry().GetId())
-			a.Equal(categories[2].GetId(), imagesCategories[2].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[0].GetId(), imagesCategories[0].Category.GetId())
+			a.Equal(categories[1].GetId(), imagesCategories[1].Category.GetId())
+			a.Equal(categories[2].GetId(), imagesCategories[2].Category.GetId())
 		})
 
 		t.Run("Many categories many images", func(t *testing.T) {
@@ -71,23 +71,23 @@ func TestImageCategoryStore_CategorizeImage(t *testing.T) {
 			imagesCategories, err := sut.GetImagesCategories(images[0].GetId())
 			a.Nil(err)
 			a.Equal(3, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[0].GetId(), imagesCategories[0].GetEntry().GetId())
-			a.Equal(categories[1].GetId(), imagesCategories[1].GetEntry().GetId())
-			a.Equal(categories[2].GetId(), imagesCategories[2].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[0].GetId(), imagesCategories[0].Category.GetId())
+			a.Equal(categories[1].GetId(), imagesCategories[1].Category.GetId())
+			a.Equal(categories[2].GetId(), imagesCategories[2].Category.GetId())
 
 			imagesCategories, err = sut.GetImagesCategories(images[1].GetId())
 			a.Nil(err)
 			a.Equal(1, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[1].GetId(), imagesCategories[0].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[1].GetId(), imagesCategories[0].Category.GetId())
 
 			imagesCategories, err = sut.GetImagesCategories(images[2].GetId())
 			a.Nil(err)
 			a.Equal(2, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[1].GetId(), imagesCategories[0].GetEntry().GetId())
-			a.Equal(categories[2].GetId(), imagesCategories[1].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[1].GetId(), imagesCategories[0].Category.GetId())
+			a.Equal(categories[2].GetId(), imagesCategories[1].Category.GetId())
 		})
 	})
 
@@ -105,8 +105,8 @@ func TestImageCategoryStore_CategorizeImage(t *testing.T) {
 		imagesCategories, err := sut.GetImagesCategories(images[0].GetId())
 		a.Nil(err)
 		a.Equal(1, len(imagesCategories))
-		a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-		a.Equal(categories[1].GetId(), imagesCategories[0].GetEntry().GetId())
+		a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+		a.Equal(categories[1].GetId(), imagesCategories[0].Category.GetId())
 	})
 
 	t.Run("None category", func(t *testing.T) {
@@ -129,9 +129,9 @@ func TestImageCategoryStore_CategorizeImage(t *testing.T) {
 			imagesCategories, err := sut.GetImagesCategories(images[0].GetId())
 			a.Nil(err)
 			a.Equal(2, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[0].GetId(), imagesCategories[0].GetEntry().GetId())
-			a.Equal(categories[2].GetId(), imagesCategories[1].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[0].GetId(), imagesCategories[0].Category.GetId())
+			a.Equal(categories[2].GetId(), imagesCategories[1].Category.GetId())
 		})
 
 		t.Run("Second time", func(t *testing.T) {
@@ -141,9 +141,9 @@ func TestImageCategoryStore_CategorizeImage(t *testing.T) {
 			imagesCategories, err := sut.GetImagesCategories(images[0].GetId())
 			a.Nil(err)
 			a.Equal(2, len(imagesCategories))
-			a.Equal(apitype.MOVE, imagesCategories[0].GetOperation())
-			a.Equal(categories[0].GetId(), imagesCategories[0].GetEntry().GetId())
-			a.Equal(categories[2].GetId(), imagesCategories[1].GetEntry().GetId())
+			a.Equal(apitype.MOVE, imagesCategories[0].Operation)
+			a.Equal(categories[0].GetId(), imagesCategories[0].Category.GetId())
+			a.Equal(categories[2].GetId(), imagesCategories[1].Category.GetId())
 		})
 	})
 }
@@ -242,16 +242,16 @@ func TestImageCategoryStore_GetCategorizedImages(t *testing.T) {
 	a.Equal(3, len(imagesCategories))
 
 	a.Equal(2, len(imagesCategories[images[0].GetId()]))
-	a.Equal("C1", imagesCategories[images[0].GetId()][categories[0].GetId()].GetEntry().GetName())
-	a.Equal("C2", imagesCategories[images[0].GetId()][categories[1].GetId()].GetEntry().GetName())
+	a.Equal("C1", imagesCategories[images[0].GetId()][categories[0].GetId()].Category.GetName())
+	a.Equal("C2", imagesCategories[images[0].GetId()][categories[1].GetId()].Category.GetName())
 
 	a.Equal(3, len(imagesCategories[images[1].GetId()]))
-	a.Equal("C1", imagesCategories[images[1].GetId()][categories[0].GetId()].GetEntry().GetName())
-	a.Equal("C2", imagesCategories[images[1].GetId()][categories[1].GetId()].GetEntry().GetName())
-	a.Equal("C3", imagesCategories[images[1].GetId()][categories[2].GetId()].GetEntry().GetName())
+	a.Equal("C1", imagesCategories[images[1].GetId()][categories[0].GetId()].Category.GetName())
+	a.Equal("C2", imagesCategories[images[1].GetId()][categories[1].GetId()].Category.GetName())
+	a.Equal("C3", imagesCategories[images[1].GetId()][categories[2].GetId()].Category.GetName())
 
 	a.Equal(1, len(imagesCategories[images[2].GetId()]))
-	a.Equal("C3", imagesCategories[images[2].GetId()][categories[2].GetId()].GetEntry().GetName())
+	a.Equal("C3", imagesCategories[images[2].GetId()][categories[2].GetId()].Category.GetName())
 }
 
 func createCategories() []*apitype.Category {

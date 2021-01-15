@@ -6,19 +6,26 @@ import (
 	"os"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 )
 
 var options = &jpeg.DecoderOptions{}
 
-func NewImageLoader() api.ImageLoader {
-	return &LibJPEGImageLoader{}
+func NewImageLoader(imageStore *database.ImageStore) api.ImageLoader {
+	return &LibJPEGImageLoader{
+		imageStore: imageStore,
+	}
 }
 
 type LibJPEGImageLoader struct {
+	imageStore *database.ImageStore
+
 	api.ImageLoader
 }
 
-func (s *LibJPEGImageLoader) LoadImage(handle *apitype.Handle) (image.Image, error) {
+func (s *LibJPEGImageLoader) LoadImage(handleId apitype.HandleId) (image.Image, error) {
+	handle := s.imageStore.GetImageById(handleId)
+
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -29,10 +36,14 @@ func (s *LibJPEGImageLoader) LoadImage(handle *apitype.Handle) (image.Image, err
 	if err != nil {
 		return nil, err
 	}
-	return imageFile, err
+
+	rotation, flipped := handle.GetRotation()
+	return apitype.ExifRotateImage(imageFile, rotation, flipped)
 }
 
-func (s *LibJPEGImageLoader) LoadImageScaled(handle *apitype.Handle, size apitype.Size) (image.Image, error) {
+func (s *LibJPEGImageLoader) LoadImageScaled(handleId apitype.HandleId, size apitype.Size) (image.Image, error) {
+	handle := s.imageStore.GetImageById(handleId)
+
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
 		return nil, err
@@ -43,9 +54,12 @@ func (s *LibJPEGImageLoader) LoadImageScaled(handle *apitype.Handle, size apityp
 	if err != nil {
 		return nil, err
 	}
-	return imageFile, err
+
+	rotation, flipped := handle.GetRotation()
+	return apitype.ExifRotateImage(imageFile, rotation, flipped)
 }
 
-func (s *LibJPEGImageLoader) LoadExifData(handle *apitype.Handle) (*apitype.ExifData, error) {
-	return apitype.LoadExifData(handle)
+func (s *LibJPEGImageLoader) LoadExifData(handleId apitype.HandleId) (*apitype.ExifData, error) {
+	// TODO
+	return nil, nil
 }

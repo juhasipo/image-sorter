@@ -4,16 +4,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 )
 
 func TestInstance_GetFull(t *testing.T) {
 	a := assert.New(t)
 
-	loader := NewImageLoader()
+	db := database.NewInMemoryDatabase()
+	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+
+	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+
+	loader := NewImageLoader(imageStore)
 
 	t.Run("Horizontal", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetFull()
 
@@ -25,8 +31,7 @@ func TestInstance_GetFull(t *testing.T) {
 		a.Equal(39953712, instance.GetByteLength())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(2, testAssetsDir, "vertical.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(vertical.GetId(), loader)
 
 		scaled, err := instance.GetFull()
 
@@ -38,8 +43,7 @@ func TestInstance_GetFull(t *testing.T) {
 		a.Equal(39953712, instance.GetByteLength())
 	})
 	t.Run("Cached", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetFull()
 		scaled, err = instance.GetFull()
@@ -53,28 +57,16 @@ func TestInstance_GetFull(t *testing.T) {
 		a.Equal(39953712, instance.GetByteLength())
 	})
 	t.Run("No image", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(3, testAssetsDir, "no_image.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(3, loader)
 
 		scaled, err := instance.GetFull()
 		a.NotNil(err)
 		a.Nil(scaled)
-		a.True(handle.IsValid())
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := apitype.NewHandle("", "")
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(apitype.NoHandle, loader)
 
 		scaled, err := instance.GetFull()
-		a.NotNil(err)
-		a.Nil(scaled)
-		a.False(handle.IsValid())
-	})
-	t.Run("Nil", func(t *testing.T) {
-		instance := NewInstance(nil, loader)
-
-		scaled, err := instance.GetFull()
-
 		a.NotNil(err)
 		a.Nil(scaled)
 	})
@@ -83,11 +75,16 @@ func TestInstance_GetFull(t *testing.T) {
 func TestInstance_GetScaled(t *testing.T) {
 	a := assert.New(t)
 
-	loader := NewImageLoader()
+	db := database.NewInMemoryDatabase()
+	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+
+	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+
+	loader := NewImageLoader(imageStore)
 
 	t.Run("Horizontal", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -100,8 +97,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(40433712, instance.GetByteLength())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(2, testAssetsDir, "vertical.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(vertical.GetId(), loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -114,8 +110,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(40433712, instance.GetByteLength())
 	})
 	t.Run("Cached", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -129,8 +124,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(40433712, instance.GetByteLength())
 	})
 	t.Run("Rescaled", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		size1 := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size1)
@@ -153,29 +147,16 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(41873712, instance.GetByteLength())
 	})
 	t.Run("Not found", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(3, testAssetsDir, "no_image.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(3, loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
 
 		a.NotNil(err)
 		a.Nil(scaled)
-		a.True(handle.IsValid())
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := apitype.NewHandle("", "")
-		instance := NewInstance(handle, loader)
-
-		size := apitype.SizeOf(400, 400)
-		scaled, err := instance.GetScaled(size)
-
-		a.NotNil(err)
-		a.Nil(scaled)
-		a.False(handle.IsValid())
-	})
-	t.Run("Nil", func(t *testing.T) {
-		instance := NewInstance(nil, loader)
+		instance := NewInstance(apitype.NoHandle, loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -188,11 +169,16 @@ func TestInstance_GetScaled(t *testing.T) {
 func TestInstance_GetThumbnail(t *testing.T) {
 	a := assert.New(t)
 
-	loader := NewImageLoader()
+	db := database.NewInMemoryDatabase()
+	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+
+	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+
+	loader := NewImageLoader(imageStore)
 
 	t.Run("Horizontal", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetThumbnail()
 
@@ -204,8 +190,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 		a.Equal(30000, instance.GetByteLength())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(2, testAssetsDir, "vertical.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(vertical.GetId(), loader)
 
 		scaled, err := instance.GetThumbnail()
 
@@ -217,8 +202,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 		a.Equal(30000, instance.GetByteLength())
 	})
 	t.Run("Cached", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetThumbnail()
 		scaled, err = instance.GetThumbnail()
@@ -231,27 +215,15 @@ func TestInstance_GetThumbnail(t *testing.T) {
 		a.Equal(30000, instance.GetByteLength())
 	})
 	t.Run("Not found", func(t *testing.T) {
-		handle := apitype.NewHandleWithId(3, testAssetsDir, "no_image.jpg", map[string]string{})
-		instance := NewInstance(handle, loader)
+		instance := NewInstance(3, loader)
 
 		scaled, err := instance.GetThumbnail()
 
 		a.NotNil(err)
 		a.Nil(scaled)
-		a.True(handle.IsValid())
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := apitype.NewHandle("", "")
-		instance := NewInstance(handle, loader)
-
-		scaled, err := instance.GetThumbnail()
-
-		a.NotNil(err)
-		a.Nil(scaled)
-		a.False(handle.IsValid())
-	})
-	t.Run("Nil", func(t *testing.T) {
-		instance := NewInstance(nil, loader)
+		instance := NewInstance(apitype.NoHandle, loader)
 
 		scaled, err := instance.GetThumbnail()
 
@@ -263,10 +235,15 @@ func TestInstance_GetThumbnail(t *testing.T) {
 func TestInstance_Purge(t *testing.T) {
 	a := assert.New(t)
 
-	loader := NewImageLoader()
+	db := database.NewInMemoryDatabase()
+	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
 
-	handle := apitype.NewHandleWithId(1, testAssetsDir, "horizontal.jpg", map[string]string{})
-	instance := NewInstance(handle, loader)
+	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
+	_, _ = imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+
+	loader := NewImageLoader(imageStore)
+
+	instance := NewInstance(horizontal.GetId(), loader)
 
 	scaled, err := instance.GetFull()
 

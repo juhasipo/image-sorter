@@ -7,6 +7,9 @@ import (
 	"vincit.fi/image-sorter/common/logger"
 )
 
+var nextImage = &api.ImageAtQuery{Index: 1}
+var previousImage = &api.ImageAtQuery{Index: -1}
+
 type Manager struct {
 	sender  api.Sender
 	manager *internalManager
@@ -29,8 +32,8 @@ func (s *Manager) GetHandles() []*apitype.Handle {
 	return s.manager.GetHandles()
 }
 
-func (s *Manager) ShowOnlyImages(categoryId apitype.CategoryId) {
-	s.manager.ShowOnlyImages(categoryId)
+func (s *Manager) ShowOnlyImages(command *api.SelectCategoryCommand) {
+	s.manager.ShowOnlyImages(command.CategoryId)
 	s.RequestImages()
 }
 
@@ -49,39 +52,41 @@ func (s *Manager) RequestGenerateHashes() {
 	}
 }
 
-func (s *Manager) SetSendSimilarImages(sendSimilarImages bool) {
-	s.manager.SetSimilarStatus(sendSimilarImages)
+func (s *Manager) SetSendSimilarImages(command *api.SimilarImagesCommand) {
+	s.manager.SetSimilarStatus(command.SendSimilarImages)
 }
 
 func (s *Manager) RequestStopHashes() {
 	s.manager.StopHashes()
 }
 
-func (s *Manager) RequestNextImageWithOffset(offset int) {
-	s.manager.MoveToNextImageWithOffset(offset)
+func (s *Manager) RequestNextImageWithOffset(query *api.ImageAtQuery) {
+	s.manager.MoveToNextImageWithOffset(query.Index)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestPrevImageWithOffset(offset int) {
-	s.manager.MoveToPrevImageWithOffset(offset)
+func (s *Manager) RequestPrevImageWithOffset(query *api.ImageAtQuery) {
+	s.manager.MoveToPrevImageWithOffset(query.Index)
 	s.RequestImages()
 }
 
 func (s *Manager) RequestNextImage() {
-	s.RequestNextImageWithOffset(1)
+
+	s.RequestNextImageWithOffset(nextImage)
 }
 
 func (s *Manager) RequestPrevImage() {
-	s.RequestNextImageWithOffset(-1)
+
+	s.RequestNextImageWithOffset(previousImage)
 }
 
-func (s *Manager) RequestImage(handle *apitype.Handle) {
-	s.manager.MoveToImage(handle)
+func (s *Manager) RequestImage(query *api.ImageQuery) {
+	s.manager.MoveToImage(query.Id)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestImageAt(index int) {
-	s.manager.MoveToImageAt(index)
+func (s *Manager) RequestImageAt(query *api.ImageAtQuery) {
+	s.manager.MoveToImageAt(query.Index)
 	s.RequestImages()
 }
 
@@ -93,8 +98,8 @@ func (s *Manager) requestImageLists() {
 	s.sendImages(false)
 }
 
-func (s *Manager) SetImageListSize(imageListSize int) {
-	if s.manager.SetImageListSize(imageListSize) {
+func (s *Manager) SetImageListSize(command *api.ImageListCommand) {
+	if s.manager.SetImageListSize(command.ImageListSize) {
 		s.requestImageLists()
 	}
 }
@@ -125,9 +130,12 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		}
 
 		if sendCurrentImage {
-			s.sender.SendToTopicWithData(api.ImageCurrentUpdated,
-				currentImage, currentIndex, totalImages,
-				s.manager.getSelectedCategoryId())
+			s.sender.SendCommandToTopic(api.ImageCurrentUpdated, &api.UpdateImageCommand{
+				Image:      currentImage,
+				Index:      currentIndex,
+				Total:      totalImages,
+				CategoryId: s.manager.getSelectedCategoryId(),
+			})
 		}
 
 		if nextImages, err := s.manager.getNextImages(); err != nil {
@@ -135,8 +143,14 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		} else if prevImages, err := s.manager.getPrevImages(); err != nil {
 			s.sender.SendError("Error while fetching previous images", err)
 		} else {
-			s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestPrev, prevImages)
-			s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestNext, nextImages)
+			s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
+				Topic:  api.ImageRequestPrev,
+				Images: prevImages,
+			})
+			s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
+				Topic:  api.ImageRequestNext,
+				Images: nextImages,
+			})
 		}
 
 		if s.manager.shouldSendSimilarImages() {
@@ -149,7 +163,10 @@ func (s *Manager) sendSimilarImages(handle *apitype.Handle) {
 	if images, shouldSend, err := s.manager.getSimilarImages(handle); err != nil {
 		s.sender.SendError("Error while fetching similar images", err)
 	} else if shouldSend {
-		s.sender.SendToTopicWithData(api.ImageListUpdated, api.ImageRequestSimilar, images)
+		s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
+			Topic:  api.ImageRequestSimilar,
+			Images: images,
+		})
 	}
 }
 

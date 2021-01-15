@@ -20,13 +20,13 @@ func TestHandle_String(t *testing.T) {
 	var nilHandle *Handle
 	a.Equal("Handle<nil>", nilHandle.String())
 	a.Equal("Handle<invalid>", NewHandle("", "").String())
-	a.Equal("Handle{file.jpeg}", NewHandleWithId(2, "/some/dir", "file.jpeg", map[string]string{}).String())
+	a.Equal("Handle{file.jpeg}", NewHandleWithId(2, "/some/dir", "file.jpeg", 0, false, map[string]string{}).String())
 }
 
 func TestValidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(1, "some/dir", "file.jpeg", map[string]string{})
+	handle := NewHandleWithId(1, "some/dir", "file.jpeg", 0, false, map[string]string{})
 	handle.SetByteSize(1.5 * 1024 * 1024)
 
 	t.Run("Validity", func(t *testing.T) {
@@ -45,7 +45,7 @@ func TestValidHandle(t *testing.T) {
 func TestInvalidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(NoHandle, "", "", map[string]string{})
+	handle := NewHandleWithId(NoHandle, "", "", 0, false, map[string]string{})
 
 	t.Run("Validity", func(t *testing.T) {
 		a.False(handle.IsValid())

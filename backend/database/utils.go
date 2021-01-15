@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"time"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
@@ -19,7 +20,8 @@ func toApiHandle(image *Image) (*apitype.Handle, error) {
 		return nil, err
 	}
 	handle := apitype.NewHandleWithId(
-		image.Id, image.Directory, image.FileName, metaData,
+		image.Id, image.Directory, image.FileName,
+		float64(image.ImageAngle), image.ImageFlip, metaData,
 	)
 	handle.SetByteSize(image.ByteSize)
 	return handle, nil
@@ -33,20 +35,20 @@ func toApiHandles(images []Image) []*apitype.Handle {
 	return handles
 }
 
-func toApiCategorizedImages(categories []CategorizedImage) []*apitype.CategorizedImage {
-	apiTypeCategories := make([]*apitype.CategorizedImage, len(categories))
+func toApiCategorizedImages(categories []CategorizedImage) []*api.CategorizedImage {
+	apiTypeCategories := make([]*api.CategorizedImage, len(categories))
 	for i, category := range categories {
 		apiTypeCategories[i] = toApiCategorizedImage(&category)
 	}
 	return apiTypeCategories
 }
 
-func toApiCategorizedImage(category *CategorizedImage) *apitype.CategorizedImage {
-	return apitype.NewCategorizedImage(
-		apitype.NewCategoryWithId(
+func toApiCategorizedImage(category *CategorizedImage) *api.CategorizedImage {
+	return &api.CategorizedImage{
+		Category: apitype.NewCategoryWithId(
 			category.CategoryId, category.Name, category.SubPath, category.Shortcut),
-		apitype.OperationFromId(category.Operation),
-	)
+		Operation: apitype.OperationFromId(category.Operation),
+	}
 }
 
 func toApiCategories(categories []Category) []*apitype.Category {

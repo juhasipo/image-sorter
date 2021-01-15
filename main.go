@@ -33,7 +33,7 @@ func main() {
 	broker := event.InitBus(EventBusQueueSize)
 
 	categoryManager := category.New(params, broker, categoryStore)
-	imageLoader := imageloader.NewImageLoader()
+	imageLoader := imageloader.NewImageLoader(imageStore)
 	imageCache := imageloader.NewImageCache(imageLoader)
 	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader, similarityIndex, imageStore)
 	filterManager := filter.NewFilterManager()

@@ -231,14 +231,10 @@ func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
 	}
 }
 
-func ExifRotateImage(loadedImage image.Image, exifData *ExifData) (image.Image, error) {
-	if exifData != nil {
-		loadedImage = imaging.Rotate(loadedImage, float64(exifData.GetRotation()), color.Black)
-		if exifData.IsFlipped() {
-			return imaging.FlipH(loadedImage), nil
-		} else {
-			return loadedImage, nil
-		}
+func ExifRotateImage(loadedImage image.Image, rotation float64, flipped bool) (image.Image, error) {
+	loadedImage = imaging.Rotate(loadedImage, rotation, color.Black)
+	if flipped {
+		return imaging.FlipH(loadedImage), nil
 	} else {
 		return loadedImage, nil
 	}

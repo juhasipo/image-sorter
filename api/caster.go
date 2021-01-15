@@ -1,13 +1,16 @@
 package api
 
-import "vincit.fi/image-sorter/api/apitype"
+type SelectDeviceCommand struct {
+	Name           string
+	ShowBackground bool
+}
 
 type Caster interface {
 	StartServer(port int)
 	StopServer()
 	FindDevices()
-	SelectDevice(name string, showBackground bool)
-	CastImage(handle *apitype.Handle)
+	SelectDevice(*SelectDeviceCommand)
+	CastImage(*ImageCategoryQuery)
 	StopCasting()
 	Close()
 }
