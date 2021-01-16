@@ -37,7 +37,7 @@ func (s *ImageStore) AddImages(imageFiles []*apitype.ImageFile) error {
 	return s.getCollection().Session().Tx(func(sess db.Session) error {
 		for _, imageFile := range imageFiles {
 			if _, err := s.addImage(sess, imageFile); err != nil {
-				logger.Error.Printf("Error while adding image '%s' to DB", imageFile.GetPath())
+				logger.Error.Printf("Error while adding image '%s' to DB", imageFile.Path())
 				return err
 			}
 		}
@@ -234,8 +234,8 @@ func (s *ImageStore) findByDirAndFile(collection db.Collection, imageFile *apity
 	var imageFiles []Image
 	err := collection.
 		Find(db.Cond{
-			"directory": imageFile.GetDir(),
-			"file_name": imageFile.GetFile(),
+			"directory": imageFile.Directory(),
+			"file_name": imageFile.FileName(),
 		}).
 		All(&imageFiles)
 	if err != nil {
@@ -254,8 +254,8 @@ func (s *ImageStore) Exists(imageFile *apitype.ImageFile) (bool, error) {
 func (s *ImageStore) exists(collection db.Collection, imageFile *apitype.ImageFile) (bool, error) {
 	return collection.
 		Find(db.Cond{
-			"directory": imageFile.GetDir(),
-			"file_name": imageFile.GetFile(),
+			"directory": imageFile.Directory(),
+			"file_name": imageFile.FileName(),
 		}).
 		Exists()
 }
@@ -277,8 +277,8 @@ func (s *ImageStore) findModifiedId(collection db.Collection, imageFile *apitype
 	var images []Image
 	err = collection.
 		Find(db.Cond{
-			"directory":            imageFile.GetDir(),
-			"file_name":            imageFile.GetFile(),
+			"directory":            imageFile.Directory(),
+			"file_name":            imageFile.FileName(),
 			"modified_timestamp <": stat.ModTime(),
 		}).All(&images)
 

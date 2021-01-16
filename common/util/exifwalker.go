@@ -26,6 +26,6 @@ func (s *MapExifWalker) Walk(name exif.FieldName, tag *tiff.Tag) error {
 	return nil
 }
 
-func (s *MapExifWalker) GetMetaData() map[string]string {
+func (s *MapExifWalker) MetaData() map[string]string {
 	return s.values
 }

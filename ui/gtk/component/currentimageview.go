@@ -70,21 +70,21 @@ func findZoomIndexForValue(value uint16) int {
 	return len(zoomLevels) - 1
 }
 
-func getZoomLevelValue(i int) uint16 {
+func resolveZoomLevelValueAtIndex(i int) uint16 {
 	return zoomLevels[i]
 }
 
-func (s *CurrentImageView) getFormattedZoomLevel() string {
+func (s *CurrentImageView) formattedZoomLevel() string {
 	if s.zoomToFixEnabled {
-		return fmt.Sprintf("Fit (%d %%)", s.getCalculatedZoomLevel())
+		return fmt.Sprintf("Fit (%d %%)", s.calculatedZoomLevel())
 	} else {
-		return fmt.Sprintf("%d %%", getZoomLevelValue(s.zoomIndex))
+		return fmt.Sprintf("%d %%", resolveZoomLevelValueAtIndex(s.zoomIndex))
 	}
 }
 
 func (s *CurrentImageView) zoomIn() {
 	if s.zoomToFixEnabled {
-		s.zoomIndex = findZoomIndexForValue(s.getCalculatedZoomLevel())
+		s.zoomIndex = findZoomIndexForValue(s.calculatedZoomLevel())
 	}
 
 	s.zoomToFixEnabled = false
@@ -95,12 +95,12 @@ func (s *CurrentImageView) zoomIn() {
 }
 
 func (s *CurrentImageView) updateZoomLevelLabel() {
-	s.zoomLevelLabel.SetLabel(s.getFormattedZoomLevel())
+	s.zoomLevelLabel.SetLabel(s.formattedZoomLevel())
 }
 
 func (s *CurrentImageView) zoomOut() {
 	if s.zoomToFixEnabled {
-		s.zoomIndex = findZoomIndexForValue(s.getCalculatedZoomLevel())
+		s.zoomIndex = findZoomIndexForValue(s.calculatedZoomLevel())
 	}
 
 	s.zoomToFixEnabled = false
@@ -115,15 +115,15 @@ func (s *CurrentImageView) zoomToFit() {
 	s.zoomToFixEnabled = true
 }
 
-func (s *CurrentImageView) getCurrentZoomLevel() float64 {
-	return float64(getZoomLevelValue(s.zoomIndex))
+func (s *CurrentImageView) currentZoomLevel() float64 {
+	return float64(resolveZoomLevelValueAtIndex(s.zoomIndex))
 }
 
 func (s *CurrentImageView) UpdateCurrentImage() {
 	gtkImage := s.view
 	if s.imageInstance != nil {
 		fullSize := s.imageInstance.Bounds()
-		zoomPercent := s.getCurrentZoomLevel() / 100.0
+		zoomPercent := s.currentZoomLevel() / 100.0
 		var targetSize apitype.Size
 		if s.zoomToFixEnabled {
 			targetSize = apitype.ZoomedSizeFromWindow(s.scrolledView, zoomPercent)
@@ -132,12 +132,12 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 		}
 		targetFitSize := apitype.RectangleOfScaledToFit(fullSize, targetSize)
 
-		pixBufSize := getPixbufSize(gtkImage.GetPixbuf())
+		pixBufSize := calculatePixbufSize(gtkImage.GetPixbuf())
 		if s.imageChanged ||
-			(targetFitSize.GetWidth() != pixBufSize.GetWidth() &&
-				targetFitSize.GetHeight() != pixBufSize.GetHeight()) {
+			(targetFitSize.Width() != pixBufSize.Width() &&
+				targetFitSize.Height() != pixBufSize.Height()) {
 			s.imageChanged = false
-			scaled, err := asPixbuf(s.imageInstance).ScaleSimple(targetFitSize.GetWidth(), targetFitSize.GetHeight(), gdk.INTERP_TILES)
+			scaled, err := asPixbuf(s.imageInstance).ScaleSimple(targetFitSize.Width(), targetFitSize.Height(), gdk.INTERP_TILES)
 			if err != nil {
 				logger.Error.Print("Could not load Pixbuf", err)
 			}
@@ -153,19 +153,19 @@ const showExifData = false
 
 func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContainer) {
 	s.imageChanged = true
-	imageFile := imageContainer.GetImageFile()
-	metaData := imageContainer.GetMetaData()
-	imageData := imageContainer.GetImageData()
+	imageFile := imageContainer.ImageFile()
+	metaData := imageContainer.MetaData()
+	imageData := imageContainer.ImageData()
 	s.imageInstance = imageData
 
 	if imageData != nil {
 		size := imageData.Bounds()
 		buffer, _ := s.details.GetBuffer()
 		stringBuffer := bytes.NewBuffer([]byte{})
-		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", imageFile.GetPath(), metaData.GetByteSizeMB(), size.Dx(), size.Dy()))
+		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", imageFile.Path(), metaData.ByteSizeInMB(), size.Dx(), size.Dy()))
 
 		if showExifData {
-			for key, value := range metaData.GetMetaData() {
+			for key, value := range metaData.MetaData() {
 				stringBuffer.WriteString("\n")
 				stringBuffer.WriteString(key)
 				stringBuffer.WriteString(": ")
@@ -183,7 +183,7 @@ func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContaine
 	}
 }
 
-func (s *CurrentImageView) getCalculatedZoomLevel() uint16 {
+func (s *CurrentImageView) calculatedZoomLevel() uint16 {
 	if s.imageInstance != nil && s.view.GetPixbuf() != nil {
 		currentSize := s.imageInstance.Bounds()
 		width := s.view.GetPixbuf().GetWidth()
@@ -214,7 +214,7 @@ func asPixbuf(cachedImage image.Image) *gdk.Pixbuf {
 	return nil
 }
 
-func getPixbufSize(pixbuf *gdk.Pixbuf) apitype.Size {
+func calculatePixbufSize(pixbuf *gdk.Pixbuf) apitype.Size {
 	if pixbuf != nil {
 		return apitype.SizeOf(pixbuf.GetWidth(), pixbuf.GetHeight())
 	} else {

@@ -40,8 +40,8 @@ func TestScaleToFit(t *testing.T) {
 				image.Rect(0, 0, tt.args.sourceWidth, tt.args.sourceHeight),
 				SizeOf(tt.args.targetWidth, tt.args.targetHeight),
 			)
-			a.Equal(tt.width, size.GetWidth())
-			a.Equal(tt.height, size.GetHeight())
+			a.Equal(tt.width, size.Width())
+			a.Equal(tt.height, size.Height())
 		})
 
 		t.Run("PointOfScaledToFit: "+tt.name, func(t *testing.T) {
@@ -49,8 +49,8 @@ func TestScaleToFit(t *testing.T) {
 				image.Pt(tt.args.sourceWidth, tt.args.sourceHeight),
 				SizeOf(tt.args.targetWidth, tt.args.targetHeight),
 			)
-			a.Equal(tt.width, size.GetWidth())
-			a.Equal(tt.height, size.GetHeight())
+			a.Equal(tt.width, size.Width())
+			a.Equal(tt.height, size.Height())
 		})
 	}
 }
@@ -71,8 +71,8 @@ func TestSizeOf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := SizeOf(tt.args.width, tt.args.height)
-			a.Equal(tt.width, got.GetWidth())
-			a.Equal(tt.height, got.GetHeight())
+			a.Equal(tt.width, got.Width())
+			a.Equal(tt.height, got.Height())
 		})
 	}
 }
@@ -103,8 +103,8 @@ func TestZoomedSizeFromRectangle(t *testing.T) {
 				image.Rect(0, 0, tt.args.sourceWidth, tt.args.sourceHeight),
 				tt.args.zoomFactor,
 			)
-			a.Equal(tt.width, size.GetWidth())
-			a.Equal(tt.height, size.GetHeight())
+			a.Equal(tt.width, size.Width())
+			a.Equal(tt.height, size.Height())
 		})
 	}
 }

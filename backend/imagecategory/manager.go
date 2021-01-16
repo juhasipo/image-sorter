@@ -50,7 +50,7 @@ func (s *Manager) GetCategories(query *api.ImageCategoryQuery) map[apitype.Categ
 	} else {
 		categorizedEntries := map[apitype.CategoryId]*api.CategorizedImage{}
 		for _, categorizedImage := range categories {
-			categorizedEntries[categorizedImage.Category.GetId()] = categorizedImage
+			categorizedEntries[categorizedImage.Category.Id()] = categorizedImage
 		}
 		return categorizedEntries
 	}
@@ -126,17 +126,17 @@ func (s *Manager) ResolveOperationsForGroup(
 	imageFile *apitype.ImageFileWithMetaData,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
-	dir, file := imageFile.GetDir(), imageFile.GetFile()
+	dir, file := imageFile.Directory(), imageFile.FileName()
 
-	filters := s.filterManager.GetFilters(imageFile.GetId(), options)
+	filters := s.filterManager.GetFilters(imageFile.Id(), options)
 
 	var imageOperations []apitype.ImageOperation
 	for _, categorizedImage := range categoryEntries {
-		targetDirName := categorizedImage.Category.GetSubPath()
+		targetDirName := categorizedImage.Category.SubPath()
 		targetDir := filepath.Join(dir, targetDirName)
 
 		for _, f := range filters {
-			imageOperations = append(imageOperations, f.GetOperation())
+			imageOperations = append(imageOperations, f.Operation())
 		}
 		imageOperations = append(imageOperations, filter.NewImageCopy(targetDir, file, options.Quality))
 	}
@@ -144,10 +144,10 @@ func (s *Manager) ResolveOperationsForGroup(
 		imageOperations = append(imageOperations, filter.NewImageRemove())
 	}
 
-	if fullImage, err := s.imageLoader.LoadImage(imageFile.GetId()); err != nil {
+	if fullImage, err := s.imageLoader.LoadImage(imageFile.Id()); err != nil {
 		s.sender.SendError("Could not load image", err)
 		return nil, err
-	} else if exifData, err := s.imageLoader.LoadExifData(imageFile.GetId()); err != nil {
+	} else if exifData, err := s.imageLoader.LoadExifData(imageFile.Id()); err != nil {
 		s.sender.SendError("Could not load exif data", err)
 		return nil, err
 	} else {

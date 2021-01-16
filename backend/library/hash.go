@@ -33,10 +33,10 @@ func hashImage(input chan *apitype.ImageFile, output chan *HashResult, quitChann
 		case imageFile := <-input:
 			{
 				if decodedImage, err := openImageForHashing(imageLoader, imageFile); err != nil {
-					ReturnResult(output, imageFile.GetId(), nil)
+					ReturnResult(output, imageFile.Id(), nil)
 				} else {
 					hash := generateHash(decodedImage, imageFile)
-					ReturnResult(output, imageFile.GetId(), &hash)
+					ReturnResult(output, imageFile.Id(), &hash)
 				}
 			}
 		}
@@ -45,9 +45,9 @@ func hashImage(input chan *apitype.ImageFile, output chan *HashResult, quitChann
 
 func openImageForHashing(imageLoader api.ImageLoader, imageFile *apitype.ImageFile) (image.Image, error) {
 	startTime := time.Now()
-	decodedImage, err := imageLoader.LoadImageScaled(imageFile.GetId(), hashImageSize)
+	decodedImage, err := imageLoader.LoadImageScaled(imageFile.Id(), hashImageSize)
 	endTime := time.Now()
-	logger.Trace.Printf("'%s': Image loaded in %s", imageFile.GetPath(), endTime.Sub(startTime).String())
+	logger.Trace.Printf("'%s': Image loaded in %s", imageFile.Path(), endTime.Sub(startTime).String())
 	return decodedImage, err
 }
 
@@ -55,6 +55,6 @@ func generateHash(img image.Image, imageFile *apitype.ImageFile) duplo.Hash {
 	startTime := time.Now()
 	hash, _ := duplo.CreateHash(img)
 	endTime := time.Now()
-	logger.Trace.Printf("'%s': Calculated hash in %s", imageFile.GetPath(), endTime.Sub(startTime).String())
+	logger.Trace.Printf("'%s': Calculated hash in %s", imageFile.Path(), endTime.Sub(startTime).String())
 	return hash
 }

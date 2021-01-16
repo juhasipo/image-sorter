@@ -32,10 +32,10 @@ func TestValidImageFile(t *testing.T) {
 		a.True(imageFile.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(ImageId(1), imageFile.GetId())
-		a.Equal("file.jpeg", imageFile.GetFile())
-		a.Equal("some/dir", imageFile.GetDir())
-		a.Equal(filepath.Join("some", "dir", "file.jpeg"), imageFile.GetPath())
+		a.Equal(ImageId(1), imageFile.Id())
+		a.Equal("file.jpeg", imageFile.FileName())
+		a.Equal("some/dir", imageFile.Directory())
+		a.Equal(filepath.Join("some", "dir", "file.jpeg"), imageFile.Path())
 	})
 }
 
@@ -48,10 +48,10 @@ func TestInvalidImageFile(t *testing.T) {
 		a.False(imageFile.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(NoImage, imageFile.GetId())
-		a.Equal("", imageFile.GetFile())
-		a.Equal("", imageFile.GetDir())
-		a.Equal("", imageFile.GetPath())
+		a.Equal(NoImage, imageFile.Id())
+		a.Equal("", imageFile.FileName())
+		a.Equal("", imageFile.Directory())
+		a.Equal("", imageFile.Path())
 	})
 }
 
@@ -64,10 +64,10 @@ func TestNilImageFile(t *testing.T) {
 		a.False(imageFile.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(NoImage, imageFile.GetId())
-		a.Equal("", imageFile.GetFile())
-		a.Equal("", imageFile.GetDir())
-		a.Equal("", imageFile.GetPath())
+		a.Equal(NoImage, imageFile.Id())
+		a.Equal("", imageFile.FileName())
+		a.Equal("", imageFile.Directory())
+		a.Equal("", imageFile.Path())
 	})
 }
 

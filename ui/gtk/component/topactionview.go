@@ -77,10 +77,10 @@ func (s *TopActionView) NewCommandForShortcut(key uint, imageFile *apitype.Image
 		keyUpper := gdk.KeyvalToUpper(key)
 		if entry.HasShortcut(keyUpper) {
 			keyName := common.KeyvalName(key)
-			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
+			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.Name())
 			return &api.CategorizeCommand{
-				ImageId:         imageFile.GetId(),
-				CategoryId:      button.entry.GetId(),
+				ImageId:         imageFile.Id(),
+				CategoryId:      button.entry.Id(),
 				Operation:       button.operation.NextOperation(),
 				StayOnSameImage: false,
 				NextImageDelay:  0,
@@ -93,7 +93,7 @@ func (s *TopActionView) NewCommandForShortcut(key uint, imageFile *apitype.Image
 
 func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCallback CategorizeCallback) {
 	layout, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
-	button, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("%s (%s)", entry.GetName(), entry.GetShortcutAsString()))
+	button, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("%s (%s)", entry.Name(), entry.ShortcutAsString()))
 	toggle, _ := gtk.LevelBarNew()
 
 	categoryButton := &CategoryButton{
@@ -103,7 +103,7 @@ func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCal
 		entry:     entry,
 		operation: apitype.NONE,
 	}
-	s.categoryButtons[entry.GetId()] = categoryButton
+	s.categoryButtons[entry.Id()] = categoryButton
 
 	send := s.createSendFuncForEntry(categoryButton, categorizeCallback)
 
@@ -125,21 +125,21 @@ func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCal
 	buttonBox.Add(menuButton)
 	menuBox, _ := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
 
-	browseButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Browse '%s' (ALT + %s)", entry.GetName(), entry.GetShortcutAsString()))
+	browseButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Browse '%s' (ALT + %s)", entry.Name(), entry.ShortcutAsString()))
 	browseButton.SetRelief(gtk.RELIEF_NONE)
 	browseButton.Connect("clicked", func() {
-		s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: entry.GetId()})
+		s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: entry.Id()})
 	})
 	menuBox.Add(browseButton)
 
-	addAndStayButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Add '%s' and Stay (Shift + %s)", entry.GetName(), entry.GetShortcutAsString()))
+	addAndStayButton, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Add '%s' and Stay (Shift + %s)", entry.Name(), entry.ShortcutAsString()))
 	addAndStayButton.SetRelief(gtk.RELIEF_NONE)
 	addAndStayButton.Connect("clicked", func() {
 		send(true, false)
 	})
 	menuBox.Add(addAndStayButton)
 
-	setAsOnly, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Set '%s' as only (CTRL + %s)", entry.GetName(), entry.GetShortcutAsString()))
+	setAsOnly, _ := gtk.ButtonNewWithLabel(fmt.Sprintf("Set '%s' as only (CTRL + %s)", entry.Name(), entry.ShortcutAsString()))
 	setAsOnly.SetRelief(gtk.RELIEF_NONE)
 	setAsOnly.Connect("clicked", func() {
 		send(false, true)
@@ -188,7 +188,7 @@ type CategorizeCallback func(*apitype.Category, apitype.Operation, bool, bool)
 
 func (s *TopActionView) createSendFuncForEntry(categoryButton *CategoryButton, categoizeCB CategorizeCallback) func(bool, bool) {
 	return func(stayOnSameImage bool, forceToCategory bool) {
-		logger.Debug.Printf("Cat '%s': %d", categoryButton.entry.GetName(), categoryButton.operation)
+		logger.Debug.Printf("Cat '%s': %d", categoryButton.entry.Name(), categoryButton.operation)
 		if forceToCategory {
 			categoizeCB(categoryButton.entry, apitype.MOVE, stayOnSameImage, forceToCategory)
 		} else {
@@ -208,7 +208,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, categoryId apityp
 	if categoryId == apitype.NoCategory {
 		s.currentImagesStatusLabel.SetText(fmt.Sprintf("All pictures (%s)", progressText))
 	} else if c, ok := s.categoryButtons[categoryId]; ok {
-		s.currentImagesStatusLabel.SetText(fmt.Sprintf("%s pictures (%s)", c.entry.GetName(), progressText))
+		s.currentImagesStatusLabel.SetText(fmt.Sprintf("%s pictures (%s)", c.entry.Name(), progressText))
 	} else {
 		s.currentImagesStatusLabel.SetText("Unkown category")
 	}
@@ -225,12 +225,12 @@ func (s *TopActionView) UpdateCategories(categories *api.UpdateCategoriesCommand
 		logger.Trace.Printf("Create categorization handler for entry '%s'", entry)
 
 		s.addCategoryButton(entry, func(entry *apitype.Category, operation apitype.Operation, stayOnSameImage bool, forceToCategory bool) {
-			currentImageFile := s.imageView.GetCurrentImageFile()
+			currentImageFile := s.imageView.CurrentImageFile()
 			logger.Debug.Printf("Categorize image '%s' to category '%s", currentImageFile, entry)
 
 			command := &api.CategorizeCommand{
-				ImageId:         currentImageFile.GetId(),
-				CategoryId:      entry.GetId(),
+				ImageId:         currentImageFile.Id(),
+				CategoryId:      entry.Id(),
 				Operation:       operation,
 				StayOnSameImage: stayOnSameImage,
 				NextImageDelay:  200 * time.Millisecond,

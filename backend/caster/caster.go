@@ -69,9 +69,9 @@ type DeviceEntry struct {
 
 func NewCaster(params *common.Params, sender api.Sender, imageCache api.ImageStore) api.Caster {
 	c := &Caster{
-		port:                  params.GetHttpPort(),
-		alwaysStartHttpServer: params.GetAlwaysStartHttpServer(),
-		secret:                resolveSecret(params.GetSecret()),
+		port:                  params.HttpPort(),
+		alwaysStartHttpServer: params.AlwaysStartHttpServer(),
+		secret:                resolveSecret(params.Secret()),
 		sender:                sender,
 		imageCache:            imageCache,
 		showBackground:        true,
@@ -80,8 +80,8 @@ func NewCaster(params *common.Params, sender api.Sender, imageCache api.ImageSto
 
 	c.imageQueueBroker.Subscribe(castImageEvent, c.castImageFromQueue)
 
-	if params.GetAlwaysStartHttpServer() {
-		c.StartServer(params.GetHttpPort())
+	if params.AlwaysStartHttpServer() {
+		c.StartServer(params.HttpPort())
 	}
 
 	return c
@@ -189,8 +189,8 @@ func resizedAndBlurImage(srcImage image.Image, blurBackground bool) image.Image 
 		draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), background, image.Point{}, draw.Src)
 	}
 
-	srcImage = imaging.Resize(srcImage, size.GetWidth(), size.GetHeight(), imaging.Linear)
-	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (size.GetWidth() - canvasWidth) / 2}, draw.Src)
+	srcImage = imaging.Resize(srcImage, size.Width(), size.Height(), imaging.Linear)
+	draw.Draw(fullHdCanvas, fullHdCanvas.Bounds(), srcImage, image.Point{X: (size.Width() - canvasWidth) / 2}, draw.Src)
 
 	var img image.Image = fullHdCanvas
 	return img
@@ -303,7 +303,7 @@ func (s *Caster) SelectDevice(command *api.SelectDeviceCommand) {
 	}
 }
 
-func (s *Caster) getLocalHost() string {
+func (s *Caster) localHost() string {
 	if hostname, err := os.Hostname(); err != nil {
 		s.sender.SendError("Could not resolve hostname", err)
 		return ""
@@ -324,7 +324,7 @@ func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 }
 
 func (s *Caster) castImageFromQueue() {
-	img := s.getImageFromQueue()
+	img := s.nextImageFromQueue()
 	if img != apitype.NoImage {
 		s.reserveImage()
 		s.currentImage = img
@@ -365,7 +365,7 @@ func (s *Caster) castImageFromQueue() {
 	}
 }
 
-func (s *Caster) getImageFromQueue() apitype.ImageId {
+func (s *Caster) nextImageFromQueue() apitype.ImageId {
 	s.reserveImage()
 	defer s.releaseImage()
 	s.imageQueueMux.Lock()

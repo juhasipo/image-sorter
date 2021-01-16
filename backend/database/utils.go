@@ -74,14 +74,14 @@ type FileSystemImageFileConverter struct {
 }
 
 func (s *FileSystemImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {
-	return os.Stat(imageFile.GetPath())
+	return os.Stat(imageFile.Path())
 }
 
 func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*Image, map[string]string, error) {
 	exifLoadStart := time.Now()
 	exifData, err := apitype.LoadExifData(imageFile)
 	if err != nil {
-		logger.Warn.Printf("Exif data not properly loaded for '%d'", imageFile.GetId())
+		logger.Warn.Printf("Exif data not properly loaded for '%d'", imageFile.Id())
 		return nil, nil, err
 	}
 	exifLoadEnd := time.Now()
@@ -98,22 +98,22 @@ func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.Ima
 	w := util.NewMapExifWalker()
 	exifData.Walk(w)
 
-	metaDataJson, err := json.Marshal(w.GetMetaData())
+	metaDataJson, err := json.Marshal(w.MetaData())
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return &Image{
-		Name:            imageFile.GetFile(),
-		FileName:        imageFile.GetFile(),
-		Directory:       imageFile.GetDir(),
+		Name:            imageFile.FileName(),
+		FileName:        imageFile.FileName(),
+		Directory:       imageFile.Directory(),
 		ByteSize:        fileStat.Size(),
-		ExifOrientation: exifData.GetExifOrientation(),
-		ImageAngle:      int(exifData.GetRotation()),
-		CreatedTime:     exifData.GetCreatedTime(),
-		Width:           exifData.GetWidth(),
-		Height:          exifData.GetHeight(),
+		ExifOrientation: exifData.ExifOrientation(),
+		ImageAngle:      int(exifData.Rotation()),
+		CreatedTime:     exifData.CreatedTime(),
+		Width:           exifData.ImageWidth(),
+		Height:          exifData.ImageHeight(),
 		ModifiedTime:    fileStat.ModTime(),
 		ExifData:        metaDataJson,
-	}, w.GetMetaData(), nil
+	}, w.MetaData(), nil
 }

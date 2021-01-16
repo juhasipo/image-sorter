@@ -10,11 +10,11 @@ type Size struct {
 	height int
 }
 
-func (s *Size) GetHeight() int {
+func (s *Size) Height() int {
 	return s.height
 }
 
-func (s *Size) GetWidth() int {
+func (s *Size) Width() int {
 	return s.width
 }
 

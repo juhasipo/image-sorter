@@ -27,7 +27,7 @@ type LibJPEGImageLoader struct {
 func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, error) {
 	if imageId != apitype.NoImage {
 		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
-			file, err := os.Open(imageFileWithMetaData.GetPath())
+			file, err := os.Open(imageFileWithMetaData.Path())
 			if err != nil {
 				return nil, err
 			}
@@ -38,7 +38,7 @@ func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, er
 				return nil, err
 			}
 
-			rotation, flipped := imageFileWithMetaData.GetRotation()
+			rotation, flipped := imageFileWithMetaData.Rotation()
 			return apitype.ExifRotateImage(imageFile, rotation, flipped)
 		} else {
 			return nil, errors.New("image not found in DB")
@@ -51,18 +51,18 @@ func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, er
 func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apitype.Size) (image.Image, error) {
 	if imageId != apitype.NoImage {
 		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
-			file, err := os.Open(imageFileWithMetaData.GetPath())
+			file, err := os.Open(imageFileWithMetaData.Path())
 			if err != nil {
 				return nil, err
 			}
 			defer file.Close()
 
-			imageFile, err := jpeg.Decode(file, &jpeg.DecoderOptions{ScaleTarget: image.Rect(0, 0, size.GetWidth(), size.GetHeight())})
+			imageFile, err := jpeg.Decode(file, &jpeg.DecoderOptions{ScaleTarget: image.Rect(0, 0, size.Width(), size.Height())})
 			if err != nil {
 				return nil, err
 			}
 
-			rotation, flipped := imageFileWithMetaData.GetRotation()
+			rotation, flipped := imageFileWithMetaData.Rotation()
 			return apitype.ExifRotateImage(imageFile, rotation, flipped)
 		} else {
 			return nil, errors.New("image not found in DB")

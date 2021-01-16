@@ -77,7 +77,7 @@ func (s *CastModal) SearchDone() {
 	s.refreshButton.SetSensitive(true)
 }
 
-func (s *CastModal) GetDevices() []string {
+func (s *CastModal) Devices() []string {
 	return s.devices
 }
 

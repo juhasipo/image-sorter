@@ -32,13 +32,13 @@ func TestSimilarityIndex_AddAndGetSimilarImages(t *testing.T) {
 	err := sut.DoInTransaction(func(session db.Session) error {
 		if err := sut.StartRecreateSimilarImageIndex(session); err != nil {
 			return err
-		} else if err = sut.AddSimilarImage(image1.GetId(), image2.GetId(), 0, -10.12); err != nil {
+		} else if err = sut.AddSimilarImage(image1.Id(), image2.Id(), 0, -10.12); err != nil {
 			return err
-		} else if err = sut.AddSimilarImage(image1.GetId(), image3.GetId(), 1, 1); err != nil {
+		} else if err = sut.AddSimilarImage(image1.Id(), image3.Id(), 1, 1); err != nil {
 			return err
-		} else if err = sut.AddSimilarImage(image1.GetId(), image4.GetId(), 2, 12); err != nil {
+		} else if err = sut.AddSimilarImage(image1.Id(), image4.Id(), 2, 12); err != nil {
 			return err
-		} else if err = sut.AddSimilarImage(image2.GetId(), image4.GetId(), 0, 1); err != nil {
+		} else if err = sut.AddSimilarImage(image2.Id(), image4.Id(), 0, 1); err != nil {
 			return err
 		}
 		return sut.EndRecreateSimilarImageIndex()
@@ -46,21 +46,21 @@ func TestSimilarityIndex_AddAndGetSimilarImages(t *testing.T) {
 	a.Nil(err)
 
 	t.Run("One similar image found for an image", func(t *testing.T) {
-		images := sut.GetSimilarImages(image2.GetId())
+		images := sut.GetSimilarImages(image2.Id())
 		a.Equal(1, len(images))
-		a.Equal(images[0].GetId(), image4.GetId())
+		a.Equal(images[0].Id(), image4.Id())
 	})
 
 	t.Run("Many similar images found for an image", func(t *testing.T) {
-		images := sut.GetSimilarImages(image1.GetId())
+		images := sut.GetSimilarImages(image1.Id())
 		a.Equal(3, len(images))
-		a.Equal(images[0].GetId(), image2.GetId())
-		a.Equal(images[1].GetId(), image3.GetId())
-		a.Equal(images[2].GetId(), image4.GetId())
+		a.Equal(images[0].Id(), image2.Id())
+		a.Equal(images[1].Id(), image3.Id())
+		a.Equal(images[2].Id(), image4.Id())
 	})
 
 	t.Run("No similar found for an image", func(t *testing.T) {
-		images := sut.GetSimilarImages(image5.GetId())
+		images := sut.GetSimilarImages(image5.Id())
 		a.Equal(0, len(images))
 	})
 

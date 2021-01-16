@@ -46,26 +46,26 @@ func ParseParams() *Params {
 	}
 }
 
-func (s *Params) GetCategories() []string {
+func (s *Params) Categories() []string {
 	return s.categories
 }
 
-func (s *Params) GetHttpPort() int {
+func (s *Params) HttpPort() int {
 	return s.httpPort
 }
 
-func (s *Params) GetSecret() string {
+func (s *Params) Secret() string {
 	return s.secret
 }
 
-func (s *Params) GetAlwaysStartHttpServer() bool {
+func (s *Params) AlwaysStartHttpServer() bool {
 	return s.alwaysStartHttpServer
 }
 
-func (s *Params) GetLogLevel() string {
+func (s *Params) LogLevel() string {
 	return s.logLevel
 }
 
-func (s *Params) GetRootPath() string {
+func (s *Params) RootPath() string {
 	return s.rootPath
 }

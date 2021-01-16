@@ -59,9 +59,9 @@ func TestFromCategoriesStrings(t *testing.T) {
 		}
 		categories := fromCategoriesStrings(values)
 		a.Equal(1, len(categories))
-		a.Equal("Name", categories[0].GetName())
-		a.Equal("Path", categories[0].GetSubPath())
-		a.Equal("P", categories[0].GetShortcutAsString())
+		a.Equal("Name", categories[0].Name())
+		a.Equal("Path", categories[0].SubPath())
+		a.Equal("P", categories[0].ShortcutAsString())
 	})
 	t.Run("Multiple", func(t *testing.T) {
 		values := []string{
@@ -71,17 +71,17 @@ func TestFromCategoriesStrings(t *testing.T) {
 		}
 		categories := fromCategoriesStrings(values)
 		a.Equal(3, len(categories))
-		a.Equal("Name", categories[0].GetName())
-		a.Equal("Path", categories[0].GetSubPath())
-		a.Equal("P", categories[0].GetShortcutAsString())
+		a.Equal("Name", categories[0].Name())
+		a.Equal("Path", categories[0].SubPath())
+		a.Equal("P", categories[0].ShortcutAsString())
 
-		a.Equal("Another", categories[1].GetName())
-		a.Equal("Another", categories[1].GetSubPath())
-		a.Equal("A", categories[1].GetShortcutAsString())
+		a.Equal("Another", categories[1].Name())
+		a.Equal("Another", categories[1].SubPath())
+		a.Equal("A", categories[1].ShortcutAsString())
 
-		a.Equal("Some", categories[2].GetName())
-		a.Equal("Some", categories[2].GetSubPath())
-		a.Equal("S", categories[2].GetShortcutAsString())
+		a.Equal("Some", categories[2].Name())
+		a.Equal("Some", categories[2].SubPath())
+		a.Equal("S", categories[2].ShortcutAsString())
 	})
 	t.Run("Nil", func(t *testing.T) {
 		categories := fromCategoriesStrings(nil)
@@ -149,9 +149,9 @@ func TestReadCategoriesFromReader(t *testing.T) {
 		categories := readCategoriesFromReader(reader)
 
 		a.Equal(1, len(categories))
-		a.Equal("Name1", categories[0].GetName())
-		a.Equal("Path1", categories[0].GetSubPath())
-		a.Equal("S", categories[0].GetShortcutAsString())
+		a.Equal("Name1", categories[0].Name())
+		a.Equal("Path1", categories[0].SubPath())
+		a.Equal("S", categories[0].ShortcutAsString())
 	})
 
 	t.Run("Multiple", func(t *testing.T) {
@@ -162,13 +162,13 @@ func TestReadCategoriesFromReader(t *testing.T) {
 		categories := readCategoriesFromReader(reader)
 
 		a.Equal(2, len(categories))
-		a.Equal("Name1", categories[0].GetName())
-		a.Equal("Path1", categories[0].GetSubPath())
-		a.Equal("S", categories[0].GetShortcutAsString())
+		a.Equal("Name1", categories[0].Name())
+		a.Equal("Path1", categories[0].SubPath())
+		a.Equal("S", categories[0].ShortcutAsString())
 
-		a.Equal("Name2", categories[1].GetName())
-		a.Equal("Path2", categories[1].GetSubPath())
-		a.Equal("S", categories[1].GetShortcutAsString())
+		a.Equal("Name2", categories[1].Name())
+		a.Equal("Path2", categories[1].SubPath())
+		a.Equal("S", categories[1].ShortcutAsString())
 	})
 }
 
@@ -190,8 +190,8 @@ func TestResetCategories(t *testing.T) {
 
 	sut.Save(&api.SaveCategoriesCommand{
 		Categories: []*apitype.Category{
-			apitype.NewCategoryWithId(cat2.GetId(), "Cat 2", "C2", "2"),
-			apitype.NewCategoryWithId(cat4.GetId(), "Cat 4_", "C4", "4"),
+			apitype.NewCategoryWithId(cat2.Id(), "Cat 2", "C2", "2"),
+			apitype.NewCategoryWithId(cat4.Id(), "Cat 4_", "C4", "4"),
 			apitype.NewCategory("Cat 5", "C5", "5"),
 		},
 	})
@@ -199,11 +199,11 @@ func TestResetCategories(t *testing.T) {
 	categories, _ := categoryStore.GetCategories()
 
 	if a.Equal(3, len(categories)) {
-		a.Equal(categories[0].GetId(), cat2.GetId())
-		a.Equal(categories[0].GetName(), "Cat 2")
-		a.Equal(categories[1].GetId(), cat4.GetId())
-		a.Equal(categories[1].GetName(), "Cat 4_")
-		a.Equal(categories[2].GetName(), "Cat 5")
+		a.Equal(categories[0].Id(), cat2.Id())
+		a.Equal(categories[0].Name(), "Cat 2")
+		a.Equal(categories[1].Id(), cat4.Id())
+		a.Equal(categories[1].Name(), "Cat 4_")
+		a.Equal(categories[2].Name(), "Cat 5")
 	}
 }
 
@@ -230,21 +230,21 @@ func TestSaveCategoriesToFile_AndLoadCategoriesFromFile(t *testing.T) {
 	if a.Nil(err) {
 		categories := sut.loadCategoriesFromFile(filepath.Join(dir, file))
 		a.Equal(4, len(categories))
-		a.Equal("Cat 1", categories[0].GetName())
-		a.Equal("C1", categories[0].GetSubPath())
-		a.Equal(uint(0x31), categories[0].GetShortcut())
+		a.Equal("Cat 1", categories[0].Name())
+		a.Equal("C1", categories[0].SubPath())
+		a.Equal(uint(0x31), categories[0].Shortcut())
 
-		a.Equal("Cat 2", categories[1].GetName())
-		a.Equal("C2", categories[1].GetSubPath())
-		a.Equal(uint(0x32), categories[1].GetShortcut())
+		a.Equal("Cat 2", categories[1].Name())
+		a.Equal("C2", categories[1].SubPath())
+		a.Equal(uint(0x32), categories[1].Shortcut())
 
-		a.Equal("Cat 3", categories[2].GetName())
-		a.Equal("C3", categories[2].GetSubPath())
-		a.Equal(uint(0x33), categories[2].GetShortcut())
+		a.Equal("Cat 3", categories[2].Name())
+		a.Equal("C3", categories[2].SubPath())
+		a.Equal(uint(0x33), categories[2].Shortcut())
 
-		a.Equal("Cat 4", categories[3].GetName())
-		a.Equal("C4", categories[3].GetSubPath())
-		a.Equal(uint(0x34), categories[3].GetShortcut())
+		a.Equal("Cat 4", categories[3].Name())
+		a.Equal("C4", categories[3].SubPath())
+		a.Equal(uint(0x34), categories[3].Shortcut())
 	}
 }
 
@@ -288,21 +288,21 @@ func TestSaveCategoriesToFile_AndLoadCategoriesFromFiles(t *testing.T) {
 				filepath.Join(dir, "not-file-3"),
 			})
 			a.Equal(4, len(categories))
-			a.Equal("Cat 1", categories[0].GetName())
-			a.Equal("C1", categories[0].GetSubPath())
-			a.Equal(uint(0x31), categories[0].GetShortcut())
+			a.Equal("Cat 1", categories[0].Name())
+			a.Equal("C1", categories[0].SubPath())
+			a.Equal(uint(0x31), categories[0].Shortcut())
 
-			a.Equal("Cat 2", categories[1].GetName())
-			a.Equal("C2", categories[1].GetSubPath())
-			a.Equal(uint(0x32), categories[1].GetShortcut())
+			a.Equal("Cat 2", categories[1].Name())
+			a.Equal("C2", categories[1].SubPath())
+			a.Equal(uint(0x32), categories[1].Shortcut())
 
-			a.Equal("Cat 3", categories[2].GetName())
-			a.Equal("C3", categories[2].GetSubPath())
-			a.Equal(uint(0x33), categories[2].GetShortcut())
+			a.Equal("Cat 3", categories[2].Name())
+			a.Equal("C3", categories[2].SubPath())
+			a.Equal(uint(0x33), categories[2].Shortcut())
 
-			a.Equal("Cat 4", categories[3].GetName())
-			a.Equal("C4", categories[3].GetSubPath())
-			a.Equal(uint(0x34), categories[3].GetShortcut())
+			a.Equal("Cat 4", categories[3].Name())
+			a.Equal("C4", categories[3].SubPath())
+			a.Equal(uint(0x34), categories[3].Shortcut())
 		}
 	})
 }

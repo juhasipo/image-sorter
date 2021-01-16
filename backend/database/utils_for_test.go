@@ -23,9 +23,9 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 
 		return &Image{
 			Id:              0,
-			Name:            imageFile.GetFile(),
-			FileName:        imageFile.GetFile(),
-			Directory:       imageFile.GetDir(),
+			Name:            imageFile.FileName(),
+			FileName:        imageFile.FileName(),
+			Directory:       imageFile.Directory(),
 			ByteSize:        1234,
 			ExifOrientation: 1,
 			ImageAngle:      90,

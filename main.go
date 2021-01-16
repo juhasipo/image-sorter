@@ -20,7 +20,7 @@ const EventBusQueueSize = 1000
 func main() {
 	params := common.ParseParams()
 
-	logger.Initialize(logger.StringToLogLevel(params.GetLogLevel()))
+	logger.Initialize(logger.StringToLogLevel(params.LogLevel()))
 
 	db := database.NewDatabase()
 	defer db.Close()

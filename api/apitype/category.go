@@ -39,15 +39,15 @@ func NewCategory(name string, subPath string, shortcut string) *Category {
 	return NewCategoryWithId(NoCategory, name, subPath, shortcut)
 }
 
-func (s *Category) GetId() CategoryId {
+func (s *Category) Id() CategoryId {
 	return s.id
 }
 
-func (s *Category) GetSubPath() string {
+func (s *Category) SubPath() string {
 	return s.subPath
 }
 
-func (s *Category) GetName() string {
+func (s *Category) Name() string {
 	return s.name
 }
 
@@ -55,11 +55,11 @@ func (s *Category) String() string {
 	return s.name
 }
 
-func (s *Category) GetShortcut() uint {
+func (s *Category) Shortcut() uint {
 	return s.shortcut
 }
 
-func (s *Category) GetShortcutAsString() string {
+func (s *Category) ShortcutAsString() string {
 	return common.KeyvalName(s.shortcut)
 }
 

@@ -79,23 +79,23 @@ func find(exifData []byte, s []byte) (int, error) {
 	}
 }
 
-func (s *ExifData) GetExifOrientation() uint8 {
+func (s *ExifData) ExifOrientation() uint8 {
 	return s.orientation
 }
 
-func (s *ExifData) GetRotation() gdk.PixbufRotation {
+func (s *ExifData) Rotation() gdk.PixbufRotation {
 	return s.rotation
 }
 
-func (s *ExifData) IsFlipped() bool {
+func (s *ExifData) Flipped() bool {
 	return s.flipped
 }
 
-func (s *ExifData) GetCreatedTime() time.Time {
+func (s *ExifData) CreatedTime() time.Time {
 	return s.created
 }
 
-func (s *ExifData) GetRaw() []byte {
+func (s *ExifData) RawExifData() []byte {
 	return s.raw.Raw
 }
 
@@ -111,15 +111,15 @@ func (s *ExifData) Walk(walker exif.Walker) {
 	_ = s.raw.Walk(walker)
 }
 
-func (s *ExifData) GetRawLength() uint16 {
+func (s *ExifData) RawExifDataLength() uint16 {
 	return uint16(len(s.raw.Raw))
 }
 
-func (s *ExifData) GetWidth() uint32 {
+func (s *ExifData) ImageWidth() uint32 {
 	return s.width
 }
 
-func (s *ExifData) GetHeight() uint32 {
+func (s *ExifData) ImageHeight() uint32 {
 	return s.height
 }
 
@@ -158,7 +158,7 @@ func GetTime(decodedExif *exif.Exif, tagName exif.FieldName) (time.Time, error) 
 }
 
 func LoadExifData(imageFile *ImageFile) (*ExifData, error) {
-	fileForExif, err := os.Open(imageFile.GetPath())
+	fileForExif, err := os.Open(imageFile.Path())
 	if fileForExif != nil && err == nil {
 		defer fileForExif.Close()
 

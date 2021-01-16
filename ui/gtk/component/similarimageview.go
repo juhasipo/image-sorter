@@ -49,12 +49,12 @@ func (s *SimilarImagesView) SetImages(imageContainers []*apitype.ImageContainer)
 
 func (s *SimilarImagesView) createSimilarImage(imageContainer *apitype.ImageContainer, sender api.Sender) *gtk.EventBox {
 	eventBox, _ := gtk.EventBoxNew()
-	thumbnail := imageContainer.GetImageData()
+	thumbnail := imageContainer.ImageData()
 	imageWidget, _ := gtk.ImageNewFromPixbuf(asPixbuf(thumbnail))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
 		sender.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
-			Id: imageContainer.GetImageFile().GetId(),
+			Id: imageContainer.ImageFile().Id(),
 		})
 	})
 	return eventBox

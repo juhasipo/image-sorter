@@ -49,7 +49,7 @@ func New(params *common.Params, sender api.Sender, categoryStore *database.Categ
 func newManager(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) *Manager {
 	manager := Manager{
 		sender:                sender,
-		commandLineCategories: params.GetCategories(),
+		commandLineCategories: params.Categories(),
 		categoryStore:         categoryStore,
 	}
 	return &manager
@@ -167,7 +167,7 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 	}
 	logger.Debug.Printf("Parsed %d categories", len(categoryEntries))
 	for _, entry := range categoryEntries {
-		logger.Trace.Printf(" - %s", entry.GetName())
+		logger.Trace.Printf(" - %s", entry.Name())
 	}
 	return categoryEntries
 }
@@ -240,7 +240,7 @@ func readCategoriesFromReader(f io.Reader) []*apitype.Category {
 func toCategoryIds(categories []*apitype.Category) []apitype.CategoryId {
 	var categoryIds []apitype.CategoryId
 	for _, category := range categories {
-		categoryIds = append(categoryIds, category.GetId())
+		categoryIds = append(categoryIds, category.Id())
 	}
 	return categoryIds
 }

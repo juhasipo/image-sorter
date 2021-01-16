@@ -56,10 +56,10 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		application: application,
 		imageCache:  imageCache,
 		sender:      broker,
-		rootPath:    params.GetRootPath(),
+		rootPath:    params.RootPath(),
 	}
 
-	gui.Init(params.GetRootPath())
+	gui.Init(params.RootPath())
 	return &gui
 }
 
@@ -160,7 +160,7 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}
-	} else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.GetCurrentImageFile()); command != nil {
+	} else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.CurrentImageFile()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
 			s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: command.CategoryId})
@@ -215,7 +215,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		ImageId: s.imageView.GetCurrentImageFile().GetId(),
+		ImageId: s.imageView.CurrentImageFile().Id(),
 	})
 }
 
@@ -229,9 +229,9 @@ func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 	}
 
 	for _, category := range command.Categories {
-		logger.Debug.Printf("Marked image category: '%s'", category.GetName())
+		logger.Debug.Printf("Marked image category: '%s'", category.Name())
 
-		if button, ok := s.topActionView.GetCategoryButton(category.GetId()); ok {
+		if button, ok := s.topActionView.GetCategoryButton(category.Id()); ok {
 			button.SetStatus(apitype.MOVE)
 		}
 	}
@@ -261,7 +261,7 @@ func (s *Ui) CastReady() {
 	s.sendCurrentImageChangedEvent()
 }
 func (s *Ui) CastFindDone() {
-	if len(s.castModal.GetDevices()) == 0 {
+	if len(s.castModal.Devices()) == 0 {
 		s.castModal.SetNoDevices()
 	}
 	s.castModal.SearchDone()

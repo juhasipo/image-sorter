@@ -83,11 +83,11 @@ func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 	newSize := apitype.RectangleOfScaledToFit(fullSize, size)
 
 	if s.scaled == nil {
-		s.scaled = imaging.Resize(full, newSize.GetWidth(), newSize.GetHeight(), imaging.Linear)
+		s.scaled = imaging.Resize(full, newSize.Width(), newSize.Height(), imaging.Linear)
 	} else {
 		size := s.scaled.Bounds()
-		if newSize.GetWidth() != size.Dx() && newSize.GetHeight() != size.Dy() {
-			s.scaled = imaging.Resize(full, newSize.GetWidth(), newSize.GetHeight(), imaging.Linear)
+		if newSize.Width() != size.Dx() && newSize.Height() != size.Dy() {
+			s.scaled = imaging.Resize(full, newSize.Width(), newSize.Height(), imaging.Linear)
 		} else {
 			logger.Trace.Print("Use cached scaled image")
 			// Use cached
@@ -115,7 +115,7 @@ func (s *Instance) GetThumbnail() (image.Image, error) {
 			fullSize := full.Bounds()
 			newSize := apitype.RectangleOfScaledToFit(fullSize, thumbnailSize)
 
-			s.thumbnail = imaging.Resize(full, newSize.GetWidth(), newSize.GetHeight(), imaging.Linear)
+			s.thumbnail = imaging.Resize(full, newSize.Width(), newSize.Height(), imaging.Linear)
 		}
 	} else {
 		logger.Trace.Print("Use cached thumbnail")

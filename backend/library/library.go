@@ -47,7 +47,7 @@ func (s *Manager) RequestGenerateHashes() {
 		if image, _, err := s.manager.getCurrentImage(); err != nil {
 			s.sender.SendError("Error while generating hashes", err)
 		} else {
-			s.sendSimilarImages(image.GetImageFile().GetId())
+			s.sendSimilarImages(image.ImageFile().Id())
 		}
 	}
 }
@@ -154,7 +154,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		}
 
 		if s.manager.shouldSendSimilarImages() {
-			s.sendSimilarImages(currentImage.GetImageFile().GetId())
+			s.sendSimilarImages(currentImage.ImageFile().Id())
 		}
 	}
 }

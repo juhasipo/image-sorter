@@ -18,15 +18,15 @@ func (s *ImageContainer) String() string {
 	}
 }
 
-func (s *ImageContainer) GetImageFile() *ImageFile {
+func (s *ImageContainer) ImageFile() *ImageFile {
 	return s.imageFile
 }
 
-func (s *ImageContainer) GetImageData() image.Image {
+func (s *ImageContainer) ImageData() image.Image {
 	return s.imageData
 }
 
-func (s *ImageContainer) GetMetaData() *ImageMetaData {
+func (s *ImageContainer) MetaData() *ImageMetaData {
 	return s.metaData
 }
 

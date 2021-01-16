@@ -21,9 +21,9 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 	} else {
 		return &database.Image{
 			Id:              0,
-			Name:            imageFile.GetFile(),
-			FileName:        imageFile.GetFile(),
-			Directory:       imageFile.GetDir(),
+			Name:            imageFile.FileName(),
+			FileName:        imageFile.FileName(),
+			Directory:       imageFile.Directory(),
 			ByteSize:        1234,
 			ExifOrientation: 1,
 			ImageAngle:      90,
@@ -98,11 +98,11 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 
 	a.Equal(uint64(60000), cache.GetByteSize())
 
-	_, _ = cache.GetFull(imageFile0.GetId())
-	_, _ = cache.GetFull(imageFile1.GetId())
+	_, _ = cache.GetFull(imageFile0.Id())
+	_, _ = cache.GetFull(imageFile1.Id())
 	size := apitype.SizeOf(100, 100)
-	_, _ = cache.GetScaled(imageFile0.GetId(), size)
-	_, _ = cache.GetScaled(imageFile1.GetId(), size)
+	_, _ = cache.GetScaled(imageFile0.Id(), size)
+	_, _ = cache.GetScaled(imageFile1.Id(), size)
 
 	a.Equal(uint64(79967424), cache.GetByteSize())
 	a.InDelta(76.3, cache.GetSizeInMB(), 0.1)
@@ -122,21 +122,21 @@ func TestDefaultImageStore_GetFull(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
-		img, err := cache.GetFull(imageFile.GetId())
+		img, err := cache.GetFull(imageFile.Id())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
 		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
-		img, err := cache.GetFull(imageFile.GetId())
+		img, err := cache.GetFull(imageFile.Id())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
 		imageFile := apitype.NewImageFile("", "")
-		img, err := cache.GetFull(imageFile.GetId())
+		img, err := cache.GetFull(imageFile.Id())
 
 		a.NotNil(err)
 		a.Nil(img)
@@ -155,7 +155,7 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
 		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(imageFile.GetId(), size)
+		img, err := cache.GetScaled(imageFile.Id(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -163,7 +163,7 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	t.Run("No exif", func(t *testing.T) {
 		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(imageFile.GetId(), size)
+		img, err := cache.GetScaled(imageFile.Id(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -171,7 +171,7 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	t.Run("Invalid", func(t *testing.T) {
 		imageFile := apitype.NewImageFile("", "")
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(imageFile.GetId(), size)
+		img, err := cache.GetScaled(imageFile.Id(), size)
 
 		a.NotNil(err)
 		a.Nil(img)
@@ -189,21 +189,21 @@ func TestDefaultImageStore_GetThumbnail(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
-		img, err := cache.GetThumbnail(imageFile.GetId())
+		img, err := cache.GetThumbnail(imageFile.Id())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
 		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
-		img, err := cache.GetThumbnail(imageFile.GetId())
+		img, err := cache.GetThumbnail(imageFile.Id())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
 		imageFile := apitype.NewImageFile("", "")
-		img, err := cache.GetThumbnail(imageFile.GetId())
+		img, err := cache.GetThumbnail(imageFile.Id())
 
 		a.NotNil(err)
 		a.Nil(img)

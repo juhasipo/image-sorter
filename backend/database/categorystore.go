@@ -30,7 +30,7 @@ func (s *CategoryStore) AddCategory(category *apitype.Category) (*apitype.Catego
 
 func addCategory(collection db.Collection, category *apitype.Category) (*apitype.Category, error) {
 	var existing []Category
-	if err := collection.Find(db.Cond{"name": category.GetName()}).
+	if err := collection.Find(db.Cond{"name": category.Name()}).
 		All(&existing); err != nil {
 		return nil, err
 	} else if len(existing) > 0 {
@@ -38,16 +38,16 @@ func addCategory(collection db.Collection, category *apitype.Category) (*apitype
 	}
 
 	result, err := collection.Insert(Category{
-		Name:     category.GetName(),
-		SubPath:  category.GetSubPath(),
-		Shortcut: category.GetShortcutAsString(),
+		Name:     category.Name(),
+		SubPath:  category.SubPath(),
+		Shortcut: category.ShortcutAsString(),
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Debug.Printf("Stored category %s (%d) to DB", category.GetName(), category.GetId())
+	logger.Debug.Printf("Stored category %s (%d) to DB", category.Name(), category.Id())
 	return apitype.NewPersistedCategory(idToCategoryId(result.ID()), category), err
 }
 
@@ -65,7 +65,7 @@ func (s *CategoryStore) ResetCategories(categories []*apitype.Category) error {
 		}
 
 		for _, category := range categories {
-			categoryKey := category.GetId()
+			categoryKey := category.Id()
 			if _, ok := existingCategoriesById[categoryKey]; ok {
 				if err := updateCategory(collection, category); err != nil {
 					return err
@@ -79,7 +79,7 @@ func (s *CategoryStore) ResetCategories(categories []*apitype.Category) error {
 		}
 
 		for _, category := range existingCategoriesById {
-			if err := removeCategory(collection, category.GetId()); err != nil {
+			if err := removeCategory(collection, category.Id()); err != nil {
 				return err
 			}
 		}
@@ -114,10 +114,10 @@ func removeCategory(collection db.Collection, categoryId apitype.CategoryId) err
 }
 
 func updateCategory(collection db.Collection, category *apitype.Category) error {
-	return collection.Find(db.Cond{"id": category.GetId()}).Update(&Category{
-		Id:       category.GetId(),
-		Name:     category.GetName(),
-		SubPath:  category.GetSubPath(),
-		Shortcut: category.GetShortcutAsString(),
+	return collection.Find(db.Cond{"id": category.Id()}).Update(&Category{
+		Id:       category.Id(),
+		Name:     category.Name(),
+		SubPath:  category.SubPath(),
+		Shortcut: category.ShortcutAsString(),
 	})
 }

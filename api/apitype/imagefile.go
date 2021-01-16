@@ -56,7 +56,7 @@ func GetEmptyImageFile() *ImageFile {
 	return &EmptyImageFile
 }
 
-func (s *ImageFile) GetId() ImageId {
+func (s *ImageFile) Id() ImageId {
 	if s != nil {
 		return s.id
 	} else {
@@ -64,7 +64,7 @@ func (s *ImageFile) GetId() ImageId {
 	}
 }
 
-func (s *ImageFile) IsPersisted() bool {
+func (s *ImageFile) Persisted() bool {
 	if s != nil {
 		return s.id > 0
 	} else {
@@ -84,7 +84,7 @@ func (s *ImageFile) String() string {
 	}
 }
 
-func (s *ImageFile) GetPath() string {
+func (s *ImageFile) Path() string {
 	if s != nil {
 		return s.path
 	} else {
@@ -92,7 +92,7 @@ func (s *ImageFile) GetPath() string {
 	}
 }
 
-func (s *ImageFile) GetDir() string {
+func (s *ImageFile) Directory() string {
 	if s != nil {
 		return s.directory
 	} else {
@@ -100,7 +100,7 @@ func (s *ImageFile) GetDir() string {
 	}
 }
 
-func (s *ImageFile) GetFile() string {
+func (s *ImageFile) FileName() string {
 	if s != nil {
 		return s.filename
 	} else {
@@ -117,7 +117,7 @@ func NewImageMetaData(byteSize int64, rotation float64, flipped bool, metaData m
 	}
 }
 
-func (s *ImageMetaData) GetMetaData() map[string]string {
+func (s *ImageMetaData) MetaData() map[string]string {
 	if s != nil {
 		return s.metaData
 	} else {
@@ -129,7 +129,7 @@ func (s *ImageMetaData) SetByteSize(length int64) {
 	s.byteSize = length
 }
 
-func (s *ImageMetaData) GetByteSize() int64 {
+func (s *ImageMetaData) ByteSize() int64 {
 	if s != nil {
 		return s.byteSize
 	} else {
@@ -137,7 +137,7 @@ func (s *ImageMetaData) GetByteSize() int64 {
 	}
 }
 
-func (s *ImageMetaData) GetByteSizeMB() float64 {
+func (s *ImageMetaData) ByteSizeInMB() float64 {
 	if s != nil {
 		return float64(s.byteSize) / (1024.0 * 1024.0)
 	} else {
@@ -145,7 +145,7 @@ func (s *ImageMetaData) GetByteSizeMB() float64 {
 	}
 }
 
-func (s *ImageMetaData) GetRotation() (float64, bool) {
+func (s *ImageMetaData) Rotation() (float64, bool) {
 	return s.rotation, s.flipped
 }
 

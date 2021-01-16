@@ -11,7 +11,7 @@ type Filter struct {
 	operation apitype.ImageOperation
 }
 
-func (s *Filter) GetOperation() apitype.ImageOperation {
+func (s *Filter) Operation() apitype.ImageOperation {
 	return s.operation
 }
 
@@ -29,8 +29,8 @@ func NewFilterManager() *Manager {
 func (s *Manager) AddFilterForImage(imageFile *apitype.ImageFile, id string) {
 	if filter, ok := s.filters[id]; !ok {
 		logger.Error.Printf("Could not find filter '%s'", id)
-	} else if filterList, ok := s.filtersToApply[imageFile.GetId()]; ok {
-		s.filtersToApply[imageFile.GetId()] = append(filterList, filter)
+	} else if filterList, ok := s.filtersToApply[imageFile.Id()]; ok {
+		s.filtersToApply[imageFile.Id()] = append(filterList, filter)
 	}
 }
 

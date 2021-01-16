@@ -18,27 +18,27 @@ type ImageOperationGroup struct {
 	operations      []ImageOperation
 }
 
-func (s *ImageOperationGroup) GetImageFile() *ImageFile {
+func (s *ImageOperationGroup) ImageFile() *ImageFile {
 	return &s.imageFile.ImageFile
 }
 
-func (s *ImageOperationGroup) GetMetaData() *ImageMetaData {
+func (s *ImageOperationGroup) MetaData() *ImageMetaData {
 	return &s.imageFile.ImageMetaData
 }
 
-func (s *ImageOperationGroup) GetImage() image.Image {
+func (s *ImageOperationGroup) ImageData() image.Image {
 	return s.img
 }
 
-func (s *ImageOperationGroup) GetExifData() *ExifData {
+func (s *ImageOperationGroup) ExifData() *ExifData {
 	return s.exifData
 }
 
-func (s *ImageOperationGroup) GetHasBeenModified() bool {
+func (s *ImageOperationGroup) Modified() bool {
 	return s.hasBeenModified
 }
 
-func (s *ImageOperationGroup) GetOperations() []ImageOperation {
+func (s *ImageOperationGroup) Operations() []ImageOperation {
 	return s.operations
 }
 

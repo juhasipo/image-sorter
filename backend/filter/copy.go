@@ -37,12 +37,12 @@ func NewImageCopy(targetDir string, targetFile string, quality int) apitype.Imag
 	}
 }
 func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
-	imageFile := operationGroup.GetImageFile()
-	imageData := operationGroup.GetImage()
-	exifData := operationGroup.GetExifData()
-	logger.Debug.Printf("Copy %s", imageFile.GetPath())
+	imageFile := operationGroup.ImageFile()
+	imageData := operationGroup.ImageData()
+	exifData := operationGroup.ExifData()
+	logger.Debug.Printf("Copy %s", imageFile.Path())
 
-	if operationGroup.GetHasBeenModified() {
+	if operationGroup.Modified() {
 		encodingOptions := &jpeg.Options{
 			Quality: s.quality,
 		}
@@ -52,7 +52,7 @@ func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Im
 		if err := jpeg.Encode(jpegBuffer, imageData, encodingOptions); err != nil {
 			logger.Error.Println("Could not encode image", err)
 			return imageData, exifData, err
-		} else if err := util.MakeDirectoriesIfNotExist(imageFile.GetDir(), s.dstPath); err != nil {
+		} else if err := util.MakeDirectoriesIfNotExist(imageFile.Directory(), s.dstPath); err != nil {
 			return imageData, exifData, err
 		} else if destination, err := os.Create(dstFilePath); err != nil {
 			logger.Error.Println("Could not open file for writing", err)
@@ -63,8 +63,8 @@ func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Im
 			return imageData, exifData, nil
 		}
 	} else {
-		logger.Debug.Printf("Copy '%s' as is", imageFile.GetPath())
-		return imageData, exifData, util.CopyFile(imageFile.GetDir(), imageFile.GetFile(), s.dstPath, s.dstFile)
+		logger.Debug.Printf("Copy '%s' as is", imageFile.Path())
+		return imageData, exifData, util.CopyFile(imageFile.Directory(), imageFile.FileName(), s.dstPath, s.dstFile)
 	}
 }
 
@@ -86,13 +86,13 @@ func (s *ImageCopy) writeExifBlock(data *apitype.ExifData, writer *bufio.Writer)
 	const exifHeader = "Exif\x00\x00"
 	headerLength := len(exifHeader)
 	// Length includes the length bytes, so we need to add them when writing
-	dataLength := data.GetRawLength() + uint16(headerLength) + lengthBytes
+	dataLength := data.RawExifDataLength() + uint16(headerLength) + lengthBytes
 	dataLengthBytes := (*[2]byte)(unsafe.Pointer(&dataLength))[:]
 	writer.Write([]byte{0xFF, 0xE1})
 	writer.WriteByte(dataLengthBytes[1])
 	writer.WriteByte(dataLengthBytes[0])
 	writer.WriteString(exifHeader)
-	writer.Write(data.GetRaw())
+	writer.Write(data.RawExifData())
 }
 
 func (s *ImageCopy) writeJfifBlock(writer *bufio.Writer, bw *bytes.Buffer) {

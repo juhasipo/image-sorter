@@ -52,9 +52,9 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 	} else {
 		return &database.Image{
 			Id:              0,
-			Name:            imageFile.GetFile(),
-			FileName:        imageFile.GetFile(),
-			Directory:       imageFile.GetDir(),
+			Name:            imageFile.FileName(),
+			FileName:        imageFile.FileName(),
+			Directory:       imageFile.Directory(),
 			ByteSize:        1234,
 			ExifOrientation: 1,
 			ImageAngle:      90,
@@ -110,7 +110,7 @@ func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
 	img, index, _ := sut.getCurrentImage()
 	a.NotNil(img)
 	a.Equal(0, index)
-	a.False(img.GetImageFile().IsValid())
+	a.False(img.ImageFile().IsValid())
 }
 
 func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
@@ -127,7 +127,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo1", img.GetImageFile().GetFile())
+		a.Equal("foo1", img.ImageFile().FileName())
 	})
 
 	t.Run("Next stays on same", func(t *testing.T) {
@@ -135,7 +135,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo1", img.GetImageFile().GetFile())
+		a.Equal("foo1", img.ImageFile().FileName())
 	})
 
 	t.Run("Previous stays on same", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo1", img.GetImageFile().GetFile())
+		a.Equal("foo1", img.ImageFile().FileName())
 	})
 }
 
@@ -164,7 +164,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo1", img.GetImageFile().GetFile())
+		a.Equal("foo1", img.ImageFile().FileName())
 
 	})
 
@@ -173,7 +173,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
-		a.Equal("foo2", img.GetImageFile().GetFile())
+		a.Equal("foo2", img.ImageFile().FileName())
 
 	})
 
@@ -182,7 +182,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(2, index)
-		a.Equal("foo3", img.GetImageFile().GetFile())
+		a.Equal("foo3", img.ImageFile().FileName())
 	})
 
 	t.Run("Next again should stay", func(t *testing.T) {
@@ -190,7 +190,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(2, index)
-		a.Equal("foo3", img.GetImageFile().GetFile())
+		a.Equal("foo3", img.ImageFile().FileName())
 	})
 
 	t.Run("Previous", func(t *testing.T) {
@@ -198,7 +198,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
-		a.Equal("foo2", img.GetImageFile().GetFile())
+		a.Equal("foo2", img.ImageFile().FileName())
 	})
 }
 
@@ -226,7 +226,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(5, index)
-		a.Equal("foo5", img.GetImageFile().GetFile())
+		a.Equal("foo5", img.ImageFile().FileName())
 	})
 
 	t.Run("Jump beyond the last", func(t *testing.T) {
@@ -234,7 +234,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
-		a.Equal("foo9", img.GetImageFile().GetFile())
+		a.Equal("foo9", img.ImageFile().FileName())
 	})
 
 	t.Run("Jump back to 5 images", func(t *testing.T) {
@@ -242,7 +242,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(4, index)
-		a.Equal("foo4", img.GetImageFile().GetFile())
+		a.Equal("foo4", img.ImageFile().FileName())
 	})
 
 	t.Run("Jump beyond the first", func(t *testing.T) {
@@ -250,7 +250,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo0", img.GetImageFile().GetFile())
+		a.Equal("foo0", img.ImageFile().FileName())
 	})
 }
 
@@ -278,7 +278,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo0", img.GetImageFile().GetFile())
+		a.Equal("foo0", img.ImageFile().FileName())
 	})
 
 	t.Run("Index 5", func(t *testing.T) {
@@ -286,7 +286,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(5, index)
-		a.Equal("foo5", img.GetImageFile().GetFile())
+		a.Equal("foo5", img.ImageFile().FileName())
 	})
 
 	t.Run("Index last image", func(t *testing.T) {
@@ -294,7 +294,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
-		a.Equal("foo9", img.GetImageFile().GetFile())
+		a.Equal("foo9", img.ImageFile().FileName())
 	})
 
 	t.Run("Index after the last gives the last image", func(t *testing.T) {
@@ -302,7 +302,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
-		a.Equal("foo9", img.GetImageFile().GetFile())
+		a.Equal("foo9", img.ImageFile().FileName())
 	})
 
 	t.Run("Index last image with negative index", func(t *testing.T) {
@@ -310,7 +310,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(9, index)
-		a.Equal("foo9", img.GetImageFile().GetFile())
+		a.Equal("foo9", img.ImageFile().FileName())
 	})
 
 	t.Run("Index second to last image with negative index", func(t *testing.T) {
@@ -318,7 +318,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(8, index)
-		a.Equal("foo8", img.GetImageFile().GetFile())
+		a.Equal("foo8", img.ImageFile().FileName())
 	})
 
 	t.Run("Too big negative index returns the first", func(t *testing.T) {
@@ -326,7 +326,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
-		a.Equal("foo0", img.GetImageFile().GetFile())
+		a.Equal("foo0", img.ImageFile().FileName())
 	})
 }
 
@@ -345,18 +345,18 @@ func TestGetCurrentImage_Navigate_ImageId(t *testing.T) {
 	imageFiles, _ := imageStore.GetAllImages()
 
 	t.Run("foo1", func(t *testing.T) {
-		sut.MoveToImage(imageFiles[1].GetId())
+		sut.MoveToImage(imageFiles[1].Id())
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
-		a.Equal("foo1", img.GetImageFile().GetFile())
+		a.Equal("foo1", img.ImageFile().FileName())
 	})
 	t.Run("foo3", func(t *testing.T) {
-		sut.MoveToImage(imageFiles[3].GetId())
+		sut.MoveToImage(imageFiles[3].Id())
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
-		a.Equal("foo3", img.GetImageFile().GetFile())
+		a.Equal("foo3", img.ImageFile().FileName())
 	})
 
 	t.Run("NoImage stays on the current image", func(t *testing.T) {
@@ -364,7 +364,7 @@ func TestGetCurrentImage_Navigate_ImageId(t *testing.T) {
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)
-		a.Equal("foo3", img.GetImageFile().GetFile())
+		a.Equal("foo3", img.ImageFile().FileName())
 	})
 }
 
@@ -393,11 +393,11 @@ func TestGetNextImages(t *testing.T) {
 		imgList, _ := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo1", imgList[0].GetImageFile().GetFile())
-			a.Equal("foo2", imgList[1].GetImageFile().GetFile())
-			a.Equal("foo3", imgList[2].GetImageFile().GetFile())
-			a.Equal("foo4", imgList[3].GetImageFile().GetFile())
-			a.Equal("foo5", imgList[4].GetImageFile().GetFile())
+			a.Equal("foo1", imgList[0].ImageFile().FileName())
+			a.Equal("foo2", imgList[1].ImageFile().FileName())
+			a.Equal("foo3", imgList[2].ImageFile().FileName())
+			a.Equal("foo4", imgList[3].ImageFile().FileName())
+			a.Equal("foo5", imgList[4].ImageFile().FileName())
 		}
 	})
 
@@ -406,11 +406,11 @@ func TestGetNextImages(t *testing.T) {
 		imgList, _ := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo2", imgList[0].GetImageFile().GetFile())
-			a.Equal("foo3", imgList[1].GetImageFile().GetFile())
-			a.Equal("foo4", imgList[2].GetImageFile().GetFile())
-			a.Equal("foo5", imgList[3].GetImageFile().GetFile())
-			a.Equal("foo6", imgList[4].GetImageFile().GetFile())
+			a.Equal("foo2", imgList[0].ImageFile().FileName())
+			a.Equal("foo3", imgList[1].ImageFile().FileName())
+			a.Equal("foo4", imgList[2].ImageFile().FileName())
+			a.Equal("foo5", imgList[3].ImageFile().FileName())
+			a.Equal("foo6", imgList[4].ImageFile().FileName())
 		}
 	})
 
@@ -419,9 +419,9 @@ func TestGetNextImages(t *testing.T) {
 		imgList, _ := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(3, len(imgList)) {
-			a.Equal("foo7", imgList[0].GetImageFile().GetFile())
-			a.Equal("foo8", imgList[1].GetImageFile().GetFile())
-			a.Equal("foo9", imgList[2].GetImageFile().GetFile())
+			a.Equal("foo7", imgList[0].ImageFile().FileName())
+			a.Equal("foo8", imgList[1].ImageFile().FileName())
+			a.Equal("foo9", imgList[2].ImageFile().FileName())
 		}
 	})
 
@@ -430,7 +430,7 @@ func TestGetNextImages(t *testing.T) {
 		imgList, _ := sut.getNextImages()
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
-			a.Equal("foo9", imgList[0].GetImageFile().GetFile())
+			a.Equal("foo9", imgList[0].ImageFile().FileName())
 		}
 	})
 
@@ -475,7 +475,7 @@ func TestGetPrevImages(t *testing.T) {
 		imgList, _ := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
-			a.Equal("foo0", imgList[0].GetImageFile().GetFile())
+			a.Equal("foo0", imgList[0].ImageFile().FileName())
 		}
 	})
 
@@ -484,11 +484,11 @@ func TestGetPrevImages(t *testing.T) {
 		imgList, _ := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo4", imgList[0].GetImageFile().GetFile())
-			a.Equal("foo3", imgList[1].GetImageFile().GetFile())
-			a.Equal("foo2", imgList[2].GetImageFile().GetFile())
-			a.Equal("foo1", imgList[3].GetImageFile().GetFile())
-			a.Equal("foo0", imgList[4].GetImageFile().GetFile())
+			a.Equal("foo4", imgList[0].ImageFile().FileName())
+			a.Equal("foo3", imgList[1].ImageFile().FileName())
+			a.Equal("foo2", imgList[2].ImageFile().FileName())
+			a.Equal("foo1", imgList[3].ImageFile().FileName())
+			a.Equal("foo0", imgList[4].ImageFile().FileName())
 		}
 	})
 
@@ -497,11 +497,11 @@ func TestGetPrevImages(t *testing.T) {
 		imgList, _ := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo7", imgList[0].GetImageFile().GetFile())
-			a.Equal("foo6", imgList[1].GetImageFile().GetFile())
-			a.Equal("foo5", imgList[2].GetImageFile().GetFile())
-			a.Equal("foo4", imgList[3].GetImageFile().GetFile())
-			a.Equal("foo3", imgList[4].GetImageFile().GetFile())
+			a.Equal("foo7", imgList[0].ImageFile().FileName())
+			a.Equal("foo6", imgList[1].ImageFile().FileName())
+			a.Equal("foo5", imgList[2].ImageFile().FileName())
+			a.Equal("foo4", imgList[3].ImageFile().FileName())
+			a.Equal("foo3", imgList[4].ImageFile().FileName())
 		}
 	})
 
@@ -510,11 +510,11 @@ func TestGetPrevImages(t *testing.T) {
 		imgList, _ := sut.getPrevImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
-			a.Equal("foo8", imgList[0].GetImageFile().GetFile())
-			a.Equal("foo7", imgList[1].GetImageFile().GetFile())
-			a.Equal("foo6", imgList[2].GetImageFile().GetFile())
-			a.Equal("foo5", imgList[3].GetImageFile().GetFile())
-			a.Equal("foo4", imgList[4].GetImageFile().GetFile())
+			a.Equal("foo8", imgList[0].ImageFile().FileName())
+			a.Equal("foo7", imgList[1].ImageFile().FileName())
+			a.Equal("foo6", imgList[2].ImageFile().FileName())
+			a.Equal("foo5", imgList[3].ImageFile().FileName())
+			a.Equal("foo4", imgList[4].ImageFile().FileName())
 		}
 	})
 }
@@ -565,35 +565,35 @@ func TestShowOnlyImages(t *testing.T) {
 	category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))
 	sut.SetImageListSize(10)
 
-	_ = imageCategoryStore.CategorizeImage(imageFiles[1].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[2].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[6].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[7].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[9].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[1].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[2].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[6].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[7].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[9].Id(), category1.Id(), apitype.MOVE)
 
-	_ = imageCategoryStore.CategorizeImage(imageFiles[0].GetId(), category2.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[1].GetId(), category2.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[3].GetId(), category2.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[9].GetId(), category2.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[0].Id(), category2.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[1].Id(), category2.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[3].Id(), category2.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[9].Id(), category2.Id(), apitype.MOVE)
 
-	sut.ShowOnlyImages(category1.GetId())
+	sut.ShowOnlyImages(category1.Id())
 
 	a.Equal(5, sut.getTotalImages())
-	a.Equal(category1.GetId(), sut.getSelectedCategoryId())
+	a.Equal(category1.Id(), sut.getSelectedCategoryId())
 
 	t.Run("Next and prev images", func(t *testing.T) {
 		nextImages, _ := sut.getNextImages()
 		prevImages, _ := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(4, len(nextImages)) {
-			a.Equal(imageFiles[2].GetId(), nextImages[0].GetImageFile().GetId())
-			a.Equal("foo2", nextImages[0].GetImageFile().GetFile())
-			a.Equal(imageFiles[6].GetId(), nextImages[1].GetImageFile().GetId())
-			a.Equal("foo6", nextImages[1].GetImageFile().GetFile())
-			a.Equal(imageFiles[7].GetId(), nextImages[2].GetImageFile().GetId())
-			a.Equal("foo7", nextImages[2].GetImageFile().GetFile())
-			a.Equal(imageFiles[9].GetId(), nextImages[3].GetImageFile().GetId())
-			a.Equal("foo9", nextImages[3].GetImageFile().GetFile())
+			a.Equal(imageFiles[2].Id(), nextImages[0].ImageFile().Id())
+			a.Equal("foo2", nextImages[0].ImageFile().FileName())
+			a.Equal(imageFiles[6].Id(), nextImages[1].ImageFile().Id())
+			a.Equal("foo6", nextImages[1].ImageFile().FileName())
+			a.Equal(imageFiles[7].Id(), nextImages[2].ImageFile().Id())
+			a.Equal("foo7", nextImages[2].ImageFile().FileName())
+			a.Equal(imageFiles[9].Id(), nextImages[3].ImageFile().Id())
+			a.Equal("foo9", nextImages[3].ImageFile().FileName())
 		}
 
 		a.NotNil(prevImages)
@@ -606,18 +606,18 @@ func TestShowOnlyImages(t *testing.T) {
 		prevImages, _ := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(2, len(nextImages)) {
-			a.Equal(imageFiles[7].GetId(), nextImages[0].GetImageFile().GetId())
-			a.Equal("foo7", nextImages[0].GetImageFile().GetFile())
-			a.Equal(imageFiles[9].GetId(), nextImages[1].GetImageFile().GetId())
-			a.Equal("foo9", nextImages[1].GetImageFile().GetFile())
+			a.Equal(imageFiles[7].Id(), nextImages[0].ImageFile().Id())
+			a.Equal("foo7", nextImages[0].ImageFile().FileName())
+			a.Equal(imageFiles[9].Id(), nextImages[1].ImageFile().Id())
+			a.Equal("foo9", nextImages[1].ImageFile().FileName())
 		}
 
 		a.NotNil(prevImages)
 		if a.Equal(2, len(prevImages)) {
-			a.Equal(imageFiles[1].GetId(), prevImages[1].GetImageFile().GetId())
-			a.Equal("foo1", prevImages[1].GetImageFile().GetFile())
-			a.Equal(imageFiles[2].GetId(), prevImages[0].GetImageFile().GetId())
-			a.Equal("foo2", prevImages[0].GetImageFile().GetFile())
+			a.Equal(imageFiles[1].Id(), prevImages[1].ImageFile().Id())
+			a.Equal("foo1", prevImages[1].ImageFile().FileName())
+			a.Equal(imageFiles[2].Id(), prevImages[0].ImageFile().Id())
+			a.Equal("foo2", prevImages[0].ImageFile().FileName())
 		}
 	})
 }
@@ -643,16 +643,16 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 
 	imageFiles, _ := imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
-	_ = imageCategoryStore.CategorizeImage(imageFiles[1].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[2].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[6].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[7].GetId(), category1.GetId(), apitype.MOVE)
-	_ = imageCategoryStore.CategorizeImage(imageFiles[9].GetId(), category1.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[1].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[2].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[6].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[7].Id(), category1.Id(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFiles[9].Id(), category1.Id(), apitype.MOVE)
 
-	sut.ShowOnlyImages(category1.GetId())
+	sut.ShowOnlyImages(category1.Id())
 
 	a.Equal(5, sut.getTotalImages())
-	a.Equal(category1.GetId(), sut.getSelectedCategoryId())
+	a.Equal(category1.Id(), sut.getSelectedCategoryId())
 
 	sut.ShowAllImages()
 	a.Equal(10, sut.getTotalImages())
@@ -663,15 +663,15 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 		prevImages, _ := sut.getPrevImages()
 		a.NotNil(nextImages)
 		if a.Equal(9, len(nextImages)) {
-			a.Equal("foo1", nextImages[0].GetImageFile().GetFile())
-			a.Equal("foo2", nextImages[1].GetImageFile().GetFile())
-			a.Equal("foo3", nextImages[2].GetImageFile().GetFile())
-			a.Equal("foo4", nextImages[3].GetImageFile().GetFile())
-			a.Equal("foo5", nextImages[4].GetImageFile().GetFile())
-			a.Equal("foo6", nextImages[5].GetImageFile().GetFile())
-			a.Equal("foo7", nextImages[6].GetImageFile().GetFile())
-			a.Equal("foo8", nextImages[7].GetImageFile().GetFile())
-			a.Equal("foo9", nextImages[8].GetImageFile().GetFile())
+			a.Equal("foo1", nextImages[0].ImageFile().FileName())
+			a.Equal("foo2", nextImages[1].ImageFile().FileName())
+			a.Equal("foo3", nextImages[2].ImageFile().FileName())
+			a.Equal("foo4", nextImages[3].ImageFile().FileName())
+			a.Equal("foo5", nextImages[4].ImageFile().FileName())
+			a.Equal("foo6", nextImages[5].ImageFile().FileName())
+			a.Equal("foo7", nextImages[6].ImageFile().FileName())
+			a.Equal("foo8", nextImages[7].ImageFile().FileName())
+			a.Equal("foo9", nextImages[8].ImageFile().FileName())
 		}
 
 		a.NotNil(prevImages)
