@@ -17,12 +17,12 @@ const (
 )
 
 var (
-	emptyInstance = Instance{handleId: apitype.NoHandle}
+	emptyInstance = Instance{imageId: apitype.NoImage}
 	thumbnailSize = apitype.SizeOf(thumbnailWidth, thumbnailHeight)
 )
 
 type Instance struct {
-	handleId    apitype.HandleId
+	imageId     apitype.ImageId
 	full        image.Image
 	thumbnail   image.Image
 	scaled      image.Image
@@ -30,11 +30,11 @@ type Instance struct {
 	mux         sync.Mutex
 }
 
-func NewInstance(handleId apitype.HandleId, imageLoader api.ImageLoader) *Instance {
+func NewInstance(imageId apitype.ImageId, imageLoader api.ImageLoader) *Instance {
 	var instance *Instance
 
 	instance = &Instance{
-		handleId:    handleId,
+		imageId:     imageId,
 		imageLoader: imageLoader,
 	}
 
@@ -43,7 +43,7 @@ func NewInstance(handleId apitype.HandleId, imageLoader api.ImageLoader) *Instan
 }
 
 func (s *Instance) IsValid() bool {
-	return s.handleId != apitype.NoHandle
+	return s.imageId != apitype.NoImage
 }
 
 func (s *Instance) GetFull() (image.Image, error) {
@@ -53,12 +53,12 @@ func (s *Instance) GetFull() (image.Image, error) {
 		startTime := time.Now()
 
 		if full, err := s.loadFull(nil); err != nil {
-			logger.Error.Printf("Could not load full image: %d", s.handleId)
+			logger.Error.Printf("Could not load full image: %d", s.imageId)
 			return nil, err
 		} else {
 			s.full = full
 			endTime := time.Now()
-			logger.Trace.Printf("%d: Full loaded in %s", s.handleId, endTime.Sub(startTime).String())
+			logger.Trace.Printf("%d: Full loaded in %s", s.imageId, endTime.Sub(startTime).String())
 			return s.full, nil
 		}
 	} else {
@@ -94,13 +94,13 @@ func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 		}
 	}
 	endTime := time.Now()
-	logger.Trace.Printf("%d: Scaled loaded in %s", s.handleId, endTime.Sub(startTime).String())
+	logger.Trace.Printf("%d: Scaled loaded in %s", s.imageId, endTime.Sub(startTime).String())
 
 	return s.scaled, err
 }
 
 func (s *Instance) GetThumbnail() (image.Image, error) {
-	if s.handleId == apitype.NoHandle {
+	if s.imageId == apitype.NoImage {
 		return nil, errors.New("invalid handle")
 	}
 	var err error
@@ -119,7 +119,7 @@ func (s *Instance) GetThumbnail() (image.Image, error) {
 		logger.Trace.Print("Use cached thumbnail")
 	}
 	endTime := time.Now()
-	logger.Trace.Printf("%d: Thumbnail loaded in %s", s.handleId, endTime.Sub(startTime).String())
+	logger.Trace.Printf("%d: Thumbnail loaded in %s", s.imageId, endTime.Sub(startTime).String())
 	return s.thumbnail, err
 }
 
@@ -158,9 +158,9 @@ func (s *Instance) loadImageWithExifCorrection(size *apitype.Size) (image.Image,
 	var loadedImage image.Image
 	var err error
 	if size != nil {
-		loadedImage, err = s.imageLoader.LoadImageScaled(s.handleId, *size)
+		loadedImage, err = s.imageLoader.LoadImageScaled(s.imageId, *size)
 	} else {
-		loadedImage, err = s.imageLoader.LoadImage(s.handleId)
+		loadedImage, err = s.imageLoader.LoadImage(s.imageId)
 	}
 
 	if err != nil {
@@ -178,12 +178,12 @@ func (s *Instance) loadThumbnailFromCache() (image.Image, error) {
 		startTime := time.Now()
 
 		if thumbnail, err := s.loadFull(&thumbnailSize); err != nil {
-			logger.Error.Printf("Could not load thumbnail: %d", s.handleId)
+			logger.Error.Printf("Could not load thumbnail: %d", s.imageId)
 			return nil, err
 		} else {
 			s.thumbnail = thumbnail
 			endTime := time.Now()
-			logger.Trace.Printf("%d: Thumbnail loaded in %s", s.handleId, endTime.Sub(startTime).String())
+			logger.Trace.Printf("%d: Thumbnail loaded in %s", s.imageId, endTime.Sub(startTime).String())
 			return s.thumbnail, nil
 		}
 	} else {

@@ -64,7 +64,7 @@ func TestInstance_GetFull(t *testing.T) {
 		a.Nil(scaled)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		instance := NewInstance(apitype.NoHandle, loader)
+		instance := NewInstance(apitype.NoImage, loader)
 
 		scaled, err := instance.GetFull()
 		a.NotNil(err)
@@ -156,7 +156,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Nil(scaled)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		instance := NewInstance(apitype.NoHandle, loader)
+		instance := NewInstance(apitype.NoImage, loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -223,7 +223,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 		a.Nil(scaled)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		instance := NewInstance(apitype.NoHandle, loader)
+		instance := NewInstance(apitype.NoImage, loader)
 
 		scaled, err := instance.GetThumbnail()
 

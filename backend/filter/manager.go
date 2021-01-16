@@ -16,13 +16,13 @@ func (s *Filter) GetOperation() apitype.ImageOperation {
 }
 
 type Manager struct {
-	filtersToApply map[apitype.HandleId][]*Filter
+	filtersToApply map[apitype.ImageId][]*Filter
 	filters        map[string]*Filter
 }
 
 func NewFilterManager() *Manager {
 	return &Manager{
-		filtersToApply: map[apitype.HandleId][]*Filter{},
+		filtersToApply: map[apitype.ImageId][]*Filter{},
 	}
 }
 

@@ -215,7 +215,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		HandleId: s.imageView.GetCurrentHandle().GetId(),
+		ImageId: s.imageView.GetCurrentHandle().GetId(),
 	})
 }
 

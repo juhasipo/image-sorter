@@ -7,10 +7,10 @@ import (
 
 type ImageStore interface {
 	Initialize([]*apitype.Handle)
-	GetFull(apitype.HandleId) (image.Image, error)
-	GetScaled(apitype.HandleId, apitype.Size) (image.Image, error)
-	GetThumbnail(apitype.HandleId) (image.Image, error)
-	GetExifData(apitype.HandleId) *apitype.ExifData
+	GetFull(apitype.ImageId) (image.Image, error)
+	GetScaled(apitype.ImageId, apitype.Size) (image.Image, error)
+	GetThumbnail(apitype.ImageId) (image.Image, error)
+	GetExifData(apitype.ImageId) *apitype.ExifData
 	GetByteSize() uint64
 	GetSizeInMB() float64
 	Purge()

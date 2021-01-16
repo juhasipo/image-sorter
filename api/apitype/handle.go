@@ -7,12 +7,12 @@ import (
 	"vincit.fi/image-sorter/common/logger"
 )
 
-type HandleId int64
+type ImageId int64
 
-const NoHandle = HandleId(-1)
+const NoImage = ImageId(-1)
 
 type Handle struct {
-	id        HandleId
+	id        ImageId
 	directory string
 	filename  string
 	path      string
@@ -27,11 +27,11 @@ func (s *Handle) IsValid() bool {
 }
 
 var (
-	EmptyHandle          = Handle{id: NoHandle, path: ""}
+	EmptyHandle          = Handle{id: NoImage, path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewPersistedHandle(id HandleId, handle *Handle, metaData map[string]string) *Handle {
+func NewPersistedHandle(id ImageId, handle *Handle, metaData map[string]string) *Handle {
 	return &Handle{
 		id:        id,
 		directory: handle.directory,
@@ -42,7 +42,7 @@ func NewPersistedHandle(id HandleId, handle *Handle, metaData map[string]string)
 	}
 }
 
-func NewHandleWithId(id HandleId, fileDir string, fileName string, rotation float64, flipped bool, metaData map[string]string) *Handle {
+func NewHandleWithId(id ImageId, fileDir string, fileName string, rotation float64, flipped bool, metaData map[string]string) *Handle {
 	return &Handle{
 		id:        id,
 		directory: fileDir,
@@ -55,22 +55,22 @@ func NewHandleWithId(id HandleId, fileDir string, fileName string, rotation floa
 }
 
 func NewHandle(fileDir string, fileName string) *Handle {
-	return NewHandleWithId(NoHandle, fileDir, fileName, 0, false, map[string]string{})
+	return NewHandleWithId(NoImage, fileDir, fileName, 0, false, map[string]string{})
 }
 
 func NewHandleWithMetaData(fileDir string, fileName string, metaData map[string]string) *Handle {
-	return NewHandleWithId(NoHandle, fileDir, fileName, 0, false, metaData)
+	return NewHandleWithId(NoImage, fileDir, fileName, 0, false, metaData)
 }
 
 func GetEmptyHandle() *Handle {
 	return &EmptyHandle
 }
 
-func (s *Handle) GetId() HandleId {
+func (s *Handle) GetId() ImageId {
 	if s != nil {
 		return s.id
 	} else {
-		return NoHandle
+		return NoImage
 	}
 }
 

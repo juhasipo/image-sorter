@@ -24,14 +24,14 @@ func (s *ImageCategoryStore) getCollection() db.Collection {
 	return s.collection
 }
 
-func (s *ImageCategoryStore) RemoveImageCategories(imageId apitype.HandleId) error {
+func (s *ImageCategoryStore) RemoveImageCategories(imageId apitype.ImageId) error {
 	_, err := s.getCollection().Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ?
 		`, imageId)
 	return err
 }
 
-func (s *ImageCategoryStore) CategorizeImage(imageId apitype.HandleId, categoryId apitype.CategoryId, operation apitype.Operation) error {
+func (s *ImageCategoryStore) CategorizeImage(imageId apitype.ImageId, categoryId apitype.CategoryId, operation apitype.Operation) error {
 	if operation == apitype.NONE {
 		_, err := s.getCollection().Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ? AND category_id = ?
@@ -49,7 +49,7 @@ func (s *ImageCategoryStore) CategorizeImage(imageId apitype.HandleId, categoryI
 	}
 }
 
-func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*api.CategorizedImage, error) {
+func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.ImageId) ([]*api.CategorizedImage, error) {
 	var categories []CategorizedImage
 	err := s.getCollection().Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -71,7 +71,7 @@ func (s *ImageCategoryStore) GetImagesCategories(imageId apitype.HandleId) ([]*a
 	return toApiCategorizedImages(categories), nil
 }
 
-func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.HandleId]map[apitype.CategoryId]*api.CategorizedImage, error) {
+func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage, error) {
 	var categorizedImages []CategorizedImage
 	err := s.getCollection().Session().SQL().
 		Select("image_category.image_id AS image_id",
@@ -89,16 +89,16 @@ func (s *ImageCategoryStore) GetCategorizedImages() (map[apitype.HandleId]map[ap
 		return nil, err
 	}
 
-	var catImagesByHandleIdAndCategoryId = map[apitype.HandleId]map[apitype.CategoryId]*api.CategorizedImage{}
+	var categoryImagesByImageIdAndCategoryId = map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage{}
 	for _, categorizedImage := range categorizedImages {
 		var categorizedImagesByCategoryId map[apitype.CategoryId]*api.CategorizedImage
-		if val, ok := catImagesByHandleIdAndCategoryId[categorizedImage.ImageId]; ok {
+		if val, ok := categoryImagesByImageIdAndCategoryId[categorizedImage.ImageId]; ok {
 			categorizedImagesByCategoryId = val
 		} else {
 			categorizedImagesByCategoryId = map[apitype.CategoryId]*api.CategorizedImage{}
-			catImagesByHandleIdAndCategoryId[categorizedImage.ImageId] = categorizedImagesByCategoryId
+			categoryImagesByImageIdAndCategoryId[categorizedImage.ImageId] = categorizedImagesByCategoryId
 		}
 		categorizedImagesByCategoryId[categorizedImage.CategoryId] = toApiCategorizedImage(&categorizedImage)
 	}
-	return catImagesByHandleIdAndCategoryId, nil
+	return categoryImagesByImageIdAndCategoryId, nil
 }

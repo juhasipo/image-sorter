@@ -79,7 +79,7 @@ func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.Handle) 
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
 			return &api.CategorizeCommand{
-				HandleId:        handle.GetId(),
+				ImageId:         handle.GetId(),
 				CategoryId:      button.entry.GetId(),
 				Operation:       button.operation.NextOperation(),
 				StayOnSameImage: false,
@@ -229,7 +229,7 @@ func (s *TopActionView) UpdateCategories(categories *api.UpdateCategoriesCommand
 			logger.Debug.Printf("Categorize handle '%s' to category '%s", currentImageHandle, entry)
 
 			command := &api.CategorizeCommand{
-				HandleId:        currentImageHandle.GetId(),
+				ImageId:         currentImageHandle.GetId(),
 				CategoryId:      entry.GetId(),
 				Operation:       operation,
 				StayOnSameImage: stayOnSameImage,

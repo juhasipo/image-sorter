@@ -10,15 +10,15 @@ import (
 )
 
 type HashResult struct {
-	handleId    apitype.HandleId
+	imageId     apitype.ImageId
 	hash        *duplo.Hash
 	imageLoader api.ImageLoader
 }
 
-func ReturnResult(channel chan *HashResult, handleId apitype.HandleId, hash *duplo.Hash) {
+func ReturnResult(channel chan *HashResult, imageId apitype.ImageId, hash *duplo.Hash) {
 	channel <- &HashResult{
-		handleId: handleId,
-		hash:     hash,
+		imageId: imageId,
+		hash:    hash,
 	}
 }
 

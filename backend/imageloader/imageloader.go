@@ -23,8 +23,8 @@ type LibJPEGImageLoader struct {
 	api.ImageLoader
 }
 
-func (s *LibJPEGImageLoader) LoadImage(handleId apitype.HandleId) (image.Image, error) {
-	handle := s.imageStore.GetImageById(handleId)
+func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, error) {
+	handle := s.imageStore.GetImageById(imageId)
 
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
@@ -41,8 +41,8 @@ func (s *LibJPEGImageLoader) LoadImage(handleId apitype.HandleId) (image.Image, 
 	return apitype.ExifRotateImage(imageFile, rotation, flipped)
 }
 
-func (s *LibJPEGImageLoader) LoadImageScaled(handleId apitype.HandleId, size apitype.Size) (image.Image, error) {
-	handle := s.imageStore.GetImageById(handleId)
+func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apitype.Size) (image.Image, error) {
+	handle := s.imageStore.GetImageById(imageId)
 
 	file, err := os.Open(handle.GetPath())
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *LibJPEGImageLoader) LoadImageScaled(handleId apitype.HandleId, size api
 	return apitype.ExifRotateImage(imageFile, rotation, flipped)
 }
 
-func (s *LibJPEGImageLoader) LoadExifData(handleId apitype.HandleId) (*apitype.ExifData, error) {
-	handle := s.imageStore.GetImageById(handleId)
+func (s *LibJPEGImageLoader) LoadExifData(imageId apitype.ImageId) (*apitype.ExifData, error) {
+	handle := s.imageStore.GetImageById(imageId)
 	return apitype.LoadExifData(handle)
 }

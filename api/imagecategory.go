@@ -6,7 +6,7 @@ import (
 )
 
 type CategorizeCommand struct {
-	HandleId        apitype.HandleId
+	ImageId         apitype.ImageId
 	CategoryId      apitype.CategoryId
 	Operation       apitype.Operation
 	StayOnSameImage bool
@@ -28,7 +28,7 @@ type CategorizedImage struct {
 }
 
 type ImageCategoryQuery struct {
-	HandleId apitype.HandleId
+	ImageId apitype.ImageId
 }
 
 type PersistCategorizationCommand struct {
@@ -52,7 +52,7 @@ type ImageCategoryManager interface {
 
 	ShowOnlyCategoryImages(*SelectCategoryCommand)
 
-	ResolveFileOperations(map[apitype.HandleId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) []*apitype.ImageOperationGroup
+	ResolveFileOperations(map[apitype.ImageId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) []*apitype.ImageOperationGroup
 	ResolveOperationsForGroup(*apitype.Handle, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()

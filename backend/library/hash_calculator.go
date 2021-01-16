@@ -31,12 +31,12 @@ func NewHashCalculator(similarityIndex *database.SimilarityIndex, imageLoader ap
 	}
 }
 
-func (s *HashCalculator) GenerateHashes(images []*apitype.Handle, statusCallback func(int, int)) (map[apitype.HandleId]*duplo.Hash, error) {
+func (s *HashCalculator) GenerateHashes(images []*apitype.Handle, statusCallback func(int, int)) (map[apitype.ImageId]*duplo.Hash, error) {
 	startTime := time.Now()
 	hashExpected := len(images)
 	logger.Info.Printf("Generate hashes for %d images...", hashExpected)
 	statusCallback(0, hashExpected)
-	hashes := map[apitype.HandleId]*duplo.Hash{}
+	hashes := map[apitype.ImageId]*duplo.Hash{}
 
 	if hashExpected > 0 {
 		// Just to make things consistent in case Go decides to change the default
@@ -68,7 +68,7 @@ func (s *HashCalculator) GenerateHashes(images []*apitype.Handle, statusCallback
 			s.addHashToMap(result, hashes, &mux)
 
 			statusCallback(i, hashExpected)
-			s.hashIndex.Add(result.handleId, *result.hash)
+			s.hashIndex.Add(result.imageId, *result.hash)
 
 			if i == hashExpected {
 				s.StopHashes()
@@ -104,7 +104,7 @@ func (s *HashCalculator) StopHashes() {
 	}
 }
 
-func (s *HashCalculator) BuildSimilarityIndex(hashes map[apitype.HandleId]*duplo.Hash, statusCallback func(int, int)) error {
+func (s *HashCalculator) BuildSimilarityIndex(hashes map[apitype.ImageId]*duplo.Hash, statusCallback func(int, int)) error {
 	logger.Info.Printf("Building similarity index for %d most similar images for each image", maxSimilarImages)
 
 	startTime := time.Now()
@@ -118,7 +118,7 @@ func (s *HashCalculator) BuildSimilarityIndex(hashes map[apitype.HandleId]*duplo
 		numOfHashedImages := len(hashes)
 		statusCallback(0, len(hashes))
 		imageIndex := 0
-		for handleId, hash := range hashes {
+		for imageId, hash := range hashes {
 			searchStart := time.Now()
 			matches := s.hashIndex.Query(*hash)
 			searchEnd := time.Now()
@@ -130,10 +130,10 @@ func (s *HashCalculator) BuildSimilarityIndex(hashes map[apitype.HandleId]*duplo
 			addStart := time.Now()
 			i := 0
 			for _, match := range matches {
-				similarId := match.ID.(apitype.HandleId)
-				if handleId != similarId {
+				similarId := match.ID.(apitype.ImageId)
+				if imageId != similarId {
 					if err := s.similarityIndex.
-						AddSimilarImage(handleId, similarId, i, match.Score); err != nil {
+						AddSimilarImage(imageId, similarId, i, match.Score); err != nil {
 						logger.Error.Print("Error while storing similar images", err)
 						return err
 					}
@@ -148,7 +148,7 @@ func (s *HashCalculator) BuildSimilarityIndex(hashes map[apitype.HandleId]*duplo
 			statusCallback(imageIndex, numOfHashedImages)
 			imageIndex = imageIndex + 1
 
-			logger.Trace.Printf("Print added matches for image: %d", handleId)
+			logger.Trace.Printf("Print added matches for image: %d", imageId)
 			logger.Trace.Printf(" -    Search: %s", searchEnd.Sub(searchStart))
 			logger.Trace.Printf(" -      Sort: %s", sortEnd.Sub(sortStart))
 			logger.Trace.Printf(" -       Add: %s", addEnd.Sub(addStart))
@@ -172,8 +172,8 @@ func (s *HashCalculator) BuildSimilarityIndex(hashes map[apitype.HandleId]*duplo
 	return nil
 }
 
-func (s *HashCalculator) addHashToMap(result *HashResult, hashes map[apitype.HandleId]*duplo.Hash, mux *sync.Mutex) {
+func (s *HashCalculator) addHashToMap(result *HashResult, hashes map[apitype.ImageId]*duplo.Hash, mux *sync.Mutex) {
 	mux.Lock()
 	defer mux.Unlock()
-	hashes[result.handleId] = result.hash
+	hashes[result.imageId] = result.hash
 }

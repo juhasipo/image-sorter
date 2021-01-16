@@ -10,7 +10,7 @@ type ImagesQuery struct {
 }
 
 type ImageQuery struct {
-	Id apitype.HandleId
+	Id apitype.ImageId
 	apitype.Command
 }
 type ImageAtQuery struct {
@@ -48,7 +48,7 @@ type Library interface {
 
 	GetHandles() []*apitype.Handle
 	AddHandles(imageList []*apitype.Handle)
-	GetHandleById(handleId apitype.HandleId) *apitype.Handle
+	GetHandleById(apitype.ImageId) *apitype.Handle
 
 	ShowAllImages()
 	ShowOnlyImages(*SelectCategoryCommand)

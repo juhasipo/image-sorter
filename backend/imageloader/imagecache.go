@@ -13,7 +13,7 @@ type CacheContainer struct {
 }
 
 type DefaultImageStore struct {
-	imageCache  map[apitype.HandleId]*Instance
+	imageCache  map[apitype.ImageId]*Instance
 	mux         sync.Mutex
 	imageLoader api.ImageLoader
 
@@ -23,7 +23,7 @@ type DefaultImageStore struct {
 func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	s.imageCache = map[apitype.HandleId]*Instance{}
+	s.imageCache = map[apitype.ImageId]*Instance{}
 	for _, handle := range handles {
 		s.imageCache[handle.GetId()] = NewInstance(handle.GetId(), s.imageLoader)
 	}
@@ -32,32 +32,32 @@ func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
 
 func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
 	return &DefaultImageStore{
-		imageCache:  map[apitype.HandleId]*Instance{},
+		imageCache:  map[apitype.ImageId]*Instance{},
 		mux:         sync.Mutex{},
 		imageLoader: imageLoader,
 	}
 }
 
-func (s *DefaultImageStore) GetFull(handleId apitype.HandleId) (image.Image, error) {
-	return s.getImage(handleId).GetFull()
+func (s *DefaultImageStore) GetFull(imageId apitype.ImageId) (image.Image, error) {
+	return s.getImage(imageId).GetFull()
 }
-func (s *DefaultImageStore) GetScaled(handleId apitype.HandleId, size apitype.Size) (image.Image, error) {
-	return s.getImage(handleId).GetScaled(size)
+func (s *DefaultImageStore) GetScaled(imageId apitype.ImageId, size apitype.Size) (image.Image, error) {
+	return s.getImage(imageId).GetScaled(size)
 }
-func (s *DefaultImageStore) GetThumbnail(handleId apitype.HandleId) (image.Image, error) {
-	return s.getImage(handleId).GetThumbnail()
+func (s *DefaultImageStore) GetThumbnail(imageId apitype.ImageId) (image.Image, error) {
+	return s.getImage(imageId).GetThumbnail()
 }
-func (s *DefaultImageStore) GetExifData(handleId apitype.HandleId) *apitype.ExifData {
+func (s *DefaultImageStore) GetExifData(imageId apitype.ImageId) *apitype.ExifData {
 	return nil
 }
 
-func (s *DefaultImageStore) getImage(handleId apitype.HandleId) *Instance {
+func (s *DefaultImageStore) getImage(imageId apitype.ImageId) *Instance {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	if handleId != apitype.NoHandle {
-		if existingInstance, ok := s.imageCache[handleId]; !ok {
-			instance := NewInstance(handleId, s.imageLoader)
-			s.imageCache[handleId] = instance
+	if imageId != apitype.NoImage {
+		if existingInstance, ok := s.imageCache[imageId]; !ok {
+			instance := NewInstance(imageId, s.imageLoader)
+			s.imageCache[imageId] = instance
 			return instance
 		} else {
 			return existingInstance

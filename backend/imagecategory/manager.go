@@ -40,11 +40,11 @@ func (s *Manager) InitializeForDirectory(directory string) {
 }
 
 func (s *Manager) RequestCategory(query *api.ImageCategoryQuery) {
-	s.sendCategories(query.HandleId)
+	s.sendCategories(query.ImageId)
 }
 
 func (s *Manager) GetCategories(query *api.ImageCategoryQuery) map[apitype.CategoryId]*api.CategorizedImage {
-	if categories, err := s.imageCategoryStore.GetImagesCategories(query.HandleId); err != nil {
+	if categories, err := s.imageCategoryStore.GetImagesCategories(query.ImageId); err != nil {
 		s.sender.SendError("Error while fetching image's category", err)
 		return map[apitype.CategoryId]*api.CategorizedImage{}
 	} else {
@@ -57,25 +57,25 @@ func (s *Manager) GetCategories(query *api.ImageCategoryQuery) map[apitype.Categ
 }
 
 func (s *Manager) SetCategory(command *api.CategorizeCommand) {
-	handleId := command.HandleId
+	imageId := command.ImageId
 	categoryId := command.CategoryId
 	operation := command.Operation
 
 	if command.ForceToCategory {
-		logger.Debug.Printf("Force to category for '%d'", handleId)
-		if err := s.imageCategoryStore.RemoveImageCategories(handleId); err != nil {
+		logger.Debug.Printf("Force to category for '%d'", imageId)
+		if err := s.imageCategoryStore.RemoveImageCategories(imageId); err != nil {
 			s.sender.SendError("Error while removing image categories", err)
 		}
 	}
 
-	if err := s.imageCategoryStore.CategorizeImage(handleId, categoryId, operation); err != nil {
+	if err := s.imageCategoryStore.CategorizeImage(imageId, categoryId, operation); err != nil {
 		s.sender.SendError("Error while setting category", err)
 	}
 
 	if command.StayOnSameImage {
-		s.sendCategories(command.HandleId)
+		s.sendCategories(command.ImageId)
 	} else {
-		s.sendCategories(handleId)
+		s.sendCategories(imageId)
 		time.Sleep(command.NextImageDelay)
 		s.sender.SendToTopic(api.ImageRequestNext)
 	}
@@ -108,12 +108,12 @@ func (s *Manager) PersistImageCategories(options *api.PersistCategorizationComma
 }
 
 func (s *Manager) ResolveFileOperations(
-	imageCategory map[apitype.HandleId]map[apitype.CategoryId]*api.CategorizedImage,
+	imageCategory map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
-	for handleId, categoryEntries := range imageCategory {
-		handle := s.library.GetHandleById(handleId)
+	for imageId, categoryEntries := range imageCategory {
+		handle := s.library.GetHandleById(imageId)
 		if newOperationGroup, err := s.ResolveOperationsForGroup(handle, categoryEntries, options); err == nil {
 			operationGroups = append(operationGroups, newOperationGroup)
 		}
@@ -163,8 +163,8 @@ func (s *Manager) ShowOnlyCategoryImages(command *api.SelectCategoryCommand) {
 	s.sender.SendCommandToTopic(api.ImageShowOnly, command)
 }
 
-func (s *Manager) getCategories(handleId apitype.HandleId) []*api.CategorizedImage {
-	if categories, err := s.imageCategoryStore.GetImagesCategories(handleId); err != nil {
+func (s *Manager) getCategories(imageId apitype.ImageId) []*api.CategorizedImage {
+	if categories, err := s.imageCategoryStore.GetImagesCategories(imageId); err != nil {
 		s.sender.SendError("Error while fetching categories for image", err)
 		return []*api.CategorizedImage{}
 	} else {
@@ -172,9 +172,9 @@ func (s *Manager) getCategories(handleId apitype.HandleId) []*api.CategorizedIma
 	}
 }
 
-func (s *Manager) sendCategories(currentImageId apitype.HandleId) {
+func (s *Manager) sendCategories(currentImageId apitype.ImageId) {
 	var commands []*apitype.Category
-	if currentImageId != apitype.HandleId(-1) {
+	if currentImageId != apitype.ImageId(-1) {
 		var categories = s.getCategories(currentImageId)
 
 		for _, image := range categories {

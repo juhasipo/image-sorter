@@ -28,11 +28,11 @@ type MockImage struct {
 	mock.Mock
 }
 
-func (s *MockImageStore) GetFull(apitype.HandleId) (image.Image, error) {
+func (s *MockImageStore) GetFull(apitype.ImageId) (image.Image, error) {
 	return nil, nil
 }
 
-func (s *MockImageStore) GetThumbnail(apitype.HandleId) (image.Image, error) {
+func (s *MockImageStore) GetThumbnail(apitype.ImageId) (image.Image, error) {
 	return nil, nil
 }
 
@@ -359,8 +359,8 @@ func TestGetCurrentImage_Navigate_Handle(t *testing.T) {
 		a.Equal("foo3", img.GetHandle().GetFile())
 	})
 
-	t.Run("NoHandle stays on the current image", func(t *testing.T) {
-		sut.MoveToImage(apitype.NoHandle)
+	t.Run("NoImage stays on the current image", func(t *testing.T) {
+		sut.MoveToImage(apitype.NoImage)
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(3, index)

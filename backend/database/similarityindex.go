@@ -63,7 +63,7 @@ func (s *SimilarityIndex) EndRecreateSimilarImageIndex() error {
 	return nil
 }
 
-func (s *SimilarityIndex) AddSimilarImage(imageId apitype.HandleId, similarId apitype.HandleId, rank int, score float64) error {
+func (s *SimilarityIndex) AddSimilarImage(imageId apitype.ImageId, similarId apitype.ImageId, rank int, score float64) error {
 	collection := s.session.Collection(s.getCollection().Name())
 	_, err := collection.Insert(&ImageSimilar{
 		ImageId:        imageId,
@@ -79,7 +79,7 @@ func (s *SimilarityIndex) AddSimilarImage(imageId apitype.HandleId, similarId ap
 	return nil
 }
 
-func (s *SimilarityIndex) GetSimilarImages(imageId apitype.HandleId) []*apitype.Handle {
+func (s *SimilarityIndex) GetSimilarImages(imageId apitype.ImageId) []*apitype.Handle {
 	var images []Image
 	s.getCollection().Session().SQL().
 		Select("image.*").

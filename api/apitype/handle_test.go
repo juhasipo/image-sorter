@@ -33,7 +33,7 @@ func TestValidHandle(t *testing.T) {
 		a.True(handle.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(HandleId(1), handle.GetId())
+		a.Equal(ImageId(1), handle.GetId())
 		a.Equal("file.jpeg", handle.GetFile())
 		a.Equal("some/dir", handle.GetDir())
 		a.Equal(filepath.Join("some", "dir", "file.jpeg"), handle.GetPath())
@@ -45,13 +45,13 @@ func TestValidHandle(t *testing.T) {
 func TestInvalidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(NoHandle, "", "", 0, false, map[string]string{})
+	handle := NewHandleWithId(NoImage, "", "", 0, false, map[string]string{})
 
 	t.Run("Validity", func(t *testing.T) {
 		a.False(handle.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(NoHandle, handle.GetId())
+		a.Equal(NoImage, handle.GetId())
 		a.Equal("", handle.GetFile())
 		a.Equal("", handle.GetDir())
 		a.Equal("", handle.GetPath())
@@ -69,7 +69,7 @@ func TestNilHandle(t *testing.T) {
 		a.False(handle.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(NoHandle, handle.GetId())
+		a.Equal(NoImage, handle.GetId())
 		a.Equal("", handle.GetFile())
 		a.Equal("", handle.GetDir())
 		a.Equal("", handle.GetPath())

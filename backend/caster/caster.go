@@ -47,14 +47,14 @@ type Caster struct {
 	sender                api.Sender
 	selectedDevice        string
 	path                  string
-	currentImage          apitype.HandleId
+	currentImage          apitype.ImageId
 	server                *http.Server
 	showBackground        bool
 	imageCache            api.ImageStore
 	alwaysStartHttpServer bool
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
-	imageQueue            apitype.HandleId
+	imageQueue            apitype.ImageId
 	imageQueueBroker      event.Broker
 
 	api.Caster
@@ -315,9 +315,9 @@ func (s *Caster) getLocalHost() string {
 func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
-	if query.HandleId != apitype.NoHandle && s.server != nil {
-		logger.Debug.Printf("Adding to cast queue: '%d'", query.HandleId)
-		s.imageQueue = query.HandleId
+	if query.ImageId != apitype.NoImage && s.server != nil {
+		logger.Debug.Printf("Adding to cast queue: '%d'", query.ImageId)
+		s.imageQueue = query.ImageId
 
 		s.imageQueueBroker.SendToTopic(castImageEvent)
 	}
@@ -325,7 +325,7 @@ func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 
 func (s *Caster) castImageFromQueue() {
 	img := s.getImageFromQueue()
-	if img != apitype.NoHandle {
+	if img != apitype.NoImage {
 		s.reserveImage()
 		s.currentImage = img
 		s.releaseImage()
@@ -365,19 +365,19 @@ func (s *Caster) castImageFromQueue() {
 	}
 }
 
-func (s *Caster) getImageFromQueue() apitype.HandleId {
+func (s *Caster) getImageFromQueue() apitype.ImageId {
 	s.reserveImage()
 	defer s.releaseImage()
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 
-	if s.imageQueue != apitype.NoHandle {
+	if s.imageQueue != apitype.NoImage {
 		img := s.imageQueue
 		logger.Debug.Printf("Getting from cast queue: '%d'", img)
-		s.imageQueue = apitype.NoHandle
+		s.imageQueue = apitype.NoImage
 		return img
 	} else {
-		return apitype.NoHandle
+		return apitype.NoImage
 	}
 }
 

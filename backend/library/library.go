@@ -114,8 +114,8 @@ func (s *Manager) AddHandles(imageList []*apitype.Handle) {
 	}
 }
 
-func (s *Manager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
-	return s.manager.GetHandleById(handleId)
+func (s *Manager) GetHandleById(imageId apitype.ImageId) *apitype.Handle {
+	return s.manager.GetHandleById(imageId)
 }
 
 // Private API

@@ -87,7 +87,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 		return nil, err
 	}
 
-	if modifiedId > apitype.HandleId(0) {
+	if modifiedId > apitype.ImageId(0) {
 		logger.Trace.Printf(" - Image exists with ID %d but is modified", modifiedId)
 
 		handleToImageStart := time.Now()
@@ -266,14 +266,14 @@ func (s *ImageStore) getCollectionForSession(session db.Session) db.Collection {
 	return session.Collection(s.getCollection().Name())
 }
 
-func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.HandleId, error) {
+func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.ImageId, error) {
 	return s.findModifiedId(s.getCollection(), handle)
 }
 
-func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.HandleId, error) {
+func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.ImageId, error) {
 	stat, err := s.imageHandleConverter.GetHandleFileStats(handle)
 	if err != nil {
-		return apitype.NoHandle, err
+		return apitype.NoImage, err
 	}
 
 	var images []Image
@@ -285,21 +285,21 @@ func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Ha
 		}).All(&images)
 
 	if err != nil {
-		return apitype.NoHandle, err
+		return apitype.NoImage, err
 	}
 
 	if len(images) > 0 {
 		return images[0].Id, nil
 	} else {
-		return apitype.NoHandle, nil
+		return apitype.NoImage, nil
 	}
 }
 
-func (s *ImageStore) update(collection db.Collection, id apitype.HandleId, image *Image) error {
+func (s *ImageStore) update(collection db.Collection, id apitype.ImageId, image *Image) error {
 	return collection.Find(db.Cond{"id": id}).Update(image)
 }
 
-func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
+func (s *ImageStore) GetImageById(id apitype.ImageId) *apitype.Handle {
 	var image Image
 	err := s.getCollection().Find(db.Cond{"id": id}).One(&image)
 
@@ -316,6 +316,6 @@ func (s *ImageStore) GetImageById(id apitype.HandleId) *apitype.Handle {
 
 }
 
-func (s *ImageStore) RemoveImage(handleId apitype.HandleId) error {
-	return s.getCollection().Find(db.Cond{"id": handleId}).Delete()
+func (s *ImageStore) RemoveImage(imageId apitype.ImageId) error {
+	return s.getCollection().Find(db.Cond{"id": imageId}).Delete()
 }

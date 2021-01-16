@@ -128,10 +128,10 @@ func (s *internalManager) StopHashes() {
 	}
 }
 
-func (s *internalManager) MoveToImage(handleId apitype.HandleId) {
+func (s *internalManager) MoveToImage(imageId apitype.ImageId) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	for imageIndex, image := range images {
-		if handleId == image.GetId() {
+		if imageId == image.GetId() {
 			s.index = imageIndex
 		}
 	}
@@ -206,8 +206,8 @@ func (s *internalManager) AddHandles(imageList []*apitype.Handle) error {
 	return nil
 }
 
-func (s *internalManager) GetHandleById(handleId apitype.HandleId) *apitype.Handle {
-	return s.imageStore.GetImageById(handleId)
+func (s *internalManager) GetHandleById(imageId apitype.ImageId) *apitype.Handle {
+	return s.imageStore.GetImageById(imageId)
 }
 
 // Private API
@@ -315,7 +315,7 @@ func (s *internalManager) removeMissingImages(handles []*apitype.Handle) error {
 		return err
 	} else {
 		var existing = map[string]int{}
-		var toRemove = map[apitype.HandleId]*apitype.Handle{}
+		var toRemove = map[apitype.ImageId]*apitype.Handle{}
 
 		for _, handle := range handles {
 			existing[handle.GetFile()] = 1
@@ -329,9 +329,9 @@ func (s *internalManager) removeMissingImages(handles []*apitype.Handle) error {
 		if len(toRemove) > 0 {
 			logger.Debug.Printf("Found %d images that don't exist anymore", len(toRemove))
 
-			for handleId, image := range toRemove {
+			for imageId, image := range toRemove {
 				logger.Trace.Printf("Removing image %s because it doesn't exist", image.String())
-				if err := s.imageStore.RemoveImage(handleId); err != nil {
+				if err := s.imageStore.RemoveImage(imageId); err != nil {
 					logger.Error.Print("Can't remove", err)
 					return err
 				}
