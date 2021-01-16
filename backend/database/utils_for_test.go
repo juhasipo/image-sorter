@@ -7,15 +7,15 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 )
 
-type StubImageHandleConverter struct {
-	ImageHandleConverter
+type StubImageFileConverter struct {
+	ImageFileConverter
 
 	incrementModTimeRequest bool
 	currentTime             time.Time
 }
 
-func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*Image, map[string]string, error) {
-	fileStat, _ := s.GetHandleFileStats(handle)
+func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*Image, map[string]string, error) {
+	fileStat, _ := s.GetImageFileStats(imageFile)
 	metaData := map[string]string{}
 	if jsonData, err := json.Marshal(metaData); err != nil {
 		return nil, nil, err
@@ -23,9 +23,9 @@ func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*Im
 
 		return &Image{
 			Id:              0,
-			Name:            handle.GetFile(),
-			FileName:        handle.GetFile(),
-			Directory:       handle.GetDir(),
+			Name:            imageFile.GetFile(),
+			FileName:        imageFile.GetFile(),
+			Directory:       imageFile.GetDir(),
 			ByteSize:        1234,
 			ExifOrientation: 1,
 			ImageAngle:      90,
@@ -40,7 +40,7 @@ func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*Im
 	}
 }
 
-func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.ImageFile) (os.FileInfo, error) {
+func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {
 	if s.incrementModTimeRequest {
 		s.currentTime = s.currentTime.Add(time.Second)
 	}
@@ -50,7 +50,7 @@ func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.ImageFile)
 	}, nil
 }
 
-func (s *StubImageHandleConverter) SetIncrementModTimeRequest(value bool) {
+func (s *StubImageFileConverter) SetIncrementModTimeRequest(value bool) {
 	s.incrementModTimeRequest = value
 }
 

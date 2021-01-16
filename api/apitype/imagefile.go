@@ -35,11 +35,11 @@ func (s *ImageFile) IsValid() bool {
 }
 
 var (
-	EmptyHandle          = ImageFile{id: NoImage, path: ""}
+	EmptyImageFile       = ImageFile{id: NoImage, path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewHandleWithId(id ImageId, fileDir string, fileName string) *ImageFile {
+func NewImageFileWithId(id ImageId, fileDir string, fileName string) *ImageFile {
 	return &ImageFile{
 		id:        id,
 		directory: fileDir,
@@ -48,12 +48,12 @@ func NewHandleWithId(id ImageId, fileDir string, fileName string) *ImageFile {
 	}
 }
 
-func NewHandle(fileDir string, fileName string) *ImageFile {
-	return NewHandleWithId(NoImage, fileDir, fileName)
+func NewImageFile(fileDir string, fileName string) *ImageFile {
+	return NewImageFileWithId(NoImage, fileDir, fileName)
 }
 
-func GetEmptyHandle() *ImageFile {
-	return &EmptyHandle
+func GetEmptyImageFile() *ImageFile {
+	return &EmptyImageFile
 }
 
 func (s *ImageFile) GetId() ImageId {
@@ -168,8 +168,8 @@ func (s *ImageFileWithMetaData) GetImageId() ImageId {
 	return s.imageFile.GetId()
 }
 
-func LoadImageHandles(dir string) []*ImageFile {
-	var handles []*ImageFile
+func LoadImageFiles(dir string) []*ImageFile {
+	var imageFiles []*ImageFile
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		logger.Error.Fatal(err)
@@ -179,12 +179,12 @@ func LoadImageHandles(dir string) []*ImageFile {
 	for _, file := range files {
 		extension := filepath.Ext(file.Name())
 		if isSupported(extension) {
-			handles = append(handles, NewHandle(dir, file.Name()))
+			imageFiles = append(imageFiles, NewImageFile(dir, file.Name()))
 		}
 	}
-	logger.Debug.Printf("Found %d images", len(handles))
+	logger.Debug.Printf("Found %d images", len(imageFiles))
 
-	return handles
+	return imageFiles
 }
 
 func isSupported(extension string) bool {

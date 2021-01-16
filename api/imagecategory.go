@@ -45,10 +45,10 @@ type ImageCategoryManager interface {
 	SetCategory(*CategorizeCommand)
 
 	PersistImageCategories(*PersistCategorizationCommand)
-	PersistImageCategory(handle *apitype.ImageFile, categories map[apitype.CategoryId]*CategorizedImage)
+	PersistImageCategory(*apitype.ImageFile, map[apitype.CategoryId]*CategorizedImage)
 
 	PersistCategorization()
-	LoadCategorization(handleManager Library, categoryManager CategoryManager)
+	LoadCategorization(Library, CategoryManager)
 
 	ShowOnlyCategoryImages(*SelectCategoryCommand)
 

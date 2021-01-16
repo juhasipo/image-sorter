@@ -10,20 +10,20 @@ import (
 	"vincit.fi/image-sorter/backend/database"
 )
 
-type StubImageHandleConverter struct {
-	database.ImageHandleConverter
+type StubImageFileConverter struct {
+	database.ImageFileConverter
 }
 
-func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*database.Image, map[string]string, error) {
+func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*database.Image, map[string]string, error) {
 	metaData := map[string]string{}
 	if jsonData, err := json.Marshal(metaData); err != nil {
 		return nil, nil, err
 	} else {
 		return &database.Image{
 			Id:              0,
-			Name:            handle.GetFile(),
-			FileName:        handle.GetFile(),
-			Directory:       handle.GetDir(),
+			Name:            imageFile.GetFile(),
+			FileName:        imageFile.GetFile(),
+			Directory:       imageFile.GetDir(),
 			ByteSize:        1234,
 			ExifOrientation: 1,
 			ImageAngle:      90,
@@ -37,7 +37,7 @@ func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*da
 	}
 }
 
-func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.ImageFile) (os.FileInfo, error) {
+func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {
 	return &StubFileInfo{modTime: time.Now()}, nil
 }
 
@@ -55,18 +55,18 @@ func TestDefaultImageStore_Initialize(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
 	cache := NewImageCache(loader)
 
 	a.Equal(uint64(0), cache.GetByteSize())
 
-	handles := []*apitype.ImageFile{
-		apitype.NewHandle(testAssetsDir, "horizontal.jpg"),
-		apitype.NewHandle(testAssetsDir, "vertical.jpg"),
+	imageFiles := []*apitype.ImageFile{
+		apitype.NewImageFile(testAssetsDir, "horizontal.jpg"),
+		apitype.NewImageFile(testAssetsDir, "vertical.jpg"),
 	}
-	imageStore.AddImages(handles)
+	imageStore.AddImages(imageFiles)
 	storedImages, _ := imageStore.GetAllImages()
 	cache.Initialize(storedImages)
 
@@ -78,31 +78,31 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
 	cache := NewImageCache(loader)
 
 	a.Equal(uint64(0), cache.GetByteSize())
 
-	handles := []*apitype.ImageFile{
-		apitype.NewHandle(testAssetsDir, "horizontal.jpg"),
-		apitype.NewHandle(testAssetsDir, "vertical.jpg"),
+	imageFiles := []*apitype.ImageFile{
+		apitype.NewImageFile(testAssetsDir, "horizontal.jpg"),
+		apitype.NewImageFile(testAssetsDir, "vertical.jpg"),
 	}
-	_ = imageStore.AddImages(handles)
+	_ = imageStore.AddImages(imageFiles)
 	storedImages, _ := imageStore.GetAllImages()
-	handle1 := storedImages[0]
-	handle2 := storedImages[1]
+	imageFile0 := storedImages[0]
+	imageFile1 := storedImages[1]
 
 	cache.Initialize(storedImages)
 
 	a.Equal(uint64(60000), cache.GetByteSize())
 
-	_, _ = cache.GetFull(handle1.GetImageId())
-	_, _ = cache.GetFull(handle2.GetImageId())
+	_, _ = cache.GetFull(imageFile0.GetImageId())
+	_, _ = cache.GetFull(imageFile1.GetImageId())
 	size := apitype.SizeOf(100, 100)
-	_, _ = cache.GetScaled(handle1.GetImageId(), size)
-	_, _ = cache.GetScaled(handle2.GetImageId(), size)
+	_, _ = cache.GetScaled(imageFile0.GetImageId(), size)
+	_, _ = cache.GetScaled(imageFile1.GetImageId(), size)
 
 	a.Equal(uint64(79967424), cache.GetByteSize())
 	a.InDelta(76.3, cache.GetSizeInMB(), 0.1)
@@ -115,28 +115,28 @@ func TestDefaultImageStore_GetFull(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-		img, err := cache.GetFull(handle.GetImageId())
+		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+		img, err := cache.GetFull(imageFile.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-		img, err := cache.GetFull(handle.GetImageId())
+		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
+		img, err := cache.GetFull(imageFile.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := apitype.NewHandle("", "")
-		img, err := cache.GetFull(handle.GetId())
+		imageFile := apitype.NewImageFile("", "")
+		img, err := cache.GetFull(imageFile.GetId())
 
 		a.NotNil(err)
 		a.Nil(img)
@@ -147,31 +147,31 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
+		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(handle.GetImageId(), size)
+		img, err := cache.GetScaled(imageFile.GetImageId(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
+		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(handle.GetImageId(), size)
+		img, err := cache.GetScaled(imageFile.GetImageId(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := apitype.NewHandle("", "")
+		imageFile := apitype.NewImageFile("", "")
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(handle.GetId(), size)
+		img, err := cache.GetScaled(imageFile.GetId(), size)
 
 		a.NotNil(err)
 		a.Nil(img)
@@ -182,28 +182,28 @@ func TestDefaultImageStore_GetThumbnail(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
 	cache := NewImageCache(loader)
 
 	t.Run("Valid", func(t *testing.T) {
-		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-		img, err := cache.GetThumbnail(handle.GetImageId())
+		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+		img, err := cache.GetThumbnail(imageFile.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
-		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-		img, err := cache.GetThumbnail(handle.GetImageId())
+		imageFile, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
+		img, err := cache.GetThumbnail(imageFile.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		handle := apitype.NewHandle("", "")
-		img, err := cache.GetThumbnail(handle.GetId())
+		imageFile := apitype.NewImageFile("", "")
+		img, err := cache.GetThumbnail(imageFile.GetId())
 
 		a.NotNil(err)
 		a.Nil(img)

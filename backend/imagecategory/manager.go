@@ -123,12 +123,12 @@ func (s *Manager) ResolveFileOperations(
 }
 
 func (s *Manager) ResolveOperationsForGroup(
-	handle *apitype.ImageFileWithMetaData,
+	imageFile *apitype.ImageFileWithMetaData,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
-	dir, file := handle.GetImageFile().GetDir(), handle.GetImageFile().GetFile()
+	dir, file := imageFile.GetImageFile().GetDir(), imageFile.GetImageFile().GetFile()
 
-	filters := s.filterManager.GetFilters(handle.GetImageId(), options)
+	filters := s.filterManager.GetFilters(imageFile.GetImageId(), options)
 
 	var imageOperations []apitype.ImageOperation
 	for _, categorizedImage := range categoryEntries {
@@ -144,14 +144,14 @@ func (s *Manager) ResolveOperationsForGroup(
 		imageOperations = append(imageOperations, filter.NewImageRemove())
 	}
 
-	if fullImage, err := s.imageLoader.LoadImage(handle.GetImageId()); err != nil {
+	if fullImage, err := s.imageLoader.LoadImage(imageFile.GetImageId()); err != nil {
 		s.sender.SendError("Could not load image", err)
 		return nil, err
-	} else if exifData, err := s.imageLoader.LoadExifData(handle.GetImageId()); err != nil {
+	} else if exifData, err := s.imageLoader.LoadExifData(imageFile.GetImageId()); err != nil {
 		s.sender.SendError("Could not load exif data", err)
 		return nil, err
 	} else {
-		return apitype.NewImageOperationGroup(handle, fullImage, exifData, imageOperations), nil
+		return apitype.NewImageOperationGroup(imageFile, fullImage, exifData, imageOperations), nil
 	}
 }
 

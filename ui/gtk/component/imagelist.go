@@ -17,9 +17,9 @@ func (s *ImageList) addImagesToStore(images []*apitype.ImageContainer) {
 	for _, img := range images {
 		iter := s.model.Append()
 		if img != nil {
-			thumbnail := img.GetImage()
+			thumbnail := img.GetImageData()
 			s.model.SetValue(iter, 0, asPixbuf(thumbnail))
-			s.model.SetValue(iter, 1, img.GetHandle().GetFile())
+			s.model.SetValue(iter, 1, img.GetImageFile().GetFile())
 		} else {
 			s.model.SetValue(iter, 0, nil)
 			s.model.SetValue(iter, 1, "")

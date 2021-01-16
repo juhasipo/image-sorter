@@ -37,10 +37,10 @@ func NewImageCopy(targetDir string, targetFile string, quality int) apitype.Imag
 	}
 }
 func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
-	handle := operationGroup.GetHandle()
-	img := operationGroup.GetImage()
+	imageFile := operationGroup.GetImageFile()
+	imageData := operationGroup.GetImage()
 	exifData := operationGroup.GetExifData()
-	logger.Debug.Printf("Copy %s", handle.GetPath())
+	logger.Debug.Printf("Copy %s", imageFile.GetPath())
 
 	if operationGroup.GetHasBeenModified() {
 		encodingOptions := &jpeg.Options{
@@ -49,22 +49,22 @@ func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Im
 
 		jpegBuffer := bytes.NewBuffer([]byte{})
 		dstFilePath := filepath.Join(s.dstPath, s.dstFile)
-		if err := jpeg.Encode(jpegBuffer, img, encodingOptions); err != nil {
+		if err := jpeg.Encode(jpegBuffer, imageData, encodingOptions); err != nil {
 			logger.Error.Println("Could not encode image", err)
-			return img, exifData, err
-		} else if err := util.MakeDirectoriesIfNotExist(handle.GetDir(), s.dstPath); err != nil {
-			return img, exifData, err
+			return imageData, exifData, err
+		} else if err := util.MakeDirectoriesIfNotExist(imageFile.GetDir(), s.dstPath); err != nil {
+			return imageData, exifData, err
 		} else if destination, err := os.Create(dstFilePath); err != nil {
 			logger.Error.Println("Could not open file for writing", err)
-			return img, exifData, err
+			return imageData, exifData, err
 		} else {
 			defer destination.Close()
 			s.writeJpegWithExifData(destination, jpegBuffer, exifData)
-			return img, exifData, nil
+			return imageData, exifData, nil
 		}
 	} else {
-		logger.Debug.Printf("Copy '%s' as is", handle.GetPath())
-		return img, exifData, util.CopyFile(handle.GetDir(), handle.GetFile(), s.dstPath, s.dstFile)
+		logger.Debug.Printf("Copy '%s' as is", imageFile.GetPath())
+		return imageData, exifData, util.CopyFile(imageFile.GetDir(), imageFile.GetFile(), s.dstPath, s.dstFile)
 	}
 }
 

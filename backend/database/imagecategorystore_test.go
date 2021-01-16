@@ -13,7 +13,7 @@ var (
 
 func initImageCategoryStoreTest() *ImageCategoryStore {
 	database := NewInMemoryDatabase()
-	icsImageStore = NewImageStore(database, &StubImageHandleConverter{})
+	icsImageStore = NewImageStore(database, &StubImageFileConverter{})
 	icsCategoryStore = NewCategoryStore(database)
 
 	return NewImageCategoryStore(database)
@@ -263,11 +263,11 @@ func createCategories() []*apitype.Category {
 }
 
 func createImages() []*apitype.ImageFile {
-	image1, _ := icsImageStore.AddImage(apitype.NewHandle("images", "image1"))
-	image2, _ := icsImageStore.AddImage(apitype.NewHandle("images", "image2"))
-	image3, _ := icsImageStore.AddImage(apitype.NewHandle("images", "image3"))
-	image4, _ := icsImageStore.AddImage(apitype.NewHandle("images", "image4"))
-	image5, _ := icsImageStore.AddImage(apitype.NewHandle("images", "image5"))
+	image1, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image1"))
+	image2, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image2"))
+	image3, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image3"))
+	image4, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image4"))
+	image5, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image5"))
 	return []*apitype.ImageFile{
 		image1.GetImageFile(),
 		image2.GetImageFile(),

@@ -15,7 +15,7 @@ var (
 func initSimilarityIndexTest() {
 	database := NewInMemoryDatabase()
 	sut = NewSimilarityIndex(database)
-	imageStore = NewImageStore(database, &StubImageHandleConverter{})
+	imageStore = NewImageStore(database, &StubImageFileConverter{})
 }
 
 func TestSimilarityIndex_AddAndGetSimilarImages(t *testing.T) {
@@ -23,11 +23,11 @@ func TestSimilarityIndex_AddAndGetSimilarImages(t *testing.T) {
 
 	initSimilarityIndexTest()
 
-	image1, _ := imageStore.AddImage(apitype.NewHandle("images", "image1"))
-	image2, _ := imageStore.AddImage(apitype.NewHandle("images", "image2"))
-	image3, _ := imageStore.AddImage(apitype.NewHandle("images", "image3"))
-	image4, _ := imageStore.AddImage(apitype.NewHandle("images", "image4"))
-	image5, _ := imageStore.AddImage(apitype.NewHandle("images", "image5"))
+	image1, _ := imageStore.AddImage(apitype.NewImageFile("images", "image1"))
+	image2, _ := imageStore.AddImage(apitype.NewImageFile("images", "image2"))
+	image3, _ := imageStore.AddImage(apitype.NewImageFile("images", "image3"))
+	image4, _ := imageStore.AddImage(apitype.NewImageFile("images", "image4"))
+	image5, _ := imageStore.AddImage(apitype.NewImageFile("images", "image5"))
 
 	err := sut.DoInTransaction(func(session db.Session) error {
 		if err := sut.StartRecreateSimilarImageIndex(session); err != nil {

@@ -13,10 +13,10 @@ func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
-	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	loader := NewImageLoader(imageStore)
 	t.Run("Horizontal", func(t *testing.T) {
@@ -44,10 +44,10 @@ func TestLibJPEGImageLoader_LoadImageScaled(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
-	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	size := apitype.SizeOf(1, 1)
 

@@ -160,7 +160,7 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}
-	} else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.GetCurrentHandle()); command != nil {
+	} else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.GetCurrentImageFile()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
 			s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: command.CategoryId})
@@ -215,7 +215,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		ImageId: s.imageView.GetCurrentHandle().GetId(),
+		ImageId: s.imageView.GetCurrentImageFile().GetId(),
 	})
 }
 

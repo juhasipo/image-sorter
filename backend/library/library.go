@@ -47,7 +47,7 @@ func (s *Manager) RequestGenerateHashes() {
 		if image, _, err := s.manager.getCurrentImage(); err != nil {
 			s.sender.SendError("Error while generating hashes", err)
 		} else {
-			s.sendSimilarImages(image.GetHandle().GetId())
+			s.sendSimilarImages(image.GetImageFile().GetId())
 		}
 	}
 }
@@ -108,14 +108,14 @@ func (s *Manager) Close() {
 	logger.Info.Print("Shutting down library")
 }
 
-func (s *Manager) AddHandles(imageList []*apitype.ImageFile) {
-	if err := s.manager.AddHandles(imageList); err != nil {
+func (s *Manager) AddImageFiles(imageList []*apitype.ImageFile) {
+	if err := s.manager.AddImageFiles(imageList); err != nil {
 		s.sender.SendError("Error while adding image", err)
 	}
 }
 
 func (s *Manager) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
-	return s.manager.GetHandleById(imageId)
+	return s.manager.GetImageFileById(imageId)
 }
 
 // Private API
@@ -154,7 +154,7 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		}
 
 		if s.manager.shouldSendSimilarImages() {
-			s.sendSimilarImages(currentImage.GetHandle().GetId())
+			s.sendSimilarImages(currentImage.GetImageFile().GetId())
 		}
 	}
 }

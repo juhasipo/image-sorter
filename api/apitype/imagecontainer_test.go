@@ -9,7 +9,7 @@ func TestImageContainer_String(t *testing.T) {
 	a := assert.New(t)
 
 	t.Run("Valid", func(t *testing.T) {
-		imageFile := NewHandleWithId(1, "foo", "bar")
+		imageFile := NewImageFileWithId(1, "foo", "bar")
 		imageMetaData := NewImageMetaData(1024, 90, true, map[string]string{})
 
 		container := NewImageContainer(&ImageFileWithMetaData{
