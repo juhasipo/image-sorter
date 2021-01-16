@@ -49,7 +49,7 @@ func (s *HashCalculator) GenerateHashes(images []*apitype.ImageFileWithMetaData,
 
 		// Add images to input queue for goroutines
 		for _, imageFile := range images {
-			inputChannel <- imageFile.GetImageFile()
+			inputChannel <- &imageFile.ImageFile
 		}
 
 		// Spin up goroutines which will process the data

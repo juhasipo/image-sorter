@@ -19,7 +19,7 @@ func TestInstance_GetFull(t *testing.T) {
 	loader := NewImageLoader(imageStore)
 
 	t.Run("Horizontal", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetFull()
 
@@ -31,7 +31,7 @@ func TestInstance_GetFull(t *testing.T) {
 		a.Equal(39953712, instance.GetByteLength())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		instance := NewInstance(vertical.GetImageId(), loader)
+		instance := NewInstance(vertical.GetId(), loader)
 
 		scaled, err := instance.GetFull()
 
@@ -43,7 +43,7 @@ func TestInstance_GetFull(t *testing.T) {
 		a.Equal(39953712, instance.GetByteLength())
 	})
 	t.Run("Cached", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetFull()
 		scaled, err = instance.GetFull()
@@ -84,7 +84,7 @@ func TestInstance_GetScaled(t *testing.T) {
 	loader := NewImageLoader(imageStore)
 
 	t.Run("Horizontal", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -97,7 +97,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(40433712, instance.GetByteLength())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		instance := NewInstance(vertical.GetImageId(), loader)
+		instance := NewInstance(vertical.GetId(), loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -110,7 +110,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(40433712, instance.GetByteLength())
 	})
 	t.Run("Cached", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		size := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size)
@@ -124,7 +124,7 @@ func TestInstance_GetScaled(t *testing.T) {
 		a.Equal(40433712, instance.GetByteLength())
 	})
 	t.Run("Rescaled", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		size1 := apitype.SizeOf(400, 400)
 		scaled, err := instance.GetScaled(size1)
@@ -178,7 +178,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 	loader := NewImageLoader(imageStore)
 
 	t.Run("Horizontal", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetThumbnail()
 
@@ -190,7 +190,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 		a.Equal(30000, instance.GetByteLength())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		instance := NewInstance(vertical.GetImageId(), loader)
+		instance := NewInstance(vertical.GetId(), loader)
 
 		scaled, err := instance.GetThumbnail()
 
@@ -202,7 +202,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 		a.Equal(30000, instance.GetByteLength())
 	})
 	t.Run("Cached", func(t *testing.T) {
-		instance := NewInstance(horizontal.GetImageId(), loader)
+		instance := NewInstance(horizontal.GetId(), loader)
 
 		scaled, err := instance.GetThumbnail()
 		scaled, err = instance.GetThumbnail()
@@ -243,7 +243,7 @@ func TestInstance_Purge(t *testing.T) {
 
 	loader := NewImageLoader(imageStore)
 
-	instance := NewInstance(horizontal.GetImageId(), loader)
+	instance := NewInstance(horizontal.GetId(), loader)
 
 	scaled, err := instance.GetFull()
 

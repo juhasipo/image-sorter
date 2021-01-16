@@ -27,7 +27,7 @@ type LibJPEGImageLoader struct {
 func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, error) {
 	if imageId != apitype.NoImage {
 		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
-			file, err := os.Open(imageFileWithMetaData.GetImageFile().GetPath())
+			file, err := os.Open(imageFileWithMetaData.GetPath())
 			if err != nil {
 				return nil, err
 			}
@@ -38,7 +38,7 @@ func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, er
 				return nil, err
 			}
 
-			rotation, flipped := imageFileWithMetaData.GetMetaData().GetRotation()
+			rotation, flipped := imageFileWithMetaData.GetRotation()
 			return apitype.ExifRotateImage(imageFile, rotation, flipped)
 		} else {
 			return nil, errors.New("image not found in DB")
@@ -51,7 +51,7 @@ func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, er
 func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apitype.Size) (image.Image, error) {
 	if imageId != apitype.NoImage {
 		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
-			file, err := os.Open(imageFileWithMetaData.GetImageFile().GetPath())
+			file, err := os.Open(imageFileWithMetaData.GetPath())
 			if err != nil {
 				return nil, err
 			}
@@ -62,7 +62,7 @@ func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apity
 				return nil, err
 			}
 
-			rotation, flipped := imageFileWithMetaData.GetMetaData().GetRotation()
+			rotation, flipped := imageFileWithMetaData.GetRotation()
 			return apitype.ExifRotateImage(imageFile, rotation, flipped)
 		} else {
 			return nil, errors.New("image not found in DB")
@@ -74,5 +74,5 @@ func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apity
 
 func (s *LibJPEGImageLoader) LoadExifData(imageId apitype.ImageId) (*apitype.ExifData, error) {
 	imageFile := s.imageStore.GetImageById(imageId)
-	return apitype.LoadExifData(imageFile.GetImageFile())
+	return apitype.LoadExifData(&imageFile.ImageFile)
 }

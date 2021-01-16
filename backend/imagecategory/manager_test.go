@@ -119,13 +119,13 @@ func TestCategorizeOne(t *testing.T) {
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cmd := api.CategorizeCommand{
-		ImageId:    imageFile.GetImageId(),
+		ImageId:    imageFile.GetId(),
 		CategoryId: cat1.GetId(),
 		Operation:  apitype.MOVE,
 	}
 	sut.SetCategory(&cmd)
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	if a.Equal(1, len(result)) {
 		a.Equal("Cat 1", result[1].Category.GetName())
@@ -151,12 +151,12 @@ func TestCategorizeOneToTwoCategories(t *testing.T) {
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
-	cmd1 := &api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE}
-	cmd2 := &api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE}
+	cmd1 := &api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE}
+	cmd2 := &api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE}
 	sut.SetCategory(cmd1)
 	sut.SetCategory(cmd2)
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	if a.Equal(2, len(result)) {
 		a.Equal("Cat 1", result[1].Category.GetName())
@@ -183,11 +183,11 @@ func TestCategorizeOneRemoveCategory(t *testing.T) {
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.NONE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.NONE})
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	if a.Equal(1, len(result)) {
 		a.Equal("Cat 2", result[2].Category.GetName())
@@ -213,12 +213,12 @@ func TestCategorizeOneRemoveAll(t *testing.T) {
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.NONE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.NONE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.NONE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.NONE})
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	a.Equal(0, len(result))
 }
@@ -245,17 +245,17 @@ func TestCategorizeForceToCategory(t *testing.T) {
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	cat3, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 3", "c3", "E"))
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
 	command := &api.CategorizeCommand{
-		ImageId:         imageFile.GetImageId(),
+		ImageId:         imageFile.GetId(),
 		CategoryId:      cat3.GetId(),
 		Operation:       apitype.MOVE,
 		ForceToCategory: true,
 	}
 	sut.SetCategory(command)
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	a.Equal(1, len(result))
 	if a.NotNil(result[3]) {
@@ -282,11 +282,11 @@ func TestCategorizeForceToExistingCategory(t *testing.T) {
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
-	command := &api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE, ForceToCategory: true}
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
+	command := &api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE, ForceToCategory: true}
 	sut.SetCategory(command)
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	if a.Equal(1, len(result)) {
 		a.Equal("Cat 2", result[2].Category.GetName())
@@ -313,12 +313,12 @@ func TestCategorizeForceToCategory_None(t *testing.T) {
 	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "c2", "D"))
 	cat3, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 3", "c3", "E"))
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
-	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
-	command := &api.CategorizeCommand{ImageId: imageFile.GetImageId(), CategoryId: cat3.GetId(), Operation: apitype.NONE, ForceToCategory: true}
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat1.GetId(), Operation: apitype.MOVE})
+	sut.SetCategory(&api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat2.GetId(), Operation: apitype.MOVE})
+	command := &api.CategorizeCommand{ImageId: imageFile.GetId(), CategoryId: cat3.GetId(), Operation: apitype.NONE, ForceToCategory: true}
 	sut.SetCategory(command)
 
-	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetImageId()})
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.GetId()})
 
 	a.Equal(0, len(result))
 }
@@ -338,7 +338,7 @@ func TestResolveFileOperations(t *testing.T) {
 
 	sut := NewImageCategoryManager(sender, lib, filterManager, imageLoader, imageCategoryStore)
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("filepath", "filename"))
-	lib.AddImageFiles([]*apitype.ImageFile{imageFile.GetImageFile()})
+	lib.AddImageFiles([]*apitype.ImageFile{&imageFile.ImageFile})
 
 	var imageCategories = map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage{
 		1: {
@@ -379,7 +379,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("filepath", "filename"))
 	cat, _ := categoryStore.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
-	_ = imageCategoryStore.CategorizeImage(imageFile.GetImageId(), cat.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFile.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := imageCategoryStore.GetCategorizedImages()
 
 	command := &api.PersistCategorizationCommand{
@@ -387,7 +387,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 		FixOrientation: false,
 		Quality:        100,
 	}
-	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetImageId()], command)
+	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetId()], command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
@@ -413,7 +413,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("filepath", "filename"))
 	cat, _ := categoryStore.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
-	_ = imageCategoryStore.CategorizeImage(imageFile.GetImageId(), cat.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFile.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := imageCategoryStore.GetCategorizedImages()
 
 	command := &api.PersistCategorizationCommand{
@@ -421,7 +421,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 		FixOrientation: false,
 		Quality:        100,
 	}
-	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetImageId()], command)
+	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetId()], command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
@@ -448,7 +448,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("filepath", "filename"))
 	cat, _ := categoryStore.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
-	_ = imageCategoryStore.CategorizeImage(imageFile.GetImageId(), cat.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFile.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := imageCategoryStore.GetCategorizedImages()
 
 	command := &api.PersistCategorizationCommand{
@@ -456,7 +456,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 		FixOrientation: true,
 		Quality:        100,
 	}
-	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetImageId()], command)
+	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetId()], command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()
@@ -483,7 +483,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("filepath", "filename"))
 	cat, _ := categoryStore.AddCategory(apitype.NewCategory("cat1", "cat_1", ""))
-	_ = imageCategoryStore.CategorizeImage(imageFile.GetImageId(), cat.GetId(), apitype.MOVE)
+	_ = imageCategoryStore.CategorizeImage(imageFile.GetId(), cat.GetId(), apitype.MOVE)
 	imageCategories, _ := imageCategoryStore.GetCategorizedImages()
 
 	command := &api.PersistCategorizationCommand{
@@ -491,7 +491,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 		FixOrientation: true,
 		Quality:        100,
 	}
-	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetImageId()], command)
+	operations, err := sut.ResolveOperationsForGroup(imageFile, imageCategories[imageFile.GetId()], command)
 
 	a.Nil(err)
 	ops := operations.GetOperations()

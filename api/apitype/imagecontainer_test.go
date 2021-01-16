@@ -13,8 +13,8 @@ func TestImageContainer_String(t *testing.T) {
 		imageMetaData := NewImageMetaData(1024, 90, true, map[string]string{})
 
 		container := NewImageContainer(&ImageFileWithMetaData{
-			imageFile: imageFile,
-			metaData:  imageMetaData,
+			ImageFile:     *imageFile,
+			ImageMetaData: *imageMetaData,
 		}, nil)
 		a.Equal("ImageContainer{ImageFile{bar}}", container.String())
 	})

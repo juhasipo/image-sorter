@@ -25,7 +25,7 @@ func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFileWithMetaDa
 	defer s.mux.Unlock()
 	s.imageCache = map[apitype.ImageId]*Instance{}
 	for _, imageFile := range imageFiles {
-		s.imageCache[imageFile.GetImageId()] = NewInstance(imageFile.GetImageId(), s.imageLoader)
+		s.imageCache[imageFile.GetId()] = NewInstance(imageFile.GetId(), s.imageLoader)
 	}
 	runtime.GC()
 }

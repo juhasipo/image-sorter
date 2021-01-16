@@ -209,7 +209,7 @@ func TestImageCategoryStore_RemoveImageRemovesCategories(t *testing.T) {
 	_ = icsImageStore.RemoveImage(images[1].GetId())
 	reinserted, _ := icsImageStore.AddImage(images[1])
 
-	imagesCategories, err = sut.GetImagesCategories(reinserted.GetImageId())
+	imagesCategories, err = sut.GetImagesCategories(reinserted.GetId())
 	a.Nil(err)
 	a.Equal(0, len(imagesCategories))
 }
@@ -269,10 +269,10 @@ func createImages() []*apitype.ImageFile {
 	image4, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image4"))
 	image5, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image5"))
 	return []*apitype.ImageFile{
-		image1.GetImageFile(),
-		image2.GetImageFile(),
-		image3.GetImageFile(),
-		image4.GetImageFile(),
-		image5.GetImageFile(),
+		&image1.ImageFile,
+		&image2.ImageFile,
+		&image3.ImageFile,
+		&image4.ImageFile,
+		&image5.ImageFile,
 	}
 }

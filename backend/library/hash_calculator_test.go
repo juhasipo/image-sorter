@@ -115,13 +115,13 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 					a.Equal(uint64(6), size)
 				}
 
-				images := similarityIndex.GetSimilarImages(i1.GetImageId())
+				images := similarityIndex.GetSimilarImages(i1.GetId())
 				a.Equal(2, len(images))
 
-				images = similarityIndex.GetSimilarImages(i2.GetImageId())
+				images = similarityIndex.GetSimilarImages(i2.GetId())
 				a.Equal(2, len(images))
 
-				images = similarityIndex.GetSimilarImages(i3.GetImageId())
+				images = similarityIndex.GetSimilarImages(i3.GetId())
 				a.Equal(2, len(images))
 			}
 		}

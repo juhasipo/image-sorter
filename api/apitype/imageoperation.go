@@ -19,11 +19,11 @@ type ImageOperationGroup struct {
 }
 
 func (s *ImageOperationGroup) GetImageFile() *ImageFile {
-	return s.imageFile.GetImageFile()
+	return &s.imageFile.ImageFile
 }
 
 func (s *ImageOperationGroup) GetMetaData() *ImageMetaData {
-	return s.imageFile.GetMetaData()
+	return &s.imageFile.ImageMetaData
 }
 
 func (s *ImageOperationGroup) GetImage() image.Image {

@@ -126,9 +126,9 @@ func (s *Manager) ResolveOperationsForGroup(
 	imageFile *apitype.ImageFileWithMetaData,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
-	dir, file := imageFile.GetImageFile().GetDir(), imageFile.GetImageFile().GetFile()
+	dir, file := imageFile.GetDir(), imageFile.GetFile()
 
-	filters := s.filterManager.GetFilters(imageFile.GetImageId(), options)
+	filters := s.filterManager.GetFilters(imageFile.GetId(), options)
 
 	var imageOperations []apitype.ImageOperation
 	for _, categorizedImage := range categoryEntries {
@@ -144,10 +144,10 @@ func (s *Manager) ResolveOperationsForGroup(
 		imageOperations = append(imageOperations, filter.NewImageRemove())
 	}
 
-	if fullImage, err := s.imageLoader.LoadImage(imageFile.GetImageId()); err != nil {
+	if fullImage, err := s.imageLoader.LoadImage(imageFile.GetId()); err != nil {
 		s.sender.SendError("Could not load image", err)
 		return nil, err
-	} else if exifData, err := s.imageLoader.LoadExifData(imageFile.GetImageId()); err != nil {
+	} else if exifData, err := s.imageLoader.LoadExifData(imageFile.GetId()); err != nil {
 		s.sender.SendError("Could not load exif data", err)
 		return nil, err
 	} else {

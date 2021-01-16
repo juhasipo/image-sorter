@@ -26,8 +26,8 @@ type ImageFile struct {
 }
 
 type ImageFileWithMetaData struct {
-	imageFile *ImageFile
-	metaData  *ImageMetaData
+	ImageFile
+	ImageMetaData
 }
 
 func (s *ImageFile) IsValid() bool {
@@ -151,21 +151,9 @@ func (s *ImageMetaData) GetRotation() (float64, bool) {
 
 func NewImageFileAndMetaData(imageFile *ImageFile, metaData *ImageMetaData) *ImageFileWithMetaData {
 	return &ImageFileWithMetaData{
-		imageFile: imageFile,
-		metaData:  metaData,
+		ImageFile:     *imageFile,
+		ImageMetaData: *metaData,
 	}
-}
-
-func (s *ImageFileWithMetaData) GetImageFile() *ImageFile {
-	return s.imageFile
-}
-
-func (s *ImageFileWithMetaData) GetMetaData() *ImageMetaData {
-	return s.metaData
-}
-
-func (s *ImageFileWithMetaData) GetImageId() ImageId {
-	return s.imageFile.GetId()
 }
 
 func LoadImageFiles(dir string) []*ImageFile {

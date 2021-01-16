@@ -131,7 +131,7 @@ func (s *internalManager) StopHashes() {
 func (s *internalManager) MoveToImage(imageId apitype.ImageId) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	for imageIndex, image := range images {
-		if imageId == image.GetImageFile().GetId() {
+		if imageId == image.GetId() {
 			s.index = imageIndex
 		}
 	}
@@ -216,7 +216,7 @@ func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
 		imageFile := images[s.index]
-		if full, err := s.imageCache.GetFull(imageFile.GetImageId()); err != nil {
+		if full, err := s.imageCache.GetFull(imageFile.GetId()); err != nil {
 			logger.Error.Print("Error while loading full image", err)
 			return apitype.NewEmptyImageContainer(), 0, err
 		} else {
@@ -261,7 +261,7 @@ func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
 func (s *internalManager) toImageContainers(nextImageFiles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageContainer, error) {
 	images := make([]*apitype.ImageContainer, len(nextImageFiles))
 	for i, imageFile := range nextImageFiles {
-		if thumbnail, err := s.imageCache.GetThumbnail(imageFile.GetImageId()); err != nil {
+		if thumbnail, err := s.imageCache.GetThumbnail(imageFile.GetId()); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 			return emptyImageFiles, err
 		} else {
@@ -294,7 +294,7 @@ func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.
 		containers := make([]*apitype.ImageContainer, len(similarImages))
 		i := 0
 		for _, similar := range similarImages {
-			if thumbnail, err := s.imageCache.GetThumbnail(similar.GetImageId()); err != nil {
+			if thumbnail, err := s.imageCache.GetThumbnail(similar.GetId()); err != nil {
 				logger.Error.Print("Error while loading thumbnail", err)
 				return emptyImageFiles, false, err
 			} else {
@@ -322,8 +322,8 @@ func (s *internalManager) removeMissingImages(imageFiles []*apitype.ImageFile) e
 		}
 
 		for _, image := range images {
-			if _, ok := existing[image.GetImageFile().GetFile()]; !ok {
-				toRemove[image.GetImageId()] = image.GetImageFile()
+			if _, ok := existing[image.GetFile()]; !ok {
+				toRemove[image.GetId()] = &image.ImageFile
 			}
 		}
 		if len(toRemove) > 0 {

@@ -33,8 +33,8 @@ func (s *ImageContainer) GetMetaData() *ImageMetaData {
 func NewImageContainer(imageFile *ImageFileWithMetaData, imageData image.Image) *ImageContainer {
 	if imageFile != nil {
 		return &ImageContainer{
-			imageFile: imageFile.imageFile,
-			metaData:  imageFile.metaData,
+			imageFile: &imageFile.ImageFile,
+			metaData:  &imageFile.ImageMetaData,
 			imageData: imageData,
 		}
 	} else {
