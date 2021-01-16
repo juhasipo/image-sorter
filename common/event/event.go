@@ -38,7 +38,7 @@ func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
 			for _, param := range params {
 				args = append(args, reflect.ValueOf(param))
 			}
-			logger.Debug.Printf("Calling topic '%s' with %d arguments: %s", topic, len(args), params)
+			logger.Trace.Printf("Calling topic '%s' with: %s", topic, params)
 			reflect.ValueOf(callback).Call(args)
 		}
 

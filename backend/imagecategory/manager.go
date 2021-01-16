@@ -122,7 +122,8 @@ func (s *Manager) ResolveFileOperations(
 	return operationGroups
 }
 
-func (s *Manager) ResolveOperationsForGroup(handle *apitype.Handle,
+func (s *Manager) ResolveOperationsForGroup(
+	handle *apitype.Handle,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
 	dir, file := filepath.Split(handle.GetPath())

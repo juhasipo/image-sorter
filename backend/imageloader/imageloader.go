@@ -60,6 +60,6 @@ func (s *LibJPEGImageLoader) LoadImageScaled(handleId apitype.HandleId, size api
 }
 
 func (s *LibJPEGImageLoader) LoadExifData(handleId apitype.HandleId) (*apitype.ExifData, error) {
-	// TODO
-	return nil, nil
+	handle := s.imageStore.GetImageById(handleId)
+	return apitype.LoadExifData(handle)
 }
