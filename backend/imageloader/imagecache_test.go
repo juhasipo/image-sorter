@@ -14,8 +14,9 @@ type StubImageHandleConverter struct {
 	database.ImageHandleConverter
 }
 
-func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*database.Image, map[string]string, error) {
-	if jsonData, err := json.Marshal(handle.GetMetaData()); err != nil {
+func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*database.Image, map[string]string, error) {
+	metaData := map[string]string{}
+	if jsonData, err := json.Marshal(metaData); err != nil {
 		return nil, nil, err
 	} else {
 		return &database.Image{
@@ -32,11 +33,11 @@ func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*datab
 			Height:          2048,
 			ModifiedTime:    time.Now(),
 			ExifData:        jsonData,
-		}, handle.GetMetaData(), nil
+		}, metaData, nil
 	}
 }
 
-func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {
+func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.ImageFile) (os.FileInfo, error) {
 	return &StubFileInfo{modTime: time.Now()}, nil
 }
 
@@ -61,7 +62,7 @@ func TestDefaultImageStore_Initialize(t *testing.T) {
 
 	a.Equal(uint64(0), cache.GetByteSize())
 
-	handles := []*apitype.Handle{
+	handles := []*apitype.ImageFile{
 		apitype.NewHandle(testAssetsDir, "horizontal.jpg"),
 		apitype.NewHandle(testAssetsDir, "vertical.jpg"),
 	}
@@ -84,7 +85,7 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 
 	a.Equal(uint64(0), cache.GetByteSize())
 
-	handles := []*apitype.Handle{
+	handles := []*apitype.ImageFile{
 		apitype.NewHandle(testAssetsDir, "horizontal.jpg"),
 		apitype.NewHandle(testAssetsDir, "vertical.jpg"),
 	}
@@ -97,11 +98,11 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 
 	a.Equal(uint64(60000), cache.GetByteSize())
 
-	_, _ = cache.GetFull(handle1.GetId())
-	_, _ = cache.GetFull(handle2.GetId())
+	_, _ = cache.GetFull(handle1.GetImageId())
+	_, _ = cache.GetFull(handle2.GetImageId())
 	size := apitype.SizeOf(100, 100)
-	_, _ = cache.GetScaled(handle1.GetId(), size)
-	_, _ = cache.GetScaled(handle2.GetId(), size)
+	_, _ = cache.GetScaled(handle1.GetImageId(), size)
+	_, _ = cache.GetScaled(handle2.GetImageId(), size)
 
 	a.Equal(uint64(79967424), cache.GetByteSize())
 	a.InDelta(76.3, cache.GetSizeInMB(), 0.1)
@@ -121,14 +122,14 @@ func TestDefaultImageStore_GetFull(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-		img, err := cache.GetFull(handle.GetId())
+		img, err := cache.GetFull(handle.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
 		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-		img, err := cache.GetFull(handle.GetId())
+		img, err := cache.GetFull(handle.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -154,7 +155,7 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
 		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(handle.GetId(), size)
+		img, err := cache.GetScaled(handle.GetImageId(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -162,7 +163,7 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 	t.Run("No exif", func(t *testing.T) {
 		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
 		size := apitype.SizeOf(400, 400)
-		img, err := cache.GetScaled(handle.GetId(), size)
+		img, err := cache.GetScaled(handle.GetImageId(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -188,14 +189,14 @@ func TestDefaultImageStore_GetThumbnail(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-		img, err := cache.GetThumbnail(handle.GetId())
+		img, err := cache.GetThumbnail(handle.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
 	})
 	t.Run("No exif", func(t *testing.T) {
 		handle, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-		img, err := cache.GetThumbnail(handle.GetId())
+		img, err := cache.GetThumbnail(handle.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)

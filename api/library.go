@@ -5,7 +5,7 @@ import (
 )
 
 type ImagesQuery struct {
-	handles []*apitype.Handle
+	handles []*apitype.ImageFile
 	apitype.Command
 }
 
@@ -46,9 +46,9 @@ type Library interface {
 	RequestGenerateHashes()
 	RequestStopHashes()
 
-	GetHandles() []*apitype.Handle
-	AddHandles(imageList []*apitype.Handle)
-	GetHandleById(apitype.ImageId) *apitype.Handle
+	GetImageFiles() []*apitype.ImageFileWithMetaData
+	AddHandles(imageList []*apitype.ImageFile)
+	GetImageFileById(apitype.ImageId) *apitype.ImageFileWithMetaData
 
 	ShowAllImages()
 	ShowOnlyImages(*SelectCategoryCommand)

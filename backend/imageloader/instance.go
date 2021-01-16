@@ -109,6 +109,8 @@ func (s *Instance) GetThumbnail() (image.Image, error) {
 
 		if full, err := s.loadThumbnailFromCache(); err != nil {
 			return nil, err
+		} else if full == nil {
+			return nil, nil
 		} else {
 			fullSize := full.Bounds()
 			newSize := apitype.RectangleOfScaledToFit(fullSize, thumbnailSize)

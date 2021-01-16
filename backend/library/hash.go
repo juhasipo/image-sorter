@@ -24,7 +24,7 @@ func ReturnResult(channel chan *HashResult, imageId apitype.ImageId, hash *duplo
 
 var hashImageSize = apitype.SizeOf(duplo.ImageScale, duplo.ImageScale)
 
-func hashImage(input chan *apitype.Handle, output chan *HashResult, quitChannel chan bool, imageLoader api.ImageLoader) {
+func hashImage(input chan *apitype.ImageFile, output chan *HashResult, quitChannel chan bool, imageLoader api.ImageLoader) {
 	for {
 		select {
 		case <-quitChannel:
@@ -43,7 +43,7 @@ func hashImage(input chan *apitype.Handle, output chan *HashResult, quitChannel 
 	}
 }
 
-func openImageForHashing(imageLoader api.ImageLoader, handle *apitype.Handle) (image.Image, error) {
+func openImageForHashing(imageLoader api.ImageLoader, handle *apitype.ImageFile) (image.Image, error) {
 	startTime := time.Now()
 	decodedImage, err := imageLoader.LoadImageScaled(handle.GetId(), hashImageSize)
 	endTime := time.Now()
@@ -51,7 +51,7 @@ func openImageForHashing(imageLoader api.ImageLoader, handle *apitype.Handle) (i
 	return decodedImage, err
 }
 
-func generateHash(img image.Image, handle *apitype.Handle) duplo.Hash {
+func generateHash(img image.Image, handle *apitype.ImageFile) duplo.Hash {
 	startTime := time.Now()
 	hash, _ := duplo.CreateHash(img)
 	endTime := time.Now()

@@ -6,7 +6,7 @@ import (
 )
 
 type ImageStore interface {
-	Initialize([]*apitype.Handle)
+	Initialize([]*apitype.ImageFileWithMetaData)
 	GetFull(apitype.ImageId) (image.Image, error)
 	GetScaled(apitype.ImageId, apitype.Size) (image.Image, error)
 	GetThumbnail(apitype.ImageId) (image.Image, error)

@@ -20,7 +20,7 @@ func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 
 	loader := NewImageLoader(imageStore)
 	t.Run("Horizontal", func(t *testing.T) {
-		img, err := loader.LoadImage(horizontal.GetId())
+		img, err := loader.LoadImage(horizontal.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -29,7 +29,7 @@ func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 		a.Equal(2736, img.Bounds().Dy())
 	})
 	t.Run("Vertical", func(t *testing.T) {
-		img, err := loader.LoadImage(vertical.GetId())
+		img, err := loader.LoadImage(vertical.GetImageId())
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -53,7 +53,7 @@ func TestLibJPEGImageLoader_LoadImageScaled(t *testing.T) {
 
 	loader := NewImageLoader(imageStore)
 	t.Run("Horizontal is loaded with the smallest image lib JPEG could load image", func(t *testing.T) {
-		img, err := loader.LoadImageScaled(horizontal.GetId(), size)
+		img, err := loader.LoadImageScaled(horizontal.GetImageId(), size)
 
 		a.Nil(err)
 		a.NotNil(img)
@@ -62,7 +62,7 @@ func TestLibJPEGImageLoader_LoadImageScaled(t *testing.T) {
 		a.Equal(342, img.Bounds().Dy())
 	})
 	t.Run("Vertical is loaded with the smallest image lib JPEG could load image", func(t *testing.T) {
-		img, err := loader.LoadImageScaled(vertical.GetId(), size)
+		img, err := loader.LoadImageScaled(vertical.GetImageId(), size)
 
 		a.Nil(err)
 		a.NotNil(img)

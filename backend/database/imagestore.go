@@ -33,11 +33,11 @@ func (s *ImageStore) getCollection() db.Collection {
 	return s.collection
 }
 
-func (s *ImageStore) AddImages(handles []*apitype.Handle) error {
+func (s *ImageStore) AddImages(imageFiles []*apitype.ImageFile) error {
 	return s.getCollection().Session().Tx(func(sess db.Session) error {
-		for _, handle := range handles {
-			if _, err := s.addImage(sess, handle); err != nil {
-				logger.Error.Printf("Error while adding image '%s' to DB", handle.GetPath())
+		for _, imageFile := range imageFiles {
+			if _, err := s.addImage(sess, imageFile); err != nil {
+				logger.Error.Printf("Error while adding image '%s' to DB", imageFile.GetPath())
 				return err
 			}
 		}
@@ -45,11 +45,11 @@ func (s *ImageStore) AddImages(handles []*apitype.Handle) error {
 	})
 }
 
-func (s *ImageStore) AddImage(handle *apitype.Handle) (*apitype.Handle, error) {
+func (s *ImageStore) AddImage(handle *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
 	return s.addImage(s.getCollection().Session(), handle)
 }
 
-func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apitype.Handle, error) {
+func (s *ImageStore) addImage(session db.Session, handle *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
 	collection := s.getCollectionForSession(session)
 
 	logger.Trace.Printf("Adding image '%s'", handle.String())
@@ -91,7 +91,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 		logger.Trace.Printf(" - Image exists with ID %d but is modified", modifiedId)
 
 		handleToImageStart := time.Now()
-		image, metaData, err := s.imageHandleConverter.HandleToImage(handle)
+		image, _, err := s.imageHandleConverter.HandleToImage(handle)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func (s *ImageStore) addImage(session db.Session, handle *apitype.Handle) (*apit
 		updateEnd := time.Now()
 		logger.Trace.Printf(" - Image meta data updated %s", updateEnd.Sub(updateStart))
 
-		return apitype.NewPersistedHandle(modifiedId, handle, metaData), nil
+		return s.findByDirAndFile(collection, handle)
 	} else {
 		return s.findByDirAndFile(collection, handle)
 	}
@@ -133,16 +133,16 @@ func (s *ImageStore) GetImageCount(categoryId apitype.CategoryId) int {
 	return counter.Count
 }
 
-func (s *ImageStore) GetAllImages() ([]*apitype.Handle, error) {
+func (s *ImageStore) GetAllImages() ([]*apitype.ImageFileWithMetaData, error) {
 	return s.GetImagesInCategory(-1, 0, apitype.NoCategory)
 }
 
-func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.Handle, error) {
+func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFileWithMetaData, error) {
 	startIndex := currentIndex + 1
 	return s.GetImagesInCategory(number, startIndex, categoryId)
 }
 
-func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.Handle, error) {
+func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFileWithMetaData, error) {
 	prevIndex := currentIndex - number
 	if prevIndex < 0 {
 		prevIndex = 0
@@ -150,7 +150,7 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 	size := currentIndex - prevIndex
 
 	if size < 0 {
-		return []*apitype.Handle{}, nil
+		return []*apitype.ImageFileWithMetaData{}, nil
 	} else if images, err := s.GetImagesInCategory(size, prevIndex, categoryId); err != nil {
 		return nil, err
 	} else {
@@ -159,9 +159,9 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 	}
 }
 
-func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.Handle, error) {
+func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.ImageFileWithMetaData, error) {
 	if number == 0 {
-		return make([]*apitype.Handle, 0), nil
+		return make([]*apitype.ImageFileWithMetaData, 0), nil
 	}
 
 	var images []Image
@@ -197,9 +197,9 @@ const (
 	desc sortDir = "DESC"
 )
 
-func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName string, sort sortDir) ([]*apitype.Handle, error) {
+func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName string, sort sortDir) ([]*apitype.ImageFileWithMetaData, error) {
 	if number == 0 {
-		return make([]*apitype.Handle, 0), nil
+		return make([]*apitype.ImageFileWithMetaData, 0), nil
 	}
 
 	var images []Image
@@ -228,11 +228,11 @@ func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName st
 	}
 }
 
-func (s *ImageStore) FindByDirAndFile(handle *apitype.Handle) (*apitype.Handle, error) {
+func (s *ImageStore) FindByDirAndFile(handle *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
 	return s.findByDirAndFile(s.getCollection(), handle)
 }
 
-func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.Handle) (*apitype.Handle, error) {
+func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
 	var handles []Image
 	err := collection.
 		Find(db.Cond{
@@ -249,11 +249,11 @@ func (s *ImageStore) findByDirAndFile(collection db.Collection, handle *apitype.
 	}
 }
 
-func (s *ImageStore) Exists(handle *apitype.Handle) (bool, error) {
+func (s *ImageStore) Exists(handle *apitype.ImageFile) (bool, error) {
 	return s.exists(s.getCollection(), handle)
 }
 
-func (s *ImageStore) exists(collection db.Collection, handle *apitype.Handle) (bool, error) {
+func (s *ImageStore) exists(collection db.Collection, handle *apitype.ImageFile) (bool, error) {
 	return collection.
 		Find(db.Cond{
 			"directory": handle.GetDir(),
@@ -266,12 +266,12 @@ func (s *ImageStore) getCollectionForSession(session db.Session) db.Collection {
 	return session.Collection(s.getCollection().Name())
 }
 
-func (s *ImageStore) FindModifiedId(handle *apitype.Handle) (apitype.ImageId, error) {
+func (s *ImageStore) FindModifiedId(handle *apitype.ImageFile) (apitype.ImageId, error) {
 	return s.findModifiedId(s.getCollection(), handle)
 }
 
-func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Handle) (apitype.ImageId, error) {
-	stat, err := s.imageHandleConverter.GetHandleFileStats(handle)
+func (s *ImageStore) findModifiedId(collection db.Collection, imageFile *apitype.ImageFile) (apitype.ImageId, error) {
+	stat, err := s.imageHandleConverter.GetHandleFileStats(imageFile)
 	if err != nil {
 		return apitype.NoImage, err
 	}
@@ -279,8 +279,8 @@ func (s *ImageStore) findModifiedId(collection db.Collection, handle *apitype.Ha
 	var images []Image
 	err = collection.
 		Find(db.Cond{
-			"directory":            handle.GetDir(),
-			"file_name":            handle.GetFile(),
+			"directory":            imageFile.GetDir(),
+			"file_name":            imageFile.GetFile(),
 			"modified_timestamp <": stat.ModTime(),
 		}).All(&images)
 
@@ -299,7 +299,7 @@ func (s *ImageStore) update(collection db.Collection, id apitype.ImageId, image 
 	return collection.Find(db.Cond{"id": id}).Update(image)
 }
 
-func (s *ImageStore) GetImageById(id apitype.ImageId) *apitype.Handle {
+func (s *ImageStore) GetImageById(id apitype.ImageId) *apitype.ImageFileWithMetaData {
 	var image Image
 	err := s.getCollection().Find(db.Cond{"id": id}).One(&image)
 

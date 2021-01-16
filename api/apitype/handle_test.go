@@ -17,17 +17,16 @@ func TestGetEmptyHandle(t *testing.T) {
 func TestHandle_String(t *testing.T) {
 	a := assert.New(t)
 
-	var nilHandle *Handle
-	a.Equal("Handle<nil>", nilHandle.String())
-	a.Equal("Handle<invalid>", NewHandle("", "").String())
-	a.Equal("Handle{file.jpeg}", NewHandleWithId(2, "/some/dir", "file.jpeg", 0, false, map[string]string{}).String())
+	var nilHandle *ImageFile
+	a.Equal("ImageFile<nil>", nilHandle.String())
+	a.Equal("ImageFile<invalid>", NewHandle("", "").String())
+	a.Equal("ImageFile{file.jpeg}", NewHandleWithId(2, "/some/dir", "file.jpeg").String())
 }
 
 func TestValidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(1, "some/dir", "file.jpeg", 0, false, map[string]string{})
-	handle.SetByteSize(1.5 * 1024 * 1024)
+	handle := NewHandleWithId(1, "some/dir", "file.jpeg")
 
 	t.Run("Validity", func(t *testing.T) {
 		a.True(handle.IsValid())
@@ -37,15 +36,13 @@ func TestValidHandle(t *testing.T) {
 		a.Equal("file.jpeg", handle.GetFile())
 		a.Equal("some/dir", handle.GetDir())
 		a.Equal(filepath.Join("some", "dir", "file.jpeg"), handle.GetPath())
-		a.Equal(int64(1.5*1024*1024), handle.GetByteSize())
-		a.Equal(1.5, handle.GetByteSizeMB())
 	})
 }
 
 func TestInvalidHandle(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(NoImage, "", "", 0, false, map[string]string{})
+	handle := NewHandleWithId(NoImage, "", "")
 
 	t.Run("Validity", func(t *testing.T) {
 		a.False(handle.IsValid())
@@ -55,15 +52,13 @@ func TestInvalidHandle(t *testing.T) {
 		a.Equal("", handle.GetFile())
 		a.Equal("", handle.GetDir())
 		a.Equal("", handle.GetPath())
-		a.Equal(int64(0), handle.GetByteSize())
-		a.Equal(0.0, handle.GetByteSizeMB())
 	})
 }
 
 func TestNilHandle(t *testing.T) {
 	a := assert.New(t)
 
-	var handle *Handle
+	var handle *ImageFile
 
 	t.Run("Validity", func(t *testing.T) {
 		a.False(handle.IsValid())
@@ -73,8 +68,6 @@ func TestNilHandle(t *testing.T) {
 		a.Equal("", handle.GetFile())
 		a.Equal("", handle.GetDir())
 		a.Equal("", handle.GetPath())
-		a.Equal(int64(0), handle.GetByteSize())
-		a.Equal(0.0, handle.GetByteSizeMB())
 	})
 }
 

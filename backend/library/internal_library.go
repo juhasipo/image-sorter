@@ -15,7 +15,7 @@ var (
 
 const maxSimilarImages = 20
 
-type ImageList func(number int) []*apitype.Handle
+type ImageList func(number int) []*apitype.ImageFile
 
 type internalManager struct {
 	rootDir                     string
@@ -55,7 +55,7 @@ func (s *internalManager) InitializeFromDirectory(directory string) {
 	s.updateImages()
 }
 
-func (s *internalManager) GetHandles() []*apitype.Handle {
+func (s *internalManager) GetImages() []*apitype.ImageFileWithMetaData {
 	images, _ := s.imageStore.GetAllImages()
 	return images
 }
@@ -131,7 +131,7 @@ func (s *internalManager) StopHashes() {
 func (s *internalManager) MoveToImage(imageId apitype.ImageId) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	for imageIndex, image := range images {
-		if imageId == image.GetId() {
+		if imageId == image.GetImageFile().GetId() {
 			s.index = imageIndex
 		}
 	}
@@ -190,7 +190,7 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 	}
 }
 
-func (s *internalManager) AddHandles(imageList []*apitype.Handle) error {
+func (s *internalManager) AddHandles(imageList []*apitype.ImageFile) error {
 	s.index = 0
 	start := time.Now()
 	if err := s.imageStore.AddImages(imageList); err != nil {
@@ -206,7 +206,7 @@ func (s *internalManager) AddHandles(imageList []*apitype.Handle) error {
 	return nil
 }
 
-func (s *internalManager) GetHandleById(imageId apitype.ImageId) *apitype.Handle {
+func (s *internalManager) GetHandleById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
 	return s.imageStore.GetImageById(imageId)
 }
 
@@ -215,15 +215,15 @@ func (s *internalManager) GetHandleById(imageId apitype.ImageId) *apitype.Handle
 func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
-		handle := images[s.index]
-		if full, err := s.imageCache.GetFull(handle.GetId()); err != nil {
+		imageFile := images[s.index]
+		if full, err := s.imageCache.GetFull(imageFile.GetImageId()); err != nil {
 			logger.Error.Print("Error while loading full image", err)
-			return apitype.NewImageContainer(apitype.GetEmptyHandle(), nil), 0, err
+			return apitype.NewEmptyImageContainer(), 0, err
 		} else {
-			return apitype.NewImageContainer(handle, full), s.index, nil
+			return apitype.NewImageContainer(imageFile, full), s.index, nil
 		}
 	} else {
-		return apitype.NewImageContainer(apitype.GetEmptyHandle(), nil), 0, nil
+		return apitype.NewEmptyImageContainer(), 0, nil
 	}
 }
 
@@ -258,10 +258,10 @@ func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
 	}
 }
 
-func (s *internalManager) toImageContainers(nextImageHandles []*apitype.Handle) ([]*apitype.ImageContainer, error) {
+func (s *internalManager) toImageContainers(nextImageHandles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageContainer, error) {
 	images := make([]*apitype.ImageContainer, len(nextImageHandles))
 	for i, handle := range nextImageHandles {
-		if thumbnail, err := s.imageCache.GetThumbnail(handle.GetId()); err != nil {
+		if thumbnail, err := s.imageCache.GetThumbnail(handle.GetImageId()); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
 			return emptyHandles, err
 		} else {
@@ -288,13 +288,13 @@ func (s *internalManager) getThreadCount() int {
 	return cpuCores
 }
 
-func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.ImageContainer, bool, error) {
-	similarImages := s.similarityIndex.GetSimilarImages(handle.GetId())
+func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageContainer, bool, error) {
+	similarImages := s.similarityIndex.GetSimilarImages(imageId)
 	if len(similarImages) > 0 {
 		containers := make([]*apitype.ImageContainer, len(similarImages))
 		i := 0
 		for _, similar := range similarImages {
-			if thumbnail, err := s.imageCache.GetThumbnail(similar.GetId()); err != nil {
+			if thumbnail, err := s.imageCache.GetThumbnail(similar.GetImageId()); err != nil {
 				logger.Error.Print("Error while loading thumbnail", err)
 				return emptyHandles, false, err
 			} else {
@@ -309,21 +309,21 @@ func (s *internalManager) getSimilarImages(handle *apitype.Handle) ([]*apitype.I
 	}
 }
 
-func (s *internalManager) removeMissingImages(handles []*apitype.Handle) error {
+func (s *internalManager) removeMissingImages(handles []*apitype.ImageFile) error {
 	if images, err := s.imageStore.GetAllImages(); err != nil {
 		logger.Error.Print("Error while loading images", err)
 		return err
 	} else {
 		var existing = map[string]int{}
-		var toRemove = map[apitype.ImageId]*apitype.Handle{}
+		var toRemove = map[apitype.ImageId]*apitype.ImageFile{}
 
 		for _, handle := range handles {
 			existing[handle.GetFile()] = 1
 		}
 
 		for _, image := range images {
-			if _, ok := existing[image.GetFile()]; !ok {
-				toRemove[image.GetId()] = image
+			if _, ok := existing[image.GetImageFile().GetFile()]; !ok {
+				toRemove[image.GetImageId()] = image.GetImageFile()
 			}
 		}
 		if len(toRemove) > 0 {

@@ -71,7 +71,7 @@ func (s *TopActionView) SetNoDistractionMode(value bool) {
 	s.prevButton.SetVisible(value)
 }
 
-func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.Handle) *api.CategorizeCommand {
+func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.ImageFile) *api.CategorizeCommand {
 	for _, button := range s.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)

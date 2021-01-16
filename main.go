@@ -60,8 +60,8 @@ func main() {
 			}
 			imageLibrary.InitializeFromDirectory(directory)
 
-			if len(imageLibrary.GetHandles()) > 0 {
-				imageCache.Initialize(imageLibrary.GetHandles()[:5])
+			if len(imageLibrary.GetImageFiles()) > 0 {
+				imageCache.Initialize(imageLibrary.GetImageFiles()[:5])
 			}
 
 			imageCategoryManager.InitializeForDirectory(directory)

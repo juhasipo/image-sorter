@@ -20,12 +20,12 @@ type DefaultImageStore struct {
 	api.ImageStore
 }
 
-func (s *DefaultImageStore) Initialize(handles []*apitype.Handle) {
+func (s *DefaultImageStore) Initialize(handles []*apitype.ImageFileWithMetaData) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.imageCache = map[apitype.ImageId]*Instance{}
 	for _, handle := range handles {
-		s.imageCache[handle.GetId()] = NewInstance(handle.GetId(), s.imageLoader)
+		s.imageCache[handle.GetImageId()] = NewInstance(handle.GetImageId(), s.imageLoader)
 	}
 	runtime.GC()
 }

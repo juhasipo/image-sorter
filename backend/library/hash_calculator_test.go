@@ -22,7 +22,7 @@ func TestHashCalculator_GenerateHashes(t *testing.T) {
 	t.Run("No images in store", func(t *testing.T) {
 		sut := NewHashCalculator(similarityIndex, imageLoader, 1)
 
-		hashes, err := sut.GenerateHashes([]*apitype.Handle{}, func(current int, total int) {})
+		hashes, err := sut.GenerateHashes([]*apitype.ImageFileWithMetaData{}, func(current int, total int) {})
 
 		if a.Nil(err) {
 			a.Equal(0, len(hashes))
@@ -35,7 +35,7 @@ func TestHashCalculator_GenerateHashes(t *testing.T) {
 		i2, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
 		i3, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
 
-		hashes, err := sut.GenerateHashes([]*apitype.Handle{i1, i2, i3}, func(current int, total int) {})
+		hashes, err := sut.GenerateHashes([]*apitype.ImageFileWithMetaData{i1, i2, i3}, func(current int, total int) {})
 
 		if a.Nil(err) {
 			a.Equal(3, len(hashes))
@@ -61,7 +61,7 @@ func TestHashCalculator_StopHashes(t *testing.T) {
 	i2, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
 	i3, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
 
-	hashes, err := sut.GenerateHashes([]*apitype.Handle{i1, i2, i3}, func(current int, total int) {
+	hashes, err := sut.GenerateHashes([]*apitype.ImageFile{i1, i2, i3}, func(current int, total int) {
 		go sut.StopHashes()
 	})
 
@@ -83,7 +83,7 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 	t.Run("No images in store", func(t *testing.T) {
 		sut := NewHashCalculator(similarityIndex, imageLoader, 1)
 
-		hashes, err := sut.GenerateHashes([]*apitype.Handle{}, func(current int, total int) {})
+		hashes, err := sut.GenerateHashes([]*apitype.ImageFileWithMetaData{}, func(current int, total int) {})
 
 		if a.Nil(err) {
 
@@ -104,7 +104,7 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 		i2, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
 		i3, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
 
-		hashes, err := sut.GenerateHashes([]*apitype.Handle{i1, i2, i3}, func(current int, total int) {})
+		hashes, err := sut.GenerateHashes([]*apitype.ImageFileWithMetaData{i1, i2, i3}, func(current int, total int) {})
 
 		if a.Nil(err) {
 			err := sut.BuildSimilarityIndex(hashes, func(current int, total int) {})
@@ -115,13 +115,13 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 					a.Equal(uint64(6), size)
 				}
 
-				images := similarityIndex.GetSimilarImages(i1.GetId())
+				images := similarityIndex.GetSimilarImages(i1.GetImageId())
 				a.Equal(2, len(images))
 
-				images = similarityIndex.GetSimilarImages(i2.GetId())
+				images = similarityIndex.GetSimilarImages(i2.GetImageId())
 				a.Equal(2, len(images))
 
-				images = similarityIndex.GetSimilarImages(i3.GetId())
+				images = similarityIndex.GetSimilarImages(i3.GetImageId())
 				a.Equal(2, len(images))
 			}
 		}

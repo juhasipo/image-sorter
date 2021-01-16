@@ -9,12 +9,18 @@ func TestImageContainer_String(t *testing.T) {
 	a := assert.New(t)
 
 	t.Run("Valid", func(t *testing.T) {
-		container := NewImageContainer(NewHandleWithId(1, "foo", "bar", 0, false, map[string]string{}), nil)
-		a.Equal("ImageContainer{Handle{bar}}", container.String())
+		imageFile := NewHandleWithId(1, "foo", "bar")
+		imageMetaData := NewImageMetaData(1024, 90, true, map[string]string{})
+
+		container := NewImageContainer(&ImageFileWithMetaData{
+			imageFile: imageFile,
+			metaData:  imageMetaData,
+		}, nil)
+		a.Equal("ImageContainer{ImageFile{bar}}", container.String())
 	})
-	t.Run("Nil Handle", func(t *testing.T) {
+	t.Run("Nil ImageFile", func(t *testing.T) {
 		container := NewImageContainer(nil, nil)
-		a.Equal("ImageContainer{Handle<nil>}", container.String())
+		a.Equal("ImageContainer{ImageFile<nil>}", container.String())
 	})
 	t.Run("Nil", func(t *testing.T) {
 		var container *ImageContainer

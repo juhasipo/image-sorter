@@ -28,8 +28,8 @@ func (s *Manager) InitializeFromDirectory(directory string) {
 	s.manager.InitializeFromDirectory(directory)
 }
 
-func (s *Manager) GetHandles() []*apitype.Handle {
-	return s.manager.GetHandles()
+func (s *Manager) GetImageFiles() []*apitype.ImageFileWithMetaData {
+	return s.manager.GetImages()
 }
 
 func (s *Manager) ShowOnlyImages(command *api.SelectCategoryCommand) {
@@ -47,7 +47,7 @@ func (s *Manager) RequestGenerateHashes() {
 		if image, _, err := s.manager.getCurrentImage(); err != nil {
 			s.sender.SendError("Error while generating hashes", err)
 		} else {
-			s.sendSimilarImages(image.GetHandle())
+			s.sendSimilarImages(image.GetHandle().GetId())
 		}
 	}
 }
@@ -108,13 +108,13 @@ func (s *Manager) Close() {
 	logger.Info.Print("Shutting down library")
 }
 
-func (s *Manager) AddHandles(imageList []*apitype.Handle) {
+func (s *Manager) AddHandles(imageList []*apitype.ImageFile) {
 	if err := s.manager.AddHandles(imageList); err != nil {
 		s.sender.SendError("Error while adding image", err)
 	}
 }
 
-func (s *Manager) GetHandleById(imageId apitype.ImageId) *apitype.Handle {
+func (s *Manager) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
 	return s.manager.GetHandleById(imageId)
 }
 
@@ -154,13 +154,13 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 		}
 
 		if s.manager.shouldSendSimilarImages() {
-			s.sendSimilarImages(currentImage.GetHandle())
+			s.sendSimilarImages(currentImage.GetHandle().GetId())
 		}
 	}
 }
 
-func (s *Manager) sendSimilarImages(handle *apitype.Handle) {
-	if images, shouldSend, err := s.manager.getSimilarImages(handle); err != nil {
+func (s *Manager) sendSimilarImages(imageId apitype.ImageId) {
+	if images, shouldSend, err := s.manager.getSimilarImages(imageId); err != nil {
 		s.sender.SendError("Error while fetching similar images", err)
 	} else if shouldSend {
 		s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{

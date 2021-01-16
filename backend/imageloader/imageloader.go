@@ -1,6 +1,7 @@
 package imageloader
 
 import (
+	"errors"
 	"github.com/pixiv/go-libjpeg/jpeg"
 	"image"
 	"os"
@@ -24,42 +25,54 @@ type LibJPEGImageLoader struct {
 }
 
 func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, error) {
-	handle := s.imageStore.GetImageById(imageId)
+	if imageId != apitype.NoImage {
+		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
+			file, err := os.Open(imageFileWithMetaData.GetImageFile().GetPath())
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
 
-	file, err := os.Open(handle.GetPath())
-	if err != nil {
-		return nil, err
+			imageFile, err := jpeg.Decode(file, options)
+			if err != nil {
+				return nil, err
+			}
+
+			rotation, flipped := imageFileWithMetaData.GetMetaData().GetRotation()
+			return apitype.ExifRotateImage(imageFile, rotation, flipped)
+		} else {
+			return nil, errors.New("image not found in DB")
+		}
+	} else {
+		return nil, errors.New("invalid image ID")
 	}
-	defer file.Close()
-
-	imageFile, err := jpeg.Decode(file, options)
-	if err != nil {
-		return nil, err
-	}
-
-	rotation, flipped := handle.GetRotation()
-	return apitype.ExifRotateImage(imageFile, rotation, flipped)
 }
 
 func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apitype.Size) (image.Image, error) {
-	handle := s.imageStore.GetImageById(imageId)
+	if imageId != apitype.NoImage {
+		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
+			file, err := os.Open(imageFileWithMetaData.GetImageFile().GetPath())
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
 
-	file, err := os.Open(handle.GetPath())
-	if err != nil {
-		return nil, err
+			imageFile, err := jpeg.Decode(file, &jpeg.DecoderOptions{ScaleTarget: image.Rect(0, 0, size.GetWidth(), size.GetHeight())})
+			if err != nil {
+				return nil, err
+			}
+
+			rotation, flipped := imageFileWithMetaData.GetMetaData().GetRotation()
+			return apitype.ExifRotateImage(imageFile, rotation, flipped)
+		} else {
+			return nil, errors.New("image not found in DB")
+		}
+	} else {
+		return nil, errors.New("invalid image ID")
 	}
-	defer file.Close()
-
-	imageFile, err := jpeg.Decode(file, &jpeg.DecoderOptions{ScaleTarget: image.Rect(0, 0, size.GetWidth(), size.GetHeight())})
-	if err != nil {
-		return nil, err
-	}
-
-	rotation, flipped := handle.GetRotation()
-	return apitype.ExifRotateImage(imageFile, rotation, flipped)
 }
 
 func (s *LibJPEGImageLoader) LoadExifData(imageId apitype.ImageId) (*apitype.ExifData, error) {
 	handle := s.imageStore.GetImageById(imageId)
-	return apitype.LoadExifData(handle)
+	return apitype.LoadExifData(handle.GetImageFile())
 }

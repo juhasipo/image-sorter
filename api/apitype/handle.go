@@ -11,62 +11,52 @@ type ImageId int64
 
 const NoImage = ImageId(-1)
 
-type Handle struct {
+type ImageMetaData struct {
+	byteSize int64
+	rotation float64
+	flipped  bool
+	metaData map[string]string
+}
+
+type ImageFile struct {
 	id        ImageId
 	directory string
 	filename  string
 	path      string
-	byteSize  int64
-	rotation  float64
-	flipped   bool
-	metaData  map[string]string
 }
 
-func (s *Handle) IsValid() bool {
+type ImageFileWithMetaData struct {
+	imageFile *ImageFile
+	metaData  *ImageMetaData
+}
+
+func (s *ImageFile) IsValid() bool {
 	return s != nil && s.path != ""
 }
 
 var (
-	EmptyHandle          = Handle{id: NoImage, path: ""}
+	EmptyHandle          = ImageFile{id: NoImage, path: ""}
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewPersistedHandle(id ImageId, handle *Handle, metaData map[string]string) *Handle {
-	return &Handle{
-		id:        id,
-		directory: handle.directory,
-		filename:  handle.filename,
-		path:      handle.path,
-		byteSize:  handle.byteSize,
-		metaData:  metaData,
-	}
-}
-
-func NewHandleWithId(id ImageId, fileDir string, fileName string, rotation float64, flipped bool, metaData map[string]string) *Handle {
-	return &Handle{
+func NewHandleWithId(id ImageId, fileDir string, fileName string) *ImageFile {
+	return &ImageFile{
 		id:        id,
 		directory: fileDir,
 		filename:  fileName,
 		path:      filepath.Join(fileDir, fileName),
-		metaData:  metaData,
-		rotation:  rotation,
-		flipped:   flipped,
 	}
 }
 
-func NewHandle(fileDir string, fileName string) *Handle {
-	return NewHandleWithId(NoImage, fileDir, fileName, 0, false, map[string]string{})
+func NewHandle(fileDir string, fileName string) *ImageFile {
+	return NewHandleWithId(NoImage, fileDir, fileName)
 }
 
-func NewHandleWithMetaData(fileDir string, fileName string, metaData map[string]string) *Handle {
-	return NewHandleWithId(NoImage, fileDir, fileName, 0, false, metaData)
-}
-
-func GetEmptyHandle() *Handle {
+func GetEmptyHandle() *ImageFile {
 	return &EmptyHandle
 }
 
-func (s *Handle) GetId() ImageId {
+func (s *ImageFile) GetId() ImageId {
 	if s != nil {
 		return s.id
 	} else {
@@ -74,7 +64,7 @@ func (s *Handle) GetId() ImageId {
 	}
 }
 
-func (s *Handle) IsPersisted() bool {
+func (s *ImageFile) IsPersisted() bool {
 	if s != nil {
 		return s.id > 0
 	} else {
@@ -82,19 +72,19 @@ func (s *Handle) IsPersisted() bool {
 	}
 }
 
-func (s *Handle) String() string {
+func (s *ImageFile) String() string {
 	if s != nil {
 		if s.IsValid() {
-			return "Handle{" + s.filename + "}"
+			return "ImageFile{" + s.filename + "}"
 		} else {
-			return "Handle<invalid>"
+			return "ImageFile<invalid>"
 		}
 	} else {
-		return "Handle<nil>"
+		return "ImageFile<nil>"
 	}
 }
 
-func (s *Handle) GetPath() string {
+func (s *ImageFile) GetPath() string {
 	if s != nil {
 		return s.path
 	} else {
@@ -102,7 +92,7 @@ func (s *Handle) GetPath() string {
 	}
 }
 
-func (s *Handle) GetDir() string {
+func (s *ImageFile) GetDir() string {
 	if s != nil {
 		return s.directory
 	} else {
@@ -110,7 +100,7 @@ func (s *Handle) GetDir() string {
 	}
 }
 
-func (s *Handle) GetFile() string {
+func (s *ImageFile) GetFile() string {
 	if s != nil {
 		return s.filename
 	} else {
@@ -118,7 +108,16 @@ func (s *Handle) GetFile() string {
 	}
 }
 
-func (s *Handle) GetMetaData() map[string]string {
+func NewImageMetaData(byteSize int64, rotation float64, flipped bool, metaData map[string]string) *ImageMetaData {
+	return &ImageMetaData{
+		byteSize: byteSize,
+		rotation: rotation,
+		flipped:  flipped,
+		metaData: metaData,
+	}
+}
+
+func (s *ImageMetaData) GetMetaData() map[string]string {
 	if s != nil {
 		return s.metaData
 	} else {
@@ -126,11 +125,11 @@ func (s *Handle) GetMetaData() map[string]string {
 	}
 }
 
-func (s *Handle) SetByteSize(length int64) {
+func (s *ImageMetaData) SetByteSize(length int64) {
 	s.byteSize = length
 }
 
-func (s *Handle) GetByteSize() int64 {
+func (s *ImageMetaData) GetByteSize() int64 {
 	if s != nil {
 		return s.byteSize
 	} else {
@@ -138,7 +137,7 @@ func (s *Handle) GetByteSize() int64 {
 	}
 }
 
-func (s *Handle) GetByteSizeMB() float64 {
+func (s *ImageMetaData) GetByteSizeMB() float64 {
 	if s != nil {
 		return float64(s.byteSize) / (1024.0 * 1024.0)
 	} else {
@@ -146,12 +145,31 @@ func (s *Handle) GetByteSizeMB() float64 {
 	}
 }
 
-func (s *Handle) GetRotation() (float64, bool) {
+func (s *ImageMetaData) GetRotation() (float64, bool) {
 	return s.rotation, s.flipped
 }
 
-func LoadImageHandles(dir string) []*Handle {
-	var handles []*Handle
+func NewImageFileAndMetaData(imageFile *ImageFile, metaData *ImageMetaData) *ImageFileWithMetaData {
+	return &ImageFileWithMetaData{
+		imageFile: imageFile,
+		metaData:  metaData,
+	}
+}
+
+func (s *ImageFileWithMetaData) GetImageFile() *ImageFile {
+	return s.imageFile
+}
+
+func (s *ImageFileWithMetaData) GetMetaData() *ImageMetaData {
+	return s.metaData
+}
+
+func (s *ImageFileWithMetaData) GetImageId() ImageId {
+	return s.imageFile.GetId()
+}
+
+func LoadImageHandles(dir string) []*ImageFile {
+	var handles []*ImageFile
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		logger.Error.Fatal(err)

@@ -17,7 +17,7 @@ var zoomLevels = []uint16{
 type CurrentImageView struct {
 	scrolledView     *gtk.ScrolledWindow
 	view             *gtk.Image
-	image            *apitype.Handle
+	image            *apitype.ImageFile
 	details          *gtk.TextView
 	zoomInButton     *gtk.Button
 	zoomOutButton    *gtk.Button
@@ -153,18 +153,19 @@ const showExifData = false
 
 func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContainer) {
 	s.imageChanged = true
-	handle := imageContainer.GetHandle()
-	img := imageContainer.GetImage()
-	s.imageInstance = img
+	imageFile := imageContainer.GetHandle()
+	metaData := imageContainer.GetMetaData()
+	imageData := imageContainer.GetImage()
+	s.imageInstance = imageData
 
-	if img != nil {
-		size := img.Bounds()
+	if imageData != nil {
+		size := imageData.Bounds()
 		buffer, _ := s.details.GetBuffer()
 		stringBuffer := bytes.NewBuffer([]byte{})
-		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", handle.GetPath(), handle.GetByteSizeMB(), size.Dx(), size.Dy()))
+		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", imageFile.GetPath(), metaData.GetByteSizeMB(), size.Dx(), size.Dy()))
 
 		if showExifData {
-			for key, value := range imageContainer.GetHandle().GetMetaData() {
+			for key, value := range metaData.GetMetaData() {
 				stringBuffer.WriteString("\n")
 				stringBuffer.WriteString(key)
 				stringBuffer.WriteString(": ")
@@ -174,7 +175,7 @@ func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContaine
 		}
 
 		buffer.SetText(stringBuffer.String())
-		s.image = handle
+		s.image = imageFile
 	} else {
 		s.image = nil
 		buffer, _ := s.details.GetBuffer()

@@ -45,7 +45,7 @@ type ImageCategoryManager interface {
 	SetCategory(*CategorizeCommand)
 
 	PersistImageCategories(*PersistCategorizationCommand)
-	PersistImageCategory(handle *apitype.Handle, categories map[apitype.CategoryId]*CategorizedImage)
+	PersistImageCategory(handle *apitype.ImageFile, categories map[apitype.CategoryId]*CategorizedImage)
 
 	PersistCategorization()
 	LoadCategorization(handleManager Library, categoryManager CategoryManager)
@@ -53,7 +53,7 @@ type ImageCategoryManager interface {
 	ShowOnlyCategoryImages(*SelectCategoryCommand)
 
 	ResolveFileOperations(map[apitype.ImageId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) []*apitype.ImageOperationGroup
-	ResolveOperationsForGroup(*apitype.Handle, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
+	ResolveOperationsForGroup(*apitype.ImageFileWithMetaData, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()
 }

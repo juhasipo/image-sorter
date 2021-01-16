@@ -5,29 +5,51 @@ import (
 )
 
 type ImageContainer struct {
-	handle *Handle
-	img    image.Image
+	imageFile *ImageFile
+	metaData  *ImageMetaData
+	imageData image.Image
 }
 
 func (s *ImageContainer) String() string {
 	if s != nil {
-		return "ImageContainer{" + s.handle.String() + "}"
+		return "ImageContainer{" + s.imageFile.String() + "}"
 	} else {
 		return "ImageContainer<nil>"
 	}
 }
 
-func (s *ImageContainer) GetHandle() *Handle {
-	return s.handle
+func (s *ImageContainer) GetHandle() *ImageFile {
+	return s.imageFile
 }
 
 func (s *ImageContainer) GetImage() image.Image {
-	return s.img
+	return s.imageData
 }
 
-func NewImageContainer(handle *Handle, img image.Image) *ImageContainer {
+func (s *ImageContainer) GetMetaData() *ImageMetaData {
+	return s.metaData
+}
+
+func NewImageContainer(imageFile *ImageFileWithMetaData, imageData image.Image) *ImageContainer {
+	if imageFile != nil {
+		return &ImageContainer{
+			imageFile: imageFile.imageFile,
+			metaData:  imageFile.metaData,
+			imageData: imageData,
+		}
+	} else {
+		return &ImageContainer{
+			imageFile: nil,
+			metaData:  nil,
+			imageData: imageData,
+		}
+	}
+}
+
+func NewEmptyImageContainer() *ImageContainer {
 	return &ImageContainer{
-		handle: handle,
-		img:    img,
+		imageFile: nil,
+		metaData:  nil,
+		imageData: nil,
 	}
 }

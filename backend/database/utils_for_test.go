@@ -14,11 +14,13 @@ type StubImageHandleConverter struct {
 	currentTime             time.Time
 }
 
-func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image, map[string]string, error) {
+func (s *StubImageHandleConverter) HandleToImage(handle *apitype.ImageFile) (*Image, map[string]string, error) {
 	fileStat, _ := s.GetHandleFileStats(handle)
-	if jsonData, err := json.Marshal(handle.GetMetaData()); err != nil {
+	metaData := map[string]string{}
+	if jsonData, err := json.Marshal(metaData); err != nil {
 		return nil, nil, err
 	} else {
+
 		return &Image{
 			Id:              0,
 			Name:            handle.GetFile(),
@@ -34,11 +36,11 @@ func (s *StubImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image
 			ModifiedTime:    fileStat.ModTime(),
 
 			ExifData: jsonData,
-		}, map[string]string{}, nil
+		}, metaData, nil
 	}
 }
 
-func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {
+func (s *StubImageHandleConverter) GetHandleFileStats(handle *apitype.ImageFile) (os.FileInfo, error) {
 	if s.incrementModTimeRequest {
 		s.currentTime = s.currentTime.Add(time.Second)
 	}

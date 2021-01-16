@@ -114,6 +114,6 @@ func (s *ImageView) ZoomToFit() {
 	s.UpdateCurrentImage()
 }
 
-func (s *ImageView) GetCurrentHandle() *apitype.Handle {
+func (s *ImageView) GetCurrentHandle() *apitype.ImageFile {
 	return s.currentImage.image
 }

@@ -14,25 +14,26 @@ func idToCategoryId(id interface{}) apitype.CategoryId {
 	return apitype.CategoryId(id.(int64))
 }
 
-func toApiHandle(image *Image) (*apitype.Handle, error) {
+func toApiHandle(image *Image) (*apitype.ImageFileWithMetaData, error) {
 	var metaData = map[string]string{}
 	if err := json.Unmarshal(image.ExifData, &metaData); err != nil {
 		return nil, err
 	}
-	handle := apitype.NewHandleWithId(
+	imageFile := apitype.NewHandleWithId(
 		image.Id, image.Directory, image.FileName,
-		float64(image.ImageAngle), image.ImageFlip, metaData,
 	)
-	handle.SetByteSize(image.ByteSize)
-	return handle, nil
+	imageMetaData := apitype.NewImageMetaData(
+		image.ByteSize, float64(image.ImageAngle), image.ImageFlip, metaData,
+	)
+	return apitype.NewImageFileAndMetaData(imageFile, imageMetaData), nil
 }
 
-func toApiHandles(images []Image) []*apitype.Handle {
-	handles := make([]*apitype.Handle, len(images))
+func toApiHandles(images []Image) []*apitype.ImageFileWithMetaData {
+	imageFiles := make([]*apitype.ImageFileWithMetaData, len(images))
 	for i, image := range images {
-		handles[i], _ = toApiHandle(&image)
+		imageFiles[i], _ = toApiHandle(&image)
 	}
-	return handles
+	return imageFiles
 }
 
 func toApiCategorizedImages(categories []CategorizedImage) []*api.CategorizedImage {
@@ -64,31 +65,30 @@ func toApiCategory(category Category) *apitype.Category {
 }
 
 type ImageHandleConverter interface {
-	HandleToImage(handle *apitype.Handle) (*Image, map[string]string, error)
-	GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error)
+	HandleToImage(handle *apitype.ImageFile) (*Image, map[string]string, error)
+	GetHandleFileStats(handle *apitype.ImageFile) (os.FileInfo, error)
 }
 
 type FileSystemImageHandleConverter struct {
 	ImageHandleConverter
 }
 
-func (s *FileSystemImageHandleConverter) GetHandleFileStats(handle *apitype.Handle) (os.FileInfo, error) {
+func (s *FileSystemImageHandleConverter) GetHandleFileStats(handle *apitype.ImageFile) (os.FileInfo, error) {
 	return os.Stat(handle.GetPath())
 }
 
-func (s *FileSystemImageHandleConverter) HandleToImage(handle *apitype.Handle) (*Image, map[string]string, error) {
-
+func (s *FileSystemImageHandleConverter) HandleToImage(imageFile *apitype.ImageFile) (*Image, map[string]string, error) {
 	exifLoadStart := time.Now()
-	exifData, err := apitype.LoadExifData(handle)
+	exifData, err := apitype.LoadExifData(imageFile)
 	if err != nil {
-		logger.Warn.Printf("Exif data not properly loaded for '%d'", handle.GetId())
+		logger.Warn.Printf("Exif data not properly loaded for '%d'", imageFile.GetId())
 		return nil, nil, err
 	}
 	exifLoadEnd := time.Now()
 	logger.Trace.Printf(" - Loaded exif data in %s", exifLoadEnd.Sub(exifLoadStart))
 
 	fileStatStart := time.Now()
-	fileStat, err := s.GetHandleFileStats(handle)
+	fileStat, err := s.GetHandleFileStats(imageFile)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -104,9 +104,9 @@ func (s *FileSystemImageHandleConverter) HandleToImage(handle *apitype.Handle) (
 	}
 
 	return &Image{
-		Name:            handle.GetFile(),
-		FileName:        handle.GetFile(),
-		Directory:       handle.GetDir(),
+		Name:            imageFile.GetFile(),
+		FileName:        imageFile.GetFile(),
+		Directory:       imageFile.GetDir(),
 		ByteSize:        fileStat.Size(),
 		ExifOrientation: exifData.GetExifOrientation(),
 		ImageAngle:      int(exifData.GetRotation()),

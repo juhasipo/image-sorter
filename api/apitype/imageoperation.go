@@ -11,15 +11,19 @@ type ImageOperation interface {
 }
 
 type ImageOperationGroup struct {
-	handle          *Handle
+	handle          *ImageFileWithMetaData
 	exifData        *ExifData
 	img             image.Image
 	hasBeenModified bool
 	operations      []ImageOperation
 }
 
-func (s *ImageOperationGroup) GetHandle() *Handle {
-	return s.handle
+func (s *ImageOperationGroup) GetHandle() *ImageFile {
+	return s.handle.GetImageFile()
+}
+
+func (s *ImageOperationGroup) GetMetaData() *ImageMetaData {
+	return s.handle.GetMetaData()
 }
 
 func (s *ImageOperationGroup) GetImage() image.Image {
@@ -38,7 +42,7 @@ func (s *ImageOperationGroup) GetOperations() []ImageOperation {
 	return s.operations
 }
 
-func NewImageOperationGroup(handle *Handle, img image.Image, exifData *ExifData, operations []ImageOperation) *ImageOperationGroup {
+func NewImageOperationGroup(handle *ImageFileWithMetaData, img image.Image, exifData *ExifData, operations []ImageOperation) *ImageOperationGroup {
 	return &ImageOperationGroup{
 		handle:          handle,
 		img:             img,
