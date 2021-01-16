@@ -326,14 +326,18 @@ func (s *internalManager) removeMissingImages(handles []*apitype.Handle) error {
 				toRemove[image.GetId()] = image
 			}
 		}
-		logger.Debug.Printf("Found %d images that don't exist anymore", len(toRemove))
+		if len(toRemove) > 0 {
+			logger.Debug.Printf("Found %d images that don't exist anymore", len(toRemove))
 
-		for handleId, image := range toRemove {
-			logger.Trace.Printf("Removing image %s because it doesn't exist", image.String())
-			if err := s.imageStore.RemoveImage(handleId); err != nil {
-				logger.Error.Print("Can't remove", err)
-				return err
+			for handleId, image := range toRemove {
+				logger.Trace.Printf("Removing image %s because it doesn't exist", image.String())
+				if err := s.imageStore.RemoveImage(handleId); err != nil {
+					logger.Error.Print("Can't remove", err)
+					return err
+				}
 			}
+		} else {
+			logger.Trace.Print("No missing images to remove")
 		}
 		return nil
 	}
