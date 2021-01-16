@@ -69,7 +69,7 @@ func (s *Instance) GetFull() (image.Image, error) {
 
 func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 	if !s.IsValid() {
-		return nil, errors.New("invalid handle")
+		return nil, errors.New("invalid image instance")
 	}
 
 	startTime := time.Now()
@@ -101,7 +101,7 @@ func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 
 func (s *Instance) GetThumbnail() (image.Image, error) {
 	if s.imageId == apitype.NoImage {
-		return nil, errors.New("invalid handle")
+		return nil, errors.New("invalid image instance")
 	}
 	var err error
 	startTime := time.Now()

@@ -66,9 +66,9 @@ func initializeStore(imageList *ImageList, layout Layout, sender api.Sender) {
 
 	imageList.component.Connect("item-activated", func(view *gtk.IconView, path *gtk.TreePath) {
 		index := path.GetIndices()[0]
-		handle := imageList.images[index].GetHandle()
+		imageFile := imageList.images[index].GetImageFile()
 		sender.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
-			Id: handle.GetId(),
+			Id: imageFile.GetId(),
 		})
 	})
 	imageList.model, _ = gtk.ListStoreNew(PixbufGetType(), glib.TYPE_STRING)
@@ -114,6 +114,6 @@ func (s *ImageView) ZoomToFit() {
 	s.UpdateCurrentImage()
 }
 
-func (s *ImageView) GetCurrentHandle() *apitype.ImageFile {
+func (s *ImageView) GetCurrentImageFile() *apitype.ImageFile {
 	return s.currentImage.image
 }

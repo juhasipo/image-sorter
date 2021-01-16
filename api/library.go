@@ -5,7 +5,7 @@ import (
 )
 
 type ImagesQuery struct {
-	handles []*apitype.ImageFile
+	ImageFiles []*apitype.ImageFile
 	apitype.Command
 }
 
@@ -47,7 +47,7 @@ type Library interface {
 	RequestStopHashes()
 
 	GetImageFiles() []*apitype.ImageFileWithMetaData
-	AddHandles(imageList []*apitype.ImageFile)
+	AddImageFiles([]*apitype.ImageFile)
 	GetImageFileById(apitype.ImageId) *apitype.ImageFileWithMetaData
 
 	ShowAllImages()

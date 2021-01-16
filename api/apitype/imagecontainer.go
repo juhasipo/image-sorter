@@ -18,11 +18,11 @@ func (s *ImageContainer) String() string {
 	}
 }
 
-func (s *ImageContainer) GetHandle() *ImageFile {
+func (s *ImageContainer) GetImageFile() *ImageFile {
 	return s.imageFile
 }
 
-func (s *ImageContainer) GetImage() image.Image {
+func (s *ImageContainer) GetImageData() image.Image {
 	return s.imageData
 }
 

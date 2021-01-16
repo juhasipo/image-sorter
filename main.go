@@ -25,7 +25,7 @@ func main() {
 	db := database.NewDatabase()
 	defer db.Close()
 
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 	similarityIndex := database.NewSimilarityIndex(db)
 	categoryStore := database.NewCategoryStore(db)
 	imageCategoryStore := database.NewImageCategoryStore(db)

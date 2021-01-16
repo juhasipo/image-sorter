@@ -8,17 +8,17 @@ import (
 )
 
 var (
-	imageStoreImageHandleConverter *StubImageHandleConverter
-	isCategoryStore                *CategoryStore
-	isImageCategoryStore           *ImageCategoryStore
+	imageStoreImageFileConverter *StubImageFileConverter
+	isCategoryStore              *CategoryStore
+	isImageCategoryStore         *ImageCategoryStore
 )
 
 func initImageStoreTest() *ImageStore {
 	database := NewInMemoryDatabase()
-	imageStoreImageHandleConverter = &StubImageHandleConverter{}
+	imageStoreImageFileConverter = &StubImageFileConverter{}
 	isCategoryStore = NewCategoryStore(database)
 	isImageCategoryStore = NewImageCategoryStore(database)
-	return NewImageStore(database, imageStoreImageHandleConverter)
+	return NewImageStore(database, imageStoreImageFileConverter)
 }
 
 func TestImageStore_AddImage_GetImageById(t *testing.T) {
@@ -27,8 +27,8 @@ func TestImageStore_AddImage_GetImageById(t *testing.T) {
 	t.Run("Add image and get it by ID", func(t *testing.T) {
 		sut := initImageStoreTest()
 
-		image1, err := sut.AddImage(apitype.NewHandle("images", "image1"))
-		_, err = sut.AddImage(apitype.NewHandle("images", "image2"))
+		image1, err := sut.AddImage(apitype.NewImageFile("images", "image1"))
+		_, err = sut.AddImage(apitype.NewImageFile("images", "image2"))
 
 		a.Nil(err)
 
@@ -44,9 +44,9 @@ func TestImageStore_AddImage_GetImageById(t *testing.T) {
 	t.Run("Re-add same image not modified", func(t *testing.T) {
 		sut := initImageStoreTest()
 
-		image1, err := sut.AddImage(apitype.NewHandle("images", "image1"))
+		image1, err := sut.AddImage(apitype.NewImageFile("images", "image1"))
 		a.Nil(err)
-		_, err = sut.AddImage(apitype.NewHandle("images", "image1"))
+		_, err = sut.AddImage(apitype.NewImageFile("images", "image1"))
 		a.Nil(err)
 
 		images, err := sut.GetAllImages()
@@ -64,10 +64,10 @@ func TestImageStore_AddImage_GetImageById(t *testing.T) {
 	t.Run("Re-add same image modified", func(t *testing.T) {
 		sut := initImageStoreTest()
 
-		imageStoreImageHandleConverter.SetIncrementModTimeRequest(true)
-		image1, err := sut.AddImage(apitype.NewHandle("images", "image1"))
+		imageStoreImageFileConverter.SetIncrementModTimeRequest(true)
+		image1, err := sut.AddImage(apitype.NewImageFile("images", "image1"))
 		a.Nil(err)
-		_, err = sut.AddImage(apitype.NewHandle("images", "image1"))
+		_, err = sut.AddImage(apitype.NewImageFile("images", "image1"))
 		a.Nil(err)
 
 		images, err := sut.GetAllImages()
@@ -99,13 +99,13 @@ func TestImageStore_GetNextImagesInCategory_NoCategorySet(t *testing.T) {
 	t.Run("Next images without category", func(t *testing.T) {
 		sut := initImageStoreTest()
 		err := sut.AddImages([]*apitype.ImageFile{
-			apitype.NewHandle("images", "image0"),
-			apitype.NewHandle("images", "image1"),
-			apitype.NewHandle("images", "image2"),
-			apitype.NewHandle("images", "image3"),
-			apitype.NewHandle("images", "image4"),
-			apitype.NewHandle("images", "image5"),
-			apitype.NewHandle("images", "image6"),
+			apitype.NewImageFile("images", "image0"),
+			apitype.NewImageFile("images", "image1"),
+			apitype.NewImageFile("images", "image2"),
+			apitype.NewImageFile("images", "image3"),
+			apitype.NewImageFile("images", "image4"),
+			apitype.NewImageFile("images", "image5"),
+			apitype.NewImageFile("images", "image6"),
 		})
 
 		a.Nil(err)
@@ -178,16 +178,16 @@ func TestImageStore_GetNextImagesInCategory_CategorySet(t *testing.T) {
 	a := assert.New(t)
 	t.Run("Next images with category", func(t *testing.T) {
 		sut := initImageStoreTest()
-		image0, _ := sut.AddImage(apitype.NewHandle("images", "image0"))
-		image1, _ := sut.AddImage(apitype.NewHandle("images", "image1"))
-		image2, _ := sut.AddImage(apitype.NewHandle("images", "image2"))
-		image3, _ := sut.AddImage(apitype.NewHandle("images", "image3"))
-		image4, _ := sut.AddImage(apitype.NewHandle("images", "image4"))
-		image5, _ := sut.AddImage(apitype.NewHandle("images", "image5"))
-		image6, _ := sut.AddImage(apitype.NewHandle("images", "image6"))
-		image7, _ := sut.AddImage(apitype.NewHandle("images", "image7"))
-		image8, _ := sut.AddImage(apitype.NewHandle("images", "image8"))
-		_, _ = sut.AddImage(apitype.NewHandle("images", "image9"))
+		image0, _ := sut.AddImage(apitype.NewImageFile("images", "image0"))
+		image1, _ := sut.AddImage(apitype.NewImageFile("images", "image1"))
+		image2, _ := sut.AddImage(apitype.NewImageFile("images", "image2"))
+		image3, _ := sut.AddImage(apitype.NewImageFile("images", "image3"))
+		image4, _ := sut.AddImage(apitype.NewImageFile("images", "image4"))
+		image5, _ := sut.AddImage(apitype.NewImageFile("images", "image5"))
+		image6, _ := sut.AddImage(apitype.NewImageFile("images", "image6"))
+		image7, _ := sut.AddImage(apitype.NewImageFile("images", "image7"))
+		image8, _ := sut.AddImage(apitype.NewImageFile("images", "image8"))
+		_, _ = sut.AddImage(apitype.NewImageFile("images", "image9"))
 
 		category1, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "C"))
 		category2, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "D"))
@@ -285,13 +285,13 @@ func TestImageStore_GetPreviousImagesInCategory_NoCategorySet(t *testing.T) {
 	t.Run("Previous images without category", func(t *testing.T) {
 		sut := initImageStoreTest()
 		err := sut.AddImages([]*apitype.ImageFile{
-			apitype.NewHandle("images", "image0"),
-			apitype.NewHandle("images", "image1"),
-			apitype.NewHandle("images", "image2"),
-			apitype.NewHandle("images", "image3"),
-			apitype.NewHandle("images", "image4"),
-			apitype.NewHandle("images", "image5"),
-			apitype.NewHandle("images", "image6"),
+			apitype.NewImageFile("images", "image0"),
+			apitype.NewImageFile("images", "image1"),
+			apitype.NewImageFile("images", "image2"),
+			apitype.NewImageFile("images", "image3"),
+			apitype.NewImageFile("images", "image4"),
+			apitype.NewImageFile("images", "image5"),
+			apitype.NewImageFile("images", "image6"),
 		})
 
 		a.Nil(err)
@@ -374,16 +374,16 @@ func TestImageStore_GetPreviousImagesInCategory_CategorySet(t *testing.T) {
 	a := assert.New(t)
 	t.Run("Previous images with category", func(t *testing.T) {
 		sut := initImageStoreTest()
-		image0, _ := sut.AddImage(apitype.NewHandle("images", "image0"))
-		image1, _ := sut.AddImage(apitype.NewHandle("images", "image1"))
-		image2, _ := sut.AddImage(apitype.NewHandle("images", "image2"))
-		image3, _ := sut.AddImage(apitype.NewHandle("images", "image3"))
-		image4, _ := sut.AddImage(apitype.NewHandle("images", "image4"))
-		image5, _ := sut.AddImage(apitype.NewHandle("images", "image5"))
-		image6, _ := sut.AddImage(apitype.NewHandle("images", "image6"))
-		image7, _ := sut.AddImage(apitype.NewHandle("images", "image7"))
-		image8, _ := sut.AddImage(apitype.NewHandle("images", "image8"))
-		_, _ = sut.AddImage(apitype.NewHandle("images", "image9"))
+		image0, _ := sut.AddImage(apitype.NewImageFile("images", "image0"))
+		image1, _ := sut.AddImage(apitype.NewImageFile("images", "image1"))
+		image2, _ := sut.AddImage(apitype.NewImageFile("images", "image2"))
+		image3, _ := sut.AddImage(apitype.NewImageFile("images", "image3"))
+		image4, _ := sut.AddImage(apitype.NewImageFile("images", "image4"))
+		image5, _ := sut.AddImage(apitype.NewImageFile("images", "image5"))
+		image6, _ := sut.AddImage(apitype.NewImageFile("images", "image6"))
+		image7, _ := sut.AddImage(apitype.NewImageFile("images", "image7"))
+		image8, _ := sut.AddImage(apitype.NewImageFile("images", "image8"))
+		_, _ = sut.AddImage(apitype.NewImageFile("images", "image9"))
 
 		category1, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "C"))
 		category2, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "D"))
@@ -500,12 +500,12 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		sut := initImageStoreTest()
 
 		err := sut.AddImages([]*apitype.ImageFile{
-			apitype.NewHandle("images", "image1"),
-			apitype.NewHandle("images", "image2"),
-			apitype.NewHandle("images", "image3"),
-			apitype.NewHandle("images", "image4"),
-			apitype.NewHandle("images", "image5"),
-			apitype.NewHandle("images", "image6"),
+			apitype.NewImageFile("images", "image1"),
+			apitype.NewImageFile("images", "image2"),
+			apitype.NewImageFile("images", "image3"),
+			apitype.NewImageFile("images", "image4"),
+			apitype.NewImageFile("images", "image5"),
+			apitype.NewImageFile("images", "image6"),
 		})
 
 		a.Nil(err)
@@ -596,15 +596,15 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 
 	t.Run("In category", func(t *testing.T) {
 		sut := initImageStoreTest()
-		image1, _ := sut.AddImage(apitype.NewHandle("images", "image1"))
-		image2, _ := sut.AddImage(apitype.NewHandle("images", "image2"))
-		image3, _ := sut.AddImage(apitype.NewHandle("images", "image3"))
-		image4, _ := sut.AddImage(apitype.NewHandle("images", "image4"))
-		image5, _ := sut.AddImage(apitype.NewHandle("images", "image5"))
-		image6, _ := sut.AddImage(apitype.NewHandle("images", "image6"))
-		image7, _ := sut.AddImage(apitype.NewHandle("images", "image7"))
-		image8, _ := sut.AddImage(apitype.NewHandle("images", "image8"))
-		_, _ = sut.AddImage(apitype.NewHandle("images", "image9"))
+		image1, _ := sut.AddImage(apitype.NewImageFile("images", "image1"))
+		image2, _ := sut.AddImage(apitype.NewImageFile("images", "image2"))
+		image3, _ := sut.AddImage(apitype.NewImageFile("images", "image3"))
+		image4, _ := sut.AddImage(apitype.NewImageFile("images", "image4"))
+		image5, _ := sut.AddImage(apitype.NewImageFile("images", "image5"))
+		image6, _ := sut.AddImage(apitype.NewImageFile("images", "image6"))
+		image7, _ := sut.AddImage(apitype.NewImageFile("images", "image7"))
+		image8, _ := sut.AddImage(apitype.NewImageFile("images", "image8"))
+		_, _ = sut.AddImage(apitype.NewImageFile("images", "image9"))
 
 		category1, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "C"))
 		category2, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "D"))
@@ -718,18 +718,18 @@ func TestImageStore_FindByDirAndFile(t *testing.T) {
 	sut := initImageStoreTest()
 
 	err := sut.AddImages([]*apitype.ImageFile{
-		apitype.NewHandle("images", "image1"),
-		apitype.NewHandle("images", "image2"),
-		apitype.NewHandle("images", "image3"),
-		apitype.NewHandle("images", "image4"),
-		apitype.NewHandle("images", "image5"),
-		apitype.NewHandle("images", "image6"),
+		apitype.NewImageFile("images", "image1"),
+		apitype.NewImageFile("images", "image2"),
+		apitype.NewImageFile("images", "image3"),
+		apitype.NewImageFile("images", "image4"),
+		apitype.NewImageFile("images", "image5"),
+		apitype.NewImageFile("images", "image6"),
 	})
 
 	a.Nil(err)
 
 	t.Run("Image found", func(t *testing.T) {
-		image, err := sut.FindByDirAndFile(apitype.NewHandle("images", "image3"))
+		image, err := sut.FindByDirAndFile(apitype.NewImageFile("images", "image3"))
 
 		a.Nil(err)
 
@@ -739,7 +739,7 @@ func TestImageStore_FindByDirAndFile(t *testing.T) {
 	})
 
 	t.Run("Image not found", func(t *testing.T) {
-		image, err := sut.FindByDirAndFile(apitype.NewHandle("images", "foo"))
+		image, err := sut.FindByDirAndFile(apitype.NewImageFile("images", "foo"))
 
 		a.Nil(err)
 
@@ -753,18 +753,18 @@ func TestImageStore_Exists(t *testing.T) {
 	sut := initImageStoreTest()
 
 	err := sut.AddImages([]*apitype.ImageFile{
-		apitype.NewHandle("images", "image1"),
-		apitype.NewHandle("images", "image2"),
-		apitype.NewHandle("images", "image3"),
-		apitype.NewHandle("images", "image4"),
-		apitype.NewHandle("images", "image5"),
-		apitype.NewHandle("images", "image6"),
+		apitype.NewImageFile("images", "image1"),
+		apitype.NewImageFile("images", "image2"),
+		apitype.NewImageFile("images", "image3"),
+		apitype.NewImageFile("images", "image4"),
+		apitype.NewImageFile("images", "image5"),
+		apitype.NewImageFile("images", "image6"),
 	})
 
 	a.Nil(err)
 
 	t.Run("Image found", func(t *testing.T) {
-		imageExists, err := sut.Exists(apitype.NewHandle("images", "image3"))
+		imageExists, err := sut.Exists(apitype.NewImageFile("images", "image3"))
 
 		a.Nil(err)
 
@@ -772,7 +772,7 @@ func TestImageStore_Exists(t *testing.T) {
 	})
 
 	t.Run("Image not found", func(t *testing.T) {
-		imageExists, err := sut.Exists(apitype.NewHandle("images", "foo"))
+		imageExists, err := sut.Exists(apitype.NewImageFile("images", "foo"))
 
 		a.Nil(err)
 
@@ -786,8 +786,8 @@ func TestImageStore_FindModifiedId(t *testing.T) {
 	t.Run("Modified", func(t *testing.T) {
 		sut := initImageStoreTest()
 
-		imageStoreImageHandleConverter.SetIncrementModTimeRequest(true)
-		image1, err := sut.AddImage(apitype.NewHandle("images", "image1"))
+		imageStoreImageFileConverter.SetIncrementModTimeRequest(true)
+		image1, err := sut.AddImage(apitype.NewImageFile("images", "image1"))
 
 		a.Nil(err)
 
@@ -800,7 +800,7 @@ func TestImageStore_FindModifiedId(t *testing.T) {
 	t.Run("Not modified", func(t *testing.T) {
 		sut := initImageStoreTest()
 
-		image1, err := sut.AddImage(apitype.NewHandle("images", "image1"))
+		image1, err := sut.AddImage(apitype.NewImageFile("images", "image1"))
 
 		a.Nil(err)
 
@@ -817,12 +817,12 @@ func TestImageStore_RemoveImage(t *testing.T) {
 	sut := initImageStoreTest()
 
 	err := sut.AddImages([]*apitype.ImageFile{
-		apitype.NewHandle("images", "image1"),
-		apitype.NewHandle("images", "image2"),
-		apitype.NewHandle("images", "image3"),
-		apitype.NewHandle("images", "image4"),
-		apitype.NewHandle("images", "image5"),
-		apitype.NewHandle("images", "image6"),
+		apitype.NewImageFile("images", "image1"),
+		apitype.NewImageFile("images", "image2"),
+		apitype.NewImageFile("images", "image3"),
+		apitype.NewImageFile("images", "image4"),
+		apitype.NewImageFile("images", "image5"),
+		apitype.NewImageFile("images", "image6"),
 	})
 
 	a.Nil(err)

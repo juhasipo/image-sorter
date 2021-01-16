@@ -71,7 +71,7 @@ func (s *TopActionView) SetNoDistractionMode(value bool) {
 	s.prevButton.SetVisible(value)
 }
 
-func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.ImageFile) *api.CategorizeCommand {
+func (s *TopActionView) NewCommandForShortcut(key uint, imageFile *apitype.ImageFile) *api.CategorizeCommand {
 	for _, button := range s.categoryButtons {
 		entry := button.entry
 		keyUpper := gdk.KeyvalToUpper(key)
@@ -79,7 +79,7 @@ func (s *TopActionView) NewCommandForShortcut(key uint, handle *apitype.ImageFil
 			keyName := common.KeyvalName(key)
 			logger.Debug.Printf("Key pressed: '%s': '%s'", keyName, entry.GetName())
 			return &api.CategorizeCommand{
-				ImageId:         handle.GetId(),
+				ImageId:         imageFile.GetId(),
 				CategoryId:      button.entry.GetId(),
 				Operation:       button.operation.NextOperation(),
 				StayOnSameImage: false,
@@ -225,11 +225,11 @@ func (s *TopActionView) UpdateCategories(categories *api.UpdateCategoriesCommand
 		logger.Trace.Printf("Create categorization handler for entry '%s'", entry)
 
 		s.addCategoryButton(entry, func(entry *apitype.Category, operation apitype.Operation, stayOnSameImage bool, forceToCategory bool) {
-			currentImageHandle := s.imageView.GetCurrentHandle()
-			logger.Debug.Printf("Categorize handle '%s' to category '%s", currentImageHandle, entry)
+			currentImageFile := s.imageView.GetCurrentImageFile()
+			logger.Debug.Printf("Categorize image '%s' to category '%s", currentImageFile, entry)
 
 			command := &api.CategorizeCommand{
-				ImageId:         currentImageHandle.GetId(),
+				ImageId:         currentImageFile.GetId(),
 				CategoryId:      entry.GetId(),
 				Operation:       operation,
 				StayOnSameImage: stayOnSameImage,

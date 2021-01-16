@@ -41,20 +41,20 @@ func NewSimilarImagesView(builder *gtk.Builder, sender api.Sender, imageCache ap
 	return similarImagesView
 }
 
-func (s *SimilarImagesView) SetImages(handles []*apitype.ImageContainer) {
-	s.list.addImagesToStore(handles)
+func (s *SimilarImagesView) SetImages(imageContainers []*apitype.ImageContainer) {
+	s.list.addImagesToStore(imageContainers)
 	s.view.SetVisible(true)
 	s.view.ShowAll()
 }
 
-func (s *SimilarImagesView) createSimilarImage(handle *apitype.ImageContainer, sender api.Sender) *gtk.EventBox {
+func (s *SimilarImagesView) createSimilarImage(imageContainer *apitype.ImageContainer, sender api.Sender) *gtk.EventBox {
 	eventBox, _ := gtk.EventBoxNew()
-	thumbnail := handle.GetImage()
+	thumbnail := imageContainer.GetImageData()
 	imageWidget, _ := gtk.ImageNewFromPixbuf(asPixbuf(thumbnail))
 	eventBox.Add(imageWidget)
 	eventBox.Connect("button-press-event", func() {
 		sender.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
-			Id: handle.GetHandle().GetId(),
+			Id: imageContainer.GetImageFile().GetId(),
 		})
 	})
 	return eventBox

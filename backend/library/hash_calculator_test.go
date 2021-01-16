@@ -15,7 +15,7 @@ func TestHashCalculator_GenerateHashes(t *testing.T) {
 
 	memoryDatabase := database.NewInMemoryDatabase()
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
-	imageStore := database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 
 	imageLoader := imageloader.NewImageLoader(imageStore)
 
@@ -31,9 +31,9 @@ func TestHashCalculator_GenerateHashes(t *testing.T) {
 
 	t.Run("Images in store", func(t *testing.T) {
 		sut := NewHashCalculator(similarityIndex, imageLoader, 1)
-		i1, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-		i2, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-		i3, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+		i1, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+		i2, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
+		i3, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 		hashes, err := sut.GenerateHashes([]*apitype.ImageFileWithMetaData{i1, i2, i3}, func(current int, total int) {})
 
@@ -57,9 +57,9 @@ func TestHashCalculator_StopHashes(t *testing.T) {
 	imageLoader := imageloader.NewImageLoader()
 
 	sut := NewHashCalculator(similarityIndex, imageLoader, 1)
-	i1, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	i2, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-	i3, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	i1, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	i2, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
+	i3, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	hashes, err := sut.GenerateHashes([]*apitype.ImageFile{i1, i2, i3}, func(current int, total int) {
 		go sut.StopHashes()
@@ -76,7 +76,7 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 
 	memoryDatabase := database.NewInMemoryDatabase()
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
-	imageStore := database.NewImageStore(memoryDatabase, &StubImageHandleConverter{})
+	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 
 	imageLoader := imageloader.NewImageLoader(imageStore)
 
@@ -100,9 +100,9 @@ func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 
 	t.Run("Images in store", func(t *testing.T) {
 		sut := NewHashCalculator(similarityIndex, imageLoader, 1)
-		i1, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-		i2, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "no-exif.jpg"))
-		i3, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+		i1, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+		i2, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "no-exif.jpg"))
+		i3, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 		hashes, err := sut.GenerateHashes([]*apitype.ImageFileWithMetaData{i1, i2, i3}, func(current int, total int) {})
 

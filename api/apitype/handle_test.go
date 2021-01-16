@@ -6,68 +6,68 @@ import (
 	"testing"
 )
 
-func TestGetEmptyHandle(t *testing.T) {
+func TestGetEmptyImageFile(t *testing.T) {
 	a := assert.New(t)
 
-	handle := GetEmptyHandle()
+	imageFile := GetEmptyImageFile()
 
-	a.False(handle.IsValid())
+	a.False(imageFile.IsValid())
 }
 
-func TestHandle_String(t *testing.T) {
+func TestImageFile_String(t *testing.T) {
 	a := assert.New(t)
 
-	var nilHandle *ImageFile
-	a.Equal("ImageFile<nil>", nilHandle.String())
-	a.Equal("ImageFile<invalid>", NewHandle("", "").String())
-	a.Equal("ImageFile{file.jpeg}", NewHandleWithId(2, "/some/dir", "file.jpeg").String())
+	var nilImageFile *ImageFile
+	a.Equal("ImageFile<nil>", nilImageFile.String())
+	a.Equal("ImageFile<invalid>", NewImageFile("", "").String())
+	a.Equal("ImageFile{file.jpeg}", NewImageFileWithId(2, "/some/dir", "file.jpeg").String())
 }
 
-func TestValidHandle(t *testing.T) {
+func TestValidImageFile(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(1, "some/dir", "file.jpeg")
+	imageFile := NewImageFileWithId(1, "some/dir", "file.jpeg")
 
 	t.Run("Validity", func(t *testing.T) {
-		a.True(handle.IsValid())
+		a.True(imageFile.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(ImageId(1), handle.GetId())
-		a.Equal("file.jpeg", handle.GetFile())
-		a.Equal("some/dir", handle.GetDir())
-		a.Equal(filepath.Join("some", "dir", "file.jpeg"), handle.GetPath())
+		a.Equal(ImageId(1), imageFile.GetId())
+		a.Equal("file.jpeg", imageFile.GetFile())
+		a.Equal("some/dir", imageFile.GetDir())
+		a.Equal(filepath.Join("some", "dir", "file.jpeg"), imageFile.GetPath())
 	})
 }
 
-func TestInvalidHandle(t *testing.T) {
+func TestInvalidImageFile(t *testing.T) {
 	a := assert.New(t)
 
-	handle := NewHandleWithId(NoImage, "", "")
+	imageFile := NewImageFileWithId(NoImage, "", "")
 
 	t.Run("Validity", func(t *testing.T) {
-		a.False(handle.IsValid())
+		a.False(imageFile.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(NoImage, handle.GetId())
-		a.Equal("", handle.GetFile())
-		a.Equal("", handle.GetDir())
-		a.Equal("", handle.GetPath())
+		a.Equal(NoImage, imageFile.GetId())
+		a.Equal("", imageFile.GetFile())
+		a.Equal("", imageFile.GetDir())
+		a.Equal("", imageFile.GetPath())
 	})
 }
 
-func TestNilHandle(t *testing.T) {
+func TestNilImageFile(t *testing.T) {
 	a := assert.New(t)
 
-	var handle *ImageFile
+	var imageFile *ImageFile
 
 	t.Run("Validity", func(t *testing.T) {
-		a.False(handle.IsValid())
+		a.False(imageFile.IsValid())
 	})
 	t.Run("Properties", func(t *testing.T) {
-		a.Equal(NoImage, handle.GetId())
-		a.Equal("", handle.GetFile())
-		a.Equal("", handle.GetDir())
-		a.Equal("", handle.GetPath())
+		a.Equal(NoImage, imageFile.GetId())
+		a.Equal("", imageFile.GetFile())
+		a.Equal("", imageFile.GetDir())
+		a.Equal("", imageFile.GetPath())
 	})
 }
 

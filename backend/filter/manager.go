@@ -26,11 +26,11 @@ func NewFilterManager() *Manager {
 	}
 }
 
-func (s *Manager) AddFilterForImage(handle *apitype.ImageFile, id string) {
+func (s *Manager) AddFilterForImage(imageFile *apitype.ImageFile, id string) {
 	if filter, ok := s.filters[id]; !ok {
 		logger.Error.Printf("Could not find filter '%s'", id)
-	} else if filterList, ok := s.filtersToApply[handle.GetId()]; ok {
-		s.filtersToApply[handle.GetId()] = append(filterList, filter)
+	} else if filterList, ok := s.filtersToApply[imageFile.GetId()]; ok {
+		s.filtersToApply[imageFile.GetId()] = append(filterList, filter)
 	}
 }
 
@@ -39,7 +39,7 @@ func (s *Manager) AddFilter(filter *Filter) {
 }
 
 func (s *Manager) GetFilters(imageId apitype.ImageId, options *api.PersistCategorizationCommand) []*Filter {
-	filtersToApply := s.getFiltersForHandle(imageId)
+	filtersToApply := s.getFiltersForImageFile(imageId)
 
 	if options.FixOrientation {
 		filtersToApply = append(filtersToApply, &Filter{
@@ -50,7 +50,7 @@ func (s *Manager) GetFilters(imageId apitype.ImageId, options *api.PersistCatego
 	return filtersToApply
 }
 
-func (s *Manager) getFiltersForHandle(imageId apitype.ImageId) []*Filter {
+func (s *Manager) getFiltersForImageFile(imageId apitype.ImageId) []*Filter {
 	var filtersToApply []*Filter
 	if f, ok := s.filtersToApply[imageId]; ok {
 		filtersToApply = make([]*Filter, len(f)+1)

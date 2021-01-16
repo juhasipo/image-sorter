@@ -157,8 +157,8 @@ func GetTime(decodedExif *exif.Exif, tagName exif.FieldName) (time.Time, error) 
 	}
 }
 
-func LoadExifData(handle *ImageFile) (*ExifData, error) {
-	fileForExif, err := os.Open(handle.GetPath())
+func LoadExifData(imageFile *ImageFile) (*ExifData, error) {
+	fileForExif, err := os.Open(imageFile.GetPath())
 	if fileForExif != nil && err == nil {
 		defer fileForExif.Close()
 

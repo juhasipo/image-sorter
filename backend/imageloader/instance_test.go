@@ -11,10 +11,10 @@ func TestInstance_GetFull(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
-	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	loader := NewImageLoader(imageStore)
 
@@ -76,10 +76,10 @@ func TestInstance_GetScaled(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
-	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	loader := NewImageLoader(imageStore)
 
@@ -170,10 +170,10 @@ func TestInstance_GetThumbnail(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
-	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	vertical, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	vertical, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	loader := NewImageLoader(imageStore)
 
@@ -236,10 +236,10 @@ func TestInstance_Purge(t *testing.T) {
 	a := assert.New(t)
 
 	db := database.NewInMemoryDatabase()
-	imageStore := database.NewImageStore(db, &database.FileSystemImageHandleConverter{})
+	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
-	horizontal, _ := imageStore.AddImage(apitype.NewHandle(testAssetsDir, "horizontal.jpg"))
-	_, _ = imageStore.AddImage(apitype.NewHandle(testAssetsDir, "vertical.jpg"))
+	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
+	_, _ = imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "vertical.jpg"))
 
 	loader := NewImageLoader(imageStore)
 

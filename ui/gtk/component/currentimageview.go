@@ -153,9 +153,9 @@ const showExifData = false
 
 func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContainer) {
 	s.imageChanged = true
-	imageFile := imageContainer.GetHandle()
+	imageFile := imageContainer.GetImageFile()
 	metaData := imageContainer.GetMetaData()
-	imageData := imageContainer.GetImage()
+	imageData := imageContainer.GetImageData()
 	s.imageInstance = imageData
 
 	if imageData != nil {

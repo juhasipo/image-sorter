@@ -141,9 +141,9 @@ func (s *Caster) startServer(port int) {
 func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Request) {
 	s.reserveImage()
 	defer s.releaseImage()
-	imageHandle := s.currentImage
-	logger.Debug.Printf("Sending image '%d' to Chromecast", imageHandle)
-	img, err := s.imageCache.GetScaled(imageHandle, apitype.SizeOf(canvasWidth, canvasHeight))
+	imageId := s.currentImage
+	logger.Debug.Printf("Sending image '%d' to Chromecast", imageId)
+	img, err := s.imageCache.GetScaled(imageId, apitype.SizeOf(canvasWidth, canvasHeight))
 
 	if img != nil && err == nil {
 		writeImageToResponse(responseWriter, img, s.showBackground)
