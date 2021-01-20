@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os/user"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/backend/caster"
 	"vincit.fi/image-sorter/backend/category"
@@ -22,17 +23,31 @@ func main() {
 
 	logger.Initialize(logger.StringToLogLevel(params.LogLevel()))
 
-	db := database.NewDatabase()
-	defer db.Close()
+	configDb := database.NewDatabase()
+	if currentUser, err := user.Current(); err != nil {
+		logger.Error.Fatal("Cannot load user")
+	} else {
+		if err := configDb.InitializeForDirectory(currentUser.HomeDir, "image-sorter.db"); err != nil {
+			logger.Error.Fatal("Error opening database", err)
+		} else {
+			_ = configDb.Migrate()
+		}
+	}
+	defaultCategoryStore := database.NewCategoryStore(configDb)
 
-	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
-	similarityIndex := database.NewSimilarityIndex(db)
-	categoryStore := database.NewCategoryStore(db)
-	imageCategoryStore := database.NewImageCategoryStore(db)
+	imageDb := database.NewDatabase()
+	defer imageDb.Close()
+
+	imageStore := database.NewImageStore(imageDb, &database.FileSystemImageFileConverter{})
+	similarityIndex := database.NewSimilarityIndex(imageDb)
+	categoryStore := database.NewCategoryStore(imageDb)
+	imageCategoryStore := database.NewImageCategoryStore(imageDb)
 
 	broker := event.InitBus(EventBusQueueSize)
+	devNull := event.InitDevNullBus()
 
-	categoryManager := category.New(params, broker, categoryStore)
+	categoryManager := category.NewCategoryManager(params, broker, categoryStore)
+	defaultCategoryManager := category.NewCategoryManager(params, devNull, defaultCategoryStore)
 	imageLoader := imageloader.NewImageLoader(imageStore)
 	imageCache := imageloader.NewImageCache(imageLoader)
 	imageLibrary := library.NewLibrary(broker, imageCache, imageLoader, similarityIndex, imageStore)
@@ -52,11 +67,15 @@ func main() {
 	broker.Subscribe(api.DirectoryChanged, func(directory string) {
 		logger.Info.Printf("Directory changed to '%s'", directory)
 
-		if err := db.InitializeForDirectory(directory, "image-sorter.db"); err != nil {
+		if err := imageDb.InitializeForDirectory(directory, "image-sorter.db"); err != nil {
 			logger.Error.Fatal("Error opening database", err)
 		} else {
-			if tableExist := db.Migrate(); tableExist == database.TableNotExist {
-				categoryManager.InitializeFromDirectory([]string{}, directory)
+			if tableExist := imageDb.Migrate(); tableExist == database.TableNotExist {
+				if defaultCategories, err := defaultCategoryStore.GetCategories(); err != nil {
+					logger.Error.Print("Error while trying to load default categories ", err)
+				} else {
+					categoryManager.InitializeFromDirectory(params.Categories(), defaultCategories)
+				}
 			}
 			imageLibrary.InitializeFromDirectory(directory)
 
@@ -113,7 +132,7 @@ func main() {
 
 	// UI -> Category
 	broker.Subscribe(api.CategoriesSave, categoryManager.Save)
-	broker.Subscribe(api.CategoriesSaveDefault, categoryManager.SaveDefault)
+	broker.Subscribe(api.CategoriesSaveDefault, defaultCategoryManager.Save)
 
 	// Category -> UI
 	broker.ConnectToGui(api.CategoriesUpdated, gui.UpdateCategories)

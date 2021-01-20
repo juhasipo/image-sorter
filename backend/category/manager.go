@@ -1,19 +1,11 @@
 package category
 
 import (
-	"bufio"
-	"fmt"
-	"io"
-	"os"
-	"os/user"
-	"path/filepath"
 	"strings"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
-	"vincit.fi/image-sorter/backend/util"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -41,7 +33,7 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func New(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) api.CategoryManager {
+func NewCategoryManager(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) api.CategoryManager {
 	return newManager(params, sender, categoryStore)
 }
 
@@ -55,15 +47,14 @@ func newManager(params *common.Params, sender api.Sender, categoryStore *databas
 	return &manager
 }
 
-func (s *Manager) InitializeFromDirectory(defaultCategories []string, rootDir string) {
+func (s *Manager) InitializeFromDirectory(cmdLineCategories []string, dbCategories []*apitype.Category) {
 	var loadedCategories []*apitype.Category
-	s.rootDir = filepath.Join(rootDir, constants.ImageSorterDir)
 
-	if len(defaultCategories) > 0 && defaultCategories[0] != "" {
+	if len(cmdLineCategories) > 0 && cmdLineCategories[0] != "" {
 		logger.Info.Printf("Reading from command line parameters")
-		loadedCategories = fromCategoriesStrings(defaultCategories)
+		loadedCategories = fromCategoriesStrings(cmdLineCategories)
 	} else {
-		loadedCategories = s.loadCategoriesFromDefaultLocations()
+		loadedCategories = dbCategories
 	}
 
 	for i, category := range loadedCategories {
@@ -99,24 +90,6 @@ func (s *Manager) Save(command *api.SaveCategoriesCommand) {
 		&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
 	)
 }
-func (s *Manager) SaveDefault(command *api.SaveCategoriesCommand) {
-	s.resetCategories(command.Categories)
-
-	if currentUser, err := user.Current(); err != nil {
-		s.sender.SendError("Could not find current user", err)
-	} else {
-		categoryFile := filepath.Join(currentUser.HomeDir, constants.ImageSorterDir)
-
-		if err := s.saveCategoriesToFile(categoryFile, constants.CategoriesFileName, command.Categories); err != nil {
-			s.sender.SendError("Could not save categories", err)
-		} else {
-			s.sender.SendCommandToTopic(
-				api.CategoriesUpdated,
-				&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
-			)
-		}
-	}
-}
 
 func (s *Manager) resetCategories(categories []*apitype.Category) {
 	if err := s.categoryStore.ResetCategories(categories); err != nil {
@@ -132,31 +105,6 @@ func (s *Manager) GetCategoryById(query *api.CategoryQuery) *apitype.Category {
 	return s.categoryStore.GetCategoryById(query.Id)
 }
 
-func (s *Manager) saveCategoriesToFile(fileDir string, fileName string, categories []*apitype.Category) (err error) {
-	if _, err := os.Stat(fileDir); os.IsNotExist(err) {
-		return os.Mkdir(fileDir, 0666)
-	}
-
-	filePath := filepath.Join(fileDir, fileName)
-
-	logger.Info.Printf("Saving categories to file '%s'", filePath)
-	if f, err := os.Create(filePath); err != nil {
-		s.sender.SendError("Can't write to file", err)
-	} else {
-		defer func() {
-			err = f.Close()
-		}()
-
-		w := bufio.NewWriter(f)
-		if err = writeCategoriesToBuffer(w, categories); err != nil {
-			return err
-		} else if err := f.Close(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func fromCategoriesStrings(categories []string) []*apitype.Category {
 	var categoryEntries []*apitype.Category
 	for _, categoryName := range categories {
@@ -170,77 +118,4 @@ func fromCategoriesStrings(categories []string) []*apitype.Category {
 		logger.Trace.Printf(" - %s", entry.Name())
 	}
 	return categoryEntries
-}
-
-func (s *Manager) loadCategoriesFromDefaultLocations() []*apitype.Category {
-	if currentUser, err := user.Current(); err == nil {
-		filePaths := []string{
-			filepath.Join(currentUser.HomeDir, constants.ImageSorterDir, constants.CategoriesFileName),
-		}
-
-		return s.loadCategoriesFromFirstExistingLocation(filePaths)
-	} else {
-		s.sender.SendError("Could not find current user", err)
-		return []*apitype.Category{}
-	}
-}
-
-func (s *Manager) loadCategoriesFromFirstExistingLocation(filePaths []string) []*apitype.Category {
-	filePath := util.GetFirstExistingFilePath(filePaths)
-
-	if filePath == "" {
-		logger.Warn.Printf("No category files found: %s", filePaths)
-		return []*apitype.Category{}
-	}
-
-	return s.loadCategoriesFromFile(filePath)
-}
-
-func (s *Manager) loadCategoriesFromFile(filePath string) []*apitype.Category {
-	logger.Info.Printf("Reading categories from file '%s'", filePath)
-
-	if f, err := os.OpenFile(filePath, os.O_RDONLY, 0666); err == nil {
-		defer func() {
-			_ = f.Close()
-		}()
-
-		return readCategoriesFromReader(f)
-	} else {
-		s.sender.SendError(fmt.Sprintf("Could not open category file %s ", filePath), err)
-		return []*apitype.Category{}
-	}
-}
-
-func writeCategoriesToBuffer(w *bufio.Writer, categories []*apitype.Category) error {
-	if _, err := w.WriteString("#version:1\n"); err != nil {
-		return err
-	}
-	for _, category := range categories {
-		if _, err := w.WriteString(fmt.Sprintf("%s\n", category.Serialize())); err != nil {
-			return err
-		}
-	}
-	return w.Flush()
-}
-
-func readCategoriesFromReader(f io.Reader) []*apitype.Category {
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if lines != nil {
-		return fromCategoriesStrings(lines[1:])
-	} else {
-		return []*apitype.Category{}
-	}
-}
-
-func toCategoryIds(categories []*apitype.Category) []apitype.CategoryId {
-	var categoryIds []apitype.CategoryId
-	for _, category := range categories {
-		categoryIds = append(categoryIds, category.Id())
-	}
-	return categoryIds
 }

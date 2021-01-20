@@ -22,7 +22,17 @@ func InitBus(queueSize int) *Broker {
 	}
 }
 
+func InitDevNullBus() *Broker {
+	return &Broker{
+		bus: nil,
+	}
+}
+
 func (s *Broker) Subscribe(topic api.Topic, fn interface{}) {
+	if s.bus == nil {
+		return
+	}
+
 	err := s.bus.Subscribe(string(topic), fn)
 	if err != nil {
 		logger.Error.Panic("Could not subscribe")
@@ -32,6 +42,10 @@ func (s *Broker) Subscribe(topic api.Topic, fn interface{}) {
 type GuiCallback func(data ...interface{})
 
 func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
+	if s.bus == nil {
+		return
+	}
+
 	cb := func(params ...interface{}) {
 		sendFn := func() {
 			args := make([]reflect.Value, 0, len(params))
@@ -53,16 +67,28 @@ func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
 }
 
 func (s *Broker) SendToTopic(topic api.Topic) {
+	if s.bus == nil {
+		return
+	}
+
 	logger.Trace.Printf("Sending to '%s'", topic)
 	s.bus.Publish(string(topic))
 }
 
 func (s *Broker) SendCommandToTopic(topic api.Topic, command apitype.Command) {
+	if s.bus == nil {
+		return
+	}
+
 	logger.Trace.Printf("Sending command to '%s'", topic)
 	s.bus.Publish(string(topic), command)
 }
 
 func (s *Broker) SendError(message string, err error) {
+	if s.bus == nil {
+		return
+	}
+
 	formattedMessage := ""
 	if err != nil {
 		formattedMessage = fmt.Sprintf("%s\n%s", message, err.Error())

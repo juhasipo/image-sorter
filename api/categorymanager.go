@@ -11,11 +11,10 @@ type SaveCategoriesCommand struct {
 }
 
 type CategoryManager interface {
-	InitializeFromDirectory(categories []string, rootDir string)
+	InitializeFromDirectory(cmdLineCategories []string, dbCategories []*apitype.Category)
 	GetCategories() []*apitype.Category
 	RequestCategories()
 	Save(*SaveCategoriesCommand)
-	SaveDefault(*SaveCategoriesCommand)
 	Close()
 	GetCategoryById(*CategoryQuery) *apitype.Category
 }
