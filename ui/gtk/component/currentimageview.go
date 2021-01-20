@@ -151,7 +151,7 @@ func (s *CurrentImageView) UpdateCurrentImage() {
 
 const showExifData = false
 
-func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageContainer) {
+func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageFileAndData) {
 	s.imageChanged = true
 	imageFile := imageContainer.ImageFile()
 	metaData := imageContainer.MetaData()

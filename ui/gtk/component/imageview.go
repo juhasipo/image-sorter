@@ -80,15 +80,15 @@ func (s *ImageView) UpdateCurrentImage() {
 	s.currentImage.UpdateCurrentImage()
 }
 
-func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageContainer) {
+func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageFileAndData) {
 	s.currentImage.SetCurrentImage(imageContainer)
 }
 
-func (s *ImageView) AddImagesToNextStore(images []*apitype.ImageContainer) {
+func (s *ImageView) AddImagesToNextStore(images []*apitype.ImageFileAndData) {
 	s.nextImages.addImagesToStore(images)
 }
 
-func (s *ImageView) AddImagesToPrevStore(images []*apitype.ImageContainer) {
+func (s *ImageView) AddImagesToPrevStore(images []*apitype.ImageFileAndData) {
 	s.prevImages.addImagesToStore(images)
 }
 

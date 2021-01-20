@@ -41,13 +41,13 @@ func NewSimilarImagesView(builder *gtk.Builder, sender api.Sender, imageCache ap
 	return similarImagesView
 }
 
-func (s *SimilarImagesView) SetImages(imageContainers []*apitype.ImageContainer) {
+func (s *SimilarImagesView) SetImages(imageContainers []*apitype.ImageFileAndData) {
 	s.list.addImagesToStore(imageContainers)
 	s.view.SetVisible(true)
 	s.view.ShowAll()
 }
 
-func (s *SimilarImagesView) createSimilarImage(imageContainer *apitype.ImageContainer, sender api.Sender) *gtk.EventBox {
+func (s *SimilarImagesView) createSimilarImage(imageContainer *apitype.ImageFileAndData, sender api.Sender) *gtk.EventBox {
 	eventBox, _ := gtk.EventBoxNew()
 	thumbnail := imageContainer.ImageData()
 	imageWidget, _ := gtk.ImageNewFromPixbuf(asPixbuf(thumbnail))

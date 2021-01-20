@@ -79,7 +79,7 @@ func (s *FileSystemImageFileConverter) GetImageFileStats(imageFile *apitype.Imag
 
 func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*Image, map[string]string, error) {
 	exifLoadStart := time.Now()
-	exifData, err := apitype.LoadExifData(imageFile)
+	exifData, err := util.LoadExifData(imageFile)
 	if err != nil {
 		logger.Warn.Printf("Exif data not properly loaded for '%d'", imageFile.Id())
 		return nil, nil, err

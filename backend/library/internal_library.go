@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	emptyImageFiles = []*apitype.ImageContainer{}
+	emptyImageFiles = []*apitype.ImageFileAndData{}
 )
 
 const maxSimilarImages = 20
@@ -212,7 +212,7 @@ func (s *internalManager) GetImageFileById(imageId apitype.ImageId) *apitype.Ima
 
 // Private API
 
-func (s *internalManager) getCurrentImage() (*apitype.ImageContainer, int, error) {
+func (s *internalManager) getCurrentImage() (*apitype.ImageFileAndData, int, error) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
 		imageFile := images[s.index]
@@ -240,7 +240,7 @@ func (s *internalManager) getImageListSize() int {
 	return s.imageListSize
 }
 
-func (s *internalManager) getNextImages() ([]*apitype.ImageContainer, error) {
+func (s *internalManager) getNextImages() ([]*apitype.ImageFileAndData, error) {
 	if images, err := s.imageStore.GetNextImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyImageFiles, err
 	} else {
@@ -248,7 +248,7 @@ func (s *internalManager) getNextImages() ([]*apitype.ImageContainer, error) {
 	}
 }
 
-func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
+func (s *internalManager) getPrevImages() ([]*apitype.ImageFileAndData, error) {
 	if slice, err := s.imageStore.GetPreviousImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyImageFiles, err
 	} else if images, err := s.toImageContainers(slice); err != nil {
@@ -258,8 +258,8 @@ func (s *internalManager) getPrevImages() ([]*apitype.ImageContainer, error) {
 	}
 }
 
-func (s *internalManager) toImageContainers(nextImageFiles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageContainer, error) {
-	images := make([]*apitype.ImageContainer, len(nextImageFiles))
+func (s *internalManager) toImageContainers(nextImageFiles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageFileAndData, error) {
+	images := make([]*apitype.ImageFileAndData, len(nextImageFiles))
 	for i, imageFile := range nextImageFiles {
 		if thumbnail, err := s.imageCache.GetThumbnail(imageFile.Id()); err != nil {
 			logger.Error.Print("Error while loading thumbnail", err)
@@ -288,10 +288,10 @@ func (s *internalManager) getThreadCount() int {
 	return cpuCores
 }
 
-func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageContainer, bool, error) {
+func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFileAndData, bool, error) {
 	similarImages := s.similarityIndex.GetSimilarImages(imageId)
 	if len(similarImages) > 0 {
-		containers := make([]*apitype.ImageContainer, len(similarImages))
+		containers := make([]*apitype.ImageFileAndData, len(similarImages))
 		i := 0
 		for _, similar := range similarImages {
 			if thumbnail, err := s.imageCache.GetThumbnail(similar.Id()); err != nil {
@@ -305,7 +305,7 @@ func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.
 
 		return containers, true, nil
 	} else {
-		return []*apitype.ImageContainer{}, false, nil
+		return []*apitype.ImageFileAndData{}, false, nil
 	}
 }
 

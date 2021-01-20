@@ -8,6 +8,7 @@ import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/common/util"
 )
 
 var options = &jpeg.DecoderOptions{}
@@ -74,5 +75,5 @@ func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apity
 
 func (s *LibJPEGImageLoader) LoadExifData(imageId apitype.ImageId) (*apitype.ExifData, error) {
 	imageFile := s.imageStore.GetImageById(imageId)
-	return apitype.LoadExifData(&imageFile.ImageFile)
+	return util.LoadExifData(&imageFile.ImageFile)
 }

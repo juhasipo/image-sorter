@@ -16,15 +16,15 @@ func TestImageContainer_String(t *testing.T) {
 			ImageFile:     *imageFile,
 			ImageMetaData: *imageMetaData,
 		}, nil)
-		a.Equal("ImageContainer{ImageFile{bar}}", container.String())
+		a.Equal("ImageFileAndData{ImageFile{bar}}", container.String())
 	})
 	t.Run("Nil ImageFile", func(t *testing.T) {
 		container := NewImageContainer(nil, nil)
-		a.Equal("ImageContainer{ImageFile<nil>}", container.String())
+		a.Equal("ImageFileAndData{ImageFile<nil>}", container.String())
 	})
 	t.Run("Nil", func(t *testing.T) {
-		var container *ImageContainer
-		a.Equal("ImageContainer<nil>", container.String())
+		var container *ImageFileAndData
+		a.Equal("ImageFileAndData<nil>", container.String())
 	})
 
 }

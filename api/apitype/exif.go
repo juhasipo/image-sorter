@@ -9,34 +9,75 @@ import (
 	"github.com/rwcarlsen/goexif/tiff"
 	"image"
 	"image/color"
-	"os"
 	"time"
 	"vincit.fi/image-sorter/common/logger"
 )
 
-type ExifData struct {
-	orientation uint8
-	rotation    gdk.PixbufRotation
-	flipped     bool
-	raw         *exif.Exif
-	created     time.Time
-	width       uint32
-	height      uint32
-}
+const (
+	exifUnchangedOrientation  = 1
+	exifValueMarker           = 0xFF
+	orientationIntelOffset    = 8 // Offset for the value from the tag
+	orientationMotorolaOffset = 9 // Offset for the value from the tag
 
-const exifUnchangedOrientation = 1
-const exifValueMarker = 0xFF
+	noRotate  = 0
+	rotate180 = 180
+	left90    = 90
+	right90   = 270
+
+	noHorizontalFlip = false
+	horizontalFlip   = true
+)
 
 // Tag (2 bytes), type (2 bytes), count (4 bytes), value (2 bytes): 0xFF is the marker for value
 // Intel byte order
 var orientationIntelPattern = []byte{0x12, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, exifValueMarker, 0x00}
 
-const orientationIntelOffset = 8 // Offset for the value from the tag
-
 // Motorola byte order
 var orientationMotorolaPattern = []byte{0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, exifValueMarker}
 
-const orientationMotorolaOffset = 9 // Offset for the value from the tag
+type ExifData struct {
+	width       uint32
+	height      uint32
+	orientation uint8
+	rotation    gdk.PixbufRotation
+	flipped     bool
+	created     time.Time
+	raw         *exif.Exif
+}
+
+func NewExifData(decodedExif *exif.Exif) (*ExifData, error) {
+	if orientation, err := getInt(decodedExif, exif.Orientation); err != nil {
+		logger.Warn.Print("Could not resolve orientation", err)
+		return NewInvalidExifData(), err
+	} else if timeValue, err := getTime(decodedExif, exif.DateTimeOriginal); err != nil {
+		logger.Warn.Print("Could not resolve created value", err)
+		return NewInvalidExifData(), err
+	} else if width, err := getUInt32(decodedExif, exif.PixelXDimension); err != nil {
+		logger.Warn.Print("Could not resolve created value", err)
+		return NewInvalidExifData(), err
+	} else if height, err := getUInt32(decodedExif, exif.PixelYDimension); err != nil {
+		logger.Warn.Print("Could not resolve created value", err)
+		return NewInvalidExifData(), err
+	} else {
+		angle, flip := exifOrientationToAngleAndFlip(orientation)
+		return &ExifData{
+			orientation: uint8(orientation),
+			rotation:    angle,
+			flipped:     flip,
+			raw:         decodedExif,
+			created:     timeValue,
+			width:       width,
+			height:      height,
+		}, nil
+	}
+}
+
+func NewInvalidExifData() *ExifData {
+	return &ExifData{
+		orientation: 1,
+		created:     time.Unix(0, 0),
+	}
+}
 
 func (s *ExifData) ResetExifRotate() {
 	orientationByteIndex, err := findOrientationByteIndex(s.raw.Raw, s.orientation)
@@ -47,36 +88,6 @@ func (s *ExifData) ResetExifRotate() {
 	s.rotation = 0
 	s.flipped = false
 	s.raw.Raw[orientationByteIndex] = exifUnchangedOrientation
-}
-
-// Finds the index for orientation with the given value
-func findOrientationByteIndex(exifData []byte, value uint8) (int, error) {
-	buffer := copyAndSetValue(orientationIntelPattern, value)
-	if result, err := find(exifData, buffer); err == nil {
-		return result + orientationIntelOffset, nil
-	} else {
-		buffer = copyAndSetValue(orientationMotorolaPattern, value)
-		if result, err := find(exifData, buffer); err == nil {
-			return result + orientationMotorolaOffset, nil
-		}
-	}
-	return 0, errors.New("not found")
-}
-
-func copyAndSetValue(buf []byte, value uint8) []byte {
-	byteArray := make([]byte, len(buf))
-	copy(byteArray, buf)
-	byteArray[bytes.IndexByte(byteArray, exifValueMarker)] = value
-	return byteArray
-}
-
-func find(exifData []byte, s []byte) (int, error) {
-	index := bytes.Index(exifData, s)
-	if index < 0 {
-		return 0, errors.New("not found")
-	} else {
-		return index, nil
-	}
 }
 
 func (s *ExifData) ExifOrientation() uint8 {
@@ -123,7 +134,16 @@ func (s *ExifData) ImageHeight() uint32 {
 	return s.height
 }
 
-func GetInt(decodedExif *exif.Exif, tagName exif.FieldName) (int, error) {
+func ExifRotateImage(loadedImage image.Image, rotation float64, flipped bool) (image.Image, error) {
+	loadedImage = imaging.Rotate(loadedImage, rotation, color.Black)
+	if flipped {
+		return imaging.FlipH(loadedImage), nil
+	} else {
+		return loadedImage, nil
+	}
+}
+
+func getInt(decodedExif *exif.Exif, tagName exif.FieldName) (int, error) {
 	if tag, err := decodedExif.Get(tagName); err != nil {
 		return 0, err
 	} else {
@@ -131,7 +151,7 @@ func GetInt(decodedExif *exif.Exif, tagName exif.FieldName) (int, error) {
 	}
 }
 
-func GetUInt32(decodedExif *exif.Exif, tagName exif.FieldName) (uint32, error) {
+func getUInt32(decodedExif *exif.Exif, tagName exif.FieldName) (uint32, error) {
 	if tag, err := decodedExif.Get(tagName); err != nil {
 		return 0, err
 	} else if intVal, err := tag.Int(0); err != nil {
@@ -141,7 +161,7 @@ func GetUInt32(decodedExif *exif.Exif, tagName exif.FieldName) (uint32, error) {
 	}
 }
 
-func GetString(decodedExif *exif.Exif, tagName exif.FieldName) (string, error) {
+func getString(decodedExif *exif.Exif, tagName exif.FieldName) (string, error) {
 	if tag, err := decodedExif.Get(tagName); err != nil {
 		return "", err
 	} else {
@@ -149,66 +169,15 @@ func GetString(decodedExif *exif.Exif, tagName exif.FieldName) (string, error) {
 	}
 }
 
-func GetTime(decodedExif *exif.Exif, tagName exif.FieldName) (time.Time, error) {
-	if stringVal, err := GetString(decodedExif, tagName); err != nil {
+func getTime(decodedExif *exif.Exif, tagName exif.FieldName) (time.Time, error) {
+	if stringVal, err := getString(decodedExif, tagName); err != nil {
 		return time.Unix(0, 0), err
 	} else {
 		return time.Parse("2006:01:02 15:04:05", stringVal)
 	}
 }
 
-func LoadExifData(imageFile *ImageFile) (*ExifData, error) {
-	fileForExif, err := os.Open(imageFile.Path())
-	if fileForExif != nil && err == nil {
-		defer fileForExif.Close()
-
-		if decodedExif, err := exif.Decode(fileForExif); err != nil {
-			logger.Error.Print("Could not decode Exif data", err)
-			return nil, err
-		} else if orientation, err := GetInt(decodedExif, exif.Orientation); err != nil {
-			logger.Warn.Print("Could not resolve orientation", err)
-			return getInvalidExifData(decodedExif), err
-		} else if timeValue, err := GetTime(decodedExif, exif.DateTimeOriginal); err != nil {
-			logger.Warn.Print("Could not resolve created value", err)
-			return getInvalidExifData(decodedExif), err
-		} else if width, err := GetUInt32(decodedExif, exif.PixelXDimension); err != nil {
-			logger.Warn.Print("Could not resolve created value", err)
-			return getInvalidExifData(decodedExif), err
-		} else if height, err := GetUInt32(decodedExif, exif.PixelYDimension); err != nil {
-			logger.Warn.Print("Could not resolve created value", err)
-			return getInvalidExifData(decodedExif), err
-		} else {
-			angle, flip := ExifOrientationToAngleAndFlip(orientation)
-			return &ExifData{
-				orientation: uint8(orientation),
-				rotation:    angle,
-				flipped:     flip,
-				raw:         decodedExif,
-				created:     timeValue,
-				width:       width,
-				height:      height,
-			}, nil
-		}
-	} else {
-		return &ExifData{1, 0, false, nil, time.Unix(0, 0), 0, 0}, err
-	}
-}
-
-func getInvalidExifData(decodedExif *exif.Exif) *ExifData {
-	return &ExifData{1, 0, false, decodedExif, time.Unix(0, 0), 0, 0}
-}
-
-const (
-	noRotate  = 0
-	rotate180 = 180
-	left90    = 90
-	right90   = 270
-
-	noHorizontalFlip = false
-	horizontalFlip   = true
-)
-
-func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
+func exifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
 	switch orientation {
 	case 1:
 		return noRotate, noHorizontalFlip
@@ -231,11 +200,32 @@ func ExifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
 	}
 }
 
-func ExifRotateImage(loadedImage image.Image, rotation float64, flipped bool) (image.Image, error) {
-	loadedImage = imaging.Rotate(loadedImage, rotation, color.Black)
-	if flipped {
-		return imaging.FlipH(loadedImage), nil
+// Finds the index for orientation with the given value
+func findOrientationByteIndex(exifData []byte, value uint8) (int, error) {
+	buffer := copyAndSetValue(orientationIntelPattern, value)
+	if result, err := find(exifData, buffer); err == nil {
+		return result + orientationIntelOffset, nil
 	} else {
-		return loadedImage, nil
+		buffer = copyAndSetValue(orientationMotorolaPattern, value)
+		if result, err := find(exifData, buffer); err == nil {
+			return result + orientationMotorolaOffset, nil
+		}
+	}
+	return 0, errors.New("not found")
+}
+
+func copyAndSetValue(buf []byte, value uint8) []byte {
+	byteArray := make([]byte, len(buf))
+	copy(byteArray, buf)
+	byteArray[bytes.IndexByte(byteArray, exifValueMarker)] = value
+	return byteArray
+}
+
+func find(exifData []byte, s []byte) (int, error) {
+	index := bytes.Index(exifData, s)
+	if index < 0 {
+		return 0, errors.New("not found")
+	} else {
+		return index, nil
 	}
 }

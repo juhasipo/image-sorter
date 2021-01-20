@@ -9,10 +9,10 @@ type ImageList struct {
 	layout    *gtk.ScrolledWindow
 	component *gtk.IconView
 	model     *gtk.ListStore
-	images    []*apitype.ImageContainer
+	images    []*apitype.ImageFileAndData
 }
 
-func (s *ImageList) addImagesToStore(images []*apitype.ImageContainer) {
+func (s *ImageList) addImagesToStore(images []*apitype.ImageFileAndData) {
 	s.model.Clear()
 	for _, img := range images {
 		iter := s.model.Append()
