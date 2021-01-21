@@ -54,37 +54,47 @@ func addCategory(collection db.Collection, category *apitype.Category) (*apitype
 func (s *CategoryStore) ResetCategories(categories []*apitype.Category) error {
 	return s.getCollection().Session().Tx(func(sess db.Session) error {
 		collection := sess.Collection("category")
-		var persistedCategories []Category
-		if err := collection.Find().All(&persistedCategories); err != nil {
+		if existingCategoriesById, err := s.getExistingById(collection); err != nil {
 			return err
-		}
+		} else {
+			// Add and update the ones that still exist delete from the list
+			// so the only ones left are the ones that should be removed
+			for _, category := range categories {
+				categoryKey := category.Id()
+				if _, ok := existingCategoriesById[categoryKey]; ok {
+					if err := updateCategory(collection, category); err != nil {
+						return err
+					} else {
+						delete(existingCategoriesById, categoryKey)
+					}
+				} else if _, err := addCategory(collection, category); err != nil {
+					return err
+				}
+			}
 
-		var existingCategoriesById = map[apitype.CategoryId]*apitype.Category{}
+			// Now the only ones in the existingCategoriesById are the ones that don't
+			// exist anymore. Loop through them and remove them.
+			for _, category := range existingCategoriesById {
+				if err := removeCategory(collection, category.Id()); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	})
+}
+
+func (s *CategoryStore) getExistingById(collection db.Collection) (map[apitype.CategoryId]*apitype.Category, error) {
+	var existingCategoriesById = map[apitype.CategoryId]*apitype.Category{}
+	var persistedCategories []Category
+	if err := collection.Find().All(&persistedCategories); err != nil {
+		return nil, err
+	} else {
 		for _, category := range persistedCategories {
 			existingCategoriesById[category.Id] = toApiCategory(category)
 		}
-
-		for _, category := range categories {
-			categoryKey := category.Id()
-			if _, ok := existingCategoriesById[categoryKey]; ok {
-				if err := updateCategory(collection, category); err != nil {
-					return err
-				}
-				delete(existingCategoriesById, categoryKey)
-			} else {
-				if _, err := addCategory(collection, category); err != nil {
-					return err
-				}
-			}
-		}
-
-		for _, category := range existingCategoriesById {
-			if err := removeCategory(collection, category.Id()); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	}
+	return existingCategoriesById, nil
 }
 
 func (s *CategoryStore) GetCategories() ([]*apitype.Category, error) {

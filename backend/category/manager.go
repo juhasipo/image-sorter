@@ -83,18 +83,13 @@ func (s *Manager) RequestCategories() {
 }
 
 func (s *Manager) Save(command *api.SaveCategoriesCommand) {
-	s.resetCategories(command.Categories)
-
+	if err := s.categoryStore.ResetCategories(command.Categories); err != nil {
+		s.sender.SendError("Error while resetting categories", err)
+	}
 	s.sender.SendCommandToTopic(
 		api.CategoriesUpdated,
 		&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
 	)
-}
-
-func (s *Manager) resetCategories(categories []*apitype.Category) {
-	if err := s.categoryStore.ResetCategories(categories); err != nil {
-		s.sender.SendError("Error while resetting categories", err)
-	}
 }
 
 func (s *Manager) Close() {
