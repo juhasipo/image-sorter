@@ -141,7 +141,7 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 	} else if key == gdk.KEY_F12 {
 		s.sender.SendToTopic(api.SimilarRequestSearch)
 	} else if key == gdk.KEY_Page_Up {
-		s.sender.SendCommandToTopic(api.ImageRequestPrevOffset, &api.ImageAtQuery{Index: hugeJumpSize})
+		s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: hugeJumpSize})
 	} else if key == gdk.KEY_Page_Down {
 		s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: hugeJumpSize})
 	} else if key == gdk.KEY_Home {
@@ -150,9 +150,9 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: -1})
 	} else if key == gdk.KEY_Left {
 		if controlDown {
-			s.sender.SendCommandToTopic(api.ImageRequestPrevOffset, &api.ImageAtQuery{Index: bigJumpSize})
+			s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
-			s.sender.SendToTopic(api.ImageRequestPrev)
+			s.sender.SendToTopic(api.ImageRequestPrevious)
 		}
 	} else if key == gdk.KEY_Right {
 		if controlDown {
@@ -196,7 +196,7 @@ func (s *Ui) UpdateCurrentImage() {
 func (s *Ui) SetImages(command *api.SetImagesCommand) {
 	if command.Topic == api.ImageRequestNext {
 		s.imageView.AddImagesToNextStore(command.Images)
-	} else if command.Topic == api.ImageRequestPrev {
+	} else if command.Topic == api.ImageRequestPrevious {
 		s.imageView.AddImagesToPrevStore(command.Images)
 	} else if command.Topic == api.ImageRequestSimilar {
 		s.similarImagesView.SetImages(command.Images)

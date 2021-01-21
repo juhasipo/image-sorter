@@ -52,7 +52,7 @@ func NewTopActions(builder *gtk.Builder, imageView *ImageView, sender api.Sender
 		sender.SendToTopic(api.ImageRequestNext)
 	})
 	topActionView.prevButton.Connect("clicked", func() {
-		sender.SendToTopic(api.ImageRequestPrev)
+		sender.SendToTopic(api.ImageRequestPrevious)
 	})
 
 	return topActionView

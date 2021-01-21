@@ -65,18 +65,16 @@ func (s *Manager) RequestNextImageWithOffset(query *api.ImageAtQuery) {
 	s.RequestImages()
 }
 
-func (s *Manager) RequestPrevImageWithOffset(query *api.ImageAtQuery) {
-	s.manager.MoveToPrevImageWithOffset(query.Index)
+func (s *Manager) RequestPreviousImageWithOffset(query *api.ImageAtQuery) {
+	s.manager.MoveToPreviousImageWithOffset(query.Index)
 	s.RequestImages()
 }
 
 func (s *Manager) RequestNextImage() {
-
 	s.RequestNextImageWithOffset(nextImage)
 }
 
-func (s *Manager) RequestPrevImage() {
-
+func (s *Manager) RequestPreviousImage() {
 	s.RequestNextImageWithOffset(previousImage)
 }
 
@@ -140,12 +138,12 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 
 		if nextImages, err := s.manager.getNextImages(); err != nil {
 			s.sender.SendError("Error while fetching next images", err)
-		} else if prevImages, err := s.manager.getPrevImages(); err != nil {
+		} else if previousImages, err := s.manager.getPreviousImages(); err != nil {
 			s.sender.SendError("Error while fetching previous images", err)
 		} else {
 			s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
-				Topic:  api.ImageRequestPrev,
-				Images: prevImages,
+				Topic:  api.ImageRequestPrevious,
+				Images: previousImages,
 			})
 			s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
 				Topic:  api.ImageRequestNext,

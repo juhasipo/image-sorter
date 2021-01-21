@@ -124,8 +124,8 @@ func connectUiAndManagers(params *common.Params, stores *Stores, managers *Manag
 	// UI -> Library
 	brokers.Broker.Subscribe(api.ImageRequestNext, managers.ImageLibrary.RequestNextImage)
 	brokers.Broker.Subscribe(api.ImageRequestNextOffset, managers.ImageLibrary.RequestNextImageWithOffset)
-	brokers.Broker.Subscribe(api.ImageRequestPrev, managers.ImageLibrary.RequestPrevImage)
-	brokers.Broker.Subscribe(api.ImageRequestPrevOffset, managers.ImageLibrary.RequestPrevImageWithOffset)
+	brokers.Broker.Subscribe(api.ImageRequestPrevious, managers.ImageLibrary.RequestPreviousImage)
+	brokers.Broker.Subscribe(api.ImageRequestPreviousOffset, managers.ImageLibrary.RequestPreviousImageWithOffset)
 	brokers.Broker.Subscribe(api.ImageRequestCurrent, managers.ImageLibrary.RequestImages)
 	brokers.Broker.Subscribe(api.ImageRequest, managers.ImageLibrary.RequestImage)
 	brokers.Broker.Subscribe(api.ImageRequestAtIndex, managers.ImageLibrary.RequestImageAt)

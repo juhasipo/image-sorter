@@ -157,15 +157,15 @@ func (s *internalManager) RequestNextImage() {
 	s.MoveToNextImageWithOffset(1)
 }
 
-func (s *internalManager) RequestPrevImage() {
-	s.MoveToPrevImageWithOffset(1)
+func (s *internalManager) RequestPreviousImage() {
+	s.MoveToPreviousImageWithOffset(1)
 }
 
 func (s *internalManager) MoveToNextImageWithOffset(offset int) {
 	s.requestImageWithOffset(offset)
 }
 
-func (s *internalManager) MoveToPrevImageWithOffset(offset int) {
+func (s *internalManager) MoveToPreviousImageWithOffset(offset int) {
 	s.requestImageWithOffset(-offset)
 }
 
@@ -248,7 +248,7 @@ func (s *internalManager) getNextImages() ([]*apitype.ImageFileAndData, error) {
 	}
 }
 
-func (s *internalManager) getPrevImages() ([]*apitype.ImageFileAndData, error) {
+func (s *internalManager) getPreviousImages() ([]*apitype.ImageFileAndData, error) {
 	if slice, err := s.imageStore.GetPreviousImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyImageFiles, err
 	} else if images, err := s.toImageContainers(slice); err != nil {

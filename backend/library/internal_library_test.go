@@ -139,7 +139,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	})
 
 	t.Run("Previous stays on same", func(t *testing.T) {
-		sut.RequestPrevImage()
+		sut.RequestPreviousImage()
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
@@ -160,7 +160,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	sut.AddImageFiles(imageFiles)
 
 	t.Run("Initial image", func(t *testing.T) {
-		sut.RequestPrevImage()
+		sut.RequestPreviousImage()
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
@@ -194,7 +194,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	})
 
 	t.Run("Previous", func(t *testing.T) {
-		sut.RequestPrevImage()
+		sut.RequestPreviousImage()
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(1, index)
@@ -238,7 +238,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	})
 
 	t.Run("Jump back to 5 images", func(t *testing.T) {
-		sut.MoveToPrevImageWithOffset(5)
+		sut.MoveToPreviousImageWithOffset(5)
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(4, index)
@@ -246,7 +246,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	})
 
 	t.Run("Jump beyond the first", func(t *testing.T) {
-		sut.MoveToPrevImageWithOffset(10)
+		sut.MoveToPreviousImageWithOffset(10)
 		img, index, _ := sut.getCurrentImage()
 		a.NotNil(img)
 		a.Equal(0, index)
@@ -465,14 +465,14 @@ func TestGetPrevImages(t *testing.T) {
 	a.Equal(5, sut.getImageListSize())
 
 	t.Run("Initial image count", func(t *testing.T) {
-		imgList, _ := sut.getPrevImages()
+		imgList, _ := sut.getPreviousImages()
 		a.NotNil(imgList)
 		a.Equal(0, len(imgList))
 	})
 
 	t.Run("Next requested gives the first image", func(t *testing.T) {
 		sut.RequestNextImage()
-		imgList, _ := sut.getPrevImages()
+		imgList, _ := sut.getPreviousImages()
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
 			a.Equal("foo0", imgList[0].ImageFile().FileName())
@@ -481,7 +481,7 @@ func TestGetPrevImages(t *testing.T) {
 
 	t.Run("Image at 5 gives the first 5 images", func(t *testing.T) {
 		sut.MoveToImageAt(5)
-		imgList, _ := sut.getPrevImages()
+		imgList, _ := sut.getPreviousImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo4", imgList[0].ImageFile().FileName())
@@ -494,7 +494,7 @@ func TestGetPrevImages(t *testing.T) {
 
 	t.Run("Second to last image ", func(t *testing.T) {
 		sut.MoveToImageAt(8)
-		imgList, _ := sut.getPrevImages()
+		imgList, _ := sut.getPreviousImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo7", imgList[0].ImageFile().FileName())
@@ -507,7 +507,7 @@ func TestGetPrevImages(t *testing.T) {
 
 	t.Run("The last", func(t *testing.T) {
 		sut.MoveToImageAt(9)
-		imgList, _ := sut.getPrevImages()
+		imgList, _ := sut.getPreviousImages()
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo8", imgList[0].ImageFile().FileName())
@@ -583,7 +583,7 @@ func TestShowOnlyImages(t *testing.T) {
 
 	t.Run("Next and prev images", func(t *testing.T) {
 		nextImages, _ := sut.getNextImages()
-		prevImages, _ := sut.getPrevImages()
+		prevImages, _ := sut.getPreviousImages()
 		a.NotNil(nextImages)
 		if a.Equal(4, len(nextImages)) {
 			a.Equal(imageFiles[2].Id(), nextImages[0].ImageFile().Id())
@@ -603,7 +603,7 @@ func TestShowOnlyImages(t *testing.T) {
 	t.Run("Next and prev images at 2", func(t *testing.T) {
 		sut.MoveToImageAt(2)
 		nextImages, _ := sut.getNextImages()
-		prevImages, _ := sut.getPrevImages()
+		prevImages, _ := sut.getPreviousImages()
 		a.NotNil(nextImages)
 		if a.Equal(2, len(nextImages)) {
 			a.Equal(imageFiles[7].Id(), nextImages[0].ImageFile().Id())
@@ -660,7 +660,7 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 
 	t.Run("Next and prev images", func(t *testing.T) {
 		nextImages, _ := sut.getNextImages()
-		prevImages, _ := sut.getPrevImages()
+		prevImages, _ := sut.getPreviousImages()
 		a.NotNil(nextImages)
 		if a.Equal(9, len(nextImages)) {
 			a.Equal("foo1", nextImages[0].ImageFile().FileName())

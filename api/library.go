@@ -37,9 +37,9 @@ type Library interface {
 
 	RequestImages()
 	RequestNextImage()
-	RequestPrevImage()
+	RequestPreviousImage()
 	RequestNextImageWithOffset(*ImageAtQuery)
-	RequestPrevImageWithOffset(*ImageAtQuery)
+	RequestPreviousImageWithOffset(*ImageAtQuery)
 	RequestImage(*ImageQuery)
 	RequestImageAt(*ImageAtQuery)
 
