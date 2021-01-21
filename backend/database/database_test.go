@@ -20,8 +20,7 @@ func TestDatabase_InitializeForDirectory(t *testing.T) {
 	err = sut.session.Ping()
 	a.Nil(err)
 
-	err = sut.Close()
-	a.Nil(err)
+	sut.Close()
 }
 
 func TestDatabase_MigrateDB(t *testing.T) {
@@ -42,6 +41,5 @@ func TestDatabase_MigrateDB(t *testing.T) {
 		a.Equal(TableExists, sut.Migrate())
 	})
 
-	err = sut.Close()
-	a.Nil(err)
+	sut.Close()
 }

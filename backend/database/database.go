@@ -213,12 +213,13 @@ func (s *Database) migrate() error {
 	})
 }
 
-func (s *Database) Close() error {
+func (s *Database) Close() {
 	logger.Info.Printf("Closing database")
 	if s.session != nil {
-		return s.session.Close()
+		if err := s.session.Close(); err != nil {
+			logger.Error.Print("Error while trying to close database ", err)
+		}
 	} else {
 		logger.Warn.Printf("No database instance to close")
-		return nil
 	}
 }
