@@ -167,7 +167,3 @@ func (s *Manager) sendSimilarImages(imageId apitype.ImageId) {
 		})
 	}
 }
-
-func (s *Manager) loadImagesFromRootDir() {
-	s.manager.updateImages()
-}
