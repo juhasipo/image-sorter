@@ -34,13 +34,13 @@ func initAndRun(params *common.Params) {
 
 	imageLoader := imageloader.NewImageLoader(stores.ImageStore)
 	imageCache := imageloader.NewImageCache(imageLoader)
-	managers := initializeManagers(params, stores, brokers, imageCache, imageLoader)
-	defer managers.Close()
+	services := initializeServices(params, stores, brokers, imageCache, imageLoader)
+	defer services.Close()
 
 	// UI
 	gui := gtkUi.NewUi(params, brokers.Broker, imageCache)
 
-	connectUiAndManagers(params, stores, managers, imageCache, brokers, gui)
+	connectUiAndServices(params, stores, services, imageCache, brokers, gui)
 
 	// Everything has been initialized so it is time to start the UI
 	gui.Run()
@@ -61,20 +61,20 @@ func (s *Stores) Close() {
 	defer s.WorkDirDb.Close()
 }
 
-type Managers struct {
-	CategoryManager        api.CategoryManager
-	DefaultCategoryManager api.CategoryManager
-	ImageLibrary           api.Library
-	FilterManager          *filter.Manager
-	ImageCategoryManager   api.ImageCategoryManager
+type Services struct {
+	CategoryService        api.CategoryService
+	DefaultCategoryService api.CategoryService
+	ImageService           api.ImageService
+	FilterService          *filter.FilterService
+	ImageCategoryService   api.ImageCategoryService
 	CasterInstance         api.Caster
 }
 
-func (s *Managers) Close() {
-	defer s.CategoryManager.Close()
-	defer s.DefaultCategoryManager.Close()
-	defer s.ImageLibrary.Close()
-	defer s.ImageCategoryManager.Close()
+func (s *Services) Close() {
+	defer s.CategoryService.Close()
+	defer s.DefaultCategoryService.Close()
+	defer s.ImageService.Close()
+	defer s.ImageCategoryService.Close()
 	defer s.CasterInstance.Close()
 }
 
@@ -91,7 +91,7 @@ func initializeEventBrokers() *Brokers {
 	return brokers
 }
 
-func connectUiAndManagers(params *common.Params, stores *Stores, managers *Managers, imageCache api.ImageStore, brokers *Brokers, gui api.Gui) {
+func connectUiAndServices(params *common.Params, stores *Stores, services *Services, imageCache api.ImageStore, brokers *Brokers, gui api.Gui) {
 	// Initialize startup procedure run when the directory has been chosen
 	handleDirectoryChanged := func(directory string) {
 		logger.Info.Printf("Directory changed to '%s'", directory)
@@ -103,59 +103,59 @@ func connectUiAndManagers(params *common.Params, stores *Stores, managers *Manag
 				if defaultCategories, err := stores.DefaultCategoryStore.GetCategories(); err != nil {
 					logger.Error.Print("Error while trying to load default categories ", err)
 				} else {
-					managers.CategoryManager.InitializeFromDirectory(params.Categories(), defaultCategories)
+					services.CategoryService.InitializeFromDirectory(params.Categories(), defaultCategories)
 				}
 			}
-			managers.ImageLibrary.InitializeFromDirectory(directory)
+			services.ImageService.InitializeFromDirectory(directory)
 
-			if len(managers.ImageLibrary.GetImageFiles()) > 0 {
-				imageCache.Initialize(managers.ImageLibrary.GetImageFiles()[:5])
+			if len(services.ImageService.GetImageFiles()) > 0 {
+				imageCache.Initialize(services.ImageService.GetImageFiles()[:5])
 			}
 
-			managers.ImageCategoryManager.InitializeForDirectory(directory)
+			services.ImageCategoryService.InitializeForDirectory(directory)
 
-			managers.CategoryManager.RequestCategories()
+			services.CategoryService.RequestCategories()
 		}
 	}
 	brokers.Broker.Subscribe(api.DirectoryChanged, handleDirectoryChanged)
 
 	// Connect Topics to methods
 
-	// UI -> Library
-	brokers.Broker.Subscribe(api.ImageRequestNext, managers.ImageLibrary.RequestNextImage)
-	brokers.Broker.Subscribe(api.ImageRequestNextOffset, managers.ImageLibrary.RequestNextImageWithOffset)
-	brokers.Broker.Subscribe(api.ImageRequestPrevious, managers.ImageLibrary.RequestPreviousImage)
-	brokers.Broker.Subscribe(api.ImageRequestPreviousOffset, managers.ImageLibrary.RequestPreviousImageWithOffset)
-	brokers.Broker.Subscribe(api.ImageRequestCurrent, managers.ImageLibrary.RequestImages)
-	brokers.Broker.Subscribe(api.ImageRequest, managers.ImageLibrary.RequestImage)
-	brokers.Broker.Subscribe(api.ImageRequestAtIndex, managers.ImageLibrary.RequestImageAt)
-	brokers.Broker.Subscribe(api.ImageListSizeChanged, managers.ImageLibrary.SetImageListSize)
-	brokers.Broker.Subscribe(api.ImageShowAll, managers.ImageLibrary.ShowAllImages)
-	brokers.Broker.Subscribe(api.ImageShowOnly, managers.ImageLibrary.ShowOnlyImages)
+	// UI -> ImageService
+	brokers.Broker.Subscribe(api.ImageRequestNext, services.ImageService.RequestNextImage)
+	brokers.Broker.Subscribe(api.ImageRequestNextOffset, services.ImageService.RequestNextImageWithOffset)
+	brokers.Broker.Subscribe(api.ImageRequestPrevious, services.ImageService.RequestPreviousImage)
+	brokers.Broker.Subscribe(api.ImageRequestPreviousOffset, services.ImageService.RequestPreviousImageWithOffset)
+	brokers.Broker.Subscribe(api.ImageRequestCurrent, services.ImageService.RequestImages)
+	brokers.Broker.Subscribe(api.ImageRequest, services.ImageService.RequestImage)
+	brokers.Broker.Subscribe(api.ImageRequestAtIndex, services.ImageService.RequestImageAt)
+	brokers.Broker.Subscribe(api.ImageListSizeChanged, services.ImageService.SetImageListSize)
+	brokers.Broker.Subscribe(api.ImageShowAll, services.ImageService.ShowAllImages)
+	brokers.Broker.Subscribe(api.ImageShowOnly, services.ImageService.ShowOnlyImages)
 
-	brokers.Broker.Subscribe(api.SimilarRequestSearch, managers.ImageLibrary.RequestGenerateHashes)
-	brokers.Broker.Subscribe(api.SimilarRequestStop, managers.ImageLibrary.RequestStopHashes)
-	brokers.Broker.Subscribe(api.SimilarSetShowImages, managers.ImageLibrary.SetSendSimilarImages)
+	brokers.Broker.Subscribe(api.SimilarRequestSearch, services.ImageService.RequestGenerateHashes)
+	brokers.Broker.Subscribe(api.SimilarRequestStop, services.ImageService.RequestStopHashes)
+	brokers.Broker.Subscribe(api.SimilarSetShowImages, services.ImageService.SetSendSimilarImages)
 
-	// Library -> UI
+	// ImageService -> UI
 	brokers.Broker.ConnectToGui(api.ImageListUpdated, gui.SetImages)
 	brokers.Broker.ConnectToGui(api.ImageCurrentUpdated, gui.SetCurrentImage)
 	brokers.Broker.ConnectToGui(api.ProcessStatusUpdated, gui.UpdateProgress)
 	brokers.Broker.ConnectToGui(api.ShowError, gui.ShowError)
 
 	// UI -> Image Categorization
-	brokers.Broker.Subscribe(api.CategorizeImage, managers.ImageCategoryManager.SetCategory)
-	brokers.Broker.Subscribe(api.CategoryPersistAll, managers.ImageCategoryManager.PersistImageCategories)
-	brokers.Broker.Subscribe(api.ImageChanged, managers.ImageCategoryManager.RequestCategory)
-	brokers.Broker.Subscribe(api.CategoriesShowOnly, managers.ImageCategoryManager.ShowOnlyCategoryImages)
+	brokers.Broker.Subscribe(api.CategorizeImage, services.ImageCategoryService.SetCategory)
+	brokers.Broker.Subscribe(api.CategoryPersistAll, services.ImageCategoryService.PersistImageCategories)
+	brokers.Broker.Subscribe(api.ImageChanged, services.ImageCategoryService.RequestCategory)
+	brokers.Broker.Subscribe(api.CategoriesShowOnly, services.ImageCategoryService.ShowOnlyCategoryImages)
 
 	// Image Categorization -> UI
 	brokers.Broker.ConnectToGui(api.CategoryImageUpdate, gui.SetImageCategory)
 
 	// UI -> Caster
-	brokers.Broker.Subscribe(api.CastDeviceSearch, managers.CasterInstance.FindDevices)
-	brokers.Broker.Subscribe(api.CastDeviceSelect, managers.CasterInstance.SelectDevice)
-	brokers.Broker.Subscribe(api.ImageChanged, managers.CasterInstance.CastImage)
+	brokers.Broker.Subscribe(api.CastDeviceSearch, services.CasterInstance.FindDevices)
+	brokers.Broker.Subscribe(api.CastDeviceSelect, services.CasterInstance.SelectDevice)
+	brokers.Broker.Subscribe(api.ImageChanged, services.CasterInstance.CastImage)
 
 	// Caster -> UI
 	brokers.Broker.ConnectToGui(api.CastDeviceFound, gui.DeviceFound)
@@ -163,25 +163,25 @@ func connectUiAndManagers(params *common.Params, stores *Stores, managers *Manag
 	brokers.Broker.ConnectToGui(api.CastDevicesSearchDone, gui.CastFindDone)
 
 	// UI -> Category
-	brokers.Broker.Subscribe(api.CategoriesSave, managers.CategoryManager.Save)
-	brokers.Broker.Subscribe(api.CategoriesSaveDefault, managers.DefaultCategoryManager.Save)
+	brokers.Broker.Subscribe(api.CategoriesSave, services.CategoryService.Save)
+	brokers.Broker.Subscribe(api.CategoriesSaveDefault, services.DefaultCategoryService.Save)
 
 	// Category -> UI
 	brokers.Broker.ConnectToGui(api.CategoriesUpdated, gui.UpdateCategories)
 }
 
-func initializeManagers(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Managers {
-	filterManager := filter.NewFilterManager()
-	imageLibrary := library.NewLibrary(brokers.Broker, imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore)
-	managers := &Managers{
-		CategoryManager:        category.NewCategoryManager(params, brokers.Broker, stores.CategoryStore),
-		DefaultCategoryManager: category.NewCategoryManager(params, brokers.DevNullBroker, stores.DefaultCategoryStore),
-		ImageLibrary:           imageLibrary,
-		FilterManager:          filterManager,
-		ImageCategoryManager:   imagecategory.NewImageCategoryManager(brokers.Broker, imageLibrary, filterManager, imageLoader, stores.ImageCategoryStore),
+func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
+	filterService := filter.NewFilterService()
+	imageService := library.NewImageService(brokers.Broker, imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore)
+	services := &Services{
+		CategoryService:        category.NewCategoryService(params, brokers.Broker, stores.CategoryStore),
+		DefaultCategoryService: category.NewCategoryService(params, brokers.DevNullBroker, stores.DefaultCategoryStore),
+		ImageService:           imageService,
+		FilterService:          filterService,
+		ImageCategoryService:   imagecategory.NewImageCategoryService(brokers.Broker, imageService, filterService, imageLoader, stores.ImageCategoryStore),
 		CasterInstance:         caster.NewCaster(params, brokers.Broker, imageCache),
 	}
-	return managers
+	return services
 }
 
 // Initialize the configuration DB in user's home folder and

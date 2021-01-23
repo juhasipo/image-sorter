@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	sut                *internalManager
+	sut                *internalService
 	sender             *MockSender
 	store              *MockImageStore
 	loader             *MockImageLoader
@@ -93,13 +93,13 @@ func setup() {
 	store.On("GetThumbnail", mock.Anything).Return(new(MockImage))
 }
 
-func initializeSut() *internalManager {
+func initializeSut() *internalService {
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore = database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 	categoryStore = database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
 
-	return newLibrary(store, loader, nil, imageStore)
+	return newImageService(store, loader, nil, imageStore)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {

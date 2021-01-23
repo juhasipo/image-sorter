@@ -10,7 +10,7 @@ type SaveCategoriesCommand struct {
 	Categories []*apitype.Category
 }
 
-type CategoryManager interface {
+type CategoryService interface {
 	InitializeFromDirectory(cmdLineCategories []string, dbCategories []*apitype.Category)
 	GetCategories() []*apitype.Category
 	RequestCategories()

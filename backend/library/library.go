@@ -10,41 +10,41 @@ import (
 var nextImage = &api.ImageAtQuery{Index: 1}
 var previousImage = &api.ImageAtQuery{Index: -1}
 
-type Manager struct {
+type Service struct {
 	sender  api.Sender
-	manager *internalManager
+	service *internalService
 
-	api.Library
+	api.ImageService
 }
 
-func NewLibrary(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) api.Library {
-	return &Manager{
+func NewImageService(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) api.ImageService {
+	return &Service{
 		sender:  sender,
-		manager: newLibrary(imageCache, imageLoader, similarityIndex, imageStore),
+		service: newImageService(imageCache, imageLoader, similarityIndex, imageStore),
 	}
 }
 
-func (s *Manager) InitializeFromDirectory(directory string) {
-	s.manager.InitializeFromDirectory(directory)
+func (s *Service) InitializeFromDirectory(directory string) {
+	s.service.InitializeFromDirectory(directory)
 }
 
-func (s *Manager) GetImageFiles() []*apitype.ImageFileWithMetaData {
-	return s.manager.GetImages()
+func (s *Service) GetImageFiles() []*apitype.ImageFileWithMetaData {
+	return s.service.GetImages()
 }
 
-func (s *Manager) ShowOnlyImages(command *api.SelectCategoryCommand) {
-	s.manager.ShowOnlyImages(command.CategoryId)
+func (s *Service) ShowOnlyImages(command *api.SelectCategoryCommand) {
+	s.service.ShowOnlyImages(command.CategoryId)
 	s.RequestImages()
 }
 
-func (s *Manager) ShowAllImages() {
-	s.manager.ShowAllImages()
+func (s *Service) ShowAllImages() {
+	s.service.ShowAllImages()
 	s.RequestImages()
 }
 
-func (s *Manager) RequestGenerateHashes() {
-	if s.manager.GenerateHashes(s.sender) {
-		if image, _, err := s.manager.getCurrentImage(); err != nil {
+func (s *Service) RequestGenerateHashes() {
+	if s.service.GenerateHashes(s.sender) {
+		if image, _, err := s.service.getCurrentImage(); err != nil {
 			s.sender.SendError("Error while generating hashes", err)
 		} else {
 			s.sendSimilarImages(image.ImageFile().Id())
@@ -52,77 +52,77 @@ func (s *Manager) RequestGenerateHashes() {
 	}
 }
 
-func (s *Manager) SetSendSimilarImages(command *api.SimilarImagesCommand) {
-	s.manager.SetSimilarStatus(command.SendSimilarImages)
+func (s *Service) SetSendSimilarImages(command *api.SimilarImagesCommand) {
+	s.service.SetSimilarStatus(command.SendSimilarImages)
 }
 
-func (s *Manager) RequestStopHashes() {
-	s.manager.StopHashes()
+func (s *Service) RequestStopHashes() {
+	s.service.StopHashes()
 }
 
-func (s *Manager) RequestNextImageWithOffset(query *api.ImageAtQuery) {
-	s.manager.MoveToNextImageWithOffset(query.Index)
+func (s *Service) RequestNextImageWithOffset(query *api.ImageAtQuery) {
+	s.service.MoveToNextImageWithOffset(query.Index)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestPreviousImageWithOffset(query *api.ImageAtQuery) {
-	s.manager.MoveToPreviousImageWithOffset(query.Index)
+func (s *Service) RequestPreviousImageWithOffset(query *api.ImageAtQuery) {
+	s.service.MoveToPreviousImageWithOffset(query.Index)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestNextImage() {
+func (s *Service) RequestNextImage() {
 	s.RequestNextImageWithOffset(nextImage)
 }
 
-func (s *Manager) RequestPreviousImage() {
+func (s *Service) RequestPreviousImage() {
 	s.RequestNextImageWithOffset(previousImage)
 }
 
-func (s *Manager) RequestImage(query *api.ImageQuery) {
-	s.manager.MoveToImage(query.Id)
+func (s *Service) RequestImage(query *api.ImageQuery) {
+	s.service.MoveToImage(query.Id)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestImageAt(query *api.ImageAtQuery) {
-	s.manager.MoveToImageAt(query.Index)
+func (s *Service) RequestImageAt(query *api.ImageAtQuery) {
+	s.service.MoveToImageAt(query.Index)
 	s.RequestImages()
 }
 
-func (s *Manager) RequestImages() {
+func (s *Service) RequestImages() {
 	s.sendImages(true)
 }
 
-func (s *Manager) requestImageLists() {
+func (s *Service) requestImageLists() {
 	s.sendImages(false)
 }
 
-func (s *Manager) SetImageListSize(command *api.ImageListCommand) {
-	if s.manager.SetImageListSize(command.ImageListSize) {
+func (s *Service) SetImageListSize(command *api.ImageListCommand) {
+	if s.service.SetImageListSize(command.ImageListSize) {
 		s.requestImageLists()
 	}
 }
 
-func (s *Manager) Close() {
+func (s *Service) Close() {
 	logger.Info.Print("Shutting down library")
 }
 
-func (s *Manager) AddImageFiles(imageList []*apitype.ImageFile) {
-	if err := s.manager.AddImageFiles(imageList); err != nil {
+func (s *Service) AddImageFiles(imageList []*apitype.ImageFile) {
+	if err := s.service.AddImageFiles(imageList); err != nil {
 		s.sender.SendError("Error while adding image", err)
 	}
 }
 
-func (s *Manager) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
-	return s.manager.GetImageFileById(imageId)
+func (s *Service) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
+	return s.service.GetImageFileById(imageId)
 }
 
 // Private API
 
-func (s *Manager) sendImages(sendCurrentImage bool) {
-	if currentImage, currentIndex, err := s.manager.getCurrentImage(); err != nil {
+func (s *Service) sendImages(sendCurrentImage bool) {
+	if currentImage, currentIndex, err := s.service.getCurrentImage(); err != nil {
 		s.sender.SendError("Error while fetching images", err)
 	} else {
-		totalImages := s.manager.getTotalImages()
+		totalImages := s.service.getTotalImages()
 		if totalImages == 0 {
 			currentIndex = 0
 		}
@@ -132,13 +132,13 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 				Image:      currentImage,
 				Index:      currentIndex,
 				Total:      totalImages,
-				CategoryId: s.manager.getSelectedCategoryId(),
+				CategoryId: s.service.getSelectedCategoryId(),
 			})
 		}
 
-		if nextImages, err := s.manager.getNextImages(); err != nil {
+		if nextImages, err := s.service.getNextImages(); err != nil {
 			s.sender.SendError("Error while fetching next images", err)
-		} else if previousImages, err := s.manager.getPreviousImages(); err != nil {
+		} else if previousImages, err := s.service.getPreviousImages(); err != nil {
 			s.sender.SendError("Error while fetching previous images", err)
 		} else {
 			s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
@@ -151,14 +151,14 @@ func (s *Manager) sendImages(sendCurrentImage bool) {
 			})
 		}
 
-		if s.manager.shouldSendSimilarImages() {
+		if s.service.shouldSendSimilarImages() {
 			s.sendSimilarImages(currentImage.ImageFile().Id())
 		}
 	}
 }
 
-func (s *Manager) sendSimilarImages(imageId apitype.ImageId) {
-	if images, shouldSend, err := s.manager.getSimilarImages(imageId); err != nil {
+func (s *Service) sendSimilarImages(imageId apitype.ImageId) {
+	if images, shouldSend, err := s.service.getSimilarImages(imageId); err != nil {
 		s.sender.SendError("Error while fetching similar images", err)
 	} else if shouldSend {
 		s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{

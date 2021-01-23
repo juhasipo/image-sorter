@@ -94,7 +94,7 @@ func TestResetCategories(t *testing.T) {
 
 	memoryDatabase := database.NewInMemoryDatabase()
 	categoryStore := database.NewCategoryStore(memoryDatabase)
-	sut := NewCategoryManager(params, sender, categoryStore)
+	sut := NewCategoryService(params, sender, categoryStore)
 
 	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "1"))
 	cat2, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "2"))

@@ -37,7 +37,7 @@ type PersistCategorizationCommand struct {
 	Quality        int
 }
 
-type ImageCategoryManager interface {
+type ImageCategoryService interface {
 	InitializeForDirectory(directory string)
 
 	RequestCategory(*ImageCategoryQuery)
@@ -48,7 +48,7 @@ type ImageCategoryManager interface {
 	PersistImageCategory(*apitype.ImageFile, map[apitype.CategoryId]*CategorizedImage)
 
 	PersistCategorization()
-	LoadCategorization(Library, CategoryManager)
+	LoadCategorization(ImageService, CategoryService)
 
 	ShowOnlyCategoryImages(*SelectCategoryCommand)
 

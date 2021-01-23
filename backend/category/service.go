@@ -9,13 +9,13 @@ import (
 	"vincit.fi/image-sorter/common/logger"
 )
 
-type Manager struct {
+type Service struct {
 	commandLineCategories []string
 	sender                api.Sender
 	rootDir               string
 	categoryStore         *database.CategoryStore
 
-	api.CategoryManager
+	api.CategoryService
 }
 
 func Parse(value string) (name string, path string, shortcut string) {
@@ -33,21 +33,20 @@ func Parse(value string) (name string, path string, shortcut string) {
 	return
 }
 
-func NewCategoryManager(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) api.CategoryManager {
-	return newManager(params, sender, categoryStore)
+func NewCategoryService(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) api.CategoryService {
+	return newService(params, sender, categoryStore)
 }
 
 // For tests where some private methods are tested
-func newManager(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) *Manager {
-	manager := Manager{
+func newService(params *common.Params, sender api.Sender, categoryStore *database.CategoryStore) *Service {
+	return &Service{
 		sender:                sender,
 		commandLineCategories: params.Categories(),
 		categoryStore:         categoryStore,
 	}
-	return &manager
 }
 
-func (s *Manager) InitializeFromDirectory(cmdLineCategories []string, dbCategories []*apitype.Category) {
+func (s *Service) InitializeFromDirectory(cmdLineCategories []string, dbCategories []*apitype.Category) {
 	var loadedCategories []*apitype.Category
 
 	if len(cmdLineCategories) > 0 && cmdLineCategories[0] != "" {
@@ -66,7 +65,7 @@ func (s *Manager) InitializeFromDirectory(cmdLineCategories []string, dbCategori
 	}
 }
 
-func (s *Manager) GetCategories() []*apitype.Category {
+func (s *Service) GetCategories() []*apitype.Category {
 	if categories, err := s.categoryStore.GetCategories(); err != nil {
 		s.sender.SendError("Cannot get categories", err)
 		return nil
@@ -75,14 +74,14 @@ func (s *Manager) GetCategories() []*apitype.Category {
 	}
 }
 
-func (s *Manager) RequestCategories() {
+func (s *Service) RequestCategories() {
 	s.sender.SendCommandToTopic(
 		api.CategoriesUpdated,
 		&api.UpdateCategoriesCommand{Categories: s.GetCategories()},
 	)
 }
 
-func (s *Manager) Save(command *api.SaveCategoriesCommand) {
+func (s *Service) Save(command *api.SaveCategoriesCommand) {
 	if err := s.categoryStore.ResetCategories(command.Categories); err != nil {
 		s.sender.SendError("Error while resetting categories", err)
 	}
@@ -92,11 +91,11 @@ func (s *Manager) Save(command *api.SaveCategoriesCommand) {
 	)
 }
 
-func (s *Manager) Close() {
-	logger.Info.Print("Shutting down category manager")
+func (s *Service) Close() {
+	logger.Info.Print("Shutting down category service")
 }
 
-func (s *Manager) GetCategoryById(query *api.CategoryQuery) *apitype.Category {
+func (s *Service) GetCategoryById(query *api.CategoryQuery) *apitype.Category {
 	return s.categoryStore.GetCategoryById(query.Id)
 }
 

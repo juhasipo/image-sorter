@@ -11,39 +11,38 @@ import (
 	"vincit.fi/image-sorter/common/logger"
 )
 
-type Manager struct {
+type Service struct {
 	rootDir            string
 	settingDir         string
 	sender             api.Sender
-	library            api.Library
-	filterManager      *filter.Manager
+	library            api.ImageService
+	filterService      *filter.FilterService
 	imageLoader        api.ImageLoader
 	imageCategoryStore *database.ImageCategoryStore
 
-	api.ImageCategoryManager
+	api.ImageCategoryService
 }
 
-func NewImageCategoryManager(sender api.Sender, lib api.Library, filterManager *filter.Manager, imageLoader api.ImageLoader, imageCategoryStore *database.ImageCategoryStore) api.ImageCategoryManager {
-	var manager = Manager{
+func NewImageCategoryService(sender api.Sender, lib api.ImageService, filterService *filter.FilterService, imageLoader api.ImageLoader, imageCategoryStore *database.ImageCategoryStore) api.ImageCategoryService {
+	return &Service{
 		sender:             sender,
 		library:            lib,
-		filterManager:      filterManager,
+		filterService:      filterService,
 		imageLoader:        imageLoader,
 		imageCategoryStore: imageCategoryStore,
 	}
-	return &manager
 }
 
-func (s *Manager) InitializeForDirectory(directory string) {
+func (s *Service) InitializeForDirectory(directory string) {
 	s.rootDir = directory
 	s.settingDir = filepath.Join(directory, constants.ImageSorterDir)
 }
 
-func (s *Manager) RequestCategory(query *api.ImageCategoryQuery) {
+func (s *Service) RequestCategory(query *api.ImageCategoryQuery) {
 	s.sendCategories(query.ImageId)
 }
 
-func (s *Manager) GetCategories(query *api.ImageCategoryQuery) map[apitype.CategoryId]*api.CategorizedImage {
+func (s *Service) GetCategories(query *api.ImageCategoryQuery) map[apitype.CategoryId]*api.CategorizedImage {
 	if categories, err := s.imageCategoryStore.GetImagesCategories(query.ImageId); err != nil {
 		s.sender.SendError("Error while fetching image's category", err)
 		return map[apitype.CategoryId]*api.CategorizedImage{}
@@ -56,7 +55,7 @@ func (s *Manager) GetCategories(query *api.ImageCategoryQuery) map[apitype.Categ
 	}
 }
 
-func (s *Manager) SetCategory(command *api.CategorizeCommand) {
+func (s *Service) SetCategory(command *api.CategorizeCommand) {
 	imageId := command.ImageId
 	categoryId := command.CategoryId
 	operation := command.Operation
@@ -81,7 +80,7 @@ func (s *Manager) SetCategory(command *api.CategorizeCommand) {
 	}
 }
 
-func (s *Manager) PersistImageCategories(options *api.PersistCategorizationCommand) {
+func (s *Service) PersistImageCategories(options *api.PersistCategorizationCommand) {
 	logger.Debug.Printf("Persisting files to categories")
 	imageCategory, _ := s.imageCategoryStore.GetCategorizedImages()
 	operationsByImage := s.ResolveFileOperations(imageCategory, options)
@@ -107,7 +106,7 @@ func (s *Manager) PersistImageCategories(options *api.PersistCategorizationComma
 	s.sender.SendCommandToTopic(api.DirectoryChanged, s.rootDir)
 }
 
-func (s *Manager) ResolveFileOperations(
+func (s *Service) ResolveFileOperations(
 	imageCategory map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
@@ -122,13 +121,13 @@ func (s *Manager) ResolveFileOperations(
 	return operationGroups
 }
 
-func (s *Manager) ResolveOperationsForGroup(
+func (s *Service) ResolveOperationsForGroup(
 	imageFile *apitype.ImageFileWithMetaData,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
 	dir, file := imageFile.Directory(), imageFile.FileName()
 
-	filters := s.filterManager.GetFilters(imageFile.Id(), options)
+	filters := s.filterService.GetFilters(imageFile.Id(), options)
 
 	var imageOperations []apitype.ImageOperation
 	for _, categorizedImage := range categoryEntries {
@@ -155,15 +154,15 @@ func (s *Manager) ResolveOperationsForGroup(
 	}
 }
 
-func (s *Manager) Close() {
-	logger.Info.Print("Shutting down image category manager")
+func (s *Service) Close() {
+	logger.Info.Print("Shutting down image category service")
 }
 
-func (s *Manager) ShowOnlyCategoryImages(command *api.SelectCategoryCommand) {
+func (s *Service) ShowOnlyCategoryImages(command *api.SelectCategoryCommand) {
 	s.sender.SendCommandToTopic(api.ImageShowOnly, command)
 }
 
-func (s *Manager) getCategories(imageId apitype.ImageId) []*api.CategorizedImage {
+func (s *Service) getCategories(imageId apitype.ImageId) []*api.CategorizedImage {
 	if categories, err := s.imageCategoryStore.GetImagesCategories(imageId); err != nil {
 		s.sender.SendError("Error while fetching categories for image", err)
 		return []*api.CategorizedImage{}
@@ -172,7 +171,7 @@ func (s *Manager) getCategories(imageId apitype.ImageId) []*api.CategorizedImage
 	}
 }
 
-func (s *Manager) sendCategories(currentImageId apitype.ImageId) {
+func (s *Service) sendCategories(currentImageId apitype.ImageId) {
 	var commands []*apitype.Category
 	if currentImageId != apitype.ImageId(-1) {
 		var categories = s.getCategories(currentImageId)

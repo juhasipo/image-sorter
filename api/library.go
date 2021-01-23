@@ -32,7 +32,7 @@ type SimilarImagesCommand struct {
 	apitype.Command
 }
 
-type Library interface {
+type ImageService interface {
 	InitializeFromDirectory(directory string)
 
 	RequestImages()

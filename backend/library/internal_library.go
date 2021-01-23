@@ -17,13 +17,13 @@ const maxSimilarImages = 20
 
 type ImageList func(number int) []*apitype.ImageFile
 
-type internalManager struct {
+type internalService struct {
 	rootDir                     string
 	selectedCategoryId          apitype.CategoryId
 	index                       int
 	shouldSendSimilar           bool
 	shouldGenerateSimilarHashed bool
-	categoryManager             api.CategoryManager
+	categoryService             api.CategoryService
 	imageListSize               int
 	imageCache                  api.ImageStore
 	imageLoader                 api.ImageLoader
@@ -32,9 +32,9 @@ type internalManager struct {
 	hashCalculator              *HashCalculator
 }
 
-func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
-	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) *internalManager {
-	var manager = internalManager{
+func newImageService(imageCache api.ImageStore, imageLoader api.ImageLoader,
+	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) *internalService {
+	var service = internalService{
 		index:                       0,
 		shouldGenerateSimilarHashed: true,
 		shouldSendSimilar:           true,
@@ -45,31 +45,31 @@ func newLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 		imageStore:                  imageStore,
 		selectedCategoryId:          apitype.NoCategory,
 	}
-	return &manager
+	return &service
 }
 
-func (s *internalManager) InitializeFromDirectory(directory string) {
+func (s *internalService) InitializeFromDirectory(directory string) {
 	s.rootDir = directory
 	s.index = 0
 	s.shouldGenerateSimilarHashed = true
 	s.updateImages()
 }
 
-func (s *internalManager) GetImages() []*apitype.ImageFileWithMetaData {
+func (s *internalService) GetImages() []*apitype.ImageFileWithMetaData {
 	images, _ := s.imageStore.GetAllImages()
 	return images
 }
 
-func (s *internalManager) ShowOnlyImages(categoryId apitype.CategoryId) {
+func (s *internalService) ShowOnlyImages(categoryId apitype.CategoryId) {
 	s.selectedCategoryId = categoryId
 	s.index = 0
 }
 
-func (s *internalManager) ShowAllImages() {
+func (s *internalService) ShowAllImages() {
 	s.selectedCategoryId = apitype.NoCategory
 }
 
-func (s *internalManager) GenerateHashes(sender api.Sender) bool {
+func (s *internalService) GenerateHashes(sender api.Sender) bool {
 	s.hashCalculator = NewHashCalculator(s.similarityIndex, s.imageLoader, s.getThreadCount())
 
 	shouldSendSimilarImages := false
@@ -118,17 +118,17 @@ func (s *internalManager) GenerateHashes(sender api.Sender) bool {
 	return shouldSendSimilarImages
 }
 
-func (s *internalManager) SetSimilarStatus(sendSimilarImages bool) {
+func (s *internalService) SetSimilarStatus(sendSimilarImages bool) {
 	s.shouldSendSimilar = sendSimilarImages
 }
 
-func (s *internalManager) StopHashes() {
+func (s *internalService) StopHashes() {
 	if s.hashCalculator != nil {
 		s.hashCalculator.StopHashes()
 	}
 }
 
-func (s *internalManager) MoveToImage(imageId apitype.ImageId) {
+func (s *internalService) MoveToImage(imageId apitype.ImageId) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	for imageIndex, image := range images {
 		if imageId == image.Id() {
@@ -137,7 +137,7 @@ func (s *internalManager) MoveToImage(imageId apitype.ImageId) {
 	}
 }
 
-func (s *internalManager) MoveToImageAt(index int) {
+func (s *internalService) MoveToImageAt(index int) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if index >= 0 {
 		s.index = index
@@ -153,23 +153,23 @@ func (s *internalManager) MoveToImageAt(index int) {
 	}
 }
 
-func (s *internalManager) RequestNextImage() {
+func (s *internalService) RequestNextImage() {
 	s.MoveToNextImageWithOffset(1)
 }
 
-func (s *internalManager) RequestPreviousImage() {
+func (s *internalService) RequestPreviousImage() {
 	s.MoveToPreviousImageWithOffset(1)
 }
 
-func (s *internalManager) MoveToNextImageWithOffset(offset int) {
+func (s *internalService) MoveToNextImageWithOffset(offset int) {
 	s.requestImageWithOffset(offset)
 }
 
-func (s *internalManager) MoveToPreviousImageWithOffset(offset int) {
+func (s *internalService) MoveToPreviousImageWithOffset(offset int) {
 	s.requestImageWithOffset(-offset)
 }
 
-func (s *internalManager) requestImageWithOffset(offset int) {
+func (s *internalService) requestImageWithOffset(offset int) {
 	s.index += offset
 
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
@@ -181,7 +181,7 @@ func (s *internalManager) requestImageWithOffset(offset int) {
 	}
 }
 
-func (s *internalManager) SetImageListSize(imageListSize int) bool {
+func (s *internalService) SetImageListSize(imageListSize int) bool {
 	if s.imageListSize != imageListSize {
 		s.imageListSize = imageListSize
 		return true
@@ -190,7 +190,7 @@ func (s *internalManager) SetImageListSize(imageListSize int) bool {
 	}
 }
 
-func (s *internalManager) AddImageFiles(imageList []*apitype.ImageFile) error {
+func (s *internalService) AddImageFiles(imageList []*apitype.ImageFile) error {
 	s.index = 0
 	start := time.Now()
 	if err := s.imageStore.AddImages(imageList); err != nil {
@@ -206,13 +206,13 @@ func (s *internalManager) AddImageFiles(imageList []*apitype.ImageFile) error {
 	return nil
 }
 
-func (s *internalManager) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
+func (s *internalService) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
 	return s.imageStore.GetImageById(imageId)
 }
 
 // Private API
 
-func (s *internalManager) getCurrentImage() (*apitype.ImageFileAndData, int, error) {
+func (s *internalService) getCurrentImage() (*apitype.ImageFileAndData, int, error) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
 		imageFile := images[s.index]
@@ -227,20 +227,20 @@ func (s *internalManager) getCurrentImage() (*apitype.ImageFileAndData, int, err
 	}
 }
 
-func (s *internalManager) getTotalImages() int {
+func (s *internalService) getTotalImages() int {
 	return s.imageStore.GetImageCount(s.selectedCategoryId)
 }
-func (s *internalManager) getSelectedCategoryId() apitype.CategoryId {
+func (s *internalService) getSelectedCategoryId() apitype.CategoryId {
 	return s.selectedCategoryId
 }
-func (s *internalManager) shouldSendSimilarImages() bool {
+func (s *internalService) shouldSendSimilarImages() bool {
 	return s.shouldSendSimilar
 }
-func (s *internalManager) getImageListSize() int {
+func (s *internalService) getImageListSize() int {
 	return s.imageListSize
 }
 
-func (s *internalManager) getNextImages() ([]*apitype.ImageFileAndData, error) {
+func (s *internalService) getNextImages() ([]*apitype.ImageFileAndData, error) {
 	if images, err := s.imageStore.GetNextImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyImageFiles, err
 	} else {
@@ -248,7 +248,7 @@ func (s *internalManager) getNextImages() ([]*apitype.ImageFileAndData, error) {
 	}
 }
 
-func (s *internalManager) getPreviousImages() ([]*apitype.ImageFileAndData, error) {
+func (s *internalService) getPreviousImages() ([]*apitype.ImageFileAndData, error) {
 	if slice, err := s.imageStore.GetPreviousImagesInCategory(s.imageListSize, s.index, s.selectedCategoryId); err != nil {
 		return emptyImageFiles, err
 	} else if images, err := s.toImageContainers(slice); err != nil {
@@ -258,7 +258,7 @@ func (s *internalManager) getPreviousImages() ([]*apitype.ImageFileAndData, erro
 	}
 }
 
-func (s *internalManager) toImageContainers(nextImageFiles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageFileAndData, error) {
+func (s *internalService) toImageContainers(nextImageFiles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageFileAndData, error) {
 	images := make([]*apitype.ImageFileAndData, len(nextImageFiles))
 	for i, imageFile := range nextImageFiles {
 		if thumbnail, err := s.imageCache.GetThumbnail(imageFile.Id()); err != nil {
@@ -272,7 +272,7 @@ func (s *internalManager) toImageContainers(nextImageFiles []*apitype.ImageFileW
 	return images, nil
 }
 
-func (s *internalManager) updateImages() error {
+func (s *internalService) updateImages() error {
 	imageFiles := apitype.LoadImageFiles(s.rootDir)
 	if err := s.AddImageFiles(imageFiles); err != nil {
 		return err
@@ -283,12 +283,12 @@ func (s *internalManager) updateImages() error {
 	}
 }
 
-func (s *internalManager) getThreadCount() int {
+func (s *internalService) getThreadCount() int {
 	cpuCores := runtime.NumCPU()
 	return cpuCores
 }
 
-func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFileAndData, bool, error) {
+func (s *internalService) getSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFileAndData, bool, error) {
 	similarImages := s.similarityIndex.GetSimilarImages(imageId)
 	if len(similarImages) > 0 {
 		containers := make([]*apitype.ImageFileAndData, len(similarImages))
@@ -309,7 +309,7 @@ func (s *internalManager) getSimilarImages(imageId apitype.ImageId) ([]*apitype.
 	}
 }
 
-func (s *internalManager) removeMissingImages(imageFiles []*apitype.ImageFile) error {
+func (s *internalService) removeMissingImages(imageFiles []*apitype.ImageFile) error {
 	if images, err := s.imageStore.GetAllImages(); err != nil {
 		logger.Error.Print("Error while loading images", err)
 		return err
