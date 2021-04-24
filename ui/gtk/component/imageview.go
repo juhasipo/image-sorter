@@ -80,8 +80,8 @@ func (s *ImageView) UpdateCurrentImage() {
 	s.currentImage.UpdateCurrentImage()
 }
 
-func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageFileAndData) {
-	s.currentImage.SetCurrentImage(imageContainer)
+func (s *ImageView) SetCurrentImage(imageContainer *apitype.ImageFileAndData, metaData *apitype.ImageMetaData) {
+	s.currentImage.SetCurrentImage(imageContainer, metaData)
 }
 
 func (s *ImageView) AddImagesToNextStore(images []*apitype.ImageFileAndData) {

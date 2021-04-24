@@ -215,19 +215,20 @@ func (s *internalService) GetImageFileById(imageId apitype.ImageId) *apitype.Ima
 
 // Private API
 
-func (s *internalService) getCurrentImage() (*apitype.ImageFileAndData, int, error) {
+func (s *internalService) getCurrentImage() (*apitype.ImageFileAndData, *apitype.ImageMetaData, int, error) {
 	images, _ := s.imageStore.GetImagesInCategory(-1, 0, s.selectedCategoryId)
 	if s.index < len(images) {
 		imageFile := images[s.index]
 		if full, err := s.imageCache.GetFull(imageFile.Id()); err != nil {
 			logger.Error.Print("Error while loading full image", err)
-			return apitype.NewEmptyImageContainer(), 0, err
+			return apitype.NewEmptyImageContainer(), apitype.NewInvalidImageMetaData(), 0, err
+		} else if metaData, err := s.imageMetaDataStore.GetMetaDataByImageId(imageFile.Id()); err != nil {
+			return apitype.NewEmptyImageContainer(), apitype.NewInvalidImageMetaData(), 0, nil
 		} else {
-			return apitype.NewImageContainer(imageFile, full), s.index, nil
+			return apitype.NewImageContainer(imageFile, full), metaData, s.index, nil
 		}
-	} else {
-		return apitype.NewEmptyImageContainer(), 0, nil
 	}
+	return apitype.NewEmptyImageContainer(), apitype.NewInvalidImageMetaData(), 0, nil
 }
 
 func (s *internalService) getTotalImages() int {

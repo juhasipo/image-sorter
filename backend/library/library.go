@@ -44,7 +44,7 @@ func (s *Service) ShowAllImages() {
 
 func (s *Service) RequestGenerateHashes() {
 	if s.service.GenerateHashes(s.sender) {
-		if image, _, err := s.service.getCurrentImage(); err != nil {
+		if image, _, _, err := s.service.getCurrentImage(); err != nil {
 			s.sender.SendError("Error while generating hashes", err)
 		} else {
 			s.sendSimilarImages(image.ImageFile().Id())
@@ -119,7 +119,7 @@ func (s *Service) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile {
 // Private API
 
 func (s *Service) sendImages(sendCurrentImage bool) {
-	if currentImage, currentIndex, err := s.service.getCurrentImage(); err != nil {
+	if currentImage, metaData, currentIndex, err := s.service.getCurrentImage(); err != nil {
 		s.sender.SendError("Error while fetching images", err)
 	} else {
 		totalImages := s.service.getTotalImages()
@@ -130,6 +130,7 @@ func (s *Service) sendImages(sendCurrentImage bool) {
 		if sendCurrentImage {
 			s.sender.SendCommandToTopic(api.ImageCurrentUpdated, &api.UpdateImageCommand{
 				Image:      currentImage,
+				MetaData:   metaData,
 				Index:      currentIndex,
 				Total:      totalImages,
 				CategoryId: s.service.getSelectedCategoryId(),

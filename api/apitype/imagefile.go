@@ -58,10 +58,6 @@ func NewImageFileWithIdSizeAndOrientation(id ImageId, fileDir string, fileName s
 	}
 }
 
-func NewImageFileWithSizeAndOrientation(fileDir string, fileName string, byteSize int64, rotation float64, flipped bool) *ImageFile {
-	return NewImageFileWithIdSizeAndOrientation(NoImage, fileDir, fileName, byteSize, rotation, flipped)
-}
-
 func NewImageFile(fileDir string, fileName string) *ImageFile {
 	return NewImageFileWithIdSizeAndOrientation(NoImage, fileDir, fileName, 0, 0.0, false)
 }
@@ -151,6 +147,12 @@ func (s *ImageFile) Rotation() (float64, bool) {
 func NewImageMetaData(data map[string]string) *ImageMetaData {
 	return &ImageMetaData{
 		data: data,
+	}
+}
+
+func NewInvalidImageMetaData() *ImageMetaData {
+	return &ImageMetaData{
+		data: map[string]string{},
 	}
 }
 

@@ -24,6 +24,7 @@ type UpdateCategoriesCommand struct {
 
 type UpdateImageCommand struct {
 	Image      *apitype.ImageFileAndData
+	MetaData   *apitype.ImageMetaData
 	Index      int
 	Total      int
 	CategoryId apitype.CategoryId

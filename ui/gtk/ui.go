@@ -206,7 +206,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	s.topActionView.SetCurrentStatus(command.Index, command.Total, command.CategoryId)
 	s.bottomActionView.SetShowOnlyCategory(command.CategoryId != -1)
-	s.imageView.SetCurrentImage(command.Image)
+	s.imageView.SetCurrentImage(command.Image, command.MetaData)
 	s.UpdateCurrentImage()
 	s.sendCurrentImageChangedEvent()
 
