@@ -29,11 +29,13 @@ type internalService struct {
 	imageLoader                 api.ImageLoader
 	similarityIndex             *database.SimilarityIndex
 	imageStore                  *database.ImageStore
+	imageMetaDataStore          *database.ImageMetaDataStore
 	hashCalculator              *HashCalculator
 }
 
 func newImageService(imageCache api.ImageStore, imageLoader api.ImageLoader,
-	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) *internalService {
+	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore,
+	imageMetaDataStore *database.ImageMetaDataStore) *internalService {
 	var service = internalService{
 		index:                       0,
 		shouldGenerateSimilarHashed: true,
@@ -43,6 +45,7 @@ func newImageService(imageCache api.ImageStore, imageLoader api.ImageLoader,
 		imageLoader:                 imageLoader,
 		similarityIndex:             similarityIndex,
 		imageStore:                  imageStore,
+		imageMetaDataStore:          imageMetaDataStore,
 		selectedCategoryId:          apitype.NoCategory,
 	}
 	return &service
@@ -55,7 +58,7 @@ func (s *internalService) InitializeFromDirectory(directory string) {
 	s.updateImages()
 }
 
-func (s *internalService) GetImages() []*apitype.ImageFileWithMetaData {
+func (s *internalService) GetImages() []*apitype.ImageFile {
 	images, _ := s.imageStore.GetAllImages()
 	return images
 }
@@ -192,21 +195,21 @@ func (s *internalService) SetImageListSize(imageListSize int) bool {
 
 func (s *internalService) AddImageFiles(imageList []*apitype.ImageFile) error {
 	s.index = 0
-	start := time.Now()
-	if err := s.imageStore.AddImages(imageList); err != nil {
-		logger.Error.Print("cannot add images", err)
+	if err := s.addImagesToDb(imageList); err != nil {
 		return err
 	}
-	end := time.Now()
 
-	imageCount := len(imageList)
-	duration := end.Sub(start)
-	avg := duration / time.Duration(imageCount)
-	logger.Debug.Printf("Added %d images in %s (avg. %s/image)", imageCount, duration, avg)
+	if images, err := s.imageStore.GetAllImages(); err != nil {
+		logger.Error.Print("cannot read images", err)
+		return err
+	} else if err := s.addImageMetaDataToDb(images); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *internalService) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
+func (s *internalService) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile {
 	return s.imageStore.GetImageById(imageId)
 }
 
@@ -258,7 +261,7 @@ func (s *internalService) getPreviousImages() ([]*apitype.ImageFileAndData, erro
 	}
 }
 
-func (s *internalService) toImageContainers(nextImageFiles []*apitype.ImageFileWithMetaData) ([]*apitype.ImageFileAndData, error) {
+func (s *internalService) toImageContainers(nextImageFiles []*apitype.ImageFile) ([]*apitype.ImageFileAndData, error) {
 	images := make([]*apitype.ImageFileAndData, len(nextImageFiles))
 	for i, imageFile := range nextImageFiles {
 		if thumbnail, err := s.imageCache.GetThumbnail(imageFile.Id()); err != nil {
@@ -323,7 +326,7 @@ func (s *internalService) removeMissingImages(imageFiles []*apitype.ImageFile) e
 
 		for _, image := range images {
 			if _, ok := existing[image.FileName()]; !ok {
-				toRemove[image.Id()] = &image.ImageFile
+				toRemove[image.Id()] = image
 			}
 		}
 		if len(toRemove) > 0 {
@@ -341,4 +344,34 @@ func (s *internalService) removeMissingImages(imageFiles []*apitype.ImageFile) e
 		}
 		return nil
 	}
+}
+
+func (s *internalService) addImagesToDb(imageList []*apitype.ImageFile) error {
+	start := time.Now()
+	if err := s.imageStore.AddImages(imageList); err != nil {
+		logger.Error.Print("cannot add images", err)
+		return err
+	}
+	end := time.Now()
+
+	imageCount := len(imageList)
+	duration := end.Sub(start)
+	avg := duration / time.Duration(imageCount)
+	logger.Debug.Printf("Added %d images in %s (avg. %s/image)", imageCount, duration, avg)
+	return nil
+}
+
+func (s *internalService) addImageMetaDataToDb(images []*apitype.ImageFile) error {
+	start := time.Now()
+	if err := s.imageMetaDataStore.AddMetaDataForImages(images, s.imageLoader.LoadExifData); err != nil {
+		return err
+	}
+
+	end := time.Now()
+
+	imageCount := len(images)
+	duration := end.Sub(start)
+	avg := duration / time.Duration(imageCount)
+	logger.Debug.Printf("Added meta data for %d images in %s (avg. %s/image)", imageCount, duration, avg)
+	return nil
 }

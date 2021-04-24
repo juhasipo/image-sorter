@@ -15,11 +15,10 @@ func NewImageExifRotate() apitype.ImageOperation {
 }
 func (s *ImageExifRotate) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
 	imageFile := operationGroup.ImageFile()
-	metaData := operationGroup.MetaData()
 	imageData := operationGroup.ImageData()
 	exifData := operationGroup.ExifData()
 	logger.Debug.Printf("Exif rotate %s", imageFile.Path())
-	rotation, flipped := metaData.Rotation()
+	rotation, flipped := operationGroup.ImageFile().Rotation()
 	rotatedImage, err := apitype.ExifRotateImage(imageData, rotation, flipped)
 	if err != nil {
 		return imageData, exifData, err

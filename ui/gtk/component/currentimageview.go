@@ -154,7 +154,6 @@ const showExifData = false
 func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageFileAndData) {
 	s.imageChanged = true
 	imageFile := imageContainer.ImageFile()
-	metaData := imageContainer.MetaData()
 	imageData := imageContainer.ImageData()
 	s.imageInstance = imageData
 
@@ -162,17 +161,18 @@ func (s *CurrentImageView) SetCurrentImage(imageContainer *apitype.ImageFileAndD
 		size := imageData.Bounds()
 		buffer, _ := s.details.GetBuffer()
 		stringBuffer := bytes.NewBuffer([]byte{})
-		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", imageFile.Path(), metaData.ByteSizeInMB(), size.Dx(), size.Dy()))
+		stringBuffer.WriteString(fmt.Sprintf("%s\n%.2f MB (%d x %d)", imageFile.Path(), imageFile.ByteSizeInMB(), size.Dx(), size.Dy()))
 
-		if showExifData {
-			for key, value := range metaData.MetaData() {
-				stringBuffer.WriteString("\n")
-				stringBuffer.WriteString(key)
-				stringBuffer.WriteString(": ")
-				stringBuffer.WriteString(value)
+		/*
+			if showExifData {
+				for key, value := range metaData.MetaData() {
+					stringBuffer.WriteString("\n")
+					stringBuffer.WriteString(key)
+					stringBuffer.WriteString(": ")
+					stringBuffer.WriteString(value)
+				}
 			}
-
-		}
+		*/
 
 		buffer.SetText(stringBuffer.String())
 		s.image = imageFile

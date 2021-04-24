@@ -1,7 +1,6 @@
 package imageloader
 
 import (
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
@@ -16,25 +15,20 @@ type StubImageFileConverter struct {
 
 func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*database.Image, map[string]string, error) {
 	metaData := map[string]string{}
-	if jsonData, err := json.Marshal(metaData); err != nil {
-		return nil, nil, err
-	} else {
-		return &database.Image{
-			Id:              0,
-			Name:            imageFile.FileName(),
-			FileName:        imageFile.FileName(),
-			Directory:       imageFile.Directory(),
-			ByteSize:        1234,
-			ExifOrientation: 1,
-			ImageAngle:      90,
-			ImageFlip:       true,
-			CreatedTime:     time.Now(),
-			Width:           1024,
-			Height:          2048,
-			ModifiedTime:    time.Now(),
-			ExifData:        jsonData,
-		}, metaData, nil
-	}
+	return &database.Image{
+		Id:              0,
+		Name:            imageFile.FileName(),
+		FileName:        imageFile.FileName(),
+		Directory:       imageFile.Directory(),
+		ByteSize:        1234,
+		ExifOrientation: 1,
+		ImageAngle:      90,
+		ImageFlip:       true,
+		CreatedTime:     time.Now(),
+		Width:           1024,
+		Height:          2048,
+		ModifiedTime:    time.Now(),
+	}, metaData, nil
 }
 
 func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {

@@ -122,7 +122,7 @@ func (s *Service) ResolveFileOperations(
 }
 
 func (s *Service) ResolveOperationsForGroup(
-	imageFile *apitype.ImageFileWithMetaData,
+	imageFile *apitype.ImageFile,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
 	dir, file := imageFile.Directory(), imageFile.FileName()
@@ -146,7 +146,7 @@ func (s *Service) ResolveOperationsForGroup(
 	if fullImage, err := s.imageLoader.LoadImage(imageFile.Id()); err != nil {
 		s.sender.SendError("Could not load image", err)
 		return nil, err
-	} else if exifData, err := s.imageLoader.LoadExifData(imageFile.Id()); err != nil {
+	} else if exifData, err := s.imageLoader.LoadExifData(imageFile); err != nil {
 		s.sender.SendError("Could not load exif data", err)
 		return nil, err
 	} else {

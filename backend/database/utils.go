@@ -1,7 +1,6 @@
 package database
 
 import (
-	"encoding/json"
 	"os"
 	"time"
 	"vincit.fi/image-sorter/api"
@@ -14,22 +13,14 @@ func idToCategoryId(id interface{}) apitype.CategoryId {
 	return apitype.CategoryId(id.(int64))
 }
 
-func toImageFile(image *Image) (*apitype.ImageFileWithMetaData, error) {
-	var metaData = map[string]string{}
-	if err := json.Unmarshal(image.ExifData, &metaData); err != nil {
-		return nil, err
-	}
-	imageFile := apitype.NewImageFileWithId(
-		image.Id, image.Directory, image.FileName,
-	)
-	imageMetaData := apitype.NewImageMetaData(
-		image.ByteSize, float64(image.ImageAngle), image.ImageFlip, metaData,
-	)
-	return apitype.NewImageFileAndMetaData(imageFile, imageMetaData), nil
+func toImageFile(image *Image) (*apitype.ImageFile, error) {
+	return apitype.NewImageFileWithIdSizeAndOrientation(
+		image.Id, image.Directory, image.FileName, image.ByteSize, float64(image.ImageAngle), image.ImageFlip,
+	), nil
 }
 
-func toImageFiles(images []Image) []*apitype.ImageFileWithMetaData {
-	imageFiles := make([]*apitype.ImageFileWithMetaData, len(images))
+func toImageFiles(images []Image) []*apitype.ImageFile {
+	imageFiles := make([]*apitype.ImageFile, len(images))
 	for i, image := range images {
 		imageFiles[i], _ = toImageFile(&image)
 	}
@@ -95,14 +86,6 @@ func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.Ima
 	fileStatEnd := time.Now()
 	logger.Trace.Printf(" - Loaded file info in %s", fileStatEnd.Sub(fileStatStart))
 
-	w := util.NewMapExifWalker()
-	exifData.Walk(w)
-
-	metaDataJson, err := json.Marshal(w.MetaData())
-	if err != nil {
-		return nil, nil, err
-	}
-
 	return &Image{
 		Name:            imageFile.FileName(),
 		FileName:        imageFile.FileName(),
@@ -114,6 +97,5 @@ func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.Ima
 		Width:           exifData.ImageWidth(),
 		Height:          exifData.ImageHeight(),
 		ModifiedTime:    fileStat.ModTime(),
-		ExifData:        metaDataJson,
-	}, w.MetaData(), nil
+	}, exifData.Values(), nil
 }

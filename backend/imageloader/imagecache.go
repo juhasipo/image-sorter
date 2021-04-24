@@ -20,7 +20,7 @@ type DefaultImageStore struct {
 	api.ImageStore
 }
 
-func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFileWithMetaData) {
+func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.imageCache = map[apitype.ImageId]*Instance{}

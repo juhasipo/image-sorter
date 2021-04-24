@@ -48,6 +48,7 @@ func initAndRun(params *common.Params) {
 
 type Stores struct {
 	ImageStore           *database.ImageStore
+	ImageMetaDataStore   *database.ImageMetaDataStore
 	SimilarityIndex      *database.SimilarityIndex
 	CategoryStore        *database.CategoryStore
 	DefaultCategoryStore *database.CategoryStore
@@ -172,7 +173,7 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 
 func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
 	filterService := filter.NewFilterService()
-	imageService := library.NewImageService(brokers.Broker, imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore)
+	imageService := library.NewImageService(brokers.Broker, imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore)
 	services := &Services{
 		CategoryService:        category.NewCategoryService(params, brokers.Broker, stores.CategoryStore),
 		DefaultCategoryService: category.NewCategoryService(params, brokers.DevNullBroker, stores.DefaultCategoryStore),
@@ -204,6 +205,7 @@ func initializeStores() *Stores {
 
 	stores := &Stores{
 		ImageStore:           database.NewImageStore(workDirDb, &database.FileSystemImageFileConverter{}),
+		ImageMetaDataStore:   database.NewImageMetaDataStore(workDirDb),
 		SimilarityIndex:      database.NewSimilarityIndex(workDirDb),
 		CategoryStore:        database.NewCategoryStore(workDirDb),
 		ImageCategoryStore:   database.NewImageCategoryStore(workDirDb),

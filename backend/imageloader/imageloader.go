@@ -27,8 +27,8 @@ type LibJPEGImageLoader struct {
 
 func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, error) {
 	if imageId != apitype.NoImage {
-		if imageFileWithMetaData := s.imageStore.GetImageById(imageId); imageFileWithMetaData != nil {
-			file, err := os.Open(imageFileWithMetaData.Path())
+		if storedImageFile := s.imageStore.GetImageById(imageId); storedImageFile != nil {
+			file, err := os.Open(storedImageFile.Path())
 			if err != nil {
 				return nil, err
 			}
@@ -39,7 +39,7 @@ func (s *LibJPEGImageLoader) LoadImage(imageId apitype.ImageId) (image.Image, er
 				return nil, err
 			}
 
-			rotation, flipped := imageFileWithMetaData.Rotation()
+			rotation, flipped := storedImageFile.Rotation()
 			return apitype.ExifRotateImage(imageFile, rotation, flipped)
 		} else {
 			return nil, errors.New("image not found in DB")
@@ -73,7 +73,6 @@ func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apity
 	}
 }
 
-func (s *LibJPEGImageLoader) LoadExifData(imageId apitype.ImageId) (*apitype.ExifData, error) {
-	imageFile := s.imageStore.GetImageById(imageId)
-	return util.LoadExifData(&imageFile.ImageFile)
+func (s *LibJPEGImageLoader) LoadExifData(imageFile *apitype.ImageFile) (*apitype.ExifData, error) {
+	return util.LoadExifData(imageFile)
 }

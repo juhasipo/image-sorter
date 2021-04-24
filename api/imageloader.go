@@ -8,5 +8,5 @@ import (
 type ImageLoader interface {
 	LoadImage(apitype.ImageId) (image.Image, error)
 	LoadImageScaled(apitype.ImageId, apitype.Size) (image.Image, error)
-	LoadExifData(apitype.ImageId) (*apitype.ExifData, error)
+	LoadExifData(*apitype.ImageFile) (*apitype.ExifData, error)
 }

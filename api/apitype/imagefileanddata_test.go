@@ -10,12 +10,8 @@ func TestImageContainer_String(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		imageFile := NewImageFileWithId(1, "foo", "bar")
-		imageMetaData := NewImageMetaData(1024, 90, true, map[string]string{})
 
-		container := NewImageContainer(&ImageFileWithMetaData{
-			ImageFile:     *imageFile,
-			ImageMetaData: *imageMetaData,
-		}, nil)
+		container := NewImageContainer(imageFile, nil)
 		a.Equal("ImageFileAndData{ImageFile{bar}}", container.String())
 	})
 	t.Run("Nil ImageFile", func(t *testing.T) {

@@ -53,7 +53,7 @@ type ImageCategoryService interface {
 	ShowOnlyCategoryImages(*SelectCategoryCommand)
 
 	ResolveFileOperations(map[apitype.ImageId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) []*apitype.ImageOperationGroup
-	ResolveOperationsForGroup(*apitype.ImageFileWithMetaData, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
+	ResolveOperationsForGroup(*apitype.ImageFile, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()
 }

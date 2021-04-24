@@ -17,10 +17,10 @@ type Service struct {
 	api.ImageService
 }
 
-func NewImageService(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore) api.ImageService {
+func NewImageService(sender api.Sender, imageCache api.ImageStore, imageLoader api.ImageLoader, similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore, imageMetaDataStore *database.ImageMetaDataStore) api.ImageService {
 	return &Service{
 		sender:  sender,
-		service: newImageService(imageCache, imageLoader, similarityIndex, imageStore),
+		service: newImageService(imageCache, imageLoader, similarityIndex, imageStore, imageMetaDataStore),
 	}
 }
 
@@ -28,7 +28,7 @@ func (s *Service) InitializeFromDirectory(directory string) {
 	s.service.InitializeFromDirectory(directory)
 }
 
-func (s *Service) GetImageFiles() []*apitype.ImageFileWithMetaData {
+func (s *Service) GetImageFiles() []*apitype.ImageFile {
 	return s.service.GetImages()
 }
 
@@ -112,7 +112,7 @@ func (s *Service) AddImageFiles(imageList []*apitype.ImageFile) {
 	}
 }
 
-func (s *Service) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
+func (s *Service) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile {
 	return s.service.GetImageFileById(imageId)
 }
 

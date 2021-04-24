@@ -12,10 +12,7 @@ type ImageId int64
 const NoImage = ImageId(-1)
 
 type ImageMetaData struct {
-	byteSize int64
-	rotation float64
-	flipped  bool
-	metaData map[string]string
+	data map[string]string
 }
 
 type ImageFile struct {
@@ -23,11 +20,9 @@ type ImageFile struct {
 	directory string
 	filename  string
 	path      string
-}
-
-type ImageFileWithMetaData struct {
-	ImageFile
-	ImageMetaData
+	byteSize  int64
+	rotation  float64
+	flipped   bool
 }
 
 func (s *ImageFile) IsValid() bool {
@@ -45,11 +40,30 @@ func NewImageFileWithId(id ImageId, fileDir string, fileName string) *ImageFile 
 		directory: fileDir,
 		filename:  fileName,
 		path:      filepath.Join(fileDir, fileName),
+		byteSize:  0,
+		rotation:  0.0,
+		flipped:   false,
 	}
 }
 
+func NewImageFileWithIdSizeAndOrientation(id ImageId, fileDir string, fileName string, byteSize int64, rotation float64, flipped bool) *ImageFile {
+	return &ImageFile{
+		id:        id,
+		directory: fileDir,
+		filename:  fileName,
+		path:      filepath.Join(fileDir, fileName),
+		byteSize:  byteSize,
+		rotation:  rotation,
+		flipped:   flipped,
+	}
+}
+
+func NewImageFileWithSizeAndOrientation(fileDir string, fileName string, byteSize int64, rotation float64, flipped bool) *ImageFile {
+	return NewImageFileWithIdSizeAndOrientation(NoImage, fileDir, fileName, byteSize, rotation, flipped)
+}
+
 func NewImageFile(fileDir string, fileName string) *ImageFile {
-	return NewImageFileWithId(NoImage, fileDir, fileName)
+	return NewImageFileWithIdSizeAndOrientation(NoImage, fileDir, fileName, 0, 0.0, false)
 }
 
 func GetEmptyImageFile() *ImageFile {
@@ -108,28 +122,13 @@ func (s *ImageFile) FileName() string {
 	}
 }
 
-func NewImageMetaData(byteSize int64, rotation float64, flipped bool, metaData map[string]string) *ImageMetaData {
-	return &ImageMetaData{
-		byteSize: byteSize,
-		rotation: rotation,
-		flipped:  flipped,
-		metaData: metaData,
-	}
+func (s *ImageFile) SetMetaData(byteSize int64, rotation float64, flipped bool) {
+	s.byteSize = byteSize
+	s.rotation = rotation
+	s.flipped = flipped
 }
 
-func (s *ImageMetaData) MetaData() map[string]string {
-	if s != nil {
-		return s.metaData
-	} else {
-		return map[string]string{}
-	}
-}
-
-func (s *ImageMetaData) SetByteSize(length int64) {
-	s.byteSize = length
-}
-
-func (s *ImageMetaData) ByteSize() int64 {
+func (s *ImageFile) ByteSize() int64 {
 	if s != nil {
 		return s.byteSize
 	} else {
@@ -137,7 +136,7 @@ func (s *ImageMetaData) ByteSize() int64 {
 	}
 }
 
-func (s *ImageMetaData) ByteSizeInMB() float64 {
+func (s *ImageFile) ByteSizeInMB() float64 {
 	if s != nil {
 		return float64(s.byteSize) / (1024.0 * 1024.0)
 	} else {
@@ -145,14 +144,21 @@ func (s *ImageMetaData) ByteSizeInMB() float64 {
 	}
 }
 
-func (s *ImageMetaData) Rotation() (float64, bool) {
+func (s *ImageFile) Rotation() (float64, bool) {
 	return s.rotation, s.flipped
 }
 
-func NewImageFileAndMetaData(imageFile *ImageFile, metaData *ImageMetaData) *ImageFileWithMetaData {
-	return &ImageFileWithMetaData{
-		ImageFile:     *imageFile,
-		ImageMetaData: *metaData,
+func NewImageMetaData(data map[string]string) *ImageMetaData {
+	return &ImageMetaData{
+		data: data,
+	}
+}
+
+func (s *ImageMetaData) MetaData() map[string]string {
+	if s != nil {
+		return s.data
+	} else {
+		return map[string]string{}
 	}
 }
 

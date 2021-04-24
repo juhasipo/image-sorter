@@ -31,7 +31,7 @@ func NewHashCalculator(similarityIndex *database.SimilarityIndex, imageLoader ap
 	}
 }
 
-func (s *HashCalculator) GenerateHashes(images []*apitype.ImageFileWithMetaData, statusCallback func(int, int)) (map[apitype.ImageId]*duplo.Hash, error) {
+func (s *HashCalculator) GenerateHashes(images []*apitype.ImageFile, statusCallback func(int, int)) (map[apitype.ImageId]*duplo.Hash, error) {
 	startTime := time.Now()
 	hashExpected := len(images)
 	logger.Info.Printf("Generate hashes for %d images...", hashExpected)
@@ -49,7 +49,7 @@ func (s *HashCalculator) GenerateHashes(images []*apitype.ImageFileWithMetaData,
 
 		// Add images to input queue for goroutines
 		for _, imageFile := range images {
-			inputChannel <- &imageFile.ImageFile
+			inputChannel <- imageFile
 		}
 
 		// Spin up goroutines which will process the data

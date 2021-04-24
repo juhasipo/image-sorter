@@ -45,11 +45,11 @@ func (s *ImageStore) AddImages(imageFiles []*apitype.ImageFile) error {
 	})
 }
 
-func (s *ImageStore) AddImage(imageFile *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) AddImage(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	return s.addImage(s.getCollection().Session(), imageFile)
 }
 
-func (s *ImageStore) addImage(session db.Session, imageFile *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) addImage(session db.Session, imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	collection := s.getCollectionForSession(session)
 
 	logger.Trace.Printf("Adding image '%s'", imageFile.String())
@@ -133,16 +133,16 @@ func (s *ImageStore) GetImageCount(categoryId apitype.CategoryId) int {
 	return counter.Count
 }
 
-func (s *ImageStore) GetAllImages() ([]*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) GetAllImages() ([]*apitype.ImageFile, error) {
 	return s.GetImagesInCategory(-1, 0, apitype.NoCategory)
 }
 
-func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
 	startIndex := currentIndex + 1
 	return s.GetImagesInCategory(number, startIndex, categoryId)
 }
 
-func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
 	prevIndex := currentIndex - number
 	if prevIndex < 0 {
 		prevIndex = 0
@@ -150,7 +150,7 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 	size := currentIndex - prevIndex
 
 	if size < 0 {
-		return []*apitype.ImageFileWithMetaData{}, nil
+		return []*apitype.ImageFile{}, nil
 	} else if images, err := s.GetImagesInCategory(size, prevIndex, categoryId); err != nil {
 		return nil, err
 	} else {
@@ -159,9 +159,9 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 	}
 }
 
-func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
 	if number == 0 {
-		return make([]*apitype.ImageFileWithMetaData, 0), nil
+		return make([]*apitype.ImageFile, 0), nil
 	}
 
 	var images []Image
@@ -196,9 +196,9 @@ const (
 	desc sortDir = "DESC"
 )
 
-func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName string, sort sortDir) ([]*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName string, sort sortDir) ([]*apitype.ImageFile, error) {
 	if number == 0 {
-		return make([]*apitype.ImageFileWithMetaData, 0), nil
+		return make([]*apitype.ImageFile, 0), nil
 	}
 
 	var images []Image
@@ -226,11 +226,11 @@ func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName st
 	}
 }
 
-func (s *ImageStore) FindByDirAndFile(imageFile *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) FindByDirAndFile(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	return s.findByDirAndFile(s.getCollection(), imageFile)
 }
 
-func (s *ImageStore) findByDirAndFile(collection db.Collection, imageFile *apitype.ImageFile) (*apitype.ImageFileWithMetaData, error) {
+func (s *ImageStore) findByDirAndFile(collection db.Collection, imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	var imageFiles []Image
 	err := collection.
 		Find(db.Cond{
@@ -297,7 +297,7 @@ func (s *ImageStore) update(collection db.Collection, imageId apitype.ImageId, i
 	return collection.Find(db.Cond{"id": imageId}).Update(image)
 }
 
-func (s *ImageStore) GetImageById(imageId apitype.ImageId) *apitype.ImageFileWithMetaData {
+func (s *ImageStore) GetImageById(imageId apitype.ImageId) *apitype.ImageFile {
 	var image Image
 	err := s.getCollection().Find(db.Cond{"id": imageId}).One(&image)
 

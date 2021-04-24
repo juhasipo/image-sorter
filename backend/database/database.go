@@ -162,8 +162,6 @@ func (s *Database) migrate() error {
 				height INT,
 				created_timestamp DATETIME,
 				modified_timestamp DATETIME,
-
-				exif_data BLOB,
 				
 				UNIQUE (directory, file_name),
 				UNIQUE (name)
@@ -200,8 +198,19 @@ func (s *Database) migrate() error {
 			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
 			    FOREIGN KEY(similar_image_id) REFERENCES image(id) ON DELETE CASCADE
 			
-				-- Required indices is created dynamically so that INSERT can be optimized
-			)
+			    -- Required indices is created dynamically so that INSERT can be optimized
+			);
+
+			CREATE TABLE image_meta_data (
+			    image_id INTEGER,
+			    key TEXT,
+			    value TEXT,
+
+			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX image_meta_data_idx ON image_meta_data (key, value);
+			CREATE UNIQUE INDEX image_meta_data_uq ON image_meta_data (image_id, key);
 		`
 
 		if _, err := session.SQL().Exec(query); err != nil {

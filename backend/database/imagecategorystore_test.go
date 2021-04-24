@@ -269,10 +269,10 @@ func createImages() []*apitype.ImageFile {
 	image4, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image4"))
 	image5, _ := icsImageStore.AddImage(apitype.NewImageFile("images", "image5"))
 	return []*apitype.ImageFile{
-		&image1.ImageFile,
-		&image2.ImageFile,
-		&image3.ImageFile,
-		&image4.ImageFile,
-		&image5.ImageFile,
+		image1,
+		image2,
+		image3,
+		image4,
+		image5,
 	}
 }

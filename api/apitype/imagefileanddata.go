@@ -6,7 +6,6 @@ import (
 
 type ImageFileAndData struct {
 	imageFile *ImageFile
-	metaData  *ImageMetaData
 	imageData image.Image
 }
 
@@ -26,21 +25,15 @@ func (s *ImageFileAndData) ImageData() image.Image {
 	return s.imageData
 }
 
-func (s *ImageFileAndData) MetaData() *ImageMetaData {
-	return s.metaData
-}
-
-func NewImageContainer(imageFile *ImageFileWithMetaData, imageData image.Image) *ImageFileAndData {
+func NewImageContainer(imageFile *ImageFile, imageData image.Image) *ImageFileAndData {
 	if imageFile != nil {
 		return &ImageFileAndData{
-			imageFile: &imageFile.ImageFile,
-			metaData:  &imageFile.ImageMetaData,
+			imageFile: imageFile,
 			imageData: imageData,
 		}
 	} else {
 		return &ImageFileAndData{
 			imageFile: nil,
-			metaData:  nil,
 			imageData: imageData,
 		}
 	}
@@ -49,7 +42,6 @@ func NewImageContainer(imageFile *ImageFileWithMetaData, imageData image.Image) 
 func NewEmptyImageContainer() *ImageFileAndData {
 	return &ImageFileAndData{
 		imageFile: nil,
-		metaData:  nil,
 		imageData: nil,
 	}
 }

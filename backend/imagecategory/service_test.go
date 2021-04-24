@@ -1,7 +1,6 @@
 package imagecategory
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -44,25 +43,20 @@ type StubImageFileConverter struct {
 
 func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*database.Image, map[string]string, error) {
 	metaData := map[string]string{}
-	if jsonData, err := json.Marshal(metaData); err != nil {
-		return nil, nil, err
-	} else {
-		return &database.Image{
-			Id:              0,
-			Name:            imageFile.FileName(),
-			FileName:        imageFile.FileName(),
-			Directory:       imageFile.Directory(),
-			ByteSize:        1234,
-			ExifOrientation: 1,
-			ImageAngle:      90,
-			ImageFlip:       true,
-			CreatedTime:     time.Now(),
-			Width:           1024,
-			Height:          2048,
-			ModifiedTime:    time.Now(),
-			ExifData:        jsonData,
-		}, metaData, nil
-	}
+	return &database.Image{
+		Id:              0,
+		Name:            imageFile.FileName(),
+		FileName:        imageFile.FileName(),
+		Directory:       imageFile.Directory(),
+		ByteSize:        1234,
+		ExifOrientation: 1,
+		ImageAngle:      90,
+		ImageFlip:       true,
+		CreatedTime:     time.Now(),
+		Width:           1024,
+		Height:          2048,
+		ModifiedTime:    time.Now(),
+	}, metaData, nil
 }
 
 func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {
@@ -94,8 +88,8 @@ func (s *MockImageLoader) LoadImage(apitype.ImageId) (image.Image, error) {
 	return nil, nil
 }
 
-func (s *MockImageLoader) LoadExifData(apitype.ImageId) (*apitype.ExifData, error) {
-	return nil, nil
+func (s *MockImageLoader) LoadExifData(*apitype.ImageFile) (*apitype.ExifData, error) {
+	return apitype.NewInvalidExifData(), nil
 }
 
 //// Basic cases
@@ -332,13 +326,14 @@ func TestResolveFileOperations(t *testing.T) {
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore)
+	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
 	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("filepath", "filename"))
-	lib.AddImageFiles([]*apitype.ImageFile{&imageFile.ImageFile})
+	lib.AddImageFiles([]*apitype.ImageFile{imageFile})
 
 	var imageCategories = map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage{
 		1: {
@@ -370,9 +365,10 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore)
+	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -404,9 +400,10 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore)
+	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -439,9 +436,10 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore)
+	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -474,9 +472,10 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore)
+	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)

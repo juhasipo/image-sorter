@@ -9,9 +9,34 @@ import (
 	"github.com/rwcarlsen/goexif/tiff"
 	"image"
 	"image/color"
+	"strings"
 	"time"
 	"vincit.fi/image-sorter/common/logger"
 )
+
+type MapExifWalker struct {
+	values map[string]string
+
+	exif.Walker
+}
+
+func NewMapExifWalker() *MapExifWalker {
+	return &MapExifWalker{
+		values: map[string]string{},
+	}
+}
+
+func (s *MapExifWalker) Walk(name exif.FieldName, tag *tiff.Tag) error {
+	if tagValue := strings.Trim(tag.String(), " \t\""); tagValue != "" {
+		key := string(name)
+		s.values[key] = tagValue
+	}
+	return nil
+}
+
+func (s *MapExifWalker) MetaData() map[string]string {
+	return s.values
+}
 
 const (
 	exifUnchangedOrientation  = 1
@@ -42,10 +67,12 @@ type ExifData struct {
 	rotation    gdk.PixbufRotation
 	flipped     bool
 	created     time.Time
+	values      map[string]string
 	raw         *exif.Exif
 }
 
 func NewExifData(decodedExif *exif.Exif) (*ExifData, error) {
+	walker := NewMapExifWalker()
 	if orientation, err := getInt(decodedExif, exif.Orientation); err != nil {
 		logger.Warn.Print("Could not resolve orientation", err)
 		return NewInvalidExifData(), err
@@ -58,6 +85,9 @@ func NewExifData(decodedExif *exif.Exif) (*ExifData, error) {
 	} else if height, err := getUInt32(decodedExif, exif.PixelYDimension); err != nil {
 		logger.Warn.Print("Could not resolve created value", err)
 		return NewInvalidExifData(), err
+	} else if err := decodedExif.Walk(walker); err != nil {
+		logger.Warn.Print("Could not resolve meta data ", err)
+		return NewInvalidExifData(), err
 	} else {
 		angle, flip := exifOrientationToAngleAndFlip(orientation)
 		return &ExifData{
@@ -68,6 +98,7 @@ func NewExifData(decodedExif *exif.Exif) (*ExifData, error) {
 			created:     timeValue,
 			width:       width,
 			height:      height,
+			values:      walker.MetaData(),
 		}, nil
 	}
 }
@@ -76,6 +107,14 @@ func NewInvalidExifData() *ExifData {
 	return &ExifData{
 		orientation: 1,
 		created:     time.Unix(0, 0),
+	}
+}
+
+func NewExifDataFromMap(values map[string]string) *ExifData {
+	return &ExifData{
+		orientation: 1,
+		created:     time.Unix(0, 0),
+		values:      values,
 	}
 }
 
@@ -118,8 +157,8 @@ func (s *ExifData) Get(name exif.FieldName) *tiff.Tag {
 	}
 }
 
-func (s *ExifData) Walk(walker exif.Walker) {
-	_ = s.raw.Walk(walker)
+func (s *ExifData) Values() map[string]string {
+	return s.values
 }
 
 func (s *ExifData) RawExifDataLength() uint16 {

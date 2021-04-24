@@ -79,7 +79,7 @@ func (s *SimilarityIndex) AddSimilarImage(imageId apitype.ImageId, similarId api
 	return nil
 }
 
-func (s *SimilarityIndex) GetSimilarImages(imageId apitype.ImageId) []*apitype.ImageFileWithMetaData {
+func (s *SimilarityIndex) GetSimilarImages(imageId apitype.ImageId) []*apitype.ImageFile {
 	var images []Image
 	s.getCollection().Session().SQL().
 		Select("image.*").

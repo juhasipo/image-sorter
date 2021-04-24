@@ -18,7 +18,12 @@ type Image struct {
 	Width           uint32          `db:"width"`
 	Height          uint32          `db:"height"`
 	ModifiedTime    time.Time       `db:"modified_timestamp"`
-	ExifData        []byte          `db:"exif_data"`
+}
+
+type ImageMetaData struct {
+	ImageId apitype.ImageId `db:"image_id"`
+	Key     string          `db:"key"`
+	Value   string          `db:"value"`
 }
 
 type Category struct {

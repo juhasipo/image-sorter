@@ -791,7 +791,7 @@ func TestImageStore_FindModifiedId(t *testing.T) {
 
 		a.Nil(err)
 
-		id, err := sut.FindModifiedId(&image1.ImageFile)
+		id, err := sut.FindModifiedId(image1)
 		a.Nil(err)
 
 		a.NotEqual(apitype.NoImage, id)
@@ -804,7 +804,7 @@ func TestImageStore_FindModifiedId(t *testing.T) {
 
 		a.Nil(err)
 
-		id, err := sut.FindModifiedId(&image1.ImageFile)
+		id, err := sut.FindModifiedId(image1)
 		a.Nil(err)
 
 		a.Equal(apitype.NoImage, id)

@@ -41,13 +41,17 @@ type MockImageLoader struct {
 	mock.Mock
 }
 
+func (s *MockImageLoader) LoadExifData(*apitype.ImageFile) (*apitype.ExifData, error) {
+	return apitype.NewInvalidExifData(), nil
+}
+
 type StubImageFileConverter struct {
 	database.ImageFileConverter
 }
 
 func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*database.Image, map[string]string, error) {
 	metaData := map[string]string{}
-	if jsonData, err := json.Marshal(metaData); err != nil {
+	if _, err := json.Marshal(metaData); err != nil {
 		return nil, nil, err
 	} else {
 		return &database.Image{
@@ -63,7 +67,6 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 			Width:           1024,
 			Height:          2048,
 			ModifiedTime:    time.Now(),
-			ExifData:        jsonData,
 		}, metaData, nil
 	}
 }
@@ -80,6 +83,7 @@ var (
 	store              *MockImageStore
 	loader             *MockImageLoader
 	imageStore         *database.ImageStore
+	imageMetaDataStore *database.ImageMetaDataStore
 	categoryStore      *database.CategoryStore
 	imageCategoryStore *database.ImageCategoryStore
 )
@@ -96,10 +100,11 @@ func setup() {
 func initializeSut() *internalService {
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore = database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	imageMetaDataStore = database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore = database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
 
-	return newImageService(store, loader, nil, imageStore)
+	return newImageService(store, loader, nil, imageStore, imageMetaDataStore)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {

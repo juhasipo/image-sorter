@@ -46,9 +46,9 @@ type ImageService interface {
 	RequestGenerateHashes()
 	RequestStopHashes()
 
-	GetImageFiles() []*apitype.ImageFileWithMetaData
+	GetImageFiles() []*apitype.ImageFile
 	AddImageFiles([]*apitype.ImageFile)
-	GetImageFileById(apitype.ImageId) *apitype.ImageFileWithMetaData
+	GetImageFileById(apitype.ImageId) *apitype.ImageFile
 
 	ShowAllImages()
 	ShowOnlyImages(*SelectCategoryCommand)

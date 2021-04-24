@@ -1,7 +1,6 @@
 package database
 
 import (
-	"encoding/json"
 	"os"
 	"time"
 	"vincit.fi/image-sorter/api/apitype"
@@ -17,27 +16,20 @@ type StubImageFileConverter struct {
 func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*Image, map[string]string, error) {
 	fileStat, _ := s.GetImageFileStats(imageFile)
 	metaData := map[string]string{}
-	if jsonData, err := json.Marshal(metaData); err != nil {
-		return nil, nil, err
-	} else {
-
-		return &Image{
-			Id:              0,
-			Name:            imageFile.FileName(),
-			FileName:        imageFile.FileName(),
-			Directory:       imageFile.Directory(),
-			ByteSize:        1234,
-			ExifOrientation: 1,
-			ImageAngle:      90,
-			ImageFlip:       true,
-			CreatedTime:     fileStat.ModTime(),
-			Width:           1024,
-			Height:          2048,
-			ModifiedTime:    fileStat.ModTime(),
-
-			ExifData: jsonData,
-		}, metaData, nil
-	}
+	return &Image{
+		Id:              0,
+		Name:            imageFile.FileName(),
+		FileName:        imageFile.FileName(),
+		Directory:       imageFile.Directory(),
+		ByteSize:        1234,
+		ExifOrientation: 1,
+		ImageAngle:      90,
+		ImageFlip:       true,
+		CreatedTime:     fileStat.ModTime(),
+		Width:           1024,
+		Height:          2048,
+		ModifiedTime:    fileStat.ModTime(),
+	}, metaData, nil
 }
 
 func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {
