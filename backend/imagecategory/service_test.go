@@ -324,6 +324,7 @@ func TestResolveFileOperations(t *testing.T) {
 	imageCache := new(MockImageCache)
 	imageLoader := new(MockImageLoader)
 	imageLoader.On("LoadImage", api.ImageRequestNext).Return(nil, nil)
+	sender.On("SendCommandToTopic", mock.Anything, mock.Anything)
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)

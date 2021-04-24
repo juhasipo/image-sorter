@@ -25,7 +25,7 @@ func NewImageService(sender api.Sender, imageCache api.ImageStore, imageLoader a
 }
 
 func (s *Service) InitializeFromDirectory(directory string) {
-	s.service.InitializeFromDirectory(directory)
+	s.service.InitializeFromDirectory(directory, s.sender)
 }
 
 func (s *Service) GetImageFiles() []*apitype.ImageFile {
@@ -107,7 +107,7 @@ func (s *Service) Close() {
 }
 
 func (s *Service) AddImageFiles(imageList []*apitype.ImageFile) {
-	if err := s.service.AddImageFiles(imageList); err != nil {
+	if err := s.service.AddImageFiles(imageList, s.sender); err != nil {
 		s.sender.SendError("Error while adding image", err)
 	}
 }

@@ -18,6 +18,10 @@ type MockSender struct {
 	mock.Mock
 }
 
+func (s *MockSender) SendCommandToTopic(topic api.Topic, command apitype.Command) {
+	// Noop
+}
+
 type MockImageStore struct {
 	api.ImageStore
 	mock.Mock
@@ -127,7 +131,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	imageFiles := []*apitype.ImageFile{
 		apitype.NewImageFile("/tmp", "foo1"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 
 	t.Run("Initial image", func(t *testing.T) {
 		img, metaData, index, _ := sut.getCurrentImage()
@@ -166,7 +170,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo2"),
 		apitype.NewImageFile("/tmp", "foo3"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 
 	t.Run("Initial image", func(t *testing.T) {
 		sut.RequestPreviousImage()
@@ -233,7 +237,7 @@ func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 
 	t.Run("Jump to forward 5 images", func(t *testing.T) {
 		sut.MoveToNextImageWithOffset(5)
@@ -289,7 +293,7 @@ func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 
 	t.Run("Index first image", func(t *testing.T) {
 		sut.MoveToImageAt(0)
@@ -366,7 +370,7 @@ func TestGetCurrentImage_Navigate_ImageId(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo2"),
 		apitype.NewImageFile("/tmp", "foo3"),
 		apitype.NewImageFile("/tmp", "foo4"),
-	})
+	}, sender)
 	imageFiles, _ := imageStore.GetAllImages()
 
 	t.Run("foo1", func(t *testing.T) {
@@ -413,7 +417,7 @@ func TestGetNextImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 	sut.SetImageListSize(5)
 	a.Equal(5, sut.getImageListSize())
 
@@ -488,7 +492,7 @@ func TestGetPrevImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 	sut.SetImageListSize(5)
 	a.Equal(5, sut.getImageListSize())
 
@@ -564,7 +568,7 @@ func TestGetTotalCount(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles)
+	sut.AddImageFiles(imageFiles, sender)
 
 	a.Equal(10, sut.getTotalImages())
 }
@@ -587,7 +591,7 @@ func TestShowOnlyImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo7"),
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
-	})
+	}, sender)
 	imageFiles, _ := imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))
 	category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))
@@ -666,7 +670,7 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo7"),
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
-	})
+	}, sender)
 	sut.SetImageListSize(10)
 
 	imageFiles, _ := imageStore.GetAllImages()

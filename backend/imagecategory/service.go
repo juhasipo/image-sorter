@@ -87,7 +87,7 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 
 	total := len(operationsByImage)
 	s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-		Name:    "categorize",
+		Name:    "Categorizing...",
 		Current: 0,
 		Total:   total,
 	})
@@ -97,7 +97,7 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 			s.sender.SendError("Error while applying changes", err)
 		}
 		s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-			Name:    "categorize",
+			Name:    "Categorizing...",
 			Current: i + 1,
 			Total:   total,
 		})

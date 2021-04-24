@@ -51,11 +51,11 @@ func newImageService(imageCache api.ImageStore, imageLoader api.ImageLoader,
 	return &service
 }
 
-func (s *internalService) InitializeFromDirectory(directory string) {
+func (s *internalService) InitializeFromDirectory(directory string, sender api.Sender) {
 	s.rootDir = directory
 	s.index = 0
 	s.shouldGenerateSimilarHashed = true
-	s.updateImages()
+	s.updateImages(sender)
 }
 
 func (s *internalService) GetImages() []*apitype.ImageFile {
@@ -81,7 +81,7 @@ func (s *internalService) GenerateHashes(sender api.Sender) bool {
 		images, _ := s.imageStore.GetAllImages()
 		hashes, err := s.hashCalculator.GenerateHashes(images, func(current int, total int) {
 			sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-				Name:    "hash",
+				Name:    "Calculating Hashes...",
 				Current: current,
 				Total:   total,
 			})
@@ -90,7 +90,7 @@ func (s *internalService) GenerateHashes(sender api.Sender) bool {
 		if err == nil {
 			err = s.hashCalculator.BuildSimilarityIndex(hashes, func(current int, total int) {
 				sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-					Name:    "similarity-index",
+					Name:    "Building Similarity Index...",
 					Current: current,
 					Total:   total,
 				})
@@ -103,7 +103,7 @@ func (s *internalService) GenerateHashes(sender api.Sender) bool {
 
 		// Always send 100% status even if cancelled so that the progress bar is hidden
 		sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-			Name:    "hash",
+			Name:    "Done",
 			Current: 0,
 			Total:   0,
 		})
@@ -193,18 +193,34 @@ func (s *internalService) SetImageListSize(imageListSize int) bool {
 	}
 }
 
-func (s *internalService) AddImageFiles(imageList []*apitype.ImageFile) error {
+func (s *internalService) AddImageFiles(imageList []*apitype.ImageFile, sender api.Sender) error {
 	s.index = 0
+	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+		Name:    "Loading images...",
+		Current: 0,
+		Total:   2,
+	})
 	if err := s.addImagesToDb(imageList); err != nil {
 		return err
 	}
 
+	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+		Name:    "Loading Meta Data...",
+		Current: 1,
+		Total:   2,
+	})
 	if images, err := s.imageStore.GetAllImages(); err != nil {
 		logger.Error.Print("cannot read images", err)
 		return err
 	} else if err := s.addImageMetaDataToDb(images); err != nil {
 		return err
 	}
+
+	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+		Name:    "Done",
+		Current: 2,
+		Total:   2,
+	})
 
 	return nil
 }
@@ -276,9 +292,9 @@ func (s *internalService) toImageContainers(nextImageFiles []*apitype.ImageFile)
 	return images, nil
 }
 
-func (s *internalService) updateImages() error {
+func (s *internalService) updateImages(sender api.Sender) error {
 	imageFiles := apitype.LoadImageFiles(s.rootDir)
-	if err := s.AddImageFiles(imageFiles); err != nil {
+	if err := s.AddImageFiles(imageFiles, sender); err != nil {
 		return err
 	} else if err := s.removeMissingImages(imageFiles); err != nil {
 		return err

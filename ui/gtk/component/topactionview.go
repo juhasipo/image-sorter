@@ -210,7 +210,7 @@ func (s *TopActionView) SetCurrentStatus(index int, total int, categoryId apityp
 	} else if c, ok := s.categoryButtons[categoryId]; ok {
 		s.currentImagesStatusLabel.SetText(fmt.Sprintf("%s pictures (%s)", c.entry.Name(), progressText))
 	} else {
-		s.currentImagesStatusLabel.SetText("Unkown category")
+		s.currentImagesStatusLabel.SetText("Unknown category")
 	}
 }
 

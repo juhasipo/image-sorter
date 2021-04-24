@@ -249,7 +249,7 @@ func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
 		s.topActionView.SetVisible(true)
 		s.bottomActionView.SetVisible(true)
 	} else {
-		s.progressView.SetStatus(command.Current, command.Total)
+		s.progressView.SetStatus(command.Name, command.Current, command.Total)
 	}
 }
 

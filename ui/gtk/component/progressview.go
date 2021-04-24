@@ -29,8 +29,8 @@ func (v *ProgressView) SetVisible(visible bool) {
 	v.view.SetVisible(visible)
 }
 
-func (v *ProgressView) SetStatus(status int, total int) {
-	statusText := fmt.Sprintf("Processed %d/%d", status, total)
+func (v *ProgressView) SetStatus(name string, status int, total int) {
+	statusText := fmt.Sprintf("%s %d/%d", name, status, total)
 	v.progressbar.SetText(statusText)
 	v.progressbar.SetFraction(float64(status) / float64(total))
 }
