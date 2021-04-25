@@ -11,6 +11,7 @@ import (
 
 type Database struct {
 	session db.Session
+	dbPath  string
 }
 
 func NewInMemoryDatabase() *Database {
@@ -24,7 +25,7 @@ func NewInMemoryDatabase() *Database {
 
 	session, err := sqlite.Open(settings)
 	if err != nil {
-		logger.Error.Fatal("Error opening database", err)
+		logger.Error.Fatal("Error opening database ", err)
 	}
 
 	database := Database{session: session}
@@ -43,10 +44,10 @@ func (s *Database) InitializeForDirectory(directory string, file string) error {
 		return err
 	}
 
-	dbPath := filepath.Join(directory, constants.ImageSorterDir, file)
-	logger.Info.Printf("Initializing database %s", dbPath)
+	s.dbPath = filepath.Join(directory, constants.ImageSorterDir, file)
+	logger.Info.Printf("Initializing database %s", s.dbPath)
 	var settings = sqlite.ConnectionURL{
-		Database: dbPath,
+		Database: s.dbPath,
 	}
 
 	session, err := sqlite.Open(settings)
@@ -223,7 +224,7 @@ func (s *Database) migrate() error {
 }
 
 func (s *Database) Close() {
-	logger.Info.Printf("Closing database")
+	logger.Info.Printf("Closing database %s", s.dbPath)
 	if s.session != nil {
 		if err := s.session.Close(); err != nil {
 			logger.Error.Print("Error while trying to close database ", err)
