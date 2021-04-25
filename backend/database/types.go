@@ -5,6 +5,12 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 )
 
+type MigrationId uint32
+
+type Migration struct {
+	Id MigrationId `db:"id"`
+}
+
 type Image struct {
 	Id              apitype.ImageId `db:"id,omitempty"`
 	Name            string          `db:"name"`

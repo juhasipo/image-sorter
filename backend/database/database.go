@@ -68,14 +68,13 @@ const (
 
 func (s *Database) Migrate() TableExist {
 	logger.Info.Printf("Running migrations")
-	// TODO: Actually migrate rather than just creating database
 	tablesExists := s.doesTablesExists()
 
 	if !tablesExists {
 		logger.Info.Print("Initial databases don't exist. Creating...")
 		err := s.session.Tx(func(session db.Session) error {
 			_, err := session.SQL().Exec(`
-				CREATE TABLE migrations (
+				CREATE TABLE migration (
 					id TEXT PRIMARY KEY
 				)
 			`)
@@ -107,7 +106,7 @@ func (s *Database) Migrate() TableExist {
 
 func (s *Database) doesTablesExists() bool {
 	rows, err := s.session.SQL().Query(`
-		SELECT name FROM sqlite_master WHERE type='table' AND name= 'migrations';
+		SELECT name FROM sqlite_master WHERE type='table' AND name= 'migration';
 	`)
 
 	if err != nil {
@@ -124,103 +123,59 @@ func (s *Database) Session() db.Session {
 
 func (s *Database) migrate() error {
 	return s.session.Tx(func(session db.Session) error {
-		migrationId := "0001"
-		logger.Info.Printf("Prepare migration %s", migrationId)
-
-		if statement, err := session.SQL().Prepare(`SELECT count(*) FROM migrations WHERE id = ?`); err != nil {
+		if migrationStatusesById, err := s.findAlreadyRunMigrations(session); err != nil {
 			return err
 		} else {
-			numFound := 0
-			statement.QueryRow(migrationId).Scan(&numFound)
-
-			if numFound > 0 {
-				logger.Info.Printf("Migration %s already run", migrationId)
-				return nil
+			for _, migration := range migrations {
+				if err := s.runMigration(session, migration, migrationStatusesById); err != nil {
+					logger.Error.Print("Print failed to run migration ", err)
+					return err
+				}
 			}
-		}
 
-		if statement, err := session.SQL().Prepare(`INSERT INTO migrations (id) VALUES (?)`); err != nil {
+			logger.Debug.Printf("Commit migrations")
+			return nil
+		}
+	})
+}
+
+func (s *Database) runMigration(session db.Session, migration migration, migrationStatusesById map[MigrationId]bool) error {
+	migrationId := migration.id
+
+	logger.Info.Printf("Prepare migration %d: %s", migrationId, migration.description)
+
+	if _, found := migrationStatusesById[migrationId]; found {
+		logger.Info.Printf("Migration %d is already done", migrationId)
+	} else {
+		if statement, err := session.SQL().Prepare(`INSERT INTO migration (id) VALUES (?)`); err != nil {
 			return err
 		} else {
-			logger.Debug.Printf("Mark %s as run", migrationId)
+			logger.Debug.Printf("Mark %d as run", migrationId)
 			if _, err := statement.Exec(migrationId); err != nil {
 				return err
 			}
 		}
 
-		logger.Info.Printf("Running migration %s", migrationId)
-		query := `
-			CREATE TABLE image (
-			    id INTEGER PRIMARY KEY,
-			    name TEXT,
-			    file_name TEXT,
-				directory TEXT,
-				byte_size INT,
-				exif_orientation INT,
-				image_angle INT,
-				image_flip INT,
-				width INT,
-				height INT,
-				created_timestamp DATETIME,
-				modified_timestamp DATETIME,
-				
-				UNIQUE (directory, file_name),
-				UNIQUE (name)
-			);
+		logger.Info.Printf("Running migration %d", migration.id)
 
-			CREATE INDEX image_created_timestamp_idx ON image (created_timestamp);
-			CREATE INDEX image_byte_size_idx ON image (byte_size);
-
-			CREATE TABLE category (
-			    id INTEGER PRIMARY KEY,
-			    name TEXT,
-				sub_path TEXT,
-				shortcut INTEGER,
-				
-				UNIQUE (name)
-			);
-
-			CREATE TABLE image_category (
-			    image_id INTEGER,
-			    category_id INTEGER,
-			    operation INT,
-			    
-			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
-			    FOREIGN KEY(category_id) REFERENCES category(id) ON DELETE CASCADE,
-			    UNIQUE (image_id, category_id)
-			);
-
-			CREATE TABLE image_similar (
-			    image_id INTEGER,
-			    similar_image_id INTEGER,
-			    rank INTEGER,
-			    score REAL,
-			    
-			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE,
-			    FOREIGN KEY(similar_image_id) REFERENCES image(id) ON DELETE CASCADE
-			
-			    -- Required indices is created dynamically so that INSERT can be optimized
-			);
-
-			CREATE TABLE image_meta_data (
-			    image_id INTEGER,
-			    key TEXT,
-			    value TEXT,
-
-			    FOREIGN KEY(image_id) REFERENCES image(id) ON DELETE CASCADE
-			);
-
-			CREATE INDEX image_meta_data_idx ON image_meta_data (key, value);
-			CREATE UNIQUE INDEX image_meta_data_uq ON image_meta_data (image_id, key);
-		`
-
-		if _, err := session.SQL().Exec(query); err != nil {
+		if _, err := session.SQL().Exec(migration.query); err != nil {
 			return err
 		}
+	}
+	return nil
+}
 
-		logger.Debug.Printf("Commit migration")
-		return nil
-	})
+func (s *Database) findAlreadyRunMigrations(session db.Session) (map[MigrationId]bool, error) {
+	var runMigrationIds []Migration
+	if err := session.Collection("migration").Find().All(&runMigrationIds); err != nil {
+		return nil, err
+	} else {
+		var migrationStatusesById = map[MigrationId]bool{}
+		for _, migration := range runMigrationIds {
+			migrationStatusesById[migration.Id] = true
+		}
+		return migrationStatusesById, nil
+	}
 }
 
 func (s *Database) Close() {
