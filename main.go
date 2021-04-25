@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os/user"
+	"strings"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/backend/caster"
 	"vincit.fi/image-sorter/backend/category"
@@ -13,6 +15,7 @@ import (
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 	gtkUi "vincit.fi/image-sorter/ui/gtk"
 )
 
@@ -27,6 +30,8 @@ func main() {
 }
 
 func initAndRun(params *common.Params) {
+	printHeaderToLogger()
+
 	stores := initializeStores()
 	defer stores.Close()
 
@@ -44,6 +49,22 @@ func initAndRun(params *common.Params) {
 
 	// Everything has been initialized so it is time to start the UI
 	gui.Run()
+}
+
+
+func printHeaderToLogger() {
+	appName := common.AppName
+	appVersion := fmt.Sprintf("version: %s", common.Version)
+
+	separatorLength := util.MaxInt(
+		len(appName), len(appVersion),
+	)
+	separator := strings.Repeat("=",separatorLength)
+
+	logger.Info.Printf(separator)
+	logger.Info.Print(appName)
+	logger.Info.Print(appVersion)
+	logger.Info.Printf(separator)
 }
 
 type Stores struct {

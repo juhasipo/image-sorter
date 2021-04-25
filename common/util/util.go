@@ -1,6 +1,9 @@
 package util
 
-import "reflect"
+import (
+	"math"
+	"reflect"
+)
 
 func Reverse(arr interface{}) {
 	if arr != nil {
@@ -10,4 +13,16 @@ func Reverse(arr interface{}) {
 			swap(i, j)
 		}
 	}
+}
+
+func MaxInt(arr ...int) int {
+	maxValue := math.MinInt32
+
+	for _, val := range arr {
+		if val > maxValue {
+			maxValue = val
+		}
+	}
+
+	return maxValue
 }
