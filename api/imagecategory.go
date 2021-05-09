@@ -6,12 +6,12 @@ import (
 )
 
 type CategorizeCommand struct {
-	ImageId         apitype.ImageId
-	CategoryId      apitype.CategoryId
-	Operation       apitype.Operation
-	StayOnSameImage bool
-	NextImageDelay  time.Duration
-	ForceToCategory bool
+	ImageId         apitype.ImageId    `json:"imageId"`
+	CategoryId      apitype.CategoryId `json:"categoryId"`
+	Operation       apitype.Operation  `json:"operation"`
+	StayOnSameImage bool               `json:"stayOnSameImage"`
+	NextImageDelay  time.Duration      `json:"nextImageDelay"`
+	ForceToCategory bool               `json:"forceToCategory"`
 
 	apitype.Command
 }

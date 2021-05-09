@@ -3,11 +3,13 @@ package caster
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	cast "github.com/AndreasAbdi/gochromecast"
 	"github.com/AndreasAbdi/gochromecast/configs"
 	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/hashicorp/mdns"
 	"image"
 	"image/color"
@@ -42,6 +44,7 @@ var canvasSize = apitype.SizeOf(canvasWidth, canvasHeight)
 
 type Caster struct {
 	secret                string
+	pinCode               string
 	port                  int
 	devices               map[string]*DeviceEntry
 	sender                api.Sender
@@ -72,6 +75,7 @@ func NewCaster(params *common.Params, sender api.Sender, imageCache api.ImageSto
 		port:                  params.HttpPort(),
 		alwaysStartHttpServer: params.AlwaysStartHttpServer(),
 		secret:                resolveSecret(params.Secret()),
+		pinCode:               resolvePinCode("9010"),
 		sender:                sender,
 		imageCache:            imageCache,
 		showBackground:        true,
@@ -98,6 +102,10 @@ func resolveSecret(secret string) string {
 	} else {
 		return secret
 	}
+}
+
+func resolvePinCode(pinCode string) string {
+	return pinCode
 }
 
 func (s *Caster) StartServer(port int) {
@@ -128,10 +136,21 @@ func (s *Caster) startServer(port int) {
 		" * Secret: %s", port, s.secret)
 	s.port = port
 
-	handler := "/" + s.secret + "/"
-	http.HandleFunc(handler, s.imageHandler)
+	imageHandler := "/" + s.secret + "/"
+	http.HandleFunc(imageHandler, s.imageHandler)
+
+	imageCommandHandler := "/command/" + s.pinCode + "/image/{command}"
+	http.HandleFunc(imageCommandHandler, s.imageCommandHandler)
+
+	categoryCommandHandler := "/command/" + s.pinCode + "/categorize"
+	http.HandleFunc(categoryCommandHandler, s.categorizeCommandHandler)
+
+	settingsQueryHandler := "/data/" + s.pinCode + "/settings"
+	http.HandleFunc(settingsQueryHandler, s.settingsQueryHandler)
+
 	address := ":" + strconv.Itoa(port)
 	s.server = &http.Server{Addr: address}
+
 	if err := s.server.ListenAndServe(); err != nil {
 		s.sender.SendError("Error while initializing HTTP server", err)
 		s.server = nil
@@ -148,6 +167,42 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	if img != nil && err == nil {
 		writeImageToResponse(responseWriter, img, s.showBackground)
 	}
+}
+
+func (s *Caster) imageCommandHandler(responseWriter http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		a := mux.Vars(r)
+		switch a["command"] {
+		case "next":
+			s.sender.SendToTopic(api.ImageRequestNext)
+			responseWriter.WriteHeader(200)
+		case "previous":
+			s.sender.SendToTopic(api.ImageRequestPrevious)
+			responseWriter.WriteHeader(200)
+		default:
+			responseWriter.WriteHeader(400)
+		}
+	} else {
+		responseWriter.WriteHeader(400)
+	}
+}
+
+func (s *Caster) categorizeCommandHandler(responseWriter http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		command := api.CategorizeCommand{}
+		if err := json.NewDecoder(r.Body).Decode(&command); err != nil {
+			responseWriter.WriteHeader(400)
+		} else {
+			responseWriter.WriteHeader(200)
+			s.sender.SendCommandToTopic(api.CategorizeImage, command)
+		}
+	} else {
+		responseWriter.WriteHeader(400)
+	}
+}
+
+func (s *Caster) settingsQueryHandler(responseWriter http.ResponseWriter, r *http.Request) {
+	responseWriter.WriteHeader(400)
 }
 
 func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, showBackground bool) {
