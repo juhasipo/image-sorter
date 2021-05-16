@@ -70,7 +70,7 @@ type Caster struct {
 	imageQueueMux         sync.Mutex
 	imageQueue            apitype.ImageId
 	categories            []*apitype.Category
-	websocket             *websocket.Conn
+	websockets            map[uuid.UUID]*websocket.Conn
 	websocketMux          sync.Mutex
 	imageQueueBroker      event.Broker
 
@@ -94,6 +94,7 @@ func NewCaster(params *common.Params, sender api.Sender, imageCache api.ImageSto
 		imageCache:            imageCache,
 		showBackground:        true,
 		imageQueueBroker:      *event.InitBus(100),
+		websockets:            map[uuid.UUID]*websocket.Conn{},
 	}
 
 	c.imageQueueBroker.Subscribe(castImageEvent, c.castImageFromQueue)
@@ -273,13 +274,16 @@ func (s *Caster) websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	if conn, err := upgrader.Upgrade(w, r, nil); err != nil {
 		logger.Error.Print("Could not start WebSocket ", err)
+	} else if connId, err := uuid.NewRandom(); err != nil {
+		logger.Error.Print("Could not generate UUID for connection ", err)
 	} else {
 		s.websocketMux.Lock()
-		s.websocket = conn
+		logger.Debug.Printf("Initializing connection with ID %s", connId)
+		s.websockets[connId] = conn
 		s.websocketMux.Unlock()
 
 		defer func() {
-			logger.Debug.Print("Closing connection...")
+			logger.Debug.Print("Closing connection with ID %s", connId)
 			if err := conn.Close(); err != nil {
 				logger.Error.Printf("Error while closing WebSocket: %s", err)
 			}
@@ -296,7 +300,7 @@ func (s *Caster) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.websocketMux.Lock()
-		s.websocket = nil
+		delete(s.websockets, connId)
 		s.websocketMux.Unlock()
 	}
 }
@@ -304,16 +308,16 @@ func (s *Caster) websocketHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Caster) sendToClient(message interface{}) error {
 	s.websocketMux.Lock()
 	defer s.websocketMux.Unlock()
-	if s.websocket != nil {
+
+	logger.Trace.Print("Broadcasting to clients")
+	for _, connection := range s.websockets {
 		msg := WebsocketMessage{
 			Type:    getMessageType(message),
 			Message: message,
 		}
-		return s.websocket.WriteJSON(msg)
-	} else {
-		logger.Debug.Print("No websocket connection")
-		return nil
+		return connection.WriteJSON(msg)
 	}
+	return nil
 }
 
 func (s *Caster) settingsQueryHandler(responseWriter http.ResponseWriter, r *http.Request) {
