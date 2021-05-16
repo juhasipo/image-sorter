@@ -51,7 +51,6 @@ func initAndRun(params *common.Params) {
 	gui.Run()
 }
 
-
 func printHeaderToLogger() {
 	appName := common.AppName
 	appVersion := fmt.Sprintf("version: %s", common.Version)
@@ -59,7 +58,7 @@ func printHeaderToLogger() {
 	separatorLength := util.MaxInt(
 		len(appName), len(appVersion),
 	)
-	separator := strings.Repeat("=",separatorLength)
+	separator := strings.Repeat("=", separatorLength)
 
 	logger.Info.Printf(separator)
 	logger.Info.Print(appName)
@@ -190,6 +189,11 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 
 	// Category -> UI
 	brokers.Broker.ConnectToGui(api.CategoriesUpdated, gui.UpdateCategories)
+
+	// Services -> Caster
+	brokers.Broker.ConnectToGui(api.ImageCurrentUpdated, services.CasterInstance.SetCurrentImage)
+	brokers.Broker.ConnectToGui(api.CategoryImageUpdate, services.CasterInstance.SetImageCategory)
+	brokers.Broker.ConnectToGui(api.CategoriesUpdated, services.CasterInstance.UpdateCategories)
 }
 
 func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {

@@ -11,6 +11,9 @@ type Caster interface {
 	FindDevices()
 	SelectDevice(*SelectDeviceCommand)
 	CastImage(*ImageCategoryQuery)
+	UpdateCategories(*UpdateCategoriesCommand)
+	SetImageCategory(*CategoriesCommand)
+	SetCurrentImage(*UpdateImageCommand)
 	StopCasting()
 	Close()
 }

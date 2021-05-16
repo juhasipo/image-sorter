@@ -10,6 +10,7 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/hashicorp/mdns"
 	"image"
 	"image/color"
@@ -18,8 +19,10 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,6 +45,11 @@ const (
 
 var canvasSize = apitype.SizeOf(canvasWidth, canvasHeight)
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
 type Caster struct {
 	secret                string
 	pinCode               string
@@ -51,6 +59,9 @@ type Caster struct {
 	selectedDevice        string
 	path                  string
 	currentImage          apitype.ImageId
+	currentImageIndex     int
+	totalImages           int
+	currentCategories     []*apitype.Category
 	server                *http.Server
 	showBackground        bool
 	imageCache            api.ImageStore
@@ -58,6 +69,9 @@ type Caster struct {
 	imageUpdateMux        sync.Mutex
 	imageQueueMux         sync.Mutex
 	imageQueue            apitype.ImageId
+	categories            []*apitype.Category
+	websocket             *websocket.Conn
+	websocketMux          sync.Mutex
 	imageQueueBroker      event.Broker
 
 	api.Caster
@@ -130,26 +144,77 @@ func (s *Caster) StopServer() {
 	}
 }
 
+type SettingCategory struct {
+	Id   apitype.CategoryId `json:"id"`
+	Name string             `json:"name"`
+}
+
+type Settings struct {
+	Categories []*SettingCategory `json:"categories"`
+}
+
+type CurrentImage struct {
+	Id                apitype.ImageId      `json:"imageId"`
+	CurrentImageIndex int                  `json:"currentImageIndex"`
+	TotalImages       int                  `json:"totalImages"`
+	Categories        []apitype.CategoryId `json:"categoryIds"`
+}
+
+type WebsocketMessage struct {
+	Type    string      `json:"type"`
+	Message interface{} `json:"data"`
+}
+
+func getMessageType(message interface{}) string {
+	if t := reflect.TypeOf(message); t.Kind() == reflect.Ptr {
+		return "*" + t.Elem().Name()
+	} else {
+		return t.Name()
+	}
+}
+
+func NewSetting(categories []*apitype.Category) Settings {
+	var settingCategories []*SettingCategory
+
+	for _, category := range categories {
+		settingCategories = append(settingCategories, &SettingCategory{
+			Id:   category.Id(),
+			Name: category.Name(),
+		})
+	}
+
+	return Settings{
+		Categories: settingCategories,
+	}
+}
+
 func (s *Caster) startServer(port int) {
 	logger.Debug.Printf("Starting HTTP server:\n"+
 		" * Port: %d\n"+
 		" * Secret: %s", port, s.secret)
 	s.port = port
 
-	imageHandler := "/" + s.secret + "/"
-	http.HandleFunc(imageHandler, s.imageHandler)
+	router := mux.NewRouter()
+	imageHandler := "/" + s.secret + "/{cacheBuster}"
+	router.HandleFunc(imageHandler, s.imageHandler)
 
 	imageCommandHandler := "/command/" + s.pinCode + "/image/{command}"
-	http.HandleFunc(imageCommandHandler, s.imageCommandHandler)
+	router.HandleFunc(imageCommandHandler, s.imageCommandHandler)
 
 	categoryCommandHandler := "/command/" + s.pinCode + "/categorize"
-	http.HandleFunc(categoryCommandHandler, s.categorizeCommandHandler)
+	router.HandleFunc(categoryCommandHandler, s.categorizeCommandHandler)
 
 	settingsQueryHandler := "/data/" + s.pinCode + "/settings"
-	http.HandleFunc(settingsQueryHandler, s.settingsQueryHandler)
+	router.HandleFunc(settingsQueryHandler, s.settingsQueryHandler)
+
+	websocketHandler := "/ws/" + s.pinCode
+	router.HandleFunc(websocketHandler, s.websocketHandler)
 
 	address := ":" + strconv.Itoa(port)
-	s.server = &http.Server{Addr: address}
+	s.server = &http.Server{
+		Addr:    address,
+		Handler: router,
+	}
 
 	if err := s.server.ListenAndServe(); err != nil {
 		s.sender.SendError("Error while initializing HTTP server", err)
@@ -169,16 +234,35 @@ func (s *Caster) imageHandler(responseWriter http.ResponseWriter, r *http.Reques
 	}
 }
 
+func parseJump(values url.Values) (int, error) {
+	nValue := values.Get("n")
+	if nValue == "" {
+		return 1, nil
+	} else if val, err := strconv.Atoi(nValue); err != nil {
+		return 0, err
+	} else {
+		return val, nil
+	}
+}
+
 func (s *Caster) imageCommandHandler(responseWriter http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		a := mux.Vars(r)
-		switch a["command"] {
+		params := mux.Vars(r)
+		switch params["command"] {
 		case "next":
-			s.sender.SendToTopic(api.ImageRequestNext)
-			responseWriter.WriteHeader(200)
+			if jump, err := parseJump(r.URL.Query()); err != nil {
+				responseWriter.WriteHeader(400)
+			} else {
+				s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: jump})
+				responseWriter.WriteHeader(200)
+			}
 		case "previous":
-			s.sender.SendToTopic(api.ImageRequestPrevious)
-			responseWriter.WriteHeader(200)
+			if jump, err := parseJump(r.URL.Query()); err != nil {
+				responseWriter.WriteHeader(400)
+			} else {
+				s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: jump})
+				responseWriter.WriteHeader(200)
+			}
 		default:
 			responseWriter.WriteHeader(400)
 		}
@@ -189,10 +273,14 @@ func (s *Caster) imageCommandHandler(responseWriter http.ResponseWriter, r *http
 
 func (s *Caster) categorizeCommandHandler(responseWriter http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		command := api.CategorizeCommand{}
+		command := &api.CategorizeCommand{}
 		if err := json.NewDecoder(r.Body).Decode(&command); err != nil {
 			responseWriter.WriteHeader(400)
 		} else {
+			command.ImageId = s.currentImage
+			if command.NextImageDelay <= 0 {
+				command.NextImageDelay = 200
+			}
 			responseWriter.WriteHeader(200)
 			s.sender.SendCommandToTopic(api.CategorizeImage, command)
 		}
@@ -201,8 +289,60 @@ func (s *Caster) categorizeCommandHandler(responseWriter http.ResponseWriter, r 
 	}
 }
 
+func (s *Caster) websocketHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Debug.Printf("Client connected")
+
+	if conn, err := upgrader.Upgrade(w, r, nil); err != nil {
+		logger.Error.Print("Could not start WebSocket ", err)
+	} else {
+		s.websocketMux.Lock()
+		s.websocket = conn
+		s.websocketMux.Unlock()
+
+		defer func() {
+			logger.Debug.Print("Closing connection...")
+			if err := conn.Close(); err != nil {
+				logger.Error.Printf("Error while closing WebSocket: %s", err)
+			}
+		}()
+
+		s.sendCurrentCategories()
+
+		for {
+			if mt, message, err := conn.ReadMessage(); err != nil {
+				break
+			} else {
+				logger.Debug.Printf("Received messageType=%s; message=%s", mt, message)
+			}
+		}
+
+		s.websocketMux.Lock()
+		s.websocket = nil
+		s.websocketMux.Unlock()
+	}
+}
+
+func (s *Caster) sendToClient(message interface{}) error {
+	s.websocketMux.Lock()
+	defer s.websocketMux.Unlock()
+	if s.websocket != nil {
+		msg := WebsocketMessage{
+			Type:    getMessageType(message),
+			Message: message,
+		}
+		return s.websocket.WriteJSON(msg)
+	} else {
+		logger.Debug.Print("No websocket connection")
+		return nil
+	}
+}
+
 func (s *Caster) settingsQueryHandler(responseWriter http.ResponseWriter, r *http.Request) {
-	responseWriter.WriteHeader(400)
+	if err := json.NewEncoder(responseWriter).Encode(NewSetting(s.categories)); err != nil {
+		responseWriter.WriteHeader(400)
+	} else {
+		responseWriter.WriteHeader(200)
+	}
 }
 
 func writeImageToResponse(responseWriter http.ResponseWriter, img image.Image, showBackground bool) {
@@ -367,6 +507,35 @@ func (s *Caster) localHost() string {
 	}
 }
 
+func (s *Caster) UpdateCategories(command *api.UpdateCategoriesCommand) {
+	s.categories = command.Categories
+}
+
+func (s *Caster) SetImageCategory(imageCategorise *api.CategoriesCommand) {
+	s.currentCategories = imageCategorise.Categories
+
+	s.sendCurrentCategories()
+}
+
+func (s *Caster) SetCurrentImage(command *api.UpdateImageCommand) {
+	s.currentImageIndex = command.Index
+	s.totalImages = command.Total
+}
+
+func (s *Caster) sendCurrentCategories() {
+	var c []apitype.CategoryId
+	for _, category := range s.currentCategories {
+		c = append(c, category.Id())
+	}
+
+	s.sendToClient(CurrentImage{
+		Id:                s.currentImage,
+		CurrentImageIndex: s.currentImageIndex,
+		TotalImages:       s.totalImages,
+		Categories:        c,
+	})
+}
+
 func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
@@ -375,6 +544,11 @@ func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 		s.imageQueue = query.ImageId
 
 		s.imageQueueBroker.SendToTopic(castImageEvent)
+	}
+
+	var c []apitype.CategoryId
+	for _, category := range s.currentCategories {
+		c = append(c, category.Id())
 	}
 }
 
