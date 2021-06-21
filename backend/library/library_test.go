@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 }
 
 var (
-	sut                *internalService
+	sut                *ImageLibrary
 	sender             *MockSender
 	store              *MockImageStore
 	loader             *MockImageLoader
@@ -101,14 +101,14 @@ func setup() {
 	store.On("GetThumbnail", mock.Anything).Return(new(MockImage))
 }
 
-func initializeSut() *internalService {
+func initializeSut() *ImageLibrary {
 	memoryDatabase := database.NewInMemoryDatabase()
 	imageStore = database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 	imageMetaDataStore = database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore = database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
 
-	return newImageService(store, loader, nil, imageStore, imageMetaDataStore)
+	return NewImageLibrary(store, loader, nil, imageStore, imageMetaDataStore)
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
@@ -116,7 +116,7 @@ func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
 
 	sut := initializeSut()
 
-	img, metaData, index, _ := sut.getCurrentImage()
+	img, metaData, index, _ := sut.GetImageAtIndex(0, apitype.NoCategory)
 	a.NotNil(img)
 	a.NotNil(metaData)
 	a.Equal(0, index)
@@ -133,30 +133,28 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	}
 	sut.AddImageFiles(imageFiles, sender)
 
-	t.Run("Initial image", func(t *testing.T) {
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("First image", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(0, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
 		a.Equal(0, index)
 		a.Equal("foo1", img.ImageFile().FileName())
 	})
 
-	t.Run("Next stays on same", func(t *testing.T) {
-		sut.RequestNextImage()
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("Positive index", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(1, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
 		a.Equal(0, index)
-		a.Equal("foo1", img.ImageFile().FileName())
+		a.Equal("", img.ImageFile().FileName())
 	})
 
-	t.Run("Previous stays on same", func(t *testing.T) {
-		sut.RequestPreviousImage()
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("Negative index", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(-1, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
 		a.Equal(0, index)
-		a.Equal("foo1", img.ImageFile().FileName())
+		a.Equal("", img.ImageFile().FileName())
 	})
 }
 
@@ -172,9 +170,8 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 	}
 	sut.AddImageFiles(imageFiles, sender)
 
-	t.Run("Initial image", func(t *testing.T) {
-		sut.RequestPreviousImage()
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("First image", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(0, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
 		a.Equal(0, index)
@@ -182,9 +179,8 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 
 	})
 
-	t.Run("Next image", func(t *testing.T) {
-		sut.RequestNextImage()
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("Second image", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(1, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
 		a.Equal(1, index)
@@ -192,34 +188,24 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 
 	})
 
-	t.Run("Next again", func(t *testing.T) {
-		sut.RequestNextImage()
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("Last image", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(2, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
 		a.Equal(2, index)
 		a.Equal("foo3", img.ImageFile().FileName())
 	})
 
-	t.Run("Next again should stay", func(t *testing.T) {
-		sut.RequestNextImage()
-		img, metaData, index, _ := sut.getCurrentImage()
+	t.Run("Over-indexing", func(t *testing.T) {
+		img, metaData, index, _ := sut.GetImageAtIndex(3, apitype.NoCategory)
 		a.NotNil(img)
 		a.NotNil(metaData)
-		a.Equal(2, index)
-		a.Equal("foo3", img.ImageFile().FileName())
-	})
-
-	t.Run("Previous", func(t *testing.T) {
-		sut.RequestPreviousImage()
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(1, index)
-		a.Equal("foo2", img.ImageFile().FileName())
+		a.Equal(0, index)
+		a.Equal("", img.ImageFile().FileName())
 	})
 }
 
+/*
 func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
 	a := assert.New(t)
 
@@ -399,7 +385,7 @@ func TestGetCurrentImage_Navigate_ImageId(t *testing.T) {
 		a.Equal("foo3", img.ImageFile().FileName())
 	})
 }
-
+*/
 func TestGetNextImages(t *testing.T) {
 	a := assert.New(t)
 
@@ -418,11 +404,9 @@ func TestGetNextImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
 	sut.AddImageFiles(imageFiles, sender)
-	sut.SetImageListSize(5)
-	a.Equal(5, sut.getImageListSize())
 
 	t.Run("Initial image count", func(t *testing.T) {
-		imgList, _ := sut.getNextImages()
+		imgList, _ := sut.GetNextImages(0, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo1", imgList[0].ImageFile().FileName())
@@ -434,8 +418,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("Next requested gives the next 5", func(t *testing.T) {
-		sut.RequestNextImage()
-		imgList, _ := sut.getNextImages()
+		imgList, _ := sut.GetNextImages(1, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo2", imgList[0].ImageFile().FileName())
@@ -447,8 +430,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("If no more next images, dont return more", func(t *testing.T) {
-		sut.MoveToImageAt(6)
-		imgList, _ := sut.getNextImages()
+		imgList, _ := sut.GetNextImages(6, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(3, len(imgList)) {
 			a.Equal("foo7", imgList[0].ImageFile().FileName())
@@ -458,8 +440,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("Second to last", func(t *testing.T) {
-		sut.MoveToImageAt(8)
-		imgList, _ := sut.getNextImages()
+		imgList, _ := sut.GetNextImages(8, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
 			a.Equal("foo9", imgList[0].ImageFile().FileName())
@@ -467,8 +448,7 @@ func TestGetNextImages(t *testing.T) {
 	})
 
 	t.Run("The last", func(t *testing.T) {
-		sut.MoveToImageAt(9)
-		imgList, _ := sut.getNextImages()
+		imgList, _ := sut.GetNextImages(9, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		a.Equal(0, len(imgList))
 	})
@@ -493,18 +473,15 @@ func TestGetPrevImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
 	sut.AddImageFiles(imageFiles, sender)
-	sut.SetImageListSize(5)
-	a.Equal(5, sut.getImageListSize())
 
 	t.Run("Initial image count", func(t *testing.T) {
-		imgList, _ := sut.getPreviousImages()
+		imgList, _ := sut.GetPreviousImages(0, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		a.Equal(0, len(imgList))
 	})
 
 	t.Run("Next requested gives the first image", func(t *testing.T) {
-		sut.RequestNextImage()
-		imgList, _ := sut.getPreviousImages()
+		imgList, _ := sut.GetPreviousImages(1, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(1, len(imgList)) {
 			a.Equal("foo0", imgList[0].ImageFile().FileName())
@@ -512,8 +489,7 @@ func TestGetPrevImages(t *testing.T) {
 	})
 
 	t.Run("Image at 5 gives the first 5 images", func(t *testing.T) {
-		sut.MoveToImageAt(5)
-		imgList, _ := sut.getPreviousImages()
+		imgList, _ := sut.GetPreviousImages(5, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo4", imgList[0].ImageFile().FileName())
@@ -525,8 +501,7 @@ func TestGetPrevImages(t *testing.T) {
 	})
 
 	t.Run("Second to last image ", func(t *testing.T) {
-		sut.MoveToImageAt(8)
-		imgList, _ := sut.getPreviousImages()
+		imgList, _ := sut.GetPreviousImages(8, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo7", imgList[0].ImageFile().FileName())
@@ -538,8 +513,7 @@ func TestGetPrevImages(t *testing.T) {
 	})
 
 	t.Run("The last", func(t *testing.T) {
-		sut.MoveToImageAt(9)
-		imgList, _ := sut.getPreviousImages()
+		imgList, _ := sut.GetPreviousImages(9, 5, apitype.NoCategory)
 		a.NotNil(imgList)
 		if a.Equal(5, len(imgList)) {
 			a.Equal("foo8", imgList[0].ImageFile().FileName())
@@ -570,7 +544,7 @@ func TestGetTotalCount(t *testing.T) {
 	}
 	sut.AddImageFiles(imageFiles, sender)
 
-	a.Equal(10, sut.getTotalImages())
+	a.Equal(10, sut.GetTotalImages(apitype.NoCategory))
 }
 
 // Show only images
@@ -595,7 +569,6 @@ func TestShowOnlyImages(t *testing.T) {
 	imageFiles, _ := imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))
 	category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))
-	sut.SetImageListSize(10)
 
 	_ = imageCategoryStore.CategorizeImage(imageFiles[1].Id(), category1.Id(), apitype.MOVE)
 	_ = imageCategoryStore.CategorizeImage(imageFiles[2].Id(), category1.Id(), apitype.MOVE)
@@ -608,14 +581,12 @@ func TestShowOnlyImages(t *testing.T) {
 	_ = imageCategoryStore.CategorizeImage(imageFiles[3].Id(), category2.Id(), apitype.MOVE)
 	_ = imageCategoryStore.CategorizeImage(imageFiles[9].Id(), category2.Id(), apitype.MOVE)
 
-	sut.ShowOnlyImages(category1.Id())
-
-	a.Equal(5, sut.getTotalImages())
-	a.Equal(category1.Id(), sut.getSelectedCategoryId())
+	selectedCategoryId := category1.Id()
+	a.Equal(5, sut.GetTotalImages(selectedCategoryId))
 
 	t.Run("Next and prev images", func(t *testing.T) {
-		nextImages, _ := sut.getNextImages()
-		prevImages, _ := sut.getPreviousImages()
+		nextImages, _ := sut.GetNextImages(0, 5, selectedCategoryId)
+		prevImages, _ := sut.GetPreviousImages(0, 5, selectedCategoryId)
 		a.NotNil(nextImages)
 		if a.Equal(4, len(nextImages)) {
 			a.Equal(imageFiles[2].Id(), nextImages[0].ImageFile().Id())
@@ -633,9 +604,8 @@ func TestShowOnlyImages(t *testing.T) {
 	})
 
 	t.Run("Next and prev images at 2", func(t *testing.T) {
-		sut.MoveToImageAt(2)
-		nextImages, _ := sut.getNextImages()
-		prevImages, _ := sut.getPreviousImages()
+		nextImages, _ := sut.GetNextImages(2, 5, selectedCategoryId)
+		prevImages, _ := sut.GetPreviousImages(2, 5, selectedCategoryId)
 		a.NotNil(nextImages)
 		if a.Equal(2, len(nextImages)) {
 			a.Equal(imageFiles[7].Id(), nextImages[0].ImageFile().Id())
@@ -654,6 +624,7 @@ func TestShowOnlyImages(t *testing.T) {
 	})
 }
 
+/*
 func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	a := assert.New(t)
 
@@ -671,7 +642,6 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}, sender)
-	sut.SetImageListSize(10)
 
 	imageFiles, _ := imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "C1", "1"))
@@ -681,18 +651,12 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	_ = imageCategoryStore.CategorizeImage(imageFiles[7].Id(), category1.Id(), apitype.MOVE)
 	_ = imageCategoryStore.CategorizeImage(imageFiles[9].Id(), category1.Id(), apitype.MOVE)
 
-	sut.ShowOnlyImages(category1.Id())
-
-	a.Equal(5, sut.getTotalImages())
-	a.Equal(category1.Id(), sut.getSelectedCategoryId())
-
-	sut.ShowAllImages()
-	a.Equal(10, sut.getTotalImages())
-	a.Equal(apitype.NoCategory, sut.getSelectedCategoryId())
+	selectedCategoryId := category1.Id()
+	a.Equal(5, sut.GetTotalImages(selectedCategoryId))
 
 	t.Run("Next and prev images", func(t *testing.T) {
-		nextImages, _ := sut.getNextImages()
-		prevImages, _ := sut.getPreviousImages()
+		nextImages, _ := sut.GetNextImages(0, 10, selectedCategoryId)
+		prevImages, _ := sut.GetPreviousImages(0, 10, selectedCategoryId)
 		a.NotNil(nextImages)
 		if a.Equal(9, len(nextImages)) {
 			a.Equal("foo1", nextImages[0].ImageFile().FileName())
@@ -710,3 +674,4 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 		a.Equal(0, len(prevImages))
 	})
 }
+*/

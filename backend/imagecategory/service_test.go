@@ -329,7 +329,7 @@ func TestResolveFileOperations(t *testing.T) {
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
+	lib := library.NewImageService(sender, library.NewImageLibrary(imageCache, imageLoader, nil, imageStore, imageMetaDataStore))
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -369,7 +369,7 @@ func TestResolveOperationsForGroup_KeepOld(t *testing.T) {
 	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
+	lib := library.NewImageService(sender, library.NewImageLibrary(imageCache, imageLoader, nil, imageStore, imageMetaDataStore))
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -404,7 +404,7 @@ func TestResolveOperationsForGroup_RemoveOld(t *testing.T) {
 	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
+	lib := library.NewImageService(sender, library.NewImageLibrary(imageCache, imageLoader, nil, imageStore, imageMetaDataStore))
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -440,7 +440,7 @@ func TestResolveOperationsForGroup_FixExifRotation(t *testing.T) {
 	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
+	lib := library.NewImageService(sender, library.NewImageLibrary(imageCache, imageLoader, nil, imageStore, imageMetaDataStore))
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
@@ -476,7 +476,7 @@ func TestResolveOperationsForGroup_FixExifRotation_RemoveOld(t *testing.T) {
 	imageMetaDataStore := database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
-	lib := library.NewImageService(sender, imageCache, imageLoader, nil, imageStore, imageMetaDataStore)
+	lib := library.NewImageService(sender, library.NewImageLibrary(imageCache, imageLoader, nil, imageStore, imageMetaDataStore))
 	filterService := filter.NewFilterService()
 
 	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)

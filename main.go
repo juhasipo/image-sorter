@@ -87,6 +87,7 @@ type Services struct {
 	CategoryService        api.CategoryService
 	DefaultCategoryService api.CategoryService
 	ImageService           api.ImageService
+	ImageLibrary           api.ImageLibrary
 	FilterService          *filter.FilterService
 	ImageCategoryService   api.ImageCategoryService
 	CasterInstance         api.Caster
@@ -194,11 +195,13 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 
 func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
 	filterService := filter.NewFilterService()
-	imageService := library.NewImageService(brokers.Broker, imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore)
+	imageLibrary := library.NewImageLibrary(imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore)
+	imageService := library.NewImageService(brokers.Broker, imageLibrary)
 	services := &Services{
 		CategoryService:        category.NewCategoryService(params, brokers.Broker, stores.CategoryStore),
 		DefaultCategoryService: category.NewCategoryService(params, brokers.DevNullBroker, stores.DefaultCategoryStore),
 		ImageService:           imageService,
+		ImageLibrary:           imageLibrary,
 		FilterService:          filterService,
 		ImageCategoryService:   imagecategory.NewImageCategoryService(brokers.Broker, imageService, filterService, imageLoader, stores.ImageCategoryStore),
 		CasterInstance:         caster.NewCaster(params, brokers.Broker, imageCache),

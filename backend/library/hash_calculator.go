@@ -13,6 +13,8 @@ import (
 	"vincit.fi/image-sorter/duplo"
 )
 
+const maxSimilarImages = 20
+
 type HashCalculator struct {
 	stopChannel     chan bool
 	outputChannel   chan *HashResult
