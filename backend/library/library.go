@@ -23,25 +23,28 @@ type ImageLibrary struct {
 	imageStore         *database.ImageStore
 	imageMetaDataStore *database.ImageMetaDataStore
 	hashCalculator     *HashCalculator
+	progressReporter   api.ProgressReporter
 
 	api.ImageLibrary
 }
 
 func NewImageLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 	similarityIndex *database.SimilarityIndex, imageStore *database.ImageStore,
-	imageMetaDataStore *database.ImageMetaDataStore) *ImageLibrary {
+	imageMetaDataStore *database.ImageMetaDataStore,
+	progressReporter api.ProgressReporter) *ImageLibrary {
 	var service = ImageLibrary{
 		imageCache:         imageCache,
 		imageLoader:        imageLoader,
 		similarityIndex:    similarityIndex,
 		imageStore:         imageStore,
 		imageMetaDataStore: imageMetaDataStore,
+		progressReporter:   progressReporter,
 	}
 	return &service
 }
 
-func (s *ImageLibrary) InitializeFromDirectory(directory string, sender api.Sender) {
-	s.updateImages(sender, directory)
+func (s *ImageLibrary) InitializeFromDirectory(directory string) {
+	s.updateImages(directory)
 }
 
 func (s *ImageLibrary) GetImages() []*apitype.ImageFile {
@@ -49,7 +52,7 @@ func (s *ImageLibrary) GetImages() []*apitype.ImageFile {
 	return images
 }
 
-func (s *ImageLibrary) GenerateHashes(sender api.Sender) bool {
+func (s *ImageLibrary) GenerateHashes() bool {
 	if s.hashCalculator != nil {
 		logger.Warn.Print("Already generating hashes")
 		return false
@@ -60,33 +63,21 @@ func (s *ImageLibrary) GenerateHashes(sender api.Sender) bool {
 	shouldSendSimilarImages := false
 	images, _ := s.imageStore.GetAllImages()
 	hashes, err := s.hashCalculator.GenerateHashes(images, func(current int, total int) {
-		sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-			Name:    "Calculating Hashes...",
-			Current: current,
-			Total:   total,
-		})
+		s.progressReporter.Update("Calculating Hashes...", current, total)
 	})
 
 	if err == nil {
 		err = s.hashCalculator.BuildSimilarityIndex(hashes, func(current int, total int) {
-			sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-				Name:    "Building Similarity Index...",
-				Current: current,
-				Total:   total,
-			})
+			s.progressReporter.Update("Building Similarity Index...", current, total)
 		})
 	}
 
 	if err != nil {
-		sender.SendError("Error while saving hashes", err)
+		s.progressReporter.Error("Error while saving hashes", err)
 	}
 
 	// Always send 100% status even if cancelled so that the progress bar is hidden
-	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-		Name:    "Done",
-		Current: 0,
-		Total:   0,
-	})
+	s.progressReporter.Update("Done", 0, 0)
 
 	// Only send if not cancelled or no error
 	if err == nil {
@@ -107,21 +98,13 @@ func (s *ImageLibrary) GetImagesInCategory(number int, offset int, categoryId ap
 	return s.imageStore.GetImagesInCategory(number, offset, categoryId)
 }
 
-func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile, sender api.Sender) error {
-	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-		Name:    "Loading images...",
-		Current: 0,
-		Total:   2,
-	})
+func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile) error {
+	s.progressReporter.Update("Loading images...", 0, 2)
 	if err := s.addImagesToDb(imageList); err != nil {
 		return err
 	}
 
-	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-		Name:    "Loading Meta Data...",
-		Current: 1,
-		Total:   2,
-	})
+	s.progressReporter.Update("Loading Meta Data...", 1, 2)
 	if images, err := s.imageStore.GetAllImages(); err != nil {
 		logger.Error.Print("cannot read images", err)
 		return err
@@ -129,11 +112,7 @@ func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile, sender api.
 		return err
 	}
 
-	sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-		Name:    "Done",
-		Current: 2,
-		Total:   2,
-	})
+	s.progressReporter.Update("Done", 2, 2)
 
 	return nil
 }
@@ -197,9 +176,9 @@ func (s *ImageLibrary) toImageContainers(nextImageFiles []*apitype.ImageFile) ([
 	return images, nil
 }
 
-func (s *ImageLibrary) updateImages(sender api.Sender, rootDir string) error {
+func (s *ImageLibrary) updateImages(rootDir string) error {
 	imageFiles := apitype.LoadImageFiles(rootDir)
-	if err := s.AddImageFiles(imageFiles, sender); err != nil {
+	if err := s.AddImageFiles(imageFiles); err != nil {
 		return err
 	} else if err := s.removeMissingImages(imageFiles); err != nil {
 		return err

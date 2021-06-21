@@ -35,7 +35,7 @@ func NewImageService(sender api.Sender, library api.ImageLibrary) api.ImageServi
 
 func (s *Service) InitializeFromDirectory(directory string) {
 	s.index = 0
-	s.service.InitializeFromDirectory(directory, s.sender)
+	s.service.InitializeFromDirectory(directory)
 	s.imagesChangedSincePreviousHashing = true
 }
 
@@ -56,7 +56,7 @@ func (s *Service) ShowAllImages() {
 
 func (s *Service) RequestGenerateHashes() {
 	s.shouldSendSimilar = true
-	if s.imagesChangedSincePreviousHashing && s.service.GenerateHashes(s.sender) {
+	if s.imagesChangedSincePreviousHashing && s.service.GenerateHashes() {
 		s.imagesChangedSincePreviousHashing = false
 	}
 
@@ -174,7 +174,7 @@ func (s *Service) Close() {
 
 func (s *Service) AddImageFiles(imageList []*apitype.ImageFile) {
 	s.index = 0
-	if err := s.service.AddImageFiles(imageList, s.sender); err != nil {
+	if err := s.service.AddImageFiles(imageList); err != nil {
 		s.sender.SendError("Error while adding image", err)
 	}
 }

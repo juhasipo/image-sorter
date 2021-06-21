@@ -75,6 +75,16 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 	}
 }
 
+type StubProgressReporter struct {
+	api.ProgressReporter
+}
+
+func (s StubProgressReporter) Update(name string, current int, total int) {
+}
+
+func (s StubProgressReporter) Error(error string, err error) {
+}
+
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
@@ -108,7 +118,7 @@ func initializeSut() *ImageLibrary {
 	categoryStore = database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
 
-	return NewImageLibrary(store, loader, nil, imageStore, imageMetaDataStore)
+	return NewImageLibrary(store, loader, nil, imageStore, imageMetaDataStore, StubProgressReporter{})
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
@@ -131,7 +141,7 @@ func TestGetCurrentImage_Navigate_OneImage(t *testing.T) {
 	imageFiles := []*apitype.ImageFile{
 		apitype.NewImageFile("/tmp", "foo1"),
 	}
-	sut.AddImageFiles(imageFiles, sender)
+	sut.AddImageFiles(imageFiles)
 
 	t.Run("First image", func(t *testing.T) {
 		img, metaData, index, _ := sut.GetImageAtIndex(0, apitype.NoCategory)
@@ -168,7 +178,7 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo2"),
 		apitype.NewImageFile("/tmp", "foo3"),
 	}
-	sut.AddImageFiles(imageFiles, sender)
+	sut.AddImageFiles(imageFiles)
 
 	t.Run("First image", func(t *testing.T) {
 		img, metaData, index, _ := sut.GetImageAtIndex(0, apitype.NoCategory)
@@ -403,7 +413,7 @@ func TestGetNextImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles, sender)
+	sut.AddImageFiles(imageFiles)
 
 	t.Run("Initial image count", func(t *testing.T) {
 		imgList, _ := sut.GetNextImages(0, 5, apitype.NoCategory)
@@ -472,7 +482,7 @@ func TestGetPrevImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles, sender)
+	sut.AddImageFiles(imageFiles)
 
 	t.Run("Initial image count", func(t *testing.T) {
 		imgList, _ := sut.GetPreviousImages(0, 5, apitype.NoCategory)
@@ -542,7 +552,7 @@ func TestGetTotalCount(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
 	}
-	sut.AddImageFiles(imageFiles, sender)
+	sut.AddImageFiles(imageFiles)
 
 	a.Equal(10, sut.GetTotalImages(apitype.NoCategory))
 }
@@ -565,7 +575,7 @@ func TestShowOnlyImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo7"),
 		apitype.NewImageFile("/tmp", "foo8"),
 		apitype.NewImageFile("/tmp", "foo9"),
-	}, sender)
+	})
 	imageFiles, _ := imageStore.GetAllImages()
 	category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))
 	category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))

@@ -195,7 +195,8 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 
 func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
 	filterService := filter.NewFilterService()
-	imageLibrary := library.NewImageLibrary(imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore)
+	progressReporter := api.NewSenderProgressReporter(brokers.Broker)
+	imageLibrary := library.NewImageLibrary(imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore, progressReporter)
 	imageService := library.NewImageService(brokers.Broker, imageLibrary)
 	services := &Services{
 		CategoryService:        category.NewCategoryService(params, brokers.Broker, stores.CategoryStore),

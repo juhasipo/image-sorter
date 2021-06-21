@@ -60,9 +60,9 @@ type ImageService interface {
 }
 
 type ImageLibrary interface {
-	InitializeFromDirectory(directory string, sender Sender)
+	InitializeFromDirectory(directory string)
 
-	AddImageFiles(imageList []*apitype.ImageFile, sender Sender) error
+	AddImageFiles(imageList []*apitype.ImageFile) error
 
 	GetImages() []*apitype.ImageFile
 	GetTotalImages(categoryId apitype.CategoryId) int
@@ -73,7 +73,7 @@ type ImageLibrary interface {
 	GetNextImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFileAndData, error)
 	GetPreviousImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFileAndData, error)
 
-	GenerateHashes(sender Sender) bool
+	GenerateHashes() bool
 	GetSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFileAndData, bool, error)
 	StopHashes()
 }
