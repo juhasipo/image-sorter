@@ -75,6 +75,28 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 	}
 }
 
+type FakeFile struct {
+	name     string
+	contents string
+	mode     os.FileMode
+	offset   int
+
+	os.FileInfo
+}
+
+func (f *FakeFile) ModTime() time.Time {
+	return time.Time{}
+}
+
+func (s *StubImageFileConverter) GetImageFileStats(*apitype.ImageFile) (os.FileInfo, error) {
+	return &FakeFile{
+		name:     "fake",
+		contents: "",
+		mode:     0,
+		offset:   0,
+	}, nil
+}
+
 type StubProgressReporter struct {
 	api.ProgressReporter
 }

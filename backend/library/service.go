@@ -21,7 +21,7 @@ type Service struct {
 	api.ImageService
 }
 
-func NewImageService(sender api.Sender, library api.ImageLibrary) api.ImageService {
+func NewImageService(sender api.Sender, library api.ImageLibrary) *Service {
 	return &Service{
 		sender:                            sender,
 		service:                           library,
@@ -104,28 +104,42 @@ func (s *Service) RequestImage(query *api.ImageQuery) {
 }
 
 func (s *Service) moveToImage(imageId apitype.ImageId) {
-	images, _ := s.service.GetImagesInCategory(-1, 0, s.selectedCategoryId)
+	s.index = s.findImageIndex(imageId, s.selectedCategoryId)
+}
+
+func (s *Service) findImageIndex(imageId apitype.ImageId, categoryId apitype.CategoryId) int {
+	images, _ := s.service.GetImagesInCategory(-1, 0, categoryId)
 	for imageIndex, image := range images {
 		if imageId == image.Id() {
-			s.index = imageIndex
+			return imageIndex
 		}
 	}
+	return 0
 }
 
 func (s *Service) moveToImageAt(index int) {
-	images, _ := s.service.GetImagesInCategory(-1, 0, s.selectedCategoryId)
+	count := s.service.GetTotalImages(s.selectedCategoryId)
+	newIndex := s.calculateNewIndexAndWrapNegative(index, count)
+
+	s.index = newIndex
+}
+
+func (s *Service) calculateNewIndexAndWrapNegative(index int, count int) int {
+	newIndex := 0
 	if index >= 0 {
-		s.index = index
+		newIndex = index
 	} else {
-		s.index = len(images) + index
+		newIndex = count + index
 	}
 
-	if s.index >= len(images) {
-		s.index = len(images) - 1
+	if newIndex >= count {
+		newIndex = count - 1
 	}
-	if s.index < 0 {
-		s.index = 0
+
+	if newIndex < 0 {
+		newIndex = 0
 	}
+	return newIndex
 }
 
 func (s *Service) RequestImageAt(query *api.ImageAtQuery) {
@@ -146,15 +160,20 @@ func (s *Service) moveToPreviousImageWithOffset(offset int) {
 }
 
 func (s *Service) requestImageWithOffset(offset int) {
-	s.index += offset
+	count := s.service.GetTotalImages(s.selectedCategoryId)
+	s.index = s.calculateIndexOffsetAndClamp(s.index, offset, count)
+}
 
-	images, _ := s.service.GetImagesInCategory(-1, 0, s.selectedCategoryId)
-	if s.index >= len(images) {
-		s.index = len(images) - 1
+func (s *Service) calculateIndexOffsetAndClamp(oldIndex int, offset int, count int) int {
+	newIndex := oldIndex + offset
+
+	if newIndex >= count {
+		newIndex = count - 1
 	}
-	if s.index < 0 {
-		s.index = 0
+	if newIndex < 0 {
+		newIndex = 0
 	}
+	return newIndex
 }
 
 func (s *Service) requestImageLists() {
