@@ -54,6 +54,65 @@ func TestImageMetaDataStore_GetMetaDataByImageId(t *testing.T) {
 	})
 }
 
+func TestImageMetaDataStore_GetAllImagesWithoutMetaData(t *testing.T) {
+	a := require.New(t)
+
+	t.Run("Meta data exists for one", func(t *testing.T) {
+		sut := initImageMetaDataStoreTest()
+
+		image1, _ := imdsImageStore.AddImage(apitype.NewImageFile("images", "image1"))
+		imdsImageStore.AddImage(apitype.NewImageFile("images", "image2"))
+		imdsImageStore.AddImage(apitype.NewImageFile("images", "image3"))
+
+		initMetaData := apitype.NewImageMetaData(map[string]string{
+			"key1": "value1",
+		})
+		err := sut.AddMetaData(image1.Id(), initMetaData)
+		a.Nil(err)
+
+		images, err := sut.GetAllImagesWithoutMetaData()
+		a.Nil(err)
+		a.NotNil(images)
+
+		a.Equal(2, len(images))
+		a.Equal("image2", images[0].FileName())
+		a.Equal("image3", images[1].FileName())
+	})
+
+	t.Run("Meta data exists for all", func(t *testing.T) {
+		sut := initImageMetaDataStoreTest()
+
+		image1, _ := imdsImageStore.AddImage(apitype.NewImageFile("images", "image1"))
+		image2, _ := imdsImageStore.AddImage(apitype.NewImageFile("images", "image2"))
+		image3, _ := imdsImageStore.AddImage(apitype.NewImageFile("images", "image3"))
+
+		initMetaData1 := apitype.NewImageMetaData(map[string]string{
+			"key1": "value1",
+		})
+		err := sut.AddMetaData(image1.Id(), initMetaData1)
+		a.Nil(err)
+
+		initMetaData2 := apitype.NewImageMetaData(map[string]string{
+			"key1": "value1",
+		})
+		err = sut.AddMetaData(image2.Id(), initMetaData2)
+		a.Nil(err)
+
+		initMetaData3 := apitype.NewImageMetaData(map[string]string{
+			"key1": "value1",
+		})
+		err = sut.AddMetaData(image3.Id(), initMetaData3)
+		a.Nil(err)
+
+		images, err := sut.GetAllImagesWithoutMetaData()
+		a.Nil(err)
+		a.NotNil(images)
+
+		a.Equal(0, len(images))
+	})
+
+}
+
 func TestImageMetaDataStore_AddMetaDataBatch(t *testing.T) {
 	a := require.New(t)
 

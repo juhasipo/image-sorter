@@ -64,3 +64,7 @@ type ImageSimilar struct {
 type Count struct {
 	Count int `db:"c"`
 }
+
+type Timestamp struct {
+	Timestamp time.Time `db:"t"`
+}

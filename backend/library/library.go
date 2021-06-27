@@ -99,22 +99,49 @@ func (s *ImageLibrary) GetImagesInCategory(number int, offset int, categoryId ap
 }
 
 func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile) error {
+	latestModifiedImageTimestamp := s.imageStore.GetLatestModifiedImage()
 	s.progressReporter.Update("Loading images...", 0, 2)
 	if err := s.addImagesToDb(imageList); err != nil {
 		return err
 	}
 
 	s.progressReporter.Update("Loading Meta Data...", 1, 2)
-	if images, err := s.imageStore.GetAllImages(); err != nil {
+
+	if modifiedImages, err := s.imageStore.GetAllImagesModifiedAfter(latestModifiedImageTimestamp); err != nil {
 		logger.Error.Print("cannot read images", err)
 		return err
-	} else if err := s.addImageMetaDataToDb(images); err != nil {
+	} else if imagesWithoutMetaData, err := s.imageMetaDataStore.GetAllImagesWithoutMetaData(); err != nil {
+		logger.Error.Print("cannot read images", err)
 		return err
+	} else {
+		logger.Debug.Printf("There are %d images modified", len(modifiedImages))
+		logger.Debug.Printf("There are %d images without meta data", len(imagesWithoutMetaData))
+		filesToAddMetaData := mergeLists(modifiedImages, imagesWithoutMetaData)
+		logger.Debug.Printf("There are %d images which needs meta data to be fetched", len(filesToAddMetaData))
+		if err := s.addImageMetaDataToDb(filesToAddMetaData); err != nil {
+			return err
+		}
 	}
 
 	s.progressReporter.Update("Done", 2, 2)
 
 	return nil
+}
+
+func mergeLists(modifiedImages []*apitype.ImageFile, imagesWithoutMetaData []*apitype.ImageFile) []*apitype.ImageFile {
+	m := map[apitype.ImageId]*apitype.ImageFile{}
+	for _, image := range modifiedImages {
+		m[image.Id()] = image
+	}
+	for _, image := range imagesWithoutMetaData {
+		m[image.Id()] = image
+	}
+
+	var v []*apitype.ImageFile
+	for _, file := range m {
+		v = append(v, file)
+	}
+	return v
 }
 
 func (s *ImageLibrary) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile {
@@ -272,7 +299,10 @@ func (s *ImageLibrary) addImageMetaDataToDb(images []*apitype.ImageFile) error {
 
 	imageCount := len(images)
 	duration := end.Sub(start)
-	avg := duration / time.Duration(imageCount)
+	avg := time.Duration(0)
+	if imageCount > 0 {
+		avg = duration / time.Duration(imageCount)
+	}
 	logger.Debug.Printf("Added meta data for %d images in %s (avg. %s/image)", imageCount, duration, avg)
 	return nil
 }

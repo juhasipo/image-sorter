@@ -133,8 +133,39 @@ func (s *ImageStore) GetImageCount(categoryId apitype.CategoryId) int {
 	return counter.Count
 }
 
+func (s *ImageStore) GetLatestModifiedImage() time.Time {
+	res := s.getCollection().Session().SQL().
+		Select(db.Raw("modified_timestamp AS t")).
+		From("image").
+		OrderBy("modified_timestamp DESC").
+		Limit(1)
+
+	var timestamps []Timestamp
+	if err := res.All(&timestamps); err != nil {
+		logger.Error.Fatal("Cannot resolve image count", err)
+		return time.Unix(0, 0)
+	} else if len(timestamps) > 0 {
+		return timestamps[0].Timestamp
+	} else {
+		return time.Unix(0, 0)
+	}
+}
+
 func (s *ImageStore) GetAllImages() ([]*apitype.ImageFile, error) {
 	return s.GetImagesInCategory(-1, 0, apitype.NoCategory)
+}
+
+func (s *ImageStore) GetAllImagesModifiedAfter(timestamp time.Time) ([]*apitype.ImageFile, error) {
+	var images []Image
+	searchCondition := db.Cond{
+		"modified_timestamp >": timestamp,
+	}
+
+	if err := s.getCollection().Find(searchCondition).OrderBy("name").All(&images); err != nil {
+		return nil, err
+	} else {
+		return toImageFiles(images), nil
+	}
 }
 
 func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {

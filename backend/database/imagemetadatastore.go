@@ -45,6 +45,24 @@ func (s *ImageMetaDataStore) GetMetaDataByImageId(imageId apitype.ImageId) (*api
 	return apitype.NewImageMetaData(md), nil
 }
 
+func (s *ImageMetaDataStore) GetAllImagesWithoutMetaData() ([]*apitype.ImageFile, error) {
+	var images []Image
+	res := s.getCollection().Session().SQL().
+		Select("image.*").
+		From("image")
+
+	res = res.
+		LeftJoin("image_meta_data").On("image_meta_data.image_id = image.id").
+		Where("image_meta_data.image_id IS NULL").
+		OrderBy("image.name")
+
+	if err := res.All(&images); err != nil {
+		return nil, err
+	} else {
+		return toImageFiles(images), nil
+	}
+}
+
 func (s *ImageMetaDataStore) AddMetaData(imageId apitype.ImageId, metaData *apitype.ImageMetaData) error {
 	return s.getCollection().Session().Tx(func(sess db.Session) error {
 		for key, value := range metaData.MetaData() {
@@ -59,13 +77,14 @@ func (s *ImageMetaDataStore) AddMetaData(imageId apitype.ImageId, metaData *apit
 
 func (s *ImageMetaDataStore) AddMetaDataForImages(images []*apitype.ImageFile, loadExifCb func(imageFile *apitype.ImageFile) (*apitype.ExifData, error)) error {
 	return s.getCollection().Session().Tx(func(session db.Session) error {
-		if err := s.clearMetaData(session); err != nil {
-			return err
-		} else if err := s.startAddingMetaData(session); err != nil {
+		if err := s.startAddingMetaData(session); err != nil {
 			return err
 		} else {
 			for _, image := range images {
-				if data, err := loadExifCb(image); err != nil {
+				if err := s.clearMetaDataForImage(session, image.Id()); err != nil {
+					logger.Error.Print("cannot remove old meta data ", image, err)
+					return err
+				} else if data, err := loadExifCb(image); err != nil {
 					logger.Error.Print("cannot read meta data ", image, err)
 					return err
 				} else if data != nil && data.Values() != nil {
@@ -120,7 +139,7 @@ func (s *ImageMetaDataStore) endAddingMetaData(session db.Session) error {
 	return nil
 }
 
-func (s *ImageMetaDataStore) clearMetaData(session db.Session) error {
+func (s *ImageMetaDataStore) clearMetaDataForImage(session db.Session, imageId apitype.ImageId) error {
 	collection := s.getCollectionForSession(session)
-	return collection.Truncate()
+	return collection.Find(db.Cond{"image_id": imageId}).Delete()
 }

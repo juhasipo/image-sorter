@@ -80,4 +80,11 @@ var migrations = []migration{
 			CREATE UNIQUE INDEX image_meta_data_uq ON image_meta_data (image_id, key);
 		`,
 	},
+	{
+		id:          2,
+		description: "Image Modified Timestamp Index",
+		query: `
+			CREATE INDEX image_modified_timestamp_idx ON image (modified_timestamp);
+		`,
+	},
 }

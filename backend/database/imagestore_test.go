@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 	"vincit.fi/image-sorter/api/apitype"
 )
 
@@ -848,6 +849,105 @@ func TestImageStore_RemoveImage(t *testing.T) {
 		a.Equal("image5", images[3].FileName())
 		a.NotNil(images[4].Id())
 		a.Equal("image6", images[4].FileName())
+	})
+
+}
+
+func TestImageStore_GetLatestModifiedImage(t *testing.T) {
+	a := require.New(t)
+
+	sut := initImageStoreTest()
+	imageStoreImageFileConverter.SetNamedStubs(true)
+	imageStoreImageFileConverter.AddStubFile("image1", time.Date(2021, 4, 3, 1, 30, 10, 0, time.UTC))
+	imageStoreImageFileConverter.AddStubFile("image2", time.Date(2021, 4, 3, 1, 30, 12, 0, time.UTC)) // Newest
+	imageStoreImageFileConverter.AddStubFile("image3", time.Date(2021, 4, 3, 1, 30, 11, 0, time.UTC))
+	imageStoreImageFileConverter.AddStubFile("image4", time.Date(2021, 4, 3, 1, 30, 9, 0, time.UTC))
+	imageStoreImageFileConverter.AddStubFile("image5", time.Date(2021, 4, 3, 1, 30, 1, 0, time.UTC)) // Oldest
+	imageStoreImageFileConverter.AddStubFile("image6", time.Date(2021, 4, 3, 1, 30, 10, 0, time.UTC))
+
+	err := sut.AddImages([]*apitype.ImageFile{
+		apitype.NewImageFile("images", "image1"),
+		apitype.NewImageFile("images", "image2"),
+		apitype.NewImageFile("images", "image3"),
+		apitype.NewImageFile("images", "image4"),
+		apitype.NewImageFile("images", "image5"),
+		apitype.NewImageFile("images", "image6"),
+	})
+
+	a.Nil(err)
+
+	t.Run("Get latest image modified timestamp", func(t *testing.T) {
+		timestamp := sut.GetLatestModifiedImage()
+		a.NotNil(timestamp)
+
+		a.Equal(time.Date(2021, 4, 3, 1, 30, 12, 0, time.UTC), timestamp)
+	})
+}
+
+func TestImageStore_GetAllImagesModifiedAfter(t *testing.T) {
+	a := require.New(t)
+
+	sut := initImageStoreTest()
+	imageStoreImageFileConverter.SetNamedStubs(true)
+	imageStoreImageFileConverter.AddStubFile("image1", time.Date(2021, 4, 3, 1, 30, 10, 0, time.UTC))
+	imageStoreImageFileConverter.AddStubFile("image2", time.Date(2021, 4, 3, 1, 30, 12, 0, time.UTC)) // Newest
+	imageStoreImageFileConverter.AddStubFile("image3", time.Date(2021, 4, 3, 1, 30, 11, 0, time.UTC))
+	imageStoreImageFileConverter.AddStubFile("image4", time.Date(2021, 4, 3, 1, 30, 9, 0, time.UTC))
+	imageStoreImageFileConverter.AddStubFile("image5", time.Date(2021, 4, 3, 1, 30, 1, 0, time.UTC)) // Oldest
+	imageStoreImageFileConverter.AddStubFile("image6", time.Date(2021, 4, 3, 1, 30, 10, 0, time.UTC))
+
+	err := sut.AddImages([]*apitype.ImageFile{
+		apitype.NewImageFile("images", "image1"),
+		apitype.NewImageFile("images", "image2"),
+		apitype.NewImageFile("images", "image3"),
+		apitype.NewImageFile("images", "image4"),
+		apitype.NewImageFile("images", "image5"),
+		apitype.NewImageFile("images", "image6"),
+	})
+
+	a.Nil(err)
+
+	t.Run("Get images modified after: Epoc start", func(t *testing.T) {
+		images, err := sut.GetAllImagesModifiedAfter(time.Unix(0, 0))
+		a.Nil(err)
+		a.NotNil(images)
+		a.Equal(6, len(images))
+		a.Equal("image1", images[0].FileName())
+		a.Equal("image2", images[1].FileName())
+		a.Equal("image3", images[2].FileName())
+		a.Equal("image4", images[3].FileName())
+		a.Equal("image5", images[4].FileName())
+		a.Equal("image6", images[5].FileName())
+	})
+
+	t.Run("Get images modified after: Mid", func(t *testing.T) {
+		images, err := sut.GetAllImagesModifiedAfter(time.Date(2021, 4, 3, 1, 30, 9, 0, time.UTC))
+		a.Nil(err)
+		a.NotNil(images)
+		a.Equal(4, len(images))
+		a.Equal("image1", images[0].FileName())
+		a.Equal("image2", images[1].FileName())
+		a.Equal("image3", images[2].FileName())
+		a.Equal("image6", images[3].FileName())
+	})
+
+	t.Run("Get images modified after: Oldest", func(t *testing.T) {
+		images, err := sut.GetAllImagesModifiedAfter(time.Date(2021, 4, 3, 1, 30, 1, 0, time.UTC))
+		a.Nil(err)
+		a.NotNil(images)
+		a.Equal(5, len(images))
+		a.Equal("image1", images[0].FileName())
+		a.Equal("image2", images[1].FileName())
+		a.Equal("image3", images[2].FileName())
+		a.Equal("image4", images[3].FileName())
+		a.Equal("image6", images[4].FileName())
+	})
+
+	t.Run("Get images modified after: Newest", func(t *testing.T) {
+		images, err := sut.GetAllImagesModifiedAfter(time.Date(2021, 4, 3, 1, 30, 12, 0, time.UTC))
+		a.Nil(err)
+		a.NotNil(images)
+		a.Equal(0, len(images))
 	})
 
 }

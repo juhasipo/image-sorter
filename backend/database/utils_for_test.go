@@ -10,7 +10,9 @@ type StubImageFileConverter struct {
 	ImageFileConverter
 
 	incrementModTimeRequest bool
+	useNamedStubs           bool
 	currentTime             time.Time
+	stubs                   map[string]StubFileInfo
 }
 
 func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile) (*Image, map[string]string, error) {
@@ -32,18 +34,37 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 	}, metaData, nil
 }
 
+func (s *StubImageFileConverter) AddStubFile(name string, modTime time.Time) {
+	s.stubs[name] = StubFileInfo{
+		modTime: modTime,
+	}
+}
+
 func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile) (os.FileInfo, error) {
 	if s.incrementModTimeRequest {
 		s.currentTime = s.currentTime.Add(time.Second)
 	}
 
-	return &StubFileInfo{
-		modTime: s.currentTime,
-	}, nil
+	if !s.useNamedStubs {
+		return &StubFileInfo{
+			modTime: s.currentTime,
+		}, nil
+	} else {
+		info := s.stubs[imageFile.FileName()]
+		return &info, nil
+	}
 }
 
 func (s *StubImageFileConverter) SetIncrementModTimeRequest(value bool) {
 	s.incrementModTimeRequest = value
+	s.stubs = map[string]StubFileInfo{}
+	s.useNamedStubs = false
+}
+
+func (s *StubImageFileConverter) SetNamedStubs(value bool) {
+	s.useNamedStubs = value
+	s.stubs = map[string]StubFileInfo{}
+	s.incrementModTimeRequest = false
 }
 
 type StubFileInfo struct {
