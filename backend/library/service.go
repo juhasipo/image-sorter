@@ -11,7 +11,7 @@ var previousImage = &api.ImageAtQuery{Index: -1}
 
 type Service struct {
 	sender                            api.Sender
-	service                           api.ImageLibrary
+	library                           api.ImageLibrary
 	selectedCategoryId                apitype.CategoryId
 	index                             int
 	imageListSize                     int
@@ -24,7 +24,7 @@ type Service struct {
 func NewImageService(sender api.Sender, library api.ImageLibrary) *Service {
 	return &Service{
 		sender:                            sender,
-		service:                           library,
+		library:                           library,
 		index:                             0,
 		imageListSize:                     0,
 		shouldSendSimilar:                 false,
@@ -35,12 +35,12 @@ func NewImageService(sender api.Sender, library api.ImageLibrary) *Service {
 
 func (s *Service) InitializeFromDirectory(directory string) {
 	s.index = 0
-	s.service.InitializeFromDirectory(directory)
+	s.library.InitializeFromDirectory(directory)
 	s.imagesChangedSincePreviousHashing = true
 }
 
 func (s *Service) GetImageFiles() []*apitype.ImageFile {
-	return s.service.GetImages()
+	return s.library.GetImages()
 }
 
 func (s *Service) ShowOnlyImages(command *api.SelectCategoryCommand) {
@@ -56,7 +56,7 @@ func (s *Service) ShowAllImages() {
 
 func (s *Service) RequestGenerateHashes() {
 	s.shouldSendSimilar = true
-	if s.imagesChangedSincePreviousHashing && s.service.GenerateHashes() {
+	if s.imagesChangedSincePreviousHashing && s.library.GenerateHashes() {
 		s.imagesChangedSincePreviousHashing = false
 	}
 
@@ -68,7 +68,7 @@ func (s *Service) RequestGenerateHashes() {
 }
 
 func (s *Service) getCurrentImage() (*apitype.ImageFileAndData, *apitype.ImageMetaData, int, error) {
-	return s.service.GetImageAtIndex(s.index, s.selectedCategoryId)
+	return s.library.GetImageAtIndex(s.index, s.selectedCategoryId)
 }
 
 func (s *Service) SetSendSimilarImages(command *api.SimilarImagesCommand) {
@@ -76,7 +76,7 @@ func (s *Service) SetSendSimilarImages(command *api.SimilarImagesCommand) {
 }
 
 func (s *Service) RequestStopHashes() {
-	s.service.StopHashes()
+	s.library.StopHashes()
 }
 
 func (s *Service) RequestNextImageWithOffset(query *api.ImageAtQuery) {
@@ -108,7 +108,7 @@ func (s *Service) moveToImage(imageId apitype.ImageId) {
 }
 
 func (s *Service) findImageIndex(imageId apitype.ImageId, categoryId apitype.CategoryId) int {
-	images, _ := s.service.GetImagesInCategory(-1, 0, categoryId)
+	images, _ := s.library.GetImagesInCategory(-1, 0, categoryId)
 	for imageIndex, image := range images {
 		if imageId == image.Id() {
 			return imageIndex
@@ -118,7 +118,7 @@ func (s *Service) findImageIndex(imageId apitype.ImageId, categoryId apitype.Cat
 }
 
 func (s *Service) moveToImageAt(index int) {
-	count := s.service.GetTotalImages(s.selectedCategoryId)
+	count := s.library.GetTotalImages(s.selectedCategoryId)
 	newIndex := s.calculateNewIndexAndWrapNegative(index, count)
 
 	s.index = newIndex
@@ -160,7 +160,7 @@ func (s *Service) moveToPreviousImageWithOffset(offset int) {
 }
 
 func (s *Service) requestImageWithOffset(offset int) {
-	count := s.service.GetTotalImages(s.selectedCategoryId)
+	count := s.library.GetTotalImages(s.selectedCategoryId)
 	s.index = s.calculateIndexOffsetAndClamp(s.index, offset, count)
 }
 
@@ -193,13 +193,13 @@ func (s *Service) Close() {
 
 func (s *Service) AddImageFiles(imageList []*apitype.ImageFile) {
 	s.index = 0
-	if err := s.service.AddImageFiles(imageList); err != nil {
+	if err := s.library.AddImageFiles(imageList); err != nil {
 		s.sender.SendError("Error while adding image", err)
 	}
 }
 
 func (s *Service) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile {
-	return s.service.GetImageFileById(imageId)
+	return s.library.GetImageFileById(imageId)
 }
 
 // Private API
@@ -208,7 +208,7 @@ func (s *Service) sendImages(sendCurrentImage bool) {
 	if currentImage, metaData, currentIndex, err := s.getCurrentImage(); err != nil {
 		s.sender.SendError("Error while fetching images", err)
 	} else {
-		totalImages := s.service.GetTotalImages(s.selectedCategoryId)
+		totalImages := s.library.GetTotalImages(s.selectedCategoryId)
 		if totalImages == 0 {
 			currentIndex = 0
 		}
@@ -223,9 +223,9 @@ func (s *Service) sendImages(sendCurrentImage bool) {
 			})
 		}
 
-		if nextImages, err := s.service.GetNextImages(s.index, s.imageListSize, s.selectedCategoryId); err != nil {
+		if nextImages, err := s.library.GetNextImages(s.index, s.imageListSize, s.selectedCategoryId); err != nil {
 			s.sender.SendError("Error while fetching next images", err)
-		} else if previousImages, err := s.service.GetPreviousImages(s.index, s.imageListSize, s.selectedCategoryId); err != nil {
+		} else if previousImages, err := s.library.GetPreviousImages(s.index, s.imageListSize, s.selectedCategoryId); err != nil {
 			s.sender.SendError("Error while fetching previous images", err)
 		} else {
 			s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{
@@ -245,7 +245,7 @@ func (s *Service) sendImages(sendCurrentImage bool) {
 }
 
 func (s *Service) sendSimilarImages(imageId apitype.ImageId) {
-	if images, shouldSend, err := s.service.GetSimilarImages(imageId); err != nil {
+	if images, shouldSend, err := s.library.GetSimilarImages(imageId); err != nil {
 		s.sender.SendError("Error while fetching similar images", err)
 	} else if shouldSend {
 		s.sender.SendCommandToTopic(api.ImageListUpdated, &api.SetImagesCommand{

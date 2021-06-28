@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"github.com/upper/db/v4"
 	"time"
 	"vincit.fi/image-sorter/api/apitype"
@@ -226,36 +225,6 @@ const (
 	asc  sortDir = "ASC"
 	desc sortDir = "DESC"
 )
-
-func (s *ImageStore) getImagesInCategory(number int, offset int, categoryName string, sort sortDir) ([]*apitype.ImageFile, error) {
-	if number == 0 {
-		return make([]*apitype.ImageFile, 0), nil
-	}
-
-	var images []Image
-	res := s.getCollection().Session().SQL().
-		Select("image.*").
-		From("image")
-
-	if categoryName != "" {
-		res = res.
-			Join("image_category").On("image_category.image_id = image.id").
-			Join("category").On("image_category.category_id = category.id").
-			Where("category.name", categoryName)
-	}
-	if number >= 0 {
-		res = res.Limit(number).
-			Offset(offset)
-	}
-
-	res = res.OrderBy(fmt.Sprintf("image.name %s", sort))
-
-	if err := res.All(&images); err != nil {
-		return nil, err
-	} else {
-		return toImageFiles(images), nil
-	}
-}
 
 func (s *ImageStore) FindByDirAndFile(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	return s.findByDirAndFile(s.getCollection(), imageFile)
