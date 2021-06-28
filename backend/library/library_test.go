@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/upper/db/v4"
 	"image"
 	"os"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type MockSender struct {
@@ -122,6 +124,7 @@ var (
 	imageMetaDataStore *database.ImageMetaDataStore
 	categoryStore      *database.CategoryStore
 	imageCategoryStore *database.ImageCategoryStore
+	similarityIndex    *database.SimilarityIndex
 )
 
 func setup() {
@@ -139,8 +142,9 @@ func initializeSut() *ImageLibrary {
 	imageMetaDataStore = database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore = database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
+	similarityIndex = database.NewSimilarityIndex(memoryDatabase)
 
-	return NewImageLibrary(store, loader, nil, imageStore, imageMetaDataStore, StubProgressReporter{})
+	return NewImageLibrary(store, loader, similarityIndex, imageStore, imageMetaDataStore, StubProgressReporter{})
 }
 
 func TestGetCurrentImage_Navigate_Empty(t *testing.T) {
@@ -707,3 +711,88 @@ func TestShowOnlyImages_ShowAllAgain(t *testing.T) {
 	})
 }
 */
+
+func TestShowOnlyImages_removeMissingImages(t *testing.T) {
+	a := assert.New(t)
+
+	sut := initializeSut()
+
+	// Add initial images to DB
+	err := sut.AddImageFiles([]*apitype.ImageFile{
+		apitype.NewImageFile("/tmp", "foo0"),
+		apitype.NewImageFile("/tmp", "foo1"),
+		apitype.NewImageFile("/tmp", "foo2"),
+		apitype.NewImageFile("/tmp", "foo3"),
+		apitype.NewImageFile("/tmp", "foo4"),
+		apitype.NewImageFile("/tmp", "foo5"),
+	})
+
+	a.Nil(err)
+	a.Equal(6, len(sut.GetImages()))
+
+	// Simulate "removing" image by giving it an incomplete list
+	err = sut.removeMissingImages([]*apitype.ImageFile{
+		apitype.NewImageFile("/tmp", "foo0"),
+		apitype.NewImageFile("/tmp", "foo1"),
+		apitype.NewImageFile("/tmp", "foo3"),
+		apitype.NewImageFile("/tmp", "foo4"),
+	})
+	a.Nil(err)
+	allImagesAfterRemove := sut.GetImages()
+	a.Equal(4, len(allImagesAfterRemove))
+	a.Equal("foo0", allImagesAfterRemove[0].FileName())
+	a.Equal("foo1", allImagesAfterRemove[1].FileName())
+	a.Equal("foo3", allImagesAfterRemove[2].FileName())
+	a.Equal("foo4", allImagesAfterRemove[3].FileName())
+}
+
+func TestShowOnlyImages_GetSimilarImages(t *testing.T) {
+	a := assert.New(t)
+
+	sut := initializeSut()
+
+	sut.AddImageFiles([]*apitype.ImageFile{
+		apitype.NewImageFile("/tmp", "foo0"),
+		apitype.NewImageFile("/tmp", "foo1"),
+		apitype.NewImageFile("/tmp", "foo2"),
+		apitype.NewImageFile("/tmp", "foo3"),
+		apitype.NewImageFile("/tmp", "foo4"),
+		apitype.NewImageFile("/tmp", "foo5"),
+	})
+
+	images := sut.GetImages()
+
+	sut.similarityIndex.DoInTransaction(func(session db.Session) error {
+		if err := sut.similarityIndex.StartRecreateSimilarImageIndex(session); err != nil {
+			logger.Error.Print("Error while clearing similar images", err)
+			return err
+		}
+
+		sut.similarityIndex.AddSimilarImage(images[0].Id(), images[1].Id(), 1, 0.5)
+		sut.similarityIndex.AddSimilarImage(images[0].Id(), images[2].Id(), 0, 1.1)
+		sut.similarityIndex.AddSimilarImage(images[0].Id(), images[5].Id(), 2, 0.1)
+
+		sut.similarityIndex.AddSimilarImage(images[1].Id(), images[4].Id(), 3, 0.6)
+		sut.similarityIndex.AddSimilarImage(images[1].Id(), images[2].Id(), 0, 2.1)
+		sut.similarityIndex.AddSimilarImage(images[1].Id(), images[5].Id(), 1, 1.2)
+		sut.similarityIndex.AddSimilarImage(images[1].Id(), images[0].Id(), 2, 1.0)
+
+		return sut.similarityIndex.EndRecreateSimilarImageIndex()
+	})
+
+	similar1, _, _ := sut.GetSimilarImages(images[0].Id())
+	a.Equal(3, len(similar1))
+	a.Equal("foo2", similar1[0].ImageFile().FileName())
+	a.Equal("foo1", similar1[1].ImageFile().FileName())
+	a.Equal("foo5", similar1[2].ImageFile().FileName())
+
+	similar2, _, _ := sut.GetSimilarImages(images[1].Id())
+	a.Equal(4, len(similar2))
+	a.Equal("foo2", similar2[0].ImageFile().FileName())
+	a.Equal("foo5", similar2[1].ImageFile().FileName())
+	a.Equal("foo0", similar2[2].ImageFile().FileName())
+	a.Equal("foo4", similar2[3].ImageFile().FileName())
+
+	similar3, _, _ := sut.GetSimilarImages(images[2].Id())
+	a.Equal(0, len(similar3))
+}

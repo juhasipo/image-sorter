@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"github.com/upper/db/v4"
 	"time"
 	"vincit.fi/image-sorter/api/apitype"
@@ -64,6 +65,10 @@ func (s *SimilarityIndex) EndRecreateSimilarImageIndex() error {
 }
 
 func (s *SimilarityIndex) AddSimilarImage(imageId apitype.ImageId, similarId apitype.ImageId, rank int, score float64) error {
+	if s.session == nil {
+		return errors.New("session is not open")
+	}
+
 	collection := s.session.Collection(s.getCollection().Name())
 	_, err := collection.Insert(&ImageSimilar{
 		ImageId:        imageId,

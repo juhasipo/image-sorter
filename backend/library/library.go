@@ -245,11 +245,11 @@ func (s *ImageLibrary) removeMissingImages(imageFiles []*apitype.ImageFile) erro
 		logger.Error.Print("Error while loading images", err)
 		return err
 	} else {
-		var existing = map[string]int{}
+		var existing = map[string]bool{}
 		var toRemove = map[apitype.ImageId]*apitype.ImageFile{}
 
 		for _, imageFile := range imageFiles {
-			existing[imageFile.FileName()] = 1
+			existing[imageFile.FileName()] = true
 		}
 
 		for _, image := range images {
