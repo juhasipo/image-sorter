@@ -1,6 +1,7 @@
 package library
 
 import (
+	"sync"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
@@ -17,6 +18,7 @@ type Service struct {
 	imageListSize                     int
 	shouldSendSimilar                 bool
 	imagesChangedSincePreviousHashing bool
+	imageLoadMux                      sync.Mutex
 
 	api.ImageService
 }
@@ -30,16 +32,21 @@ func NewImageService(sender api.Sender, library api.ImageLibrary) *Service {
 		shouldSendSimilar:                 false,
 		imagesChangedSincePreviousHashing: false,
 		selectedCategoryId:                apitype.NoCategory,
+		imageLoadMux:                      sync.Mutex{},
 	}
 }
 
 func (s *Service) InitializeFromDirectory(directory string) {
+	s.imageLoadMux.Lock()
+	defer s.imageLoadMux.Unlock()
 	s.index = 0
 	s.library.InitializeFromDirectory(directory)
 	s.imagesChangedSincePreviousHashing = true
 }
 
 func (s *Service) GetImageFiles() []*apitype.ImageFile {
+	s.imageLoadMux.Lock()
+	defer s.imageLoadMux.Unlock()
 	return s.library.GetImages()
 }
 
@@ -205,6 +212,9 @@ func (s *Service) GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile {
 // Private API
 
 func (s *Service) sendImages(sendCurrentImage bool) {
+	s.imageLoadMux.Lock()
+	defer s.imageLoadMux.Unlock()
+
 	if currentImage, metaData, currentIndex, err := s.getCurrentImage(); err != nil {
 		s.sender.SendError("Error while fetching images", err)
 	} else {
