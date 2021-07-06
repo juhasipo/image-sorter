@@ -61,6 +61,11 @@ type ImageSimilar struct {
 	Score          float64         `db:"score"`
 }
 
+type Status struct {
+	Key       StatusKey `db:"key"`
+	Timestamp time.Time `db:"timestamp"`
+}
+
 type Count struct {
 	Count int `db:"c"`
 }

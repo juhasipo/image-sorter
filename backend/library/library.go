@@ -43,8 +43,8 @@ func NewImageLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 	return &service
 }
 
-func (s *ImageLibrary) InitializeFromDirectory(directory string) {
-	s.updateImages(directory)
+func (s *ImageLibrary) InitializeFromDirectory(directory string) (time.Time, error) {
+	return s.updateImages(directory)
 }
 
 func (s *ImageLibrary) GetImages() []*apitype.ImageFile {
@@ -117,7 +117,9 @@ func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile) error {
 		logger.Debug.Printf("There are %d images modified", len(modifiedImages))
 		logger.Debug.Printf("There are %d images without meta data", len(imagesWithoutMetaData))
 		filesToAddMetaData := mergeLists(modifiedImages, imagesWithoutMetaData)
-		logger.Debug.Printf("There are %d images which needs meta data to be fetched", len(filesToAddMetaData))
+		numOfImagesToUpdate := len(filesToAddMetaData)
+		logger.Debug.Printf("There are %d images which needs meta data to be fetched", numOfImagesToUpdate)
+
 		if err := s.addImageMetaDataToDb(filesToAddMetaData); err != nil {
 			return err
 		}
@@ -203,14 +205,14 @@ func (s *ImageLibrary) toImageContainers(nextImageFiles []*apitype.ImageFile) ([
 	return images, nil
 }
 
-func (s *ImageLibrary) updateImages(rootDir string) error {
+func (s *ImageLibrary) updateImages(rootDir string) (time.Time, error) {
 	imageFiles := apitype.LoadImageFiles(rootDir)
 	if err := s.AddImageFiles(imageFiles); err != nil {
-		return err
+		return time.Unix(0, 0), err
 	} else if err := s.removeMissingImages(imageFiles); err != nil {
-		return err
+		return time.Unix(0, 0), err
 	} else {
-		return nil
+		return s.imageStore.GetLatestModifiedImage(), nil
 	}
 }
 
@@ -267,10 +269,11 @@ func (s *ImageLibrary) removeMissingImages(imageFiles []*apitype.ImageFile) erro
 					return err
 				}
 			}
+			return nil
 		} else {
 			logger.Trace.Print("No missing images to remove")
+			return nil
 		}
-		return nil
 	}
 }
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"time"
 	"vincit.fi/image-sorter/api/apitype"
 )
 
@@ -60,7 +61,7 @@ type ImageService interface {
 }
 
 type ImageLibrary interface {
-	InitializeFromDirectory(directory string)
+	InitializeFromDirectory(directory string) (time.Time, error)
 
 	AddImageFiles(imageList []*apitype.ImageFile) error
 

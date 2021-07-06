@@ -87,4 +87,17 @@ var migrations = []migration{
 			CREATE INDEX image_modified_timestamp_idx ON image (modified_timestamp);
 		`,
 	},
+	{
+		id:          3,
+		description: "Status Table",
+		query: `
+			CREATE TABLE status (
+				key TEXT PRIMARY KEY,
+				timestamp DATETIME
+			);
+			
+			INSERT INTO status (key, timestamp) VALUES('similarity_index_updated', '1970-01-01 00:00:00');
+			INSERT INTO status (key, timestamp) VALUES('image_index_updated', '1970-01-01 00:00:00');
+		`,
+	},
 }

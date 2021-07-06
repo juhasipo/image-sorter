@@ -2,8 +2,10 @@ package library
 
 import (
 	"sync"
+	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/backend/database"
 	"vincit.fi/image-sorter/common/logger"
 )
 
@@ -11,28 +13,28 @@ var nextImage = &api.ImageAtQuery{Index: 1}
 var previousImage = &api.ImageAtQuery{Index: -1}
 
 type Service struct {
-	sender                            api.Sender
-	library                           api.ImageLibrary
-	selectedCategoryId                apitype.CategoryId
-	index                             int
-	imageListSize                     int
-	shouldSendSimilar                 bool
-	imagesChangedSincePreviousHashing bool
-	imageLoadMux                      sync.Mutex
+	sender             api.Sender
+	library            api.ImageLibrary
+	statusStore        *database.StatusStore
+	selectedCategoryId apitype.CategoryId
+	index              int
+	imageListSize      int
+	shouldSendSimilar  bool
+	imageLoadMux       sync.Mutex
 
 	api.ImageService
 }
 
-func NewImageService(sender api.Sender, library api.ImageLibrary) *Service {
+func NewImageService(sender api.Sender, library api.ImageLibrary, statusStore *database.StatusStore) *Service {
 	return &Service{
-		sender:                            sender,
-		library:                           library,
-		index:                             0,
-		imageListSize:                     0,
-		shouldSendSimilar:                 false,
-		imagesChangedSincePreviousHashing: false,
-		selectedCategoryId:                apitype.NoCategory,
-		imageLoadMux:                      sync.Mutex{},
+		sender:             sender,
+		library:            library,
+		statusStore:        statusStore,
+		index:              0,
+		imageListSize:      0,
+		shouldSendSimilar:  false,
+		selectedCategoryId: apitype.NoCategory,
+		imageLoadMux:       sync.Mutex{},
 	}
 }
 
@@ -40,8 +42,23 @@ func (s *Service) InitializeFromDirectory(directory string) {
 	s.imageLoadMux.Lock()
 	defer s.imageLoadMux.Unlock()
 	s.index = 0
-	s.library.InitializeFromDirectory(directory)
-	s.imagesChangedSincePreviousHashing = true
+	latestUpdate, err := s.library.InitializeFromDirectory(directory)
+	if err != nil {
+		s.sender.SendError("Error while initializing images", err)
+	}
+
+	imageIndexUpdated, err := s.statusStore.GetStatus(database.ImageIndexUpdated)
+	if err != nil {
+		s.sender.SendError("Error while checking index update status", err)
+	} else if imageIndexUpdated == nil {
+		logger.Error.Printf("Could not find timestamp for image index update")
+	} else {
+		logger.Debug.Printf("Latest updated image:           %s", latestUpdate)
+		logger.Debug.Printf("Image index updated previously: %s", imageIndexUpdated.Timestamp)
+		if imageIndexUpdated.Timestamp.Before(latestUpdate) {
+			s.statusStore.UpdateTimestamp(database.ImageIndexUpdated, time.Now())
+		}
+	}
 }
 
 func (s *Service) GetImageFiles() []*apitype.ImageFile {
@@ -63,14 +80,33 @@ func (s *Service) ShowAllImages() {
 
 func (s *Service) RequestGenerateHashes() {
 	s.shouldSendSimilar = true
-	if s.imagesChangedSincePreviousHashing && s.library.GenerateHashes() {
-		s.imagesChangedSincePreviousHashing = false
+	shouldGenerateHashes := s.checkHashStatus()
+
+	if shouldGenerateHashes && s.library.GenerateHashes() {
+		s.statusStore.UpdateTimestamp(database.SimilarityIndexUpdated, time.Now())
 	}
 
 	if image, _, _, err := s.getCurrentImage(); err != nil {
 		s.sender.SendError("Error while generating hashes", err)
 	} else {
 		s.sendSimilarImages(image.ImageFile().Id())
+	}
+}
+
+func (s *Service) checkHashStatus() bool {
+	similarityIndexLastUpdated, _ := s.statusStore.GetStatus(database.SimilarityIndexUpdated)
+	imageIndexLastUpdated, _ := s.statusStore.GetStatus(database.ImageIndexUpdated)
+
+	logger.Debug.Printf("Similarity index updated: %s", similarityIndexLastUpdated.Timestamp)
+	logger.Debug.Printf("Image index updated:      %s", imageIndexLastUpdated.Timestamp)
+
+	epoc := similarityIndexLastUpdated.Timestamp.Unix()
+	if similarityIndexLastUpdated.Timestamp.Before(imageIndexLastUpdated.Timestamp) || epoc == 0 {
+		logger.Debug.Printf("Similarity index needs to be updated")
+		return true
+	} else {
+		logger.Debug.Printf("Similarity index is up-to-date")
+		return false
 	}
 }
 

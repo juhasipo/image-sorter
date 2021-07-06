@@ -12,7 +12,8 @@ var (
 
 func initializeSutService() *Service {
 	sut = initializeSut()
-	return NewImageService(nil, sut)
+
+	return NewImageService(nil, sut, statusStore)
 }
 
 func TestService_calculateNewIndexAndWrapNegative(t *testing.T) {

@@ -51,7 +51,6 @@ func initAndRun(params *common.Params) {
 	gui.Run()
 }
 
-
 func printHeaderToLogger() {
 	appName := common.AppName
 	appVersion := fmt.Sprintf("version: %s", common.Version)
@@ -59,7 +58,7 @@ func printHeaderToLogger() {
 	separatorLength := util.MaxInt(
 		len(appName), len(appVersion),
 	)
-	separator := strings.Repeat("=",separatorLength)
+	separator := strings.Repeat("=", separatorLength)
 
 	logger.Info.Printf(separator)
 	logger.Info.Print(appName)
@@ -74,6 +73,7 @@ type Stores struct {
 	CategoryStore        *database.CategoryStore
 	DefaultCategoryStore *database.CategoryStore
 	ImageCategoryStore   *database.ImageCategoryStore
+	StatusStore          *database.StatusStore
 	HomeDirDb            *database.Database
 	WorkDirDb            *database.Database
 }
@@ -197,7 +197,7 @@ func initializeServices(params *common.Params, stores *Stores, brokers *Brokers,
 	filterService := filter.NewFilterService()
 	progressReporter := api.NewSenderProgressReporter(brokers.Broker)
 	imageLibrary := library.NewImageLibrary(imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore, progressReporter)
-	imageService := library.NewImageService(brokers.Broker, imageLibrary)
+	imageService := library.NewImageService(brokers.Broker, imageLibrary, stores.StatusStore)
 	services := &Services{
 		CategoryService:        category.NewCategoryService(params, brokers.Broker, stores.CategoryStore),
 		DefaultCategoryService: category.NewCategoryService(params, brokers.DevNullBroker, stores.DefaultCategoryStore),
@@ -235,6 +235,7 @@ func initializeStores() *Stores {
 		CategoryStore:        database.NewCategoryStore(workDirDb),
 		ImageCategoryStore:   database.NewImageCategoryStore(workDirDb),
 		DefaultCategoryStore: database.NewCategoryStore(homeDirDb),
+		StatusStore:          database.NewStatusStore(workDirDb),
 		HomeDirDb:            homeDirDb,
 		WorkDirDb:            workDirDb,
 	}

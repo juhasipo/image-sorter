@@ -125,6 +125,7 @@ var (
 	categoryStore      *database.CategoryStore
 	imageCategoryStore *database.ImageCategoryStore
 	similarityIndex    *database.SimilarityIndex
+	statusStore        *database.StatusStore
 )
 
 func setup() {
@@ -143,6 +144,7 @@ func initializeSut() *ImageLibrary {
 	categoryStore = database.NewCategoryStore(memoryDatabase)
 	imageCategoryStore = database.NewImageCategoryStore(memoryDatabase)
 	similarityIndex = database.NewSimilarityIndex(memoryDatabase)
+	statusStore = database.NewStatusStore(memoryDatabase)
 
 	return NewImageLibrary(store, loader, similarityIndex, imageStore, imageMetaDataStore, StubProgressReporter{})
 }
@@ -738,6 +740,7 @@ func TestShowOnlyImages_removeMissingImages(t *testing.T) {
 		apitype.NewImageFile("/tmp", "foo4"),
 	})
 	a.Nil(err)
+
 	allImagesAfterRemove := sut.GetImages()
 	a.Equal(4, len(allImagesAfterRemove))
 	a.Equal("foo0", allImagesAfterRemove[0].FileName())
