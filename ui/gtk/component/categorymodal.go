@@ -154,19 +154,20 @@ func (s *CategoryModal) initAddEditView(name string, path string, key string) {
 	s.editButton.SetSensitive(false)
 }
 
-func findKeyIndex(key string, model *gtk.TreeModel) int {
+func findKeyIndex(key string, model gtk.ITreeModel) int {
 	upperKey := strings.ToUpper(key)
 
 	i := 0
-	iter, _ := model.GetIterFirst()
+	treeModel := model.ToTreeModel()
+	iter, _ := treeModel.GetIterFirst()
 	for {
-		value, _ := model.GetValue(iter, 0)
+		value, _ := treeModel.GetValue(iter, 0)
 
 		iterValueString, _ := value.GetString()
 		if strings.ToUpper(iterValueString) == upperKey {
 			return i
 		}
-		if model.IterNext(iter) {
+		if treeModel.IterNext(iter) {
 			i += 1
 		} else {
 			return 0

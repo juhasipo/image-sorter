@@ -7,8 +7,9 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gotk3/gotk3 v0.4.0
+	github.com/gotk3/gotk3 v0.6.1
 	github.com/hashicorp/mdns v1.0.3
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/imroc/req v0.3.0 // indirect
@@ -22,4 +23,5 @@ require (
 	github.com/upper/db/v4 v4.0.1
 	github.com/vardius/message-bus v1.1.4
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

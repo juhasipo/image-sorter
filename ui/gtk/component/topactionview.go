@@ -160,8 +160,8 @@ func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCal
 		modifiers := gtk.AcceleratorGetDefaultModMask()
 		state := gdk.ModifierType(keyEvent.State())
 
-		stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
-		forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+		stayOnSameImage := state&modifiers&gdk.SHIFT_MASK > 0
+		forceToCategory := state&modifiers&gdk.CONTROL_MASK > 0
 		send(stayOnSameImage, forceToCategory)
 		return true
 	})
@@ -174,8 +174,8 @@ func (s *TopActionView) addCategoryButton(entry *apitype.Category, categorizeCal
 		if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
 			modifiers := gtk.AcceleratorGetDefaultModMask()
 			state := gdk.ModifierType(keyEvent.State())
-			stayOnSameImage := state&modifiers&gdk.GDK_SHIFT_MASK > 0
-			forceToCategory := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+			stayOnSameImage := state&modifiers&gdk.SHIFT_MASK > 0
+			forceToCategory := state&modifiers&gdk.CONTROL_MASK > 0
 			send(stayOnSameImage, forceToCategory)
 			return true
 		}

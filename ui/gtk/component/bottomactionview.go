@@ -109,7 +109,7 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 		modifiers := gtk.AcceleratorGetDefaultModMask()
 		state := gdk.ModifierType(keyEvent.State())
 
-		controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+		controlDown := state&modifiers&gdk.CONTROL_MASK > 0
 		if controlDown {
 			callbacks.EnterFullScreenNoDistraction()
 		} else {
@@ -124,7 +124,7 @@ func NewBottomActions(builder *gtk.Builder, appWindow *gtk.Window, callbacks Cal
 		if key == gdk.KEY_KP_Enter || key == gdk.KEY_Return || key == gdk.KEY_KP_Space || key == gdk.KEY_space {
 			modifiers := gtk.AcceleratorGetDefaultModMask()
 			state := gdk.ModifierType(keyEvent.State())
-			controlDown := state&modifiers&gdk.GDK_CONTROL_MASK > 0
+			controlDown := state&modifiers&gdk.CONTROL_MASK > 0
 			if controlDown {
 				callbacks.EnterFullScreenNoDistraction()
 			} else {

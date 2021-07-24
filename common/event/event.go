@@ -56,9 +56,7 @@ func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
 			reflect.ValueOf(callback).Call(args)
 		}
 
-		if _, err := glib.IdleAdd(sendFn); err != nil {
-			s.SendError("Error sending internal message", err)
-		}
+		glib.IdleAdd(sendFn)
 	}
 	err := s.bus.Subscribe(string(topic), cb)
 	if err != nil {

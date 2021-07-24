@@ -348,9 +348,9 @@ func resolveModifierStatuses(keyEvent *gdk.EventKey) (shiftDown bool, controlDow
 	state := gdk.ModifierType(keyEvent.State())
 	modifierType := state & modifiers
 
-	shiftDown = modifierType&gdk.GDK_SHIFT_MASK > 0
-	controlDown = modifierType&gdk.GDK_CONTROL_MASK > 0
-	altDown = modifierType&gdk.GDK_MOD1_MASK > 0
+	shiftDown = modifierType&gdk.SHIFT_MASK > 0
+	controlDown = modifierType&gdk.CONTROL_MASK > 0
+	altDown = modifierType&gdk.MOD1_MASK > 0
 
 	logger.Trace.Printf("Modifiers: Shift = %t, CTRL = %t, ALT = %t", shiftDown, controlDown, altDown)
 	return
