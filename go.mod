@@ -3,6 +3,8 @@ module vincit.fi/image-sorter
 go 1.14
 
 require (
+	github.com/AllenDang/giu v0.5.6
+	github.com/AllenDang/imgui-go v1.12.1-0.20210801050644-e183d1c04c13
 	github.com/AndreasAbdi/gochromecast v0.0.0-20181018034447-700dddc0dea7
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
@@ -19,9 +21,9 @@ require (
 	// credit goes to correct person
 	//github.com/rivo/duplo v0.0.0-20180323201418-c4ec823d58cd
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/upper/db/v4 v4.0.1
 	github.com/vardius/message-bus v1.1.4
-	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
+	golang.org/x/image v0.0.0-20200618115811-c13761719519
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

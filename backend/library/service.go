@@ -31,7 +31,7 @@ func NewImageService(sender api.Sender, library api.ImageLibrary, statusStore *d
 		library:            library,
 		statusStore:        statusStore,
 		index:              0,
-		imageListSize:      0,
+		imageListSize:      5,
 		shouldSendSimilar:  false,
 		selectedCategoryId: apitype.NoCategory,
 		imageLoadMux:       sync.Mutex{},

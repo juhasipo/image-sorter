@@ -16,7 +16,7 @@ import (
 	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
-	gtkUi "vincit.fi/image-sorter/ui/gtk"
+	giuUi "vincit.fi/image-sorter/ui/giu"
 )
 
 const databaseFileName = "image-sorter.db"
@@ -43,7 +43,7 @@ func initAndRun(params *common.Params) {
 	defer services.Close()
 
 	// UI
-	gui := gtkUi.NewUi(params, brokers.Broker, imageCache)
+	gui := giuUi.NewUi(params, brokers.Broker, imageCache)
 
 	connectUiAndServices(params, stores, services, imageCache, brokers, gui)
 
@@ -161,10 +161,10 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 	brokers.Broker.Subscribe(api.SimilarSetShowImages, services.ImageService.SetSendSimilarImages)
 
 	// ImageService -> UI
-	brokers.Broker.ConnectToGui(api.ImageListUpdated, gui.SetImages)
-	brokers.Broker.ConnectToGui(api.ImageCurrentUpdated, gui.SetCurrentImage)
-	brokers.Broker.ConnectToGui(api.ProcessStatusUpdated, gui.UpdateProgress)
-	brokers.Broker.ConnectToGui(api.ShowError, gui.ShowError)
+	brokers.Broker.Subscribe(api.ImageListUpdated, gui.SetImages)
+	brokers.Broker.Subscribe(api.ImageCurrentUpdated, gui.SetCurrentImage)
+	brokers.Broker.Subscribe(api.ProcessStatusUpdated, gui.UpdateProgress)
+	brokers.Broker.Subscribe(api.ShowError, gui.ShowError)
 
 	// UI -> Image Categorization
 	brokers.Broker.Subscribe(api.CategorizeImage, services.ImageCategoryService.SetCategory)
@@ -173,7 +173,7 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 	brokers.Broker.Subscribe(api.CategoriesShowOnly, services.ImageCategoryService.ShowOnlyCategoryImages)
 
 	// Image Categorization -> UI
-	brokers.Broker.ConnectToGui(api.CategoryImageUpdate, gui.SetImageCategory)
+	brokers.Broker.Subscribe(api.CategoryImageUpdate, gui.SetImageCategory)
 
 	// UI -> Caster
 	brokers.Broker.Subscribe(api.CastDeviceSearch, services.CasterInstance.FindDevices)
@@ -181,16 +181,16 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 	brokers.Broker.Subscribe(api.ImageChanged, services.CasterInstance.CastImage)
 
 	// Caster -> UI
-	brokers.Broker.ConnectToGui(api.CastDeviceFound, gui.DeviceFound)
-	brokers.Broker.ConnectToGui(api.CastReady, gui.CastReady)
-	brokers.Broker.ConnectToGui(api.CastDevicesSearchDone, gui.CastFindDone)
+	brokers.Broker.Subscribe(api.CastDeviceFound, gui.DeviceFound)
+	brokers.Broker.Subscribe(api.CastReady, gui.CastReady)
+	brokers.Broker.Subscribe(api.CastDevicesSearchDone, gui.CastFindDone)
 
 	// UI -> Category
 	brokers.Broker.Subscribe(api.CategoriesSave, services.CategoryService.Save)
 	brokers.Broker.Subscribe(api.CategoriesSaveDefault, services.DefaultCategoryService.Save)
 
 	// Category -> UI
-	brokers.Broker.ConnectToGui(api.CategoriesUpdated, gui.UpdateCategories)
+	brokers.Broker.Subscribe(api.CategoriesUpdated, gui.UpdateCategories)
 }
 
 func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
