@@ -6,12 +6,12 @@ import (
 	"github.com/AllenDang/giu"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
-	"golang.org/x/image/colornames"
 	"image"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/ui/giu/widget"
 	"vincit.fi/image-sorter/ui/gtk/component"
 )
 
@@ -60,137 +60,6 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 func (s *Ui) Init(directory string) {
 }
 
-type ResizableImageWidget struct {
-	imageWidth  float32
-	imageHeight float32
-	imageRatio  float32
-	giu.ImageWidget
-}
-
-func ResizableImage(texture *giu.Texture, width float32, height float32) *ResizableImageWidget {
-	return &ResizableImageWidget{
-		imageWidth:  width,
-		imageHeight: height,
-		imageRatio:  width / height,
-		ImageWidget: *giu.Image(texture),
-	}
-}
-
-type CategoryButtonWidget struct {
-	categoryId apitype.CategoryId
-	name       string
-	active     bool
-	onClick    func(*api.CategorizeCommand)
-	giu.ColumnWidget
-}
-
-func CategoryButton(categoryId apitype.CategoryId, name string, active bool, onClick func(command *api.CategorizeCommand)) *CategoryButtonWidget {
-	return &CategoryButtonWidget{
-		categoryId: categoryId,
-		name:       name,
-		active:     active,
-		onClick:    onClick,
-	}
-}
-
-const categoryPrimaryButtonWidth = 100
-const categoryArrowButtonWidth = 20
-const categoryPrimaryButtonHeight = 20
-const categoryIndicatorButtonHeight = 5
-
-func (s *CategoryButtonWidget) Build() {
-	statusColor := colornames.Green
-	if !s.active {
-		statusColor = colornames.Navy
-	}
-
-	operation := apitype.MOVE
-	if s.active {
-		operation = apitype.NONE
-	}
-
-	primaryAction := func(operation apitype.Operation, stayOnImage bool, forceCategory bool) {
-		s.onClick(&api.CategorizeCommand{
-			CategoryId:      s.categoryId,
-			Operation:       operation,
-			StayOnSameImage: stayOnImage,
-			ForceToCategory: forceCategory,
-		})
-	}
-
-	actionName := "Add"
-	if s.active {
-		actionName = "Remove"
-	}
-
-	menuName := fmt.Sprintf("CategoryMenu-%d", s.categoryId)
-	menu := giu.Popup(menuName).
-		Layout(
-			giu.Button(actionName+" category").OnClick(func() {
-				primaryAction(operation, false, false)
-				giu.CloseCurrentPopup()
-			}).Size(180, 30),
-			giu.Button(actionName+" category and stay").OnClick(func() {
-				primaryAction(operation, true, false)
-				giu.CloseCurrentPopup()
-			}).Size(180, 30),
-			giu.Button("Force category").OnClick(func() {
-				primaryAction(apitype.MOVE, false, true)
-				giu.CloseCurrentPopup()
-			}).Size(180, 30),
-		)
-
-	primaryButton := giu.Button(s.name).
-		Size(categoryPrimaryButtonWidth, categoryPrimaryButtonHeight).
-		OnClick(func() {
-			stayOnImage := giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
-			forceCategory := giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
-			primaryAction(operation, stayOnImage, forceCategory)
-		})
-	menuButton := giu.ArrowButton("Menu", giu.DirectionDown).OnClick(func() {
-		giu.OpenPopup(menuName)
-	})
-	statusIndicator := giu.Custom(func() {
-		// w, _ := giu.GetAvailableRegion()
-		canvas := giu.GetCanvas()
-		start := giu.GetCursorPos()
-		end := start.Add(image.Pt(categoryPrimaryButtonWidth+categoryArrowButtonWidth, categoryIndicatorButtonHeight))
-
-		canvas.AddRectFilled(start, end, statusColor, 0, 0)
-	})
-
-	giu.Style().
-		SetStyle(giu.StyleVarItemSpacing, 0, 0).
-		SetStyle(giu.StyleVarItemInnerSpacing, 0, 0).
-		To(giu.Column(
-			giu.Row(
-				primaryButton,
-				menuButton,
-			),
-			menu,
-			statusIndicator,
-		)).Build()
-}
-
-func (s *ResizableImageWidget) Build() {
-	paddingW, _ := giu.GetFramePadding()
-	maxW, maxH := giu.GetAvailableRegion()
-	maxW = maxW - 120 - paddingW*2.0
-	newW := maxW
-	newH := newW / s.imageRatio
-
-	if newH > maxH {
-		newW = maxH * s.imageRatio
-		newH = maxH
-	}
-
-	offsetW := (maxW - newW) / 2.0
-	offsetH := (maxH - newH) / 2.0
-
-	s.ImageWidget.Size(newW, newH)
-	giu.Row(giu.Dummy(offsetW, offsetH), &s.ImageWidget).Build()
-}
-
 func (s *Ui) Run() {
 	s.sender.SendCommandToTopic(api.DirectoryChanged, s.rootPath)
 	s.win.Run(func() {
@@ -214,7 +83,7 @@ func (s *Ui) Run() {
 			_, active := s.currentImageCategories[cat.Id()]
 
 			categoryId := cat.Id()
-			categorizeButton := CategoryButton(categoryId, text, active, func(command *api.CategorizeCommand) {
+			categorizeButton := widget.CategoryButton(categoryId, text, active, func(command *api.CategorizeCommand) {
 				command.NextImageDelay = 100
 				command.ImageId = s.currentImageTexture.imageId
 				s.sender.SendCommandToTopic(api.CategorizeImage, command)
@@ -239,7 +108,7 @@ func (s *Ui) Run() {
 				giu.Separator(),
 				giu.Row(
 					giu.Column(nextImages...),
-					giu.Column(ResizableImage(s.currentImageTexture.texture, s.currentImageTexture.width, s.currentImageTexture.height)),
+					giu.Column(widget.ResizableImage(s.currentImageTexture.texture, s.currentImageTexture.width, s.currentImageTexture.height)),
 					giu.Dummy(-120, giu.Auto),
 					giu.Column(previousImages...),
 				),
