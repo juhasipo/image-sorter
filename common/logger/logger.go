@@ -75,6 +75,25 @@ func init() {
 	Trace = log.New(nullWriter, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
+func IsLogLevel(logLevel LogLevel) bool {
+	if logLevel == ERROR {
+		return Error != nil
+	}
+	if logLevel == WARN {
+		return Warn != nil
+	}
+	if logLevel == INFO {
+		return Info != nil
+	}
+	if logLevel == DEBUG {
+		return Debug != nil
+	}
+	if logLevel == TRACE {
+		return Trace != nil
+	}
+	return false
+}
+
 func Initialize(logLevel LogLevel) {
 	log.Printf("Initialize loggers: '%s'", logLevel.String())
 

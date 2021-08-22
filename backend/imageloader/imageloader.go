@@ -4,11 +4,12 @@ import (
 	"errors"
 	"github.com/pixiv/go-libjpeg/jpeg"
 	"image"
-	"image/color"
 	"os"
+	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
 )
 
@@ -83,22 +84,33 @@ func (s *LibJPEGImageLoader) LoadImageScaled(imageId apitype.ImageId, size apity
 }
 
 func convertNrgbaToRgba(i image.Image) image.Image {
+	start := time.Now()
 	n := i.(*image.NRGBA)
 
 	rgba := image.NewRGBA(n.Rect)
 	for x := 0; x < n.Rect.Dx(); x++ {
 		for y := 0; y < n.Rect.Dy(); y++ {
-			pix := n.NRGBAAt(x, y)
-			r, g, b, a := pix.RGBA()
-			c := color.RGBA{
-				R: uint8(r / 256),
-				G: uint8(g / 256),
-				B: uint8(b / 256),
-				A: uint8(a / 256),
-			}
-			rgba.SetRGBA(x, y, c)
+			// Just pass the pixels as-is without any conversion
+			// because all the images are JPGE which means, there is
+			// no alpha-channel in use. This should allow us to do this
+			nrgbaPixOffset := n.PixOffset(x, y)
+			ngrbaStride := n.Pix[nrgbaPixOffset : nrgbaPixOffset+4 : nrgbaPixOffset+4]
+
+			rgbaPixOffset := rgba.PixOffset(x, y)
+			rgbaStride := rgba.Pix[rgbaPixOffset : rgbaPixOffset+4 : rgbaPixOffset+4]
+
+			rgbaStride[0] = ngrbaStride[0]
+			rgbaStride[1] = ngrbaStride[1]
+			rgbaStride[2] = ngrbaStride[2]
+			rgbaStride[3] = ngrbaStride[3]
 		}
 	}
+	end := time.Now()
+
+	if logger.IsLogLevel(logger.TRACE) {
+		logger.Trace.Printf("Converting from NRGBA to RGBA: %s", end.Sub(start))
+	}
+
 	return rgba
 }
 
