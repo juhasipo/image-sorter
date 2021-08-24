@@ -7,6 +7,7 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"image"
+	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
@@ -17,26 +18,106 @@ import (
 
 type Ui struct {
 	// General
-	win                 *giu.MasterWindow
-	fullscreen          bool
-	imageCache          api.ImageStore
-	sender              api.Sender
-	categories          []*apitype.Category
-	rootPath            string
-	currentImageTexture *texturedImage
-	nextImages          []*texturedImage
-	previousImages      []*texturedImage
+	win                    *giu.MasterWindow
+	oldWidth, oldHeight    int
+	fullscreen             bool
+	imageCache             api.ImageStore
+	sender                 api.Sender
+	categories             []*apitype.Category
+	rootPath               string
+	currentImageTexture    *texturedImage
+	nextImages             []*texturedImage
+	previousImages         []*texturedImage
+	categoryKeyManager     *CategoryKeyManager
+	currentImageCategories map[apitype.CategoryId]bool
 
 	api.Gui
 	component.CallbackApi
-	currentImageCategories map[apitype.CategoryId]bool
 }
 
 type texturedImage struct {
-	width   float32
-	height  float32
-	texture *giu.Texture
-	imageId apitype.ImageId
+	width          float32
+	height         float32
+	texture        *giu.Texture
+	oldTexture     *giu.Texture
+	imageId        apitype.ImageId
+	oldImageId     apitype.ImageId
+	lastWidth      int
+	lastHeight     int
+	newImageLoaded bool
+	imageCache     api.ImageStore
+}
+
+func (s *texturedImage) changeImage(imageId apitype.ImageId, width float32, height float32) {
+	s.oldTexture = s.texture
+	s.newImageLoaded = false
+
+	s.oldImageId = s.imageId
+	s.imageId = imageId
+
+	s.width = width
+	s.height = height
+
+	s.lastWidth = -1
+	s.lastHeight = -1
+
+}
+
+func (s *texturedImage) loadImageAsTexture(width float32, height float32) *giu.Texture {
+	if s.imageCache == nil {
+		return nil
+	}
+
+	if s.newImageLoaded {
+		if s.texture != nil && int(width) == s.lastWidth && int(height) == s.lastHeight {
+			return s.texture
+		}
+	}
+
+	s.lastWidth = int(width)
+	s.lastHeight = int(height)
+
+	scaledImage, _ := s.imageCache.GetScaled(s.imageId, apitype.SizeOf(s.lastWidth, s.lastHeight))
+	if scaledImage == nil {
+		s.texture = nil
+	} else {
+		go func() {
+			var err error
+			s.texture, err = giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
+			s.newImageLoaded = true
+			if err != nil {
+				logger.Error.Print(err)
+			}
+		}()
+	}
+	return s.texture
+}
+
+func (s *texturedImage) loadImageAsTextureThumbnail() *giu.Texture {
+	if s.imageCache == nil {
+		return nil
+	}
+
+	if s.newImageLoaded {
+		if s.texture != nil {
+			return s.texture
+		}
+	}
+
+	scaledImage, _ := s.imageCache.GetThumbnail(s.imageId)
+	if scaledImage == nil {
+		s.texture = nil
+	} else {
+		go func() {
+			var err error
+			s.texture, err = giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
+			s.newImageLoaded = true
+			if err != nil {
+				logger.Error.Print(err)
+			}
+		}()
+	}
+	return s.texture
 }
 
 const (
@@ -50,7 +131,25 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		imageCache:          imageCache,
 		sender:              broker,
 		rootPath:            params.RootPath(),
-		currentImageTexture: &texturedImage{},
+		currentImageTexture: &texturedImage{imageCache: imageCache},
+	}
+
+	gui.categoryKeyManager = &CategoryKeyManager{
+		callback: func(def *CategoryDef, stayOnImage bool, forceCategory bool) {
+			operation := apitype.MOVE
+			if _, ok := gui.currentImageCategories[def.categoryId]; ok {
+				operation = apitype.NONE
+			}
+
+			broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
+				ImageId:         gui.currentImageTexture.imageId,
+				CategoryId:      def.categoryId,
+				Operation:       operation,
+				StayOnSameImage: stayOnImage,
+				NextImageDelay:  100,
+				ForceToCategory: forceCategory,
+			})
+		},
 	}
 
 	gui.Init(params.RootPath())
@@ -63,6 +162,20 @@ func (s *Ui) Init(directory string) {
 func (s *Ui) Run() {
 	s.sender.SendCommandToTopic(api.DirectoryChanged, s.rootPath)
 	s.win.Run(func() {
+		newWidth, newHeight := s.win.GetSize()
+
+		if newWidth != s.oldWidth || newHeight != s.oldHeight {
+			if logger.IsLogLevel(logger.TRACE) {
+				logger.Trace.Printf("Window size changed from (%d x %d) to (%d x %d)",
+					s.oldWidth, s.oldHeight, newWidth, newHeight)
+			}
+			go s.currentImageTexture.loadImageAsTexture(float32(newWidth), float32(newHeight))
+			s.oldWidth = newWidth
+			s.oldHeight = newHeight
+		}
+
+		renderStart := time.Now()
+
 		var nextImages []giu.Widget
 		for _, nextImage := range s.nextImages {
 			maxWidth := float32(120.0)
@@ -108,31 +221,54 @@ func (s *Ui) Run() {
 				giu.Separator(),
 				giu.Row(
 					giu.Column(nextImages...),
-					giu.Column(widget.ResizableImage(s.currentImageTexture.texture, s.currentImageTexture.width, s.currentImageTexture.height)),
+					giu.Custom(func() {
+						widget.
+							ResizableImage(
+								s.currentImageTexture.texture,
+								s.currentImageTexture.width,
+								s.currentImageTexture.height,
+							).Build()
+					}),
 					giu.Dummy(-120, giu.Auto),
 					giu.Column(previousImages...),
 				),
 				giu.PrepareMsgbox(),
 			)
+		renderStop := time.Now()
+
+		renderTime := renderStop.Sub(renderStart)
+		if renderTime >= time.Millisecond && logger.IsLogLevel(logger.TRACE) {
+			logger.Trace.Printf("Rendered UI in %s", renderTime)
+		} else if renderTime >= 10*time.Millisecond {
+			logger.Debug.Printf("Rendered UI in %s", renderTime)
+		}
+		s.handleKeyPress()
 	})
 }
 
-func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
+func (s *Ui) handleKeyPress() bool {
 	const bigJumpSize = 10
 	const hugeJumpSize = 100
 
-	keyEvent := gdk.EventKeyNewFromEvent(e)
-	key := keyEvent.KeyVal()
+	shiftDown := giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
+	altDown := giu.IsKeyDown(giu.KeyLeftAlt) || giu.IsKeyDown(giu.KeyRightAlt)
+	controlDown := giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
 
-	_, controlDown, altDown := resolveModifierStatuses(keyEvent)
-
-	if key == gdk.KEY_F8 {
+	if giu.IsKeyPressed(giu.KeyF8) {
+		logger.Debug.Printf("Find devices")
 		s.FindDevices()
-	} else if key == gdk.KEY_F10 {
+	}
+	if giu.IsKeyPressed(giu.KeyF10) {
+		logger.Debug.Printf("Show all images")
 		s.sender.SendToTopic(api.ImageShowAll)
-	} else if key == gdk.KEY_Escape {
+	}
+	if giu.IsKeyPressed(giu.KeyEscape) {
+		logger.Debug.Printf("Exit full screen")
 		s.ExitFullScreen()
-	} else if key == gdk.KEY_F11 || (altDown && key == gdk.KEY_Return) {
+	}
+
+	if giu.IsKeyPressed(giu.KeyF11) || (giu.IsKeyPressed(giu.KeyEnter) && altDown) {
+		logger.Debug.Printf("Enter full screen")
 		noDistractionMode := controlDown
 		if noDistractionMode {
 			s.EnterFullScreenNoDistraction()
@@ -141,29 +277,48 @@ func (s *Ui) handleKeyPress(_ *gtk.ApplicationWindow, e *gdk.Event) bool {
 		} else {
 			s.EnterFullScreen()
 		}
-	} else if key == gdk.KEY_F12 {
+	}
+
+	if giu.IsKeyPressed(giu.KeyF12) {
+		logger.Debug.Printf("Find similar images")
 		s.sender.SendToTopic(api.SimilarRequestSearch)
-	} else if key == gdk.KEY_Page_Up {
+	}
+
+	// Navigation
+
+	if giu.IsKeyPressed(giu.KeyPageUp) {
 		s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: hugeJumpSize})
-	} else if key == gdk.KEY_Page_Down {
+	}
+	if giu.IsKeyPressed(giu.KeyPageUp) {
 		s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: hugeJumpSize})
-	} else if key == gdk.KEY_Home {
+	}
+
+	if giu.IsKeyPressed(giu.KeyHome) {
 		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: 0})
-	} else if key == gdk.KEY_End {
+	}
+	if giu.IsKeyPressed(giu.KeyEnd) {
 		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: -1})
-	} else if key == gdk.KEY_Left {
+	}
+
+	if giu.IsKeyPressed(giu.KeyLeft) {
+		logger.Debug.Printf("Previous")
 		if controlDown {
 			s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
 			s.sender.SendToTopic(api.ImageRequestPrevious)
 		}
-	} else if key == gdk.KEY_Right {
+	}
+	if giu.IsKeyPressed(giu.KeyRight) {
+		logger.Debug.Printf("Next")
 		if controlDown {
 			s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}
-	} /*else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.CurrentImageFile()); command != nil {
+	}
+
+	s.categoryKeyManager.HandleKeys(shiftDown, controlDown)
+	/*else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.CurrentImageFile()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
 			s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: command.CategoryId})
@@ -188,6 +343,7 @@ func (s *Ui) UpdateCategories(categories *api.UpdateCategoriesCommand) {
 	s.categories = make([]*apitype.Category, len(categories.Categories))
 	copy(s.categories, categories.Categories)
 
+	s.categoryKeyManager.Reset(categories.Categories)
 	//s.topActionView.UpdateCategories(categories)
 	s.sender.SendToTopic(api.ImageRequestCurrent)
 }
@@ -196,33 +352,31 @@ func (s *Ui) UpdateCurrentImage() {
 	//s.imageView.UpdateCurrentImage()
 }
 
-func i2t(i image.Image) (*giu.Texture, error) {
-	return giu.NewTextureFromRgba(i.(*image.RGBA))
-}
-
 func (s *Ui) SetImages(command *api.SetImagesCommand) {
 	if command.Topic == api.ImageRequestNext {
 		s.nextImages = []*texturedImage{}
 		for _, data := range command.Images {
-			i, _ := i2t(data.ImageData())
 			ti := &texturedImage{
-				width:   float32(data.ImageData().Bounds().Dx()),
-				height:  float32(data.ImageData().Bounds().Dy()),
-				texture: i,
+				imageId:    data.ImageFile().Id(),
+				width:      float32(data.ImageData().Bounds().Dx()),
+				height:     float32(data.ImageData().Bounds().Dy()),
+				imageCache: s.imageCache,
 			}
 			s.nextImages = append(s.nextImages, ti)
+			ti.loadImageAsTextureThumbnail()
 		}
 		//s.imageView.AddImagesToNextStore(command.Images)
 	} else if command.Topic == api.ImageRequestPrevious {
 		s.previousImages = []*texturedImage{}
 		for _, data := range command.Images {
-			i, _ := i2t(data.ImageData())
 			ti := &texturedImage{
-				width:   float32(data.ImageData().Bounds().Dx()),
-				height:  float32(data.ImageData().Bounds().Dy()),
-				texture: i,
+				imageId:    data.ImageFile().Id(),
+				width:      float32(data.ImageData().Bounds().Dx()),
+				height:     float32(data.ImageData().Bounds().Dy()),
+				imageCache: s.imageCache,
 			}
 			s.previousImages = append(s.previousImages, ti)
+			ti.loadImageAsTextureThumbnail()
 		}
 		//s.imageView.AddImagesToPrevStore(command.Images)
 	} else if command.Topic == api.ImageRequestSimilar {
@@ -236,20 +390,13 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	//s.imageView.SetCurrentImage(command.Image, command.MetaData)
 	s.UpdateCurrentImage()
 
-	f := command.Image.ImageFile().Id()
-	fullImage, _ := s.imageCache.GetFull(f)
-	var err error
-	t, err := giu.NewTextureFromRgba(fullImage.(*image.RGBA))
-	if err != nil {
-		logger.Error.Print(err)
-	}
-
-	s.currentImageTexture = &texturedImage{
-		width:   float32(command.Image.ImageData().Bounds().Dx()),
-		height:  float32(command.Image.ImageData().Bounds().Dy()),
-		texture: t,
-		imageId: command.Image.ImageFile().Id(),
-	}
+	imageId := command.Image.ImageFile().Id()
+	s.currentImageTexture.changeImage(
+		imageId,
+		float32(command.Image.ImageData().Bounds().Dx()),
+		float32(command.Image.ImageData().Bounds().Dy()))
+	width, height := s.win.GetSize()
+	s.currentImageTexture.loadImageAsTexture(float32(width), float32(height))
 	s.sendCurrentImageChangedEvent()
 
 	s.imageCache.Purge()

@@ -83,7 +83,7 @@ func (s *Instance) GetScaled(size apitype.Size) (image.Image, error) {
 	newSize := apitype.RectangleOfScaledToFit(fullSize, size)
 
 	if s.scaled == nil {
-		s.scaled = imaging.Resize(full, newSize.Width(), newSize.Height(), imaging.Linear)
+		s.scaled = convertNrgbaToRgba(imaging.Resize(full, newSize.Width(), newSize.Height(), imaging.Linear))
 	} else {
 		size := s.scaled.Bounds()
 		if newSize.Width() != size.Dx() && newSize.Height() != size.Dy() {
