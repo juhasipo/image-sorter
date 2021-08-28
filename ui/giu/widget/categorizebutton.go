@@ -83,10 +83,10 @@ func (s *CategoryButtonWidget) Build() {
 	menuButton := giu.ArrowButton("Menu", giu.DirectionDown).OnClick(func() {
 		giu.OpenPopup(menuName)
 	})
+
 	statusIndicator := giu.Custom(func() {
-		// w, _ := giu.GetAvailableRegion()
 		canvas := giu.GetCanvas()
-		start := giu.GetCursorPos()
+		start := giu.GetCursorScreenPos()
 		end := start.Add(image.Pt(categoryPrimaryButtonWidth+categoryArrowButtonWidth, categoryIndicatorButtonHeight))
 
 		canvas.AddRectFilled(start, end, statusColor, 0, 0)
