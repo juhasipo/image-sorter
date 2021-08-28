@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"github.com/disintegration/imaging"
-	"github.com/gotk3/gotk3/gdk"
 	"github.com/rwcarlsen/goexif/exif"
 	"github.com/rwcarlsen/goexif/tiff"
 	"image"
@@ -64,7 +63,7 @@ type ExifData struct {
 	width       uint32
 	height      uint32
 	orientation uint8
-	rotation    gdk.PixbufRotation
+	rotation    int16
 	flipped     bool
 	created     time.Time
 	values      map[string]string
@@ -133,7 +132,7 @@ func (s *ExifData) ExifOrientation() uint8 {
 	return s.orientation
 }
 
-func (s *ExifData) Rotation() gdk.PixbufRotation {
+func (s *ExifData) Rotation() int16 {
 	return s.rotation
 }
 
@@ -216,7 +215,7 @@ func getTime(decodedExif *exif.Exif, tagName exif.FieldName) (time.Time, error) 
 	}
 }
 
-func exifOrientationToAngleAndFlip(orientation int) (gdk.PixbufRotation, bool) {
+func exifOrientationToAngleAndFlip(orientation int) (int16, bool) {
 	switch orientation {
 	case 1:
 		return noRotate, noHorizontalFlip

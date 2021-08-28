@@ -4,14 +4,13 @@ go 1.14
 
 require (
 	github.com/AllenDang/giu v0.5.6
-	github.com/AllenDang/imgui-go v1.12.1-0.20210801050644-e183d1c04c13
+	github.com/AllenDang/imgui-go v1.12.1-0.20210801050644-e183d1c04c13 // indirect
 	github.com/AndreasAbdi/gochromecast v0.0.0-20181018034447-700dddc0dea7
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gotk3/gotk3 v0.6.1
 	github.com/hashicorp/mdns v1.0.3
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/imroc/req v0.3.0 // indirect

@@ -1,12 +1,6 @@
 package common
-
-// #cgo pkg-config: gdk-3.0 glib-2.0 gobject-2.0
-// #include <gdk/gdk.h>
 import "C"
-import (
-	"github.com/gotk3/gotk3/gdk"
-	"strings"
-)
+import "github.com/go-gl/glfw/v3.3/glfw"
 
 /*
 These have to stay under common since
@@ -14,10 +8,22 @@ These have to stay under common since
 * Backend uses to convert between Serialized <-> GTK
 */
 
+var keymap = map[string]glfw.Key{}
+
+func InitKeyMap() {
+	/*
+	for i := glfw.Key(0); i < glfw.KeyLast; i++ {
+		if i != glfw.KeyUnknown {
+			keymap[glfw.GetKeyName(glfw.Key(i), 0)] = glfw.Key(i)
+		}
+	}
+	 */
+}
+
 func KeyvalName(keyval uint) string {
-	return C.GoString((*C.char)(C.gdk_keyval_name(C.guint(keyval))))
+	return glfw.GetKeyName(glfw.Key(keyval), 0)
 }
 
 func KeyToUint(key string) uint {
-	return gdk.KeyvalFromName(strings.ToUpper(key))
+	return uint(keymap[key])
 }

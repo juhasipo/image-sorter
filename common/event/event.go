@@ -2,9 +2,7 @@ package event
 
 import (
 	"fmt"
-	"github.com/gotk3/gotk3/glib"
 	messagebus "github.com/vardius/message-bus"
-	"reflect"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
@@ -40,29 +38,6 @@ func (s *Broker) Subscribe(topic api.Topic, fn interface{}) {
 }
 
 type GuiCallback func(data ...interface{})
-
-func (s *Broker) ConnectToGui(topic api.Topic, callback interface{}) {
-	if s.bus == nil {
-		return
-	}
-
-	cb := func(params ...interface{}) {
-		sendFn := func() {
-			args := make([]reflect.Value, 0, len(params))
-			for _, param := range params {
-				args = append(args, reflect.ValueOf(param))
-			}
-			logger.Trace.Printf("Calling topic '%s' with: %s", topic, params)
-			reflect.ValueOf(callback).Call(args)
-		}
-
-		glib.IdleAdd(sendFn)
-	}
-	err := s.bus.Subscribe(string(topic), cb)
-	if err != nil {
-		logger.Error.Panic("Could not subscribe")
-	}
-}
 
 func (s *Broker) SendToTopic(topic api.Topic) {
 	if s.bus == nil {

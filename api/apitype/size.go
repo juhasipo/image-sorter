@@ -1,7 +1,6 @@
 package apitype
 
 import (
-	"github.com/gotk3/gotk3/gtk"
 	"image"
 )
 
@@ -24,13 +23,6 @@ func SizeOf(width int, height int) Size {
 
 func applyZoom(value int, zoom float64) int {
 	return int(float64(value) * zoom)
-}
-
-func ZoomedSizeFromWindow(widget *gtk.ScrolledWindow, zoom float64) Size {
-	return Size{
-		width:  applyZoom(widget.GetAllocatedWidth(), zoom),
-		height: applyZoom(widget.GetAllocatedHeight(), zoom),
-	}
 }
 
 func ZoomedSizeFromRectangle(rectangle image.Rectangle, zoom float64) Size {

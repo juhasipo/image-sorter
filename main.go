@@ -44,6 +44,7 @@ func initAndRun(params *common.Params) {
 
 	// UI
 	gui := giuUi.NewUi(params, brokers.Broker, imageCache)
+	common.InitKeyMap()
 
 	connectUiAndServices(params, stores, services, imageCache, brokers, gui)
 

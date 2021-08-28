@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eux
+
 # Change version for this build
 VERSION="$(cat VERSION)-$(git rev-parse --short HEAD)"
 sed -i "s/__IMAGE_SORTER_VERSION__/${VERSION}/g" common/constants.go

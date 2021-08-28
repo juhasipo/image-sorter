@@ -1,18 +1,13 @@
 package gtk
 
 import (
-	"errors"
-	"fmt"
 	"github.com/AllenDang/giu"
-	"github.com/gotk3/gotk3/gdk"
-	"github.com/gotk3/gotk3/gtk"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/ui/giu/widget"
-	"vincit.fi/image-sorter/ui/gtk/component"
 )
 
 type Ui struct {
@@ -31,7 +26,6 @@ type Ui struct {
 	currentImageCategories map[apitype.CategoryId]bool
 
 	api.Gui
-	component.CallbackApi
 }
 
 const (
@@ -352,35 +346,6 @@ func (s *Ui) CastFindDone() {
 	//s.castModal.SearchDone()
 }
 
-func runAndProcessFolderChooser(folderChooser *gtk.FileChooserDialog, sender api.Sender) {
-	response := folderChooser.Run()
-	if response == gtk.RESPONSE_ACCEPT {
-		folder := folderChooser.GetFilename()
-		sender.SendCommandToTopic(api.DirectoryChanged, folder)
-	}
-}
-
-func createFileChooser(numOfButtons int, parent gtk.IWindow) (*gtk.FileChooserDialog, error) {
-	var folderChooser *gtk.FileChooserDialog
-	var err error
-
-	if numOfButtons == 1 {
-		folderChooser, err = gtk.FileChooserDialogNewWith1Button(
-			"Select folder", parent,
-			gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
-			"Select", gtk.RESPONSE_ACCEPT)
-	} else if numOfButtons == 2 {
-		folderChooser, err = gtk.FileChooserDialogNewWith2Buttons(
-			"Select folder", parent,
-			gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
-			"Select", gtk.RESPONSE_ACCEPT,
-			"Cancel", gtk.RESPONSE_CANCEL)
-	} else {
-		err = errors.New(fmt.Sprintf("Invalid number of buttons: %d", numOfButtons))
-	}
-	return folderChooser, err
-}
-
 func (s *Ui) ShowEditCategoriesModal() {
 }
 
@@ -413,19 +378,6 @@ func (s *Ui) ExitFullScreen() {
 func (s *Ui) FindDevices() {
 	// s.castModal.StartSearch(s.application.GetActiveWindow())
 	s.sender.SendToTopic(api.CastDeviceSearch)
-}
-
-func resolveModifierStatuses(keyEvent *gdk.EventKey) (shiftDown bool, controlDown bool, altDown bool) {
-	modifiers := gtk.AcceleratorGetDefaultModMask()
-	state := gdk.ModifierType(keyEvent.State())
-	modifierType := state & modifiers
-
-	shiftDown = modifierType&gdk.SHIFT_MASK > 0
-	controlDown = modifierType&gdk.CONTROL_MASK > 0
-	altDown = modifierType&gdk.MOD1_MASK > 0
-
-	logger.Trace.Printf("Modifiers: Shift = %t, CTRL = %t, ALT = %t", shiftDown, controlDown, altDown)
-	return
 }
 
 func (s *Ui) ShowError(command *api.ErrorCommand) {
