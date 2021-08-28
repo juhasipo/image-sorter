@@ -14,7 +14,7 @@ type CategoryButtonWidget struct {
 	name       string
 	active     bool
 	onClick    func(*api.CategorizeCommand)
-	giu.ColumnWidget
+	giu.Widget
 }
 
 func CategoryButton(categoryId apitype.CategoryId, name string, active bool, onClick func(command *api.CategorizeCommand)) *CategoryButtonWidget {

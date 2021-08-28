@@ -84,7 +84,7 @@ func (s *Ui) Run() {
 
 		renderStart := time.Now()
 
-		var categories []giu.Widget
+		var categories []*widget.CategoryButtonWidget
 		for _, cat := range s.categories {
 			text := cat.Name()
 
@@ -110,7 +110,7 @@ func (s *Ui) Run() {
 			Layout(
 				giu.Row(
 					previousButton,
-					giu.Row(categories...),
+					widget.CategoryButtonView(categories),
 					giu.Dummy(-120, 30),
 					nextButton),
 				giu.Separator(),
