@@ -45,8 +45,10 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 	gui.categoryKeyManager = &CategoryKeyManager{
 		callback: func(def *CategoryDef, stayOnImage bool, forceCategory bool) {
 			operation := apitype.MOVE
-			if _, ok := gui.currentImageCategories[def.categoryId]; ok {
-				operation = apitype.NONE
+			if !forceCategory {
+				if _, ok := gui.currentImageCategories[def.categoryId]; ok {
+					operation = apitype.NONE
+				}
 			}
 
 			broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{

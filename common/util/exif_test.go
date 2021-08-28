@@ -15,7 +15,7 @@ func TestLoadExifData(t *testing.T) {
 		data, err := LoadExifData(apitype.NewImageFileWithId(1, testAssetsDir, "horizontal.jpg"))
 		a.Nil(err)
 		a.Equal(uint8(1), data.ExifOrientation())
-		a.Equal(uint8(0), data.Rotation())
+		a.Equal(int16(0), data.Rotation())
 		a.Equal(false, data.Flipped())
 	})
 

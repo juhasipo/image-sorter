@@ -3,8 +3,8 @@ package widget
 import (
 	"fmt"
 	"github.com/AllenDang/giu"
-	"golang.org/x/image/colornames"
 	"image"
+	"image/color"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 )
@@ -31,12 +31,12 @@ const categoryArrowButtonWidth = 20
 const categoryPrimaryButtonHeight = 20
 const categoryIndicatorButtonHeight = 5
 
-func (s *CategoryButtonWidget) Build() {
-	statusColor := colornames.Green
-	if !s.active {
-		statusColor = colornames.Navy
-	}
+var (
+	statusActiveColor   = color.RGBA{R: 64, G: 255, B: 64, A: 255}
+	statusDisabledColor = color.RGBA{R: 0, G: 0, B: 32, A: 255}
+)
 
+func (s *CategoryButtonWidget) Build() {
 	operation := apitype.MOVE
 	if s.active {
 		operation = apitype.NONE
@@ -84,6 +84,10 @@ func (s *CategoryButtonWidget) Build() {
 		giu.OpenPopup(menuName)
 	})
 
+	statusColor := statusActiveColor
+	if !s.active {
+		statusColor = statusDisabledColor
+	}
 	statusIndicator := giu.Custom(func() {
 		canvas := giu.GetCanvas()
 		start := giu.GetCursorScreenPos()
