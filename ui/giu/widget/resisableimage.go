@@ -3,18 +3,14 @@ package widget
 import "github.com/AllenDang/giu"
 
 type ResizableImageWidget struct {
-	imageWidth  float32
-	imageHeight float32
-	imageRatio  float32
+	texturedImage *TexturedImage
 	giu.ImageWidget
 }
 
-func ResizableImage(texture *giu.Texture, width float32, height float32) *ResizableImageWidget {
+func ResizableImage(image *TexturedImage) *ResizableImageWidget {
 	return &ResizableImageWidget{
-		imageWidth:  width,
-		imageHeight: height,
-		imageRatio:  width / height,
-		ImageWidget: *giu.Image(texture),
+		texturedImage: image,
+		ImageWidget:   *giu.Image(image.Texture),
 	}
 }
 
@@ -23,10 +19,10 @@ func (s *ResizableImageWidget) Build() {
 	maxW, maxH := giu.GetAvailableRegion()
 	maxW = maxW - 120 - paddingW*2.0
 	newW := maxW
-	newH := newW / s.imageRatio
+	newH := newW / s.texturedImage.Ratio
 
 	if newH > maxH {
-		newW = maxH * s.imageRatio
+		newW = maxH * s.texturedImage.Ratio
 		newH = maxH
 	}
 

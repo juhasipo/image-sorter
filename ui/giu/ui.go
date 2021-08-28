@@ -6,7 +6,6 @@ import (
 	"github.com/AllenDang/giu"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
-	"image"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -25,99 +24,14 @@ type Ui struct {
 	sender                 api.Sender
 	categories             []*apitype.Category
 	rootPath               string
-	currentImageTexture    *texturedImage
-	nextImages             []*texturedImage
-	previousImages         []*texturedImage
+	currentImageTexture    *widget.TexturedImage
+	nextImages             []*widget.TexturedImage
+	previousImages         []*widget.TexturedImage
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 
 	api.Gui
 	component.CallbackApi
-}
-
-type texturedImage struct {
-	width          float32
-	height         float32
-	texture        *giu.Texture
-	oldTexture     *giu.Texture
-	imageId        apitype.ImageId
-	oldImageId     apitype.ImageId
-	lastWidth      int
-	lastHeight     int
-	newImageLoaded bool
-	imageCache     api.ImageStore
-}
-
-func (s *texturedImage) changeImage(imageId apitype.ImageId, width float32, height float32) {
-	s.oldTexture = s.texture
-	s.newImageLoaded = false
-
-	s.oldImageId = s.imageId
-	s.imageId = imageId
-
-	s.width = width
-	s.height = height
-
-	s.lastWidth = -1
-	s.lastHeight = -1
-
-}
-
-func (s *texturedImage) loadImageAsTexture(width float32, height float32) *giu.Texture {
-	if s.imageCache == nil {
-		return nil
-	}
-
-	if s.newImageLoaded {
-		if s.texture != nil && int(width) == s.lastWidth && int(height) == s.lastHeight {
-			return s.texture
-		}
-	}
-
-	s.lastWidth = int(width)
-	s.lastHeight = int(height)
-
-	scaledImage, _ := s.imageCache.GetScaled(s.imageId, apitype.SizeOf(s.lastWidth, s.lastHeight))
-	if scaledImage == nil {
-		s.texture = nil
-	} else {
-		go func() {
-			var err error
-			s.texture, err = giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
-			s.newImageLoaded = true
-			if err != nil {
-				logger.Error.Print(err)
-			}
-		}()
-	}
-	return s.texture
-}
-
-func (s *texturedImage) loadImageAsTextureThumbnail() *giu.Texture {
-	if s.imageCache == nil {
-		return nil
-	}
-
-	if s.newImageLoaded {
-		if s.texture != nil {
-			return s.texture
-		}
-	}
-
-	scaledImage, _ := s.imageCache.GetThumbnail(s.imageId)
-	if scaledImage == nil {
-		s.texture = nil
-	} else {
-		go func() {
-			var err error
-			s.texture, err = giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
-			s.newImageLoaded = true
-			if err != nil {
-				logger.Error.Print(err)
-			}
-		}()
-	}
-	return s.texture
 }
 
 const (
@@ -131,7 +45,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		imageCache:          imageCache,
 		sender:              broker,
 		rootPath:            params.RootPath(),
-		currentImageTexture: &texturedImage{imageCache: imageCache},
+		currentImageTexture: widget.NewEmptyTexturedImage(imageCache),
 	}
 
 	gui.categoryKeyManager = &CategoryKeyManager{
@@ -142,7 +56,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			}
 
 			broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
-				ImageId:         gui.currentImageTexture.imageId,
+				ImageId:         gui.currentImageTexture.Image.Id(),
 				CategoryId:      def.categoryId,
 				Operation:       operation,
 				StayOnSameImage: stayOnImage,
@@ -169,25 +83,12 @@ func (s *Ui) Run() {
 				logger.Trace.Printf("Window size changed from (%d x %d) to (%d x %d)",
 					s.oldWidth, s.oldHeight, newWidth, newHeight)
 			}
-			go s.currentImageTexture.loadImageAsTexture(float32(newWidth), float32(newHeight))
+			go s.currentImageTexture.LoadImageAsTexture(float32(newWidth), float32(newHeight))
 			s.oldWidth = newWidth
 			s.oldHeight = newHeight
 		}
 
 		renderStart := time.Now()
-
-		var nextImages []giu.Widget
-		for _, nextImage := range s.nextImages {
-			maxWidth := float32(120.0)
-			height := nextImage.height / nextImage.width * maxWidth
-			nextImages = append(nextImages, giu.Image(nextImage.texture).Size(maxWidth, height))
-		}
-		var previousImages []giu.Widget
-		for _, previousImage := range s.previousImages {
-			maxWidth := float32(120.0)
-			height := previousImage.height / previousImage.width * maxWidth
-			previousImages = append(previousImages, giu.Image(previousImage.texture).Size(maxWidth, height))
-		}
 
 		var categories []giu.Widget
 		for _, cat := range s.categories {
@@ -198,7 +99,7 @@ func (s *Ui) Run() {
 			categoryId := cat.Id()
 			categorizeButton := widget.CategoryButton(categoryId, text, active, func(command *api.CategorizeCommand) {
 				command.NextImageDelay = 100
-				command.ImageId = s.currentImageTexture.imageId
+				command.ImageId = s.currentImageTexture.Image.Id()
 				s.sender.SendCommandToTopic(api.CategorizeImage, command)
 			})
 			categories = append(categories, categorizeButton)
@@ -220,17 +121,10 @@ func (s *Ui) Run() {
 					nextButton),
 				giu.Separator(),
 				giu.Row(
-					giu.Column(nextImages...),
-					giu.Custom(func() {
-						widget.
-							ResizableImage(
-								s.currentImageTexture.texture,
-								s.currentImageTexture.width,
-								s.currentImageTexture.height,
-							).Build()
-					}),
+					widget.ImageList(s.nextImages, false),
+					widget.ResizableImage(s.currentImageTexture),
 					giu.Dummy(-120, giu.Auto),
-					giu.Column(previousImages...),
+					widget.ImageList(s.previousImages, false),
 				),
 				giu.PrepareMsgbox(),
 			)
@@ -354,29 +248,29 @@ func (s *Ui) UpdateCurrentImage() {
 
 func (s *Ui) SetImages(command *api.SetImagesCommand) {
 	if command.Topic == api.ImageRequestNext {
-		s.nextImages = []*texturedImage{}
+		s.nextImages = []*widget.TexturedImage{}
 		for _, data := range command.Images {
-			ti := &texturedImage{
-				imageId:    data.ImageFile().Id(),
-				width:      float32(data.ImageData().Bounds().Dx()),
-				height:     float32(data.ImageData().Bounds().Dy()),
-				imageCache: s.imageCache,
-			}
+			ti := widget.NewTexturedImage(
+				data.ImageFile(),
+				float32(data.ImageData().Bounds().Dx()),
+				float32(data.ImageData().Bounds().Dy()),
+				s.imageCache,
+			)
 			s.nextImages = append(s.nextImages, ti)
-			ti.loadImageAsTextureThumbnail()
+			ti.LoadImageAsTextureThumbnail()
 		}
 		//s.imageView.AddImagesToNextStore(command.Images)
 	} else if command.Topic == api.ImageRequestPrevious {
-		s.previousImages = []*texturedImage{}
+		s.previousImages = []*widget.TexturedImage{}
 		for _, data := range command.Images {
-			ti := &texturedImage{
-				imageId:    data.ImageFile().Id(),
-				width:      float32(data.ImageData().Bounds().Dx()),
-				height:     float32(data.ImageData().Bounds().Dy()),
-				imageCache: s.imageCache,
-			}
+			ti := widget.NewTexturedImage(
+				data.ImageFile(),
+				float32(data.ImageData().Bounds().Dx()),
+				float32(data.ImageData().Bounds().Dy()),
+				s.imageCache,
+			)
 			s.previousImages = append(s.previousImages, ti)
-			ti.loadImageAsTextureThumbnail()
+			ti.LoadImageAsTextureThumbnail()
 		}
 		//s.imageView.AddImagesToPrevStore(command.Images)
 	} else if command.Topic == api.ImageRequestSimilar {
@@ -390,13 +284,12 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	//s.imageView.SetCurrentImage(command.Image, command.MetaData)
 	s.UpdateCurrentImage()
 
-	imageId := command.Image.ImageFile().Id()
-	s.currentImageTexture.changeImage(
-		imageId,
+	s.currentImageTexture.ChangeImage(
+		command.Image.ImageFile(),
 		float32(command.Image.ImageData().Bounds().Dx()),
 		float32(command.Image.ImageData().Bounds().Dy()))
 	width, height := s.win.GetSize()
-	s.currentImageTexture.loadImageAsTexture(float32(width), float32(height))
+	s.currentImageTexture.LoadImageAsTexture(float32(width), float32(height))
 	s.sendCurrentImageChangedEvent()
 
 	s.imageCache.Purge()
@@ -404,7 +297,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		ImageId: s.currentImageTexture.imageId,
+		ImageId: s.currentImageTexture.Image.Id(),
 	})
 }
 
