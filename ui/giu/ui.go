@@ -1,6 +1,7 @@
 package gtk
 
 import (
+	"fmt"
 	"github.com/AllenDang/giu"
 	"time"
 	"vincit.fi/image-sorter/api"
@@ -26,8 +27,16 @@ type Ui struct {
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
+	currentProgress        progress
 
 	api.Gui
+}
+
+type progress struct {
+	open     bool
+	label    string
+	position int
+	max      int
 }
 
 const (
@@ -42,6 +51,12 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		sender:              broker,
 		rootPath:            params.RootPath(),
 		currentImageTexture: widget.NewEmptyTexturedImage(imageCache),
+		currentProgress: progress{
+			open:     false,
+			label:    "",
+			position: 1,
+			max:      1,
+		},
 	}
 
 	gui.categoryKeyManager = &CategoryKeyManager{
@@ -120,22 +135,52 @@ func (s *Ui) Run() {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}).Size(120, 30)
 
-		giu.SingleWindow().
+		progressModal := giu.PopupModal("Progress").
+			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
 			Layout(
+				giu.Label(s.currentProgress.label),
 				giu.Row(
-					previousButton,
-					widget.CategoryButtonView(categories),
-					giu.Dummy(-120, 30),
-					nextButton),
-				giu.Separator(),
-				giu.Row(
-					widget.ImageList(s.nextImages, false),
-					widget.ResizableImage(s.currentImageTexture),
-					giu.Dummy(-120, giu.Auto),
-					widget.ImageList(s.previousImages, false),
+					giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
+						Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
+					giu.Button("Cancel").
+						OnClick(func() {
+							s.sender.SendToTopic(api.SimilarRequestStop)
+						}),
 				),
-				giu.PrepareMsgbox(),
-			)
+				giu.Custom(func() {
+					if !s.currentProgress.open {
+						giu.CloseCurrentPopup()
+					}
+				}))
+
+		giu.SingleWindow().Layout(
+			giu.Row(
+				previousButton,
+				widget.CategoryButtonView(categories),
+				giu.Dummy(-120, 30),
+				nextButton),
+			giu.Separator(),
+			progressModal,
+			giu.Custom(func() {
+				if s.currentProgress.open {
+					giu.OpenPopup("Progress")
+				}
+			}),
+			giu.Row(
+				giu.Button("Search similar").OnClick(func() {
+					s.sender.SendToTopic(api.SimilarRequestSearch)
+				}),
+			),
+			giu.Row(
+				widget.ImageList(s.nextImages, false),
+				widget.ResizableImage(s.currentImageTexture),
+				giu.Dummy(-120, giu.Auto),
+				widget.ImageList(s.previousImages, false),
+			),
+			giu.Separator(),
+			giu.PrepareMsgbox(),
+		)
+
 		renderStop := time.Now()
 
 		renderTime := renderStop.Sub(renderStart)
@@ -144,7 +189,12 @@ func (s *Ui) Run() {
 		} else if renderTime >= 10*time.Millisecond {
 			logger.Debug.Printf("Rendered UI in %s", renderTime)
 		}
-		s.handleKeyPress()
+
+		// Ignore all input when the progress bar is shown
+		// This prevents any unexpected changes
+		if !s.currentProgress.open {
+			s.handleKeyPress()
+		}
 	})
 }
 
@@ -336,19 +386,18 @@ func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 }
 
 func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
-	//if command.Current == 0 {
-	//	s.progressView.SetVisible(true)
-	//	s.topActionView.SetVisible(false)
-	//	s.bottomActionView.SetVisible(false)
-	//}
-	//
-	//if command.Current == command.Total {
-	//	s.progressView.SetVisible(false)
-	//	s.topActionView.SetVisible(true)
-	//	s.bottomActionView.SetVisible(true)
-	//} else {
-	//	s.progressView.SetStatus(command.Name, command.Current, command.Total)
-	//}
+	if command.Current == command.Total {
+		s.currentProgress.open = false
+		s.currentProgress.label = ""
+		s.currentProgress.position = 1
+		s.currentProgress.max = 1
+	} else {
+		s.currentProgress.open = true
+		s.currentProgress.label = command.Name
+		s.currentProgress.position = command.Current
+		s.currentProgress.max = command.Total
+	}
+	giu.Update()
 }
 
 func (s *Ui) DeviceFound(command *api.DeviceFoundCommand) {
