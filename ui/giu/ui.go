@@ -140,7 +140,7 @@ func (s *Ui) Run() {
 			onClick := func(action *guiapi.CategoryAction) {
 				s.categoryKeyManager.HandleCategory(categoryId, action)
 			}
-			categorizeButton := widget.CategoryButton(categoryId, text, active, highlight, onClick)
+			categorizeButton := widget.CategoryButton(categoryId, text, cat.ShortcutAsString(), active, highlight, onClick)
 			categories = append(categories, categorizeButton)
 		}
 

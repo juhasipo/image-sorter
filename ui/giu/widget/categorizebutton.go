@@ -12,6 +12,7 @@ import (
 type CategoryButtonWidget struct {
 	categoryId apitype.CategoryId
 	name       string
+	shortcut   string
 	active     bool
 	highlight  bool
 	onClick    func(*guiapi.CategoryAction)
@@ -19,10 +20,11 @@ type CategoryButtonWidget struct {
 	giu.Widget
 }
 
-func CategoryButton(categoryId apitype.CategoryId, name string, active bool, highlight bool, onClick func(action *guiapi.CategoryAction)) *CategoryButtonWidget {
+func CategoryButton(categoryId apitype.CategoryId, name string, shortcut string, active bool, highlight bool, onClick func(action *guiapi.CategoryAction)) *CategoryButtonWidget {
 	return &CategoryButtonWidget{
 		categoryId: categoryId,
 		name:       name,
+		shortcut:   shortcut,
 		active:     active,
 		highlight:  highlight,
 		onClick:    onClick,
@@ -69,24 +71,26 @@ func (s *CategoryButtonWidget) Build() {
 		showOnlyLabel = "Show all"
 	}
 	menuName := fmt.Sprintf("CategoryMenu-%d", s.categoryId)
+	const menuButtonWidth = 210
+	const menuButtonHeight = 30
 	menu := giu.Popup(menuName).
 		Layout(
-			giu.Button(actionName+" category").OnClick(func() {
+			giu.Button(actionName+" category"+" ("+s.shortcut+")").OnClick(func() {
 				categorizeAction(operation, false, false)
 				giu.CloseCurrentPopup()
-			}).Size(180, 30),
-			giu.Button(actionName+" category and stay").OnClick(func() {
+			}).Size(menuButtonWidth, menuButtonHeight),
+			giu.Button(actionName+" category and stay"+" (Shift + "+s.shortcut+")").OnClick(func() {
 				categorizeAction(operation, true, false)
 				giu.CloseCurrentPopup()
-			}).Size(180, 30),
-			giu.Button("Force category").OnClick(func() {
+			}).Size(menuButtonWidth, menuButtonHeight),
+			giu.Button("Force to category"+" (Ctrl + "+s.shortcut+")").OnClick(func() {
 				categorizeAction(apitype.MOVE, false, true)
 				giu.CloseCurrentPopup()
-			}).Size(180, 30),
-			giu.Button(showOnlyLabel).OnClick(func() {
+			}).Size(menuButtonWidth, menuButtonHeight),
+			giu.Button(showOnlyLabel+" (Alt + "+s.shortcut+")").OnClick(func() {
 				showOnly()
 				giu.CloseCurrentPopup()
-			}).Size(180, 30),
+			}).Size(menuButtonWidth, menuButtonHeight),
 		)
 
 	primaryButton := giu.Button(s.name).
