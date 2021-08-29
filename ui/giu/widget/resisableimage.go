@@ -21,6 +21,8 @@ func (s *ResizableImageWidget) Build() {
 	newW := maxW
 	newH := newW / s.texturedImage.Ratio
 
+	maxH = maxH - 30
+
 	if newH > maxH {
 		newW = maxH * s.texturedImage.Ratio
 		newH = maxH

@@ -28,6 +28,8 @@ type Ui struct {
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
 	currentProgress        progress
+	showCategoryEditModal  bool
+	categoryEditWidget     *widget.CategoryEditWidget
 
 	api.Gui
 }
@@ -58,6 +60,20 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			max:      1,
 		},
 	}
+
+	gui.categoryEditWidget = widget.CategoryEdit(
+		func(asDefault bool, categories []*apitype.Category) {
+			if asDefault {
+				broker.SendCommandToTopic(api.CategoriesSaveDefault, &api.SaveCategoriesCommand{Categories: categories})
+			} else {
+				broker.SendCommandToTopic(api.CategoriesSave, &api.SaveCategoriesCommand{Categories: categories})
+			}
+			gui.showCategoryEditModal = false
+		},
+		func() {
+			gui.showCategoryEditModal = false
+		},
+	)
 
 	gui.categoryKeyManager = &CategoryKeyManager{
 		callback: func(def *CategoryDef, action *guiapi.CategoryAction) {
@@ -135,51 +151,74 @@ func (s *Ui) Run() {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}).Size(120, 30)
 
-		progressModal := giu.PopupModal("Progress").
-			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
-			Layout(
-				giu.Label(s.currentProgress.label),
-				giu.Row(
-					giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
-						Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
-					giu.Button("Cancel").
-						OnClick(func() {
-							s.sender.SendToTopic(api.SimilarRequestStop)
-						}),
-				),
-				giu.Custom(func() {
-					if !s.currentProgress.open {
-						giu.CloseCurrentPopup()
-					}
-				}))
+		var modal giu.Widget = giu.Row()
+		if s.currentProgress.open {
+			modal = giu.PopupModal("Progress").
+				Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
+				Layout(
+					giu.Label(s.currentProgress.label),
+					giu.Row(
+						giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
+							Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
+						giu.Button("Cancel").
+							OnClick(func() {
+								s.sender.SendToTopic(api.SimilarRequestStop)
+							}),
+					),
+					giu.Custom(func() {
+						if !s.currentProgress.open {
+							giu.CloseCurrentPopup()
+						}
+					}))
+		}
 
-		giu.SingleWindow().Layout(
-			giu.Row(
-				previousButton,
-				widget.CategoryButtonView(categories),
-				giu.Dummy(-120, 30),
-				nextButton),
-			giu.Separator(),
-			progressModal,
-			giu.Custom(func() {
-				if s.currentProgress.open {
-					giu.OpenPopup("Progress")
-				}
-			}),
-			giu.Row(
-				giu.Button("Search similar").OnClick(func() {
-					s.sender.SendToTopic(api.SimilarRequestSearch)
+		mainWindow := giu.SingleWindow()
+		if s.showCategoryEditModal {
+			mainWindow.
+				Layout(s.categoryEditWidget)
+			s.categoryEditWidget.HandleKeys()
+		} else {
+			mainWindow.Layout(
+				giu.Row(
+					previousButton,
+					widget.CategoryButtonView(categories),
+					giu.Dummy(-120, 30),
+					nextButton),
+				giu.Separator(),
+				modal,
+				giu.Custom(func() {
+					if s.currentProgress.open {
+						giu.OpenPopup("Progress")
+					}
 				}),
-			),
-			giu.Row(
-				widget.ImageList(s.nextImages, false),
-				widget.ResizableImage(s.currentImageTexture),
-				giu.Dummy(-120, giu.Auto),
-				widget.ImageList(s.previousImages, false),
-			),
-			giu.Separator(),
-			giu.PrepareMsgbox(),
-		)
+				giu.Custom(func() {
+					_, height := giu.GetAvailableRegion()
+					h := height - 30
+					giu.Column(giu.Row(
+						widget.ImageList(s.nextImages, false, h),
+						widget.ResizableImage(s.currentImageTexture),
+						giu.Dummy(-120, h),
+						widget.ImageList(s.previousImages, false, h),
+					)).Build()
+				}),
+				giu.Separator(),
+				giu.Row(
+					giu.Button("Edit categories").OnClick(func() {
+						s.categoryEditWidget.SetCategories(s.categories)
+						s.showCategoryEditModal = true
+					}), giu.Button("Search similar").OnClick(func() {
+						s.sender.SendToTopic(api.SimilarRequestSearch)
+					}),
+				),
+				giu.PrepareMsgbox(),
+			)
+
+			// Ignore all input when the progress bar is shown
+			// This prevents any unexpected changes
+			if !s.currentProgress.open {
+				s.handleKeyPress()
+			}
+		}
 
 		renderStop := time.Now()
 
@@ -188,12 +227,6 @@ func (s *Ui) Run() {
 			logger.Trace.Printf("Rendered UI in %s", renderTime)
 		} else if renderTime >= 10*time.Millisecond {
 			logger.Debug.Printf("Rendered UI in %s", renderTime)
-		}
-
-		// Ignore all input when the progress bar is shown
-		// This prevents any unexpected changes
-		if !s.currentProgress.open {
-			s.handleKeyPress()
 		}
 	})
 }
@@ -299,6 +332,7 @@ func (s *Ui) UpdateCategories(categories *api.UpdateCategoriesCommand) {
 	s.categories = make([]*apitype.Category, len(categories.Categories))
 	copy(s.categories, categories.Categories)
 
+	s.categoryEditWidget.SetCategories(s.categories)
 	s.categoryKeyManager.Reset(categories.Categories)
 	//s.topActionView.UpdateCategories(categories)
 	s.sender.SendToTopic(api.ImageRequestCurrent)

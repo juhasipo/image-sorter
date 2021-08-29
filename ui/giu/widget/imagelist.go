@@ -7,19 +7,21 @@ import (
 type ImageListWidget struct {
 	images    []*TexturedImage
 	showLabel bool
+	height    float32
 }
 
-func ImageList(images []*TexturedImage, showLabel bool) *ImageListWidget {
+func ImageList(images []*TexturedImage, showLabel bool, height float32) *ImageListWidget {
 	return &ImageListWidget{
 		images:    images,
 		showLabel: showLabel,
+		height:    height,
 	}
 }
 
 func (s *ImageListWidget) Build() {
+	maxWidth := float32(120.0)
 	var w []giu.Widget
 	for _, nextImage := range s.images {
-		maxWidth := float32(120.0)
 		height := nextImage.Height / nextImage.Width * maxWidth
 		w = append(w, giu.Image(nextImage.Texture).Size(maxWidth, height))
 		if s.showLabel {
@@ -27,5 +29,9 @@ func (s *ImageListWidget) Build() {
 		}
 	}
 
-	giu.Column(w...).Build()
+	giu.Child().
+		Layout(w...).
+		Size(maxWidth, s.height).
+		Flags(giu.WindowFlagsNoScrollbar).
+		Build()
 }
