@@ -7,6 +7,7 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/ui/giu/guiapi"
 	"vincit.fi/image-sorter/ui/giu/widget"
 )
 
@@ -24,6 +25,7 @@ type Ui struct {
 	previousImages         []*widget.TexturedImage
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
+	currentCategoryId      apitype.CategoryId
 
 	api.Gui
 }
@@ -43,22 +45,32 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 	}
 
 	gui.categoryKeyManager = &CategoryKeyManager{
-		callback: func(def *CategoryDef, stayOnImage bool, forceCategory bool) {
+		callback: func(def *CategoryDef, action *guiapi.CategoryAction) {
 			operation := apitype.MOVE
-			if !forceCategory {
+			if !action.ForceCategory {
 				if _, ok := gui.currentImageCategories[def.categoryId]; ok {
 					operation = apitype.NONE
 				}
 			}
 
-			broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
-				ImageId:         gui.currentImageTexture.Image.Id(),
-				CategoryId:      def.categoryId,
-				Operation:       operation,
-				StayOnSameImage: stayOnImage,
-				NextImageDelay:  100,
-				ForceToCategory: forceCategory,
-			})
+			if action.ShowOnlyCategory {
+				if gui.currentCategoryId == apitype.NoCategory {
+					broker.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{
+						CategoryId: def.categoryId,
+					})
+				} else {
+					broker.SendToTopic(api.ImageShowAll)
+				}
+			} else {
+				broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
+					ImageId:         gui.currentImageTexture.Image.Id(),
+					CategoryId:      def.categoryId,
+					Operation:       operation,
+					StayOnSameImage: action.StayOnImage,
+					NextImageDelay:  100,
+					ForceToCategory: action.ForceCategory,
+				})
+			}
 		},
 	}
 
@@ -88,16 +100,16 @@ func (s *Ui) Run() {
 
 		var categories []*widget.CategoryButtonWidget
 		for _, cat := range s.categories {
+			categoryId := cat.Id()
 			text := cat.Name()
 
 			_, active := s.currentImageCategories[cat.Id()]
 
-			categoryId := cat.Id()
-			categorizeButton := widget.CategoryButton(categoryId, text, active, func(command *api.CategorizeCommand) {
-				command.NextImageDelay = 100
-				command.ImageId = s.currentImageTexture.Image.Id()
-				s.sender.SendCommandToTopic(api.CategorizeImage, command)
-			})
+			highlight := s.currentCategoryId == categoryId
+			onClick := func(action *guiapi.CategoryAction) {
+				s.categoryKeyManager.HandleCategory(categoryId, action)
+			}
+			categorizeButton := widget.CategoryButton(categoryId, text, active, highlight, onClick)
 			categories = append(categories, categorizeButton)
 		}
 
@@ -207,7 +219,11 @@ func (s *Ui) handleKeyPress() bool {
 		}
 	}
 
-	s.categoryKeyManager.HandleKeys(shiftDown, controlDown)
+	s.categoryKeyManager.HandleKeys(&guiapi.CategoryAction{
+		StayOnImage:      shiftDown,
+		ForceCategory:    controlDown,
+		ShowOnlyCategory: altDown,
+	})
 	/*else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.CurrentImageFile()); command != nil {
 		switchToCategory := altDown
 		if switchToCategory {
@@ -285,6 +301,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 		float32(command.Image.ImageData().Bounds().Dx()),
 		float32(command.Image.ImageData().Bounds().Dy()))
 	width, height := s.win.GetSize()
+	s.currentCategoryId = command.CategoryId
 	s.currentImageTexture.LoadImageAsTexture(float32(width), float32(height))
 	s.sendCurrentImageChangedEvent()
 

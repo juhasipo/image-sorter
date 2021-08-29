@@ -3,6 +3,7 @@ package gtk
 import (
 	"github.com/AllenDang/giu"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/ui/giu/guiapi"
 )
 
 type CategoryDef struct {
@@ -15,7 +16,7 @@ type CategoryKeyManager struct {
 	categories     map[string]*CategoryDef
 	categoryKeyMap map[giu.Key]*CategoryDef
 	categoryIdMap  map[apitype.CategoryId]*CategoryDef
-	callback       func(def *CategoryDef, stayOnImage bool, forceCategory bool)
+	callback       func(def *CategoryDef, action *guiapi.CategoryAction)
 }
 
 func (s *CategoryKeyManager) Reset(categories []*apitype.Category) {
@@ -35,14 +36,14 @@ func (s *CategoryKeyManager) Reset(categories []*apitype.Category) {
 	}
 }
 
-func (s *CategoryKeyManager) HandleCategory(id apitype.CategoryId, stayOnImage bool, forceCategory bool) {
-	s.callback(s.categoryIdMap[id], stayOnImage, forceCategory)
+func (s *CategoryKeyManager) HandleCategory(id apitype.CategoryId, action *guiapi.CategoryAction) {
+	s.callback(s.categoryIdMap[id], action)
 }
 
-func (s *CategoryKeyManager) HandleKeys(stayOnImage bool, forceCategory bool) {
+func (s *CategoryKeyManager) HandleKeys(action *guiapi.CategoryAction) {
 	for key, def := range s.categoryKeyMap {
 		if giu.IsKeyPressed(key) {
-			s.callback(def, stayOnImage, forceCategory)
+			s.callback(def, action)
 		}
 	}
 }

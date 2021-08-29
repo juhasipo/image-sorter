@@ -5,23 +5,26 @@ import (
 	"github.com/AllenDang/giu"
 	"image"
 	"image/color"
-	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/ui/giu/guiapi"
 )
 
 type CategoryButtonWidget struct {
 	categoryId apitype.CategoryId
 	name       string
 	active     bool
-	onClick    func(*api.CategorizeCommand)
+	highlight  bool
+	onClick    func(*guiapi.CategoryAction)
+	onShowOnly func()
 	giu.Widget
 }
 
-func CategoryButton(categoryId apitype.CategoryId, name string, active bool, onClick func(command *api.CategorizeCommand)) *CategoryButtonWidget {
+func CategoryButton(categoryId apitype.CategoryId, name string, active bool, highlight bool, onClick func(action *guiapi.CategoryAction)) *CategoryButtonWidget {
 	return &CategoryButtonWidget{
 		categoryId: categoryId,
 		name:       name,
 		active:     active,
+		highlight:  highlight,
 		onClick:    onClick,
 	}
 }
@@ -42,12 +45,17 @@ func (s *CategoryButtonWidget) Build() {
 		operation = apitype.NONE
 	}
 
-	primaryAction := func(operation apitype.Operation, stayOnImage bool, forceCategory bool) {
-		s.onClick(&api.CategorizeCommand{
-			CategoryId:      s.categoryId,
-			Operation:       operation,
-			StayOnSameImage: stayOnImage,
-			ForceToCategory: forceCategory,
+	categorizeAction := func(operation apitype.Operation, stayOnImage bool, forceCategory bool) {
+		s.onClick(&guiapi.CategoryAction{
+			StayOnImage:      stayOnImage,
+			ForceCategory:    forceCategory,
+			ShowOnlyCategory: false,
+		})
+	}
+
+	showOnly := func() {
+		s.onClick(&guiapi.CategoryAction{
+			ShowOnlyCategory: true,
 		})
 	}
 
@@ -56,19 +64,27 @@ func (s *CategoryButtonWidget) Build() {
 		actionName = "Remove"
 	}
 
+	showOnlyLabel := "Show only"
+	if s.highlight {
+		showOnlyLabel = "Show all"
+	}
 	menuName := fmt.Sprintf("CategoryMenu-%d", s.categoryId)
 	menu := giu.Popup(menuName).
 		Layout(
 			giu.Button(actionName+" category").OnClick(func() {
-				primaryAction(operation, false, false)
+				categorizeAction(operation, false, false)
 				giu.CloseCurrentPopup()
 			}).Size(180, 30),
 			giu.Button(actionName+" category and stay").OnClick(func() {
-				primaryAction(operation, true, false)
+				categorizeAction(operation, true, false)
 				giu.CloseCurrentPopup()
 			}).Size(180, 30),
 			giu.Button("Force category").OnClick(func() {
-				primaryAction(apitype.MOVE, false, true)
+				categorizeAction(apitype.MOVE, false, true)
+				giu.CloseCurrentPopup()
+			}).Size(180, 30),
+			giu.Button(showOnlyLabel).OnClick(func() {
+				showOnly()
 				giu.CloseCurrentPopup()
 			}).Size(180, 30),
 		)
@@ -78,7 +94,7 @@ func (s *CategoryButtonWidget) Build() {
 		OnClick(func() {
 			stayOnImage := giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
 			forceCategory := giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
-			primaryAction(operation, stayOnImage, forceCategory)
+			categorizeAction(operation, stayOnImage, forceCategory)
 		})
 	menuButton := giu.ArrowButton("Menu", giu.DirectionDown).OnClick(func() {
 		giu.OpenPopup(menuName)
@@ -88,6 +104,12 @@ func (s *CategoryButtonWidget) Build() {
 	if !s.active {
 		statusColor = statusDisabledColor
 	}
+
+	style := giu.Style()
+	if s.highlight {
+		style.SetColor(giu.StyleColorButton, color.RGBA{R: 140, G: 184, B: 255, A: 255})
+	}
+
 	statusIndicator := giu.Custom(func() {
 		canvas := giu.GetCanvas()
 		start := giu.GetCursorScreenPos()
@@ -96,7 +118,7 @@ func (s *CategoryButtonWidget) Build() {
 		canvas.AddRectFilled(start, end, statusColor, 0, 0)
 	})
 
-	giu.Style().
+	style.
 		SetStyle(giu.StyleVarItemSpacing, 0, 0).
 		SetStyle(giu.StyleVarItemInnerSpacing, 0, 0).
 		To(giu.Column(
