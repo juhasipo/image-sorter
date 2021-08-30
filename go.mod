@@ -6,6 +6,7 @@ require (
 	github.com/AllenDang/giu v0.5.6
 	github.com/AllenDang/imgui-go v1.12.1-0.20210801050644-e183d1c04c13 // indirect
 	github.com/AndreasAbdi/gochromecast v0.0.0-20181018034447-700dddc0dea7
+	github.com/OpenDiablo2/dialog v0.0.0-20201230220514-26162241209f
 	github.com/disintegration/imaging v1.6.2
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210410170116-ea3d685f79fb
@@ -24,6 +25,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/upper/db/v4 v4.0.1
 	github.com/vardius/message-bus v1.1.4
-	golang.org/x/image v0.0.0-20200618115811-c13761719519
+	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

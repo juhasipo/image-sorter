@@ -3,6 +3,7 @@ package gtk
 import (
 	"fmt"
 	"github.com/AllenDang/giu"
+	"github.com/OpenDiablo2/dialog"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -105,15 +106,26 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		},
 	}
 
-	gui.Init(params.RootPath())
+	dialog.Init()
+
 	return &gui
 }
 
 func (s *Ui) Init(directory string) {
+	if directory == "" {
+		logger.Debug.Printf("No root directory specified, open dialog")
+		var err error
+		if directory, err = dialog.Directory().Title("Choose Image Directory").Browse(); err != nil {
+			logger.Error.Fatal("Error while trying to load directory", err)
+		}
+	}
+	logger.Debug.Printf("Opening directory '%s'", directory)
+
+	s.sender.SendCommandToTopic(api.DirectoryChanged, directory)
 }
 
 func (s *Ui) Run() {
-	s.sender.SendCommandToTopic(api.DirectoryChanged, s.rootPath)
+	s.Init(s.rootPath)
 	s.win.Run(func() {
 		newWidth, newHeight := s.win.GetSize()
 
@@ -206,8 +218,12 @@ func (s *Ui) Run() {
 					giu.Button("Edit categories").OnClick(func() {
 						s.categoryEditWidget.SetCategories(s.categories)
 						s.showCategoryEditModal = true
-					}), giu.Button("Search similar").OnClick(func() {
+					}),
+					giu.Button("Search similar").OnClick(func() {
 						s.sender.SendToTopic(api.SimilarRequestSearch)
+					}),
+					giu.Button("Open directory").OnClick(func() {
+						s.Init("")
 					}),
 				),
 				giu.PrepareMsgbox(),
