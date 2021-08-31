@@ -136,6 +136,66 @@ func TestCategorizeOne(t *testing.T) {
 	}
 }
 
+func TestCategorizeOne_InvalidImageId(t *testing.T) {
+	a := assert.New(t)
+
+	sender := new(MockSender)
+	sender.On("SendToTopic", api.ImageRequestNext).Return()
+	sender.On("SendCommandToTopic", api.CategoryImageUpdate, mock.Anything).Return()
+	lib := new(MockLibrary)
+	filterService := filter.NewFilterService()
+	imageLoader := new(MockImageLoader)
+	memoryDatabase := database.NewInMemoryDatabase()
+	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	categoryStore := database.NewCategoryStore(memoryDatabase)
+	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
+
+	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
+
+	_, _ = imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
+	cat1, _ := categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cmd := api.CategorizeCommand{
+		ImageId:    0,
+		CategoryId: cat1.Id(),
+		Operation:  apitype.MOVE,
+	}
+	sut.SetCategory(&cmd)
+
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: 0})
+
+	a.Equal(0, len(result))
+}
+
+func TestCategorizeOne_InvalidCategoryId(t *testing.T) {
+	a := assert.New(t)
+
+	sender := new(MockSender)
+	sender.On("SendToTopic", api.ImageRequestNext).Return()
+	sender.On("SendCommandToTopic", api.CategoryImageUpdate, mock.Anything).Return()
+	lib := new(MockLibrary)
+	filterService := filter.NewFilterService()
+	imageLoader := new(MockImageLoader)
+	memoryDatabase := database.NewInMemoryDatabase()
+	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
+	categoryStore := database.NewCategoryStore(memoryDatabase)
+	imageCategoryStore := database.NewImageCategoryStore(memoryDatabase)
+
+	sut := NewImageCategoryService(sender, lib, filterService, imageLoader, imageCategoryStore)
+
+	imageFile, _ := imageStore.AddImage(apitype.NewImageFile("/tmp", "foo"))
+	_, _ = categoryStore.AddCategory(apitype.NewCategory("Cat 1", "c1", "C"))
+	cmd := api.CategorizeCommand{
+		ImageId:    imageFile.Id(),
+		CategoryId: 0,
+		Operation:  apitype.MOVE,
+	}
+	sut.SetCategory(&cmd)
+
+	result := sut.GetCategories(&api.ImageCategoryQuery{ImageId: imageFile.Id()})
+
+	a.Equal(0, len(result))
+}
+
 func TestCategorizeOneToTwoCategories(t *testing.T) {
 	a := assert.New(t)
 

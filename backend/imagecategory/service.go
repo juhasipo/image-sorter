@@ -59,6 +59,14 @@ func (s *Service) SetCategory(command *api.CategorizeCommand) {
 	imageId := command.ImageId
 	categoryId := command.CategoryId
 	operation := command.Operation
+	if imageId <= 0 {
+		logger.Warn.Printf("Trying to categorize invalid imageId=%d", imageId)
+		return
+	}
+	if categoryId <= 0 {
+		logger.Warn.Printf("Trying to categorize invalid categoryId=%d", categoryId)
+		return
+	}
 
 	if command.ForceToCategory {
 		logger.Debug.Printf("Force to category for '%d'", imageId)
