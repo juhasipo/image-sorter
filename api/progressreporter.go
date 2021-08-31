@@ -1,7 +1,7 @@
 package api
 
 type ProgressReporter interface {
-	Update(name string, current int, total int)
+	Update(name string, current int, total int, canCancel bool)
 	Error(error string, err error)
 }
 
@@ -17,11 +17,12 @@ func NewSenderProgressReporter(sender Sender) ProgressReporter {
 	}
 }
 
-func (s SenderProgressReporter) Update(name string, current int, total int) {
+func (s SenderProgressReporter) Update(name string, current int, total int, canCancel bool) {
 	s.sender.SendCommandToTopic(ProcessStatusUpdated, &UpdateProgressCommand{
-		Name:    name,
-		Current: current,
-		Total:   total,
+		Name:      name,
+		Current:   current,
+		Total:     total,
+		CanCancel: canCancel,
 	})
 }
 

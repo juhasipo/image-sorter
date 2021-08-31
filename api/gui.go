@@ -13,9 +13,10 @@ type DeviceFoundCommand struct {
 }
 
 type UpdateProgressCommand struct {
-	Name    string
-	Current int
-	Total   int
+	Name      string
+	Current   int
+	Total     int
+	CanCancel bool
 }
 
 type UpdateCategoriesCommand struct {

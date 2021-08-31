@@ -103,7 +103,7 @@ type StubProgressReporter struct {
 	api.ProgressReporter
 }
 
-func (s StubProgressReporter) Update(name string, current int, total int) {
+func (s StubProgressReporter) Update(name string, current int, total int, canCancel bool) {
 }
 
 func (s StubProgressReporter) Error(error string, err error) {

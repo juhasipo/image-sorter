@@ -96,7 +96,7 @@ type StubProgressReporter struct {
 	api.ProgressReporter
 }
 
-func (s StubProgressReporter) Update(name string, current int, total int) {
+func (s StubProgressReporter) Update(name string, current int, total int, canCancel bool) {
 }
 
 func (s StubProgressReporter) Error(error string, err error) {
@@ -364,7 +364,7 @@ func TestResolveFileOperations(t *testing.T) {
 		FixOrientation: false,
 		Quality:        100,
 	}
-	operations := sut.ResolveFileOperations(imageCategories, command)
+	operations := sut.ResolveFileOperations(imageCategories, command, func(int, int) {})
 
 	a.Equal(1, len(operations))
 

@@ -86,17 +86,19 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 	imageCategory, _ := s.imageCategoryStore.GetCategorizedImages()
 	operationsByImage := s.ResolveFileOperations(imageCategory, options, func(current int, total int) {
 		s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-			Name:    "Resolving operations...",
-			Current: current,
-			Total:   total,
+			Name:      "Resolving operations...",
+			Current:   current,
+			Total:     total,
+			CanCancel: false,
 		})
 	})
 
 	total := len(operationsByImage)
 	s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-		Name:    "Categorizing...",
-		Current: 0,
-		Total:   total,
+		Name:      "Categorizing...",
+		Current:   0,
+		Total:     total,
+		CanCancel: false,
 	})
 	for i, operationGroup := range operationsByImage {
 		err := operationGroup.Apply()
@@ -104,9 +106,10 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 			s.sender.SendError("Error while applying changes", err)
 		}
 		s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
-			Name:    "Categorizing...",
-			Current: i + 1,
-			Total:   total,
+			Name:      "Categorizing...",
+			Current:   i + 1,
+			Total:     total,
+			CanCancel: false,
 		})
 	}
 

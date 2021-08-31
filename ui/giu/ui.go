@@ -37,10 +37,11 @@ type Ui struct {
 }
 
 type progress struct {
-	open     bool
-	label    string
-	position int
-	max      int
+	open      bool
+	label     string
+	position  int
+	max       int
+	canCancel bool
 }
 
 const (
@@ -172,6 +173,7 @@ func (s *Ui) Run() {
 					giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
 						Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
 					giu.Button("Cancel").
+						Disabled(!s.currentProgress.canCancel).
 						OnClick(func() {
 							s.sender.SendToTopic(api.SimilarRequestStop)
 						}),
@@ -462,12 +464,14 @@ func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
 		s.currentProgress.label = ""
 		s.currentProgress.position = 1
 		s.currentProgress.max = 1
+		s.currentProgress.canCancel = false
 	} else {
 		logger.Trace.Printf("Update progress '%s' %d/%d", command.Name, command.Current, command.Total)
 		s.currentProgress.open = true
 		s.currentProgress.label = command.Name
 		s.currentProgress.position = command.Current
 		s.currentProgress.max = command.Total
+		s.currentProgress.canCancel = command.CanCancel
 	}
 	giu.Update()
 }
