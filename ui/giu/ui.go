@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/AllenDang/giu"
 	"github.com/OpenDiablo2/dialog"
+	"image/color"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -190,13 +191,14 @@ func (s *Ui) Run() {
 				Layout(s.categoryEditWidget)
 			s.categoryEditWidget.HandleKeys()
 		} else {
+			topHeight := float32(30.0)
+			bottomHeight := float32(30.0)
 			mainWindow.Layout(
 				giu.Row(
 					previousButton,
 					widget.CategoryButtonView(categories),
-					giu.Dummy(-120, 30),
+					giu.Dummy(-120, topHeight),
 					nextButton),
-				giu.Separator(),
 				modal,
 				giu.Custom(func() {
 					if s.currentProgress.open {
@@ -204,17 +206,26 @@ func (s *Ui) Run() {
 					}
 				}),
 				giu.Custom(func() {
-					_, height := giu.GetAvailableRegion()
-					h := height - 30
-					giu.Column(giu.Row(
-						widget.ImageList(s.nextImages, false, h),
-						widget.ResizableImage(s.currentImageTexture),
-						giu.Dummy(-120, h),
-						widget.ImageList(s.previousImages, false, h),
-					)).Build()
+					width, height := giu.GetAvailableRegion()
+					h := height - bottomHeight
+					giu.Style().
+						SetStyle(giu.StyleVarItemSpacing, 0, 0).
+						SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
+						SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
+						To(
+							giu.Row(
+								widget.ImageList(s.nextImages, false, h),
+								giu.Child().
+									Size(width-(120)*2, h).
+									Border(true).
+									Layout(widget.ResizableImage(s.currentImageTexture)),
+								giu.Dummy(-(120), h),
+								widget.ImageList(s.previousImages, false, h),
+							),
+						).Build()
 				}),
-				giu.Separator(),
 				giu.Row(
+					giu.Dummy(0, bottomHeight),
 					giu.Button("Edit categories").OnClick(func() {
 						s.categoryEditWidget.SetCategories(s.categories)
 						s.showCategoryEditModal = true

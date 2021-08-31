@@ -1,6 +1,8 @@
 package widget
 
-import "github.com/AllenDang/giu"
+import (
+	"github.com/AllenDang/giu"
+)
 
 type ResizableImageWidget struct {
 	texturedImage *TexturedImage
@@ -15,13 +17,9 @@ func ResizableImage(image *TexturedImage) *ResizableImageWidget {
 }
 
 func (s *ResizableImageWidget) Build() {
-	paddingW, _ := giu.GetFramePadding()
 	maxW, maxH := giu.GetAvailableRegion()
-	maxW = maxW - 120 - paddingW*2.0
 	newW := maxW
 	newH := newW / s.texturedImage.Ratio
-
-	maxH = maxH - 30
 
 	if newH > maxH {
 		newW = maxH * s.texturedImage.Ratio
@@ -31,6 +29,15 @@ func (s *ResizableImageWidget) Build() {
 	offsetW := (maxW - newW) / 2.0
 	offsetH := (maxH - newH) / 2.0
 
+	// dummyV := giu.Button(strconv.FormatFloat(float64(offsetH), 'f', 0, 32)).Size(120, offsetH)
+	// dummyH := giu.Button(strconv.FormatFloat(float64(offsetW), 'f', 0, 32)).Size(offsetW, 20)
+
+	dummyV := giu.Dummy(120, offsetH)
+	dummyH := giu.Dummy(offsetW, 20)
 	s.ImageWidget.Size(newW, newH)
-	giu.Row(giu.Dummy(offsetW, offsetH), &s.ImageWidget).Build()
+
+	giu.Column(
+		dummyV,
+		giu.Row(dummyH, &s.ImageWidget),
+	).Build()
 }

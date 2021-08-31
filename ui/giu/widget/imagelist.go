@@ -29,9 +29,12 @@ func (s *ImageListWidget) Build() {
 		}
 	}
 
+	giu.PushItemSpacing(0, 8)
 	giu.Child().
 		Layout(w...).
+		Border(false).
 		Size(maxWidth, s.height).
 		Flags(giu.WindowFlagsNoScrollbar).
 		Build()
+	giu.PopStyle()
 }
