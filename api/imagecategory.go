@@ -52,7 +52,7 @@ type ImageCategoryService interface {
 
 	ShowOnlyCategoryImages(*SelectCategoryCommand)
 
-	ResolveFileOperations(map[apitype.ImageId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) []*apitype.ImageOperationGroup
+	ResolveFileOperations(map[apitype.ImageId]map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand, func(current int, total int)) []*apitype.ImageOperationGroup
 	ResolveOperationsForGroup(*apitype.ImageFile, map[apitype.CategoryId]*CategorizedImage, *PersistCategorizationCommand) (*apitype.ImageOperationGroup, error)
 
 	Close()

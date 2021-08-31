@@ -164,26 +164,24 @@ func (s *Ui) Run() {
 			s.sender.SendToTopic(api.ImageRequestNext)
 		}).Size(120, 30)
 
-		var modal giu.Widget = giu.Row()
-		if s.currentProgress.open {
-			modal = giu.PopupModal("Progress").
-				Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
-				Layout(
-					giu.Label(s.currentProgress.label),
-					giu.Row(
-						giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
-							Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
-						giu.Button("Cancel").
-							OnClick(func() {
-								s.sender.SendToTopic(api.SimilarRequestStop)
-							}),
-					),
-					giu.Custom(func() {
-						if !s.currentProgress.open {
-							giu.CloseCurrentPopup()
-						}
-					}))
-		}
+		modal := giu.PopupModal("Progress").
+			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
+			Layout(
+				giu.Label(s.currentProgress.label),
+				giu.Row(
+					giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
+						Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
+					giu.Button("Cancel").
+						OnClick(func() {
+							s.sender.SendToTopic(api.SimilarRequestStop)
+						}),
+				),
+				giu.Custom(func() {
+					if !s.currentProgress.open {
+						logger.Trace.Printf("Hide progress modal")
+						giu.CloseCurrentPopup()
+					}
+				}))
 
 		mainWindow := giu.SingleWindow()
 		if s.showCategoryEditModal {
@@ -202,6 +200,7 @@ func (s *Ui) Run() {
 				modal,
 				giu.Custom(func() {
 					if s.currentProgress.open {
+						logger.Trace.Printf("Show progress modal")
 						giu.OpenPopup("Progress")
 					}
 				}),
@@ -458,11 +457,13 @@ func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 
 func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
 	if command.Current == command.Total {
+		logger.Trace.Printf("Progress '%s' completed", command.Name)
 		s.currentProgress.open = false
 		s.currentProgress.label = ""
 		s.currentProgress.position = 1
 		s.currentProgress.max = 1
 	} else {
+		logger.Trace.Printf("Update progress '%s' %d/%d", command.Name, command.Current, command.Total)
 		s.currentProgress.open = true
 		s.currentProgress.label = command.Name
 		s.currentProgress.position = command.Current

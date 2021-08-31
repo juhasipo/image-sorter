@@ -82,8 +82,15 @@ func (s *Service) SetCategory(command *api.CategorizeCommand) {
 
 func (s *Service) PersistImageCategories(options *api.PersistCategorizationCommand) {
 	logger.Debug.Printf("Persisting files to categories")
+
 	imageCategory, _ := s.imageCategoryStore.GetCategorizedImages()
-	operationsByImage := s.ResolveFileOperations(imageCategory, options)
+	operationsByImage := s.ResolveFileOperations(imageCategory, options, func(current int, total int) {
+		s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
+			Name:    "Resolving operations...",
+			Current: current,
+			Total:   total,
+		})
+	})
 
 	total := len(operationsByImage)
 	s.sender.SendCommandToTopic(api.ProcessStatusUpdated, &api.UpdateProgressCommand{
@@ -108,14 +115,20 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 
 func (s *Service) ResolveFileOperations(
 	imageCategory map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage,
-	options *api.PersistCategorizationCommand) []*apitype.ImageOperationGroup {
+	options *api.PersistCategorizationCommand,
+	progressCallback func(current int, total int)) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
+	i := 0
 	for imageId, categoryEntries := range imageCategory {
 		imageFile := s.library.GetImageFileById(imageId)
-		if newOperationGroup, err := s.ResolveOperationsForGroup(imageFile, categoryEntries, options); err == nil {
-			operationGroups = append(operationGroups, newOperationGroup)
+		if imageFile.IsValid() {
+			if newOperationGroup, err := s.ResolveOperationsForGroup(imageFile, categoryEntries, options); err == nil {
+				operationGroups = append(operationGroups, newOperationGroup)
+			}
 		}
+		progressCallback(i, len(imageCategory))
+		i++
 	}
 
 	return operationGroups
@@ -144,7 +157,7 @@ func (s *Service) ResolveOperationsForGroup(
 	}
 
 	if fullImage, err := s.imageLoader.LoadImage(imageFile.Id()); err != nil {
-		s.sender.SendError("Could not load image", err)
+		s.sender.SendError("Could not load image"+imageFile.Path(), err)
 		return nil, err
 	} else if exifData, err := s.imageLoader.LoadExifData(imageFile); err != nil {
 		s.sender.SendError("Could not load exif data", err)
