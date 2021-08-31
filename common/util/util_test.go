@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 )
 
@@ -39,4 +40,22 @@ func TestReverseEmpty(t *testing.T) {
 
 	var expected []int
 	assert.Equal(t, values, expected)
+}
+
+func TestMaxInt_None(t *testing.T) {
+	a := assert.New(t)
+	a.Equal(math.MinInt32, MaxInt())
+}
+
+func TestMaxInt_One(t *testing.T) {
+	a := assert.New(t)
+	a.Equal(10, MaxInt(10))
+}
+
+func TestMaxInt_Many(t *testing.T) {
+	a := assert.New(t)
+	a.Equal(5, MaxInt(1, 2, 3, 4, 5))
+	a.Equal(5, MaxInt(-1, -2, 5, 4, 1))
+	a.Equal(-1, MaxInt(-1, -2, -3, -4, -5))
+	a.Equal(5, MaxInt(5, 1, 2, 4, 3))
 }
