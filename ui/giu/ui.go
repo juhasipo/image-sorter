@@ -236,6 +236,16 @@ func (s *Ui) Run() {
 					giu.Button("Open directory").OnClick(func() {
 						s.Init("")
 					}),
+					giu.Button("Apply Categories").OnClick(func() {
+						result := dialog.Message("Do you really want to persist these categories?").YesNo()
+						if result {
+							s.sender.SendCommandToTopic(api.CategoryPersistAll, &api.PersistCategorizationCommand{
+								KeepOriginals:  true,
+								FixOrientation: false,
+								Quality:        100,
+							})
+						}
+					}),
 				),
 				giu.PrepareMsgbox(),
 			)
