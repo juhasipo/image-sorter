@@ -32,7 +32,7 @@ func (s *ImageCategoryStore) RemoveImageCategories(imageId apitype.ImageId) erro
 }
 
 func (s *ImageCategoryStore) CategorizeImage(imageId apitype.ImageId, categoryId apitype.CategoryId, operation apitype.Operation) error {
-	if operation == apitype.NONE {
+	if operation == apitype.UNCATEGORIZE {
 		_, err := s.getCollection().Session().SQL().Exec(`
 			DELETE FROM image_category WHERE image_id = ? AND category_id = ?
 		`, imageId, categoryId)

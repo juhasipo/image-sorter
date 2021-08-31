@@ -193,16 +193,16 @@ func TestImageStore_GetNextImagesInCategory_CategorySet(t *testing.T) {
 		category1, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "C"))
 		category2, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "D"))
 
-		_ = isImageCategoryStore.CategorizeImage(image0.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image1.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image2.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image3.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image4.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image5.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image6.Id(), category1.Id(), apitype.MOVE)
+		_ = isImageCategoryStore.CategorizeImage(image0.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image1.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image2.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image3.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image4.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image5.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image6.Id(), category1.Id(), apitype.CATEGORIZE)
 
-		_ = isImageCategoryStore.CategorizeImage(image7.Id(), category2.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image8.Id(), category2.Id(), apitype.MOVE)
+		_ = isImageCategoryStore.CategorizeImage(image7.Id(), category2.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image8.Id(), category2.Id(), apitype.CATEGORIZE)
 
 		category := category1.Id()
 
@@ -389,16 +389,16 @@ func TestImageStore_GetPreviousImagesInCategory_CategorySet(t *testing.T) {
 		category1, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "C"))
 		category2, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "D"))
 
-		_ = isImageCategoryStore.CategorizeImage(image0.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image1.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image2.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image3.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image4.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image5.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image6.Id(), category1.Id(), apitype.MOVE)
+		_ = isImageCategoryStore.CategorizeImage(image0.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image1.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image2.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image3.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image4.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image5.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image6.Id(), category1.Id(), apitype.CATEGORIZE)
 
-		_ = isImageCategoryStore.CategorizeImage(image7.Id(), category2.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image8.Id(), category2.Id(), apitype.MOVE)
+		_ = isImageCategoryStore.CategorizeImage(image7.Id(), category2.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image8.Id(), category2.Id(), apitype.CATEGORIZE)
 
 		category := category1.Id()
 
@@ -610,15 +610,15 @@ func TestImageStore_AddImages_GetImages(t *testing.T) {
 		category1, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 1", "C1", "C"))
 		category2, _ := isCategoryStore.AddCategory(apitype.NewCategory("Cat 2", "C2", "D"))
 
-		_ = isImageCategoryStore.CategorizeImage(image1.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image2.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image3.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image4.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image5.Id(), category1.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image6.Id(), category1.Id(), apitype.MOVE)
+		_ = isImageCategoryStore.CategorizeImage(image1.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image2.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image3.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image4.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image5.Id(), category1.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image6.Id(), category1.Id(), apitype.CATEGORIZE)
 
-		_ = isImageCategoryStore.CategorizeImage(image7.Id(), category2.Id(), apitype.MOVE)
-		_ = isImageCategoryStore.CategorizeImage(image8.Id(), category2.Id(), apitype.MOVE)
+		_ = isImageCategoryStore.CategorizeImage(image7.Id(), category2.Id(), apitype.CATEGORIZE)
+		_ = isImageCategoryStore.CategorizeImage(image8.Id(), category2.Id(), apitype.CATEGORIZE)
 
 		category := category1.Id()
 

@@ -123,12 +123,12 @@ func TestService_moveToImage(t *testing.T) {
 		category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))
 		category2, _ := categoryStore.AddCategory(apitype.NewCategory("category2", "cat2", "D"))
 
-		imageCategoryStore.CategorizeImage(2, category1.Id(), apitype.MOVE)
-		imageCategoryStore.CategorizeImage(4, category1.Id(), apitype.MOVE)
-		imageCategoryStore.CategorizeImage(5, category1.Id(), apitype.MOVE)
+		imageCategoryStore.CategorizeImage(2, category1.Id(), apitype.CATEGORIZE)
+		imageCategoryStore.CategorizeImage(4, category1.Id(), apitype.CATEGORIZE)
+		imageCategoryStore.CategorizeImage(5, category1.Id(), apitype.CATEGORIZE)
 
-		imageCategoryStore.CategorizeImage(1, category2.Id(), apitype.MOVE)
-		imageCategoryStore.CategorizeImage(2, category2.Id(), apitype.MOVE)
+		imageCategoryStore.CategorizeImage(1, category2.Id(), apitype.CATEGORIZE)
+		imageCategoryStore.CategorizeImage(2, category2.Id(), apitype.CATEGORIZE)
 
 		tt.Run("Find by ID", func(t *testing.T) {
 			a.Equal(0, sutService.findImageIndex(2, category1.Id()))

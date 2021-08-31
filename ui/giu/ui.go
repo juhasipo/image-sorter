@@ -80,10 +80,10 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 
 	gui.categoryKeyManager = &CategoryKeyManager{
 		callback: func(def *CategoryDef, action *guiapi.CategoryAction) {
-			operation := apitype.MOVE
+			operation := apitype.CATEGORIZE
 			if !action.ForceCategory {
 				if _, ok := gui.currentImageCategories[def.categoryId]; ok {
-					operation = apitype.NONE
+					operation = apitype.UNCATEGORIZE
 				}
 			}
 
@@ -445,14 +445,14 @@ func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 	}
 
 	//for _, button := range s.topActionView.GetCategoryButtons() {
-	//	button.SetStatus(apitype.NONE)
+	//	button.SetStatus(apitype.UNCATEGORIZE)
 	//}
 	//
 	//for _, category := range command.Categories {
 	//	logger.Debug.Printf("Marked image category: '%s'", category.Name())
 	//
 	//	if button, ok := s.topActionView.GetCategoryButton(category.Id()); ok {
-	//		button.SetStatus(apitype.MOVE)
+	//		button.SetStatus(apitype.CATEGORIZE)
 	//	}
 	//}
 }

@@ -7,6 +7,6 @@ import (
 
 func TestOperation_NextOperation(t *testing.T) {
 	a := assert.New(t)
-	a.Equal(MOVE, NONE.NextOperation())
-	a.Equal(NONE, MOVE.NextOperation())
+	a.Equal(CATEGORIZE, UNCATEGORIZE.NextOperation())
+	a.Equal(UNCATEGORIZE, CATEGORIZE.NextOperation())
 }

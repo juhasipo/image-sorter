@@ -42,9 +42,9 @@ var (
 )
 
 func (s *CategoryButtonWidget) Build() {
-	operation := apitype.MOVE
+	operation := apitype.CATEGORIZE
 	if s.active {
-		operation = apitype.NONE
+		operation = apitype.UNCATEGORIZE
 	}
 
 	categorizeAction := func(operation apitype.Operation, stayOnImage bool, forceCategory bool) {
@@ -84,7 +84,7 @@ func (s *CategoryButtonWidget) Build() {
 				giu.CloseCurrentPopup()
 			}).Size(menuButtonWidth, menuButtonHeight),
 			giu.Button("Force to category"+" (Ctrl + "+s.shortcut+")").OnClick(func() {
-				categorizeAction(apitype.MOVE, false, true)
+				categorizeAction(apitype.CATEGORIZE, false, true)
 				giu.CloseCurrentPopup()
 			}).Size(menuButtonWidth, menuButtonHeight),
 			giu.Button(showOnlyLabel+" (Alt + "+s.shortcut+")").OnClick(func() {
