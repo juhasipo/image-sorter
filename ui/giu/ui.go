@@ -33,6 +33,9 @@ type Ui struct {
 	showCategoryEditModal  bool
 	categoryEditWidget     *widget.CategoryEditWidget
 
+	nextImagesList     *widget.ImageListWidget
+	previousImagesList *widget.ImageListWidget
+
 	api.Gui
 }
 
@@ -62,6 +65,8 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			position: 1,
 			max:      1,
 		},
+		nextImagesList:     widget.ImageList([]*widget.TexturedImage{}, false, 0),
+		previousImagesList: widget.ImageList([]*widget.TexturedImage{}, false, 0),
 	}
 
 	gui.categoryEditWidget = widget.CategoryEdit(
@@ -209,19 +214,25 @@ func (s *Ui) Run() {
 				giu.Custom(func() {
 					width, height := giu.GetAvailableRegion()
 					h := height - bottomHeight
+					s.nextImagesList.SetHeight(h)
+					s.nextImagesList.SetImages(s.nextImages)
+
+					s.previousImagesList.SetHeight(h)
+					s.previousImagesList.SetImages(s.previousImages)
+
 					giu.Style().
 						SetStyle(giu.StyleVarItemSpacing, 0, 0).
 						SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
 						SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
 						To(
 							giu.Row(
-								widget.ImageList(s.nextImages, false, h),
+								s.nextImagesList,
 								giu.Child().
 									Size(width-(120)*2, h).
 									Border(true).
 									Layout(widget.ResizableImage(s.currentImageTexture)),
 								giu.Dummy(-(120), h),
-								widget.ImageList(s.previousImages, false, h),
+								s.previousImagesList,
 							),
 						).Build()
 				}),
@@ -391,9 +402,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 				s.imageCache,
 			)
 			s.nextImages = append(s.nextImages, ti)
-			ti.LoadImageAsTextureThumbnail()
 		}
-		//s.imageView.AddImagesToNextStore(command.Images)
 	} else if command.Topic == api.ImageRequestPrevious {
 		s.previousImages = []*widget.TexturedImage{}
 		for _, data := range command.Images {
@@ -404,18 +413,14 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 				s.imageCache,
 			)
 			s.previousImages = append(s.previousImages, ti)
-			ti.LoadImageAsTextureThumbnail()
 		}
-		//s.imageView.AddImagesToPrevStore(command.Images)
 	} else if command.Topic == api.ImageRequestSimilar {
 		//s.similarImagesView.SetImages(command.Images)
 	}
+	giu.Update()
 }
 
 func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
-	//s.topActionView.SetCurrentStatus(command.Index, command.Total, command.CategoryId)
-	//s.bottomActionView.SetShowOnlyCategory(command.CategoryId != -1)
-	//s.imageView.SetCurrentImage(command.Image, command.MetaData)
 	s.UpdateCurrentImage()
 
 	s.currentImageTexture.ChangeImage(
@@ -428,6 +433,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	s.sendCurrentImageChangedEvent()
 
 	s.imageCache.Purge()
+	giu.Update()
 }
 
 func (s *Ui) sendCurrentImageChangedEvent() {

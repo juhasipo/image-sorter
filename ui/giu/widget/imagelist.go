@@ -18,6 +18,39 @@ func ImageList(images []*TexturedImage, showLabel bool, height float32) *ImageLi
 	}
 }
 
+func (s *ImageListWidget) SetHeight(height float32) {
+	s.height = height
+}
+
+func (s *ImageListWidget) SetImages(images []*TexturedImage) {
+	var newImageList []*TexturedImage
+	var changedImages []*TexturedImage
+
+	// Very naive algorithm to find out which images
+	// need to be reloaded and which can be re-used
+	for _, image := range images {
+		var found *TexturedImage = nil
+		for _, texturedImage := range s.images {
+			if image.IsSame(texturedImage) {
+				found = texturedImage
+			}
+		}
+
+		if found == nil {
+			changedImages = append(changedImages, image)
+			newImageList = append(newImageList, image)
+		} else {
+			newImageList = append(newImageList, found)
+		}
+	}
+
+	s.images = newImageList
+
+	for _, texturedImage := range changedImages {
+		texturedImage.LoadImageAsTextureThumbnail()
+	}
+}
+
 func (s *ImageListWidget) Build() {
 	maxWidth := float32(120.0)
 	var w []giu.Widget

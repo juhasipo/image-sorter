@@ -22,6 +22,8 @@ type TexturedImage struct {
 	imageCache     api.ImageStore
 }
 
+var cache = map[apitype.ImageId]*giu.Texture{}
+
 func NewTexturedImage(image *apitype.ImageFile, width float32, height float32, imageCache api.ImageStore) *TexturedImage {
 	return &TexturedImage{
 		Width:          width,
@@ -56,6 +58,16 @@ func (s *TexturedImage) ChangeImage(image *apitype.ImageFile, width float32, hei
 	s.lastWidth = -1
 	s.lastHeight = -1
 
+}
+
+func (s *TexturedImage) IsSame(other *TexturedImage) bool {
+	if s == nil {
+		return false
+	}
+	if other == nil {
+		return false
+	}
+	return s.Image.Id() == other.Image.Id()
 }
 
 func (s *TexturedImage) LoadImageAsTexture(width float32, height float32) *giu.Texture {
@@ -110,6 +122,7 @@ func (s *TexturedImage) LoadImageAsTextureThumbnail() *giu.Texture {
 			if err != nil {
 				logger.Error.Print(err)
 			}
+			giu.Update()
 		}()
 	}
 	return s.Texture
