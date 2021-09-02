@@ -67,7 +67,7 @@ func (s *ImageListWidget) Build() {
 		Layout(w...).
 		Border(false).
 		Size(maxWidth, s.height).
-		Flags(giu.WindowFlagsNoScrollbar).
+		Flags(giu.WindowFlagsNoScrollbar | giu.WindowFlagsNoScrollWithMouse).
 		Build()
 	giu.PopStyle()
 }

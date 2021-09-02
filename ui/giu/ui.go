@@ -35,6 +35,7 @@ type Ui struct {
 
 	nextImagesList     *widget.ImageListWidget
 	previousImagesList *widget.ImageListWidget
+	heightInNumOfImage int
 
 	api.Gui
 }
@@ -67,6 +68,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		},
 		nextImagesList:     widget.ImageList([]*widget.TexturedImage{}, false, 0),
 		previousImagesList: widget.ImageList([]*widget.TexturedImage{}, false, 0),
+		heightInNumOfImage: 0,
 	}
 
 	gui.categoryEditWidget = widget.CategoryEdit(
@@ -219,6 +221,14 @@ func (s *Ui) Run() {
 
 					s.previousImagesList.SetHeight(h)
 					s.previousImagesList.SetImages(s.previousImages)
+
+					heightInNumOfImage := int(h/90.0) + 1
+
+					if heightInNumOfImage != s.heightInNumOfImage {
+						s.sender.SendCommandToTopic(api.ImageListSizeChanged, &api.ImageListCommand{
+							ImageListSize: heightInNumOfImage,
+						})
+					}
 
 					giu.Style().
 						SetStyle(giu.StyleVarItemSpacing, 0, 0).
