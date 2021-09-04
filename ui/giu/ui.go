@@ -172,13 +172,6 @@ func (s *Ui) Run() {
 			categories = append(categories, categorizeButton)
 		}
 
-		previousButton := giu.Button("Previous").OnClick(func() {
-			s.sender.SendToTopic(api.ImageRequestPrevious)
-		}).Size(120, 30)
-		nextButton := giu.Button("Next").OnClick(func() {
-			s.sender.SendToTopic(api.ImageRequestNext)
-		}).Size(120, 30)
-
 		modal := giu.PopupModal("Progress").
 			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
 			Layout(
@@ -205,13 +198,12 @@ func (s *Ui) Run() {
 				Layout(s.categoryEditWidget)
 			s.categoryEditWidget.HandleKeys()
 		} else {
-			topHeight := float32(30.0)
 			bottomHeight := float32(30.0)
 			mainWindow.Layout(
 				giu.Custom(func() {
 					width, _ := giu.GetAvailableRegion()
 					height := float32(60)
-					buttonWidth := float32(30)
+					buttonWidth := float32(15)
 					centerPieceWidth := float32(120)
 					listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
 
@@ -245,10 +237,7 @@ func (s *Ui) Run() {
 					giu.PopStyle()
 				}),
 				giu.Row(
-					previousButton,
 					widget.CategoryButtonView(categories),
-					giu.Dummy(-120, topHeight),
-					nextButton,
 				),
 				modal,
 				giu.Custom(func() {
@@ -261,16 +250,31 @@ func (s *Ui) Run() {
 					width, height := giu.GetAvailableRegion()
 					h := height - bottomHeight
 
+					width = width - 30.0*2
+
+					pButton := giu.Button("<").
+						OnClick(func() {
+							s.sender.SendToTopic(api.ImageRequestPrevious)
+						}).
+						Size(30, h)
+					nButton := giu.Button(">").
+						OnClick(func() {
+							s.sender.SendToTopic(api.ImageRequestNext)
+						}).
+						Size(30, h)
+
 					giu.Style().
 						SetStyle(giu.StyleVarItemSpacing, 0, 0).
 						SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
 						SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
 						To(
 							giu.Row(
+								pButton,
 								giu.Child().
 									Size(width, h).
 									Border(true).
 									Layout(widget.ResizableImage(s.currentImageTexture)),
+								nButton,
 							),
 						).Build()
 				}),
