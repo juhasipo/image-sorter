@@ -33,9 +33,9 @@ type Ui struct {
 	showCategoryEditModal  bool
 	categoryEditWidget     *widget.CategoryEditWidget
 
-	nextImagesList     *widget.ImageListWidget
-	previousImagesList *widget.ImageListWidget
-	heightInNumOfImage int
+	nextImagesList     *widget.HorizontalImageListWidget
+	previousImagesList *widget.HorizontalImageListWidget
+	widthInNumOfImage  int
 
 	api.Gui
 }
@@ -54,6 +54,12 @@ const (
 )
 
 func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
+	onImageSelected := func(imageFile *apitype.ImageFile) {
+		broker.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
+			Id: imageFile.Id(),
+		})
+	}
+
 	gui := Ui{
 		win:                 giu.NewMasterWindow("Image Sorter", defaultWindowWidth, defaultWindowHeight, 0),
 		imageCache:          imageCache,
@@ -66,9 +72,9 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			position: 1,
 			max:      1,
 		},
-		nextImagesList:     widget.ImageList([]*widget.TexturedImage{}, false, 0),
-		previousImagesList: widget.ImageList([]*widget.TexturedImage{}, false, 0),
-		heightInNumOfImage: 0,
+		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, true),
+		previousImagesList: widget.HorizontalImageList(onImageSelected, false, false),
+		widthInNumOfImage:  0,
 	}
 
 	gui.categoryEditWidget = widget.CategoryEdit(
@@ -155,6 +161,7 @@ func (s *Ui) Run() {
 			categoryId := cat.Id()
 			text := cat.Name()
 
+			// FIXME: Potential concurrent write to map
 			_, active := s.currentImageCategories[cat.Id()]
 
 			highlight := s.currentCategoryId == categoryId
@@ -201,11 +208,48 @@ func (s *Ui) Run() {
 			topHeight := float32(30.0)
 			bottomHeight := float32(30.0)
 			mainWindow.Layout(
+				giu.Custom(func() {
+					width, _ := giu.GetAvailableRegion()
+					height := float32(60)
+					buttonWidth := float32(30)
+					centerPieceWidth := float32(120)
+					listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
+
+					widthInNumOfImage := int(listWidth/60) + 1
+
+					if widthInNumOfImage != s.widthInNumOfImage {
+						s.sender.SendCommandToTopic(api.ImageListSizeChanged, &api.ImageListCommand{
+							ImageListSize: widthInNumOfImage,
+						})
+					}
+					s.widthInNumOfImage = widthInNumOfImage
+
+					giu.PushItemSpacing(0, 0)
+					pButton := giu.Button("<").
+						OnClick(func() {
+							s.sender.SendToTopic(api.ImageRequestPrevious)
+						}).
+						Size(buttonWidth, height)
+					nButton := giu.Button(">").
+						OnClick(func() {
+							s.sender.SendToTopic(api.ImageRequestNext)
+						}).
+						Size(buttonWidth, height)
+					giu.Row(
+						s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
+						pButton,
+						widget.ResizableImage(s.currentImageTexture).Size(120, height),
+						nButton,
+						s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
+					).Build()
+					giu.PopStyle()
+				}),
 				giu.Row(
 					previousButton,
 					widget.CategoryButtonView(categories),
 					giu.Dummy(-120, topHeight),
-					nextButton),
+					nextButton,
+				),
 				modal,
 				giu.Custom(func() {
 					if s.currentProgress.open {
@@ -216,19 +260,6 @@ func (s *Ui) Run() {
 				giu.Custom(func() {
 					width, height := giu.GetAvailableRegion()
 					h := height - bottomHeight
-					s.nextImagesList.SetHeight(h)
-					s.nextImagesList.SetImages(s.nextImages)
-
-					s.previousImagesList.SetHeight(h)
-					s.previousImagesList.SetImages(s.previousImages)
-
-					heightInNumOfImage := int(h/90.0) + 1
-
-					if heightInNumOfImage != s.heightInNumOfImage {
-						s.sender.SendCommandToTopic(api.ImageListSizeChanged, &api.ImageListCommand{
-							ImageListSize: heightInNumOfImage,
-						})
-					}
 
 					giu.Style().
 						SetStyle(giu.StyleVarItemSpacing, 0, 0).
@@ -236,13 +267,10 @@ func (s *Ui) Run() {
 						SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
 						To(
 							giu.Row(
-								s.nextImagesList,
 								giu.Child().
-									Size(width-(120)*2, h).
+									Size(width, h).
 									Border(true).
 									Layout(widget.ResizableImage(s.currentImageTexture)),
-								giu.Dummy(-(120), h),
-								s.previousImagesList,
 							),
 						).Build()
 				}),
