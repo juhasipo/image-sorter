@@ -7,6 +7,7 @@ import (
 type ResizableImageWidget struct {
 	texturedImage       *TexturedImage
 	maxHeight, maxWidth float32
+	zoomFactor          float32
 	giu.ImageWidget
 }
 
@@ -15,6 +16,7 @@ func ResizableImage(image *TexturedImage) *ResizableImageWidget {
 		texturedImage: image,
 		maxHeight:     0,
 		maxWidth:      0,
+		zoomFactor:    1,
 		ImageWidget:   *giu.Image(image.Texture),
 	}
 }
@@ -26,6 +28,11 @@ func (s *ResizableImageWidget) Size(width float32, height float32) *ResizableIma
 	return s
 }
 
+func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32) *ResizableImageWidget {
+	s.zoomFactor = zoomFactor
+	return s
+}
+
 func (s *ResizableImageWidget) Build() {
 	maxW, maxH := giu.GetAvailableRegion()
 
@@ -34,21 +41,25 @@ func (s *ResizableImageWidget) Build() {
 		maxH = s.maxHeight
 	}
 
-	newW := maxW
+	newW := maxW * s.zoomFactor
 	newH := newW / s.texturedImage.Ratio
 
 	if newH > maxH {
-		newW = maxH * s.texturedImage.Ratio
-		newH = maxH
+		newW = maxH * s.texturedImage.Ratio * s.zoomFactor
+		newH = maxH * s.zoomFactor
 	}
 
 	offsetW := (maxW - newW) / 2.0
 	offsetH := (maxH - newH) / 2.0
 
-	// dummyV := giu.Button(strconv.FormatFloat(float64(offsetH), 'f', 0, 32)).Size(120, offsetH)
-	// dummyH := giu.Button(strconv.FormatFloat(float64(offsetW), 'f', 0, 32)).Size(offsetW, 20)
+	if offsetW < 0 {
+		offsetW = 0
+	}
+	if offsetH < 0 {
+		offsetH = 0
+	}
 
-	dummyV := giu.Dummy(120, offsetH)
+	dummyV := giu.Dummy(0, offsetH)
 	dummyH := giu.Dummy(offsetW, 20)
 	s.ImageWidget.Size(newW, newH)
 

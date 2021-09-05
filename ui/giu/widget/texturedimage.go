@@ -70,7 +70,7 @@ func (s *TexturedImage) IsSame(other *TexturedImage) bool {
 	return s.Image.Id() == other.Image.Id()
 }
 
-func (s *TexturedImage) LoadImageAsTexture(width float32, height float32) *giu.Texture {
+func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32) *giu.Texture {
 	if s.imageCache == nil || s.Image == nil {
 		return nil
 	}
@@ -81,8 +81,8 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32) *giu.T
 		}
 	}
 
-	s.lastWidth = int(width)
-	s.lastHeight = int(height)
+	s.lastWidth = int(width * zoomFactor)
+	s.lastHeight = int(height * zoomFactor)
 
 	scaledImage, _ := s.imageCache.GetScaled(s.Image.Id(), apitype.SizeOf(s.lastWidth, s.lastHeight))
 	if scaledImage == nil {

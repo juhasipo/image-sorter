@@ -41,9 +41,14 @@ type Ui struct {
 	similarImagesList  *widget.HorizontalImageListWidget
 	similarImagesShown bool
 	widthInNumOfImage  int
+	zoomLevel          int
 
 	api.Gui
 }
+
+const defaultZoomLevel = 5
+
+var zoomLevels = []float32{0.01, 0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100}
 
 type progressModal struct {
 	open      bool
@@ -113,6 +118,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		similarImagesList:  widget.HorizontalImageList(onImageSelected, false, false, false),
 		similarImagesShown: false,
 		widthInNumOfImage:  0,
+		zoomLevel:          defaultZoomLevel,
 	}
 
 	gui.categoryEditWidget = widget.CategoryEdit(
@@ -187,7 +193,7 @@ func (s *Ui) Run() {
 				logger.Trace.Printf("Window size changed from (%d x %d) to (%d x %d)",
 					s.oldWidth, s.oldHeight, newWidth, newHeight)
 			}
-			go s.currentImageTexture.LoadImageAsTexture(float32(newWidth), float32(newHeight))
+			go s.currentImageTexture.LoadImageAsTexture(float32(newWidth), float32(newHeight), s.getZoomFactor())
 			s.oldWidth = newWidth
 			s.oldHeight = newHeight
 		}
@@ -320,7 +326,8 @@ func (s *Ui) Run() {
 								giu.Child().
 									Size(width, h).
 									Border(true).
-									Layout(widget.ResizableImage(s.currentImageTexture)),
+									Flags(giu.WindowFlagsHorizontalScrollbar).
+									Layout(widget.ResizableImage(s.currentImageTexture).ZoomFactor(s.getZoomFactor())),
 								nButton,
 							),
 						).Build()
@@ -343,6 +350,10 @@ func (s *Ui) Run() {
 					giu.Button("Cast").OnClick(s.openCastToDeviceView),
 					giu.Button("Open directory").OnClick(s.changeDirectory),
 					giu.Button("Apply Categories").OnClick(s.applyCategories),
+					giu.Button("+").OnClick(s.zoomIn),
+					giu.Button("Reset").OnClick(s.resetZoom),
+					giu.Label(s.getZoomPercent()),
+					giu.Button("-").OnClick(s.zoomOut),
 				),
 				giu.PrepareMsgbox(),
 			)
@@ -575,7 +586,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 		float32(command.Image.ImageData().Bounds().Dy()))
 	width, height := s.win.GetSize()
 	s.currentCategoryId = command.CategoryId
-	s.currentImageTexture.LoadImageAsTexture(float32(width), float32(height))
+	s.currentImageTexture.LoadImageAsTexture(float32(width), float32(height), s.getZoomFactor())
 	s.sendCurrentImageChangedEvent()
 
 	s.imageCache.Purge()
@@ -638,6 +649,32 @@ func (s *Ui) FindDevices() {
 func (s *Ui) ShowError(command *api.ErrorCommand) {
 	logger.Error.Printf("Error: %s", command.Message)
 	giu.Msgbox("Error", command.Message)
+}
+
+func (s *Ui) zoomIn() {
+	s.zoomLevel++
+	if s.zoomLevel >= len(zoomLevels) {
+		s.zoomLevel = len(zoomLevels) - 1
+	}
+}
+
+func (s *Ui) resetZoom() {
+	s.zoomLevel = defaultZoomLevel
+}
+
+func (s *Ui) zoomOut() {
+	s.zoomLevel--
+	if s.zoomLevel < 0 {
+		s.zoomLevel = 0
+	}
+}
+
+func (s *Ui) getZoomFactor() float32 {
+	return zoomLevels[s.zoomLevel]
+}
+
+func (s *Ui) getZoomPercent() string {
+	return fmt.Sprintf("%d %%", int(s.getZoomFactor()*100))
 }
 
 func (s *Ui) searchSimilar() {
