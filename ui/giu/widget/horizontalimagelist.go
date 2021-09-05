@@ -15,18 +15,20 @@ type HorizontalImageListWidget struct {
 	showLabel bool
 	width     float32
 	reverse   bool
+	shrink    bool
 	height    float32
 	onClick   func(*apitype.ImageFile)
 	mux       sync.Mutex
 }
 
-func HorizontalImageList(onClick func(*apitype.ImageFile), showLabel bool, reverse bool) *HorizontalImageListWidget {
+func HorizontalImageList(onClick func(*apitype.ImageFile), showLabel bool, reverse bool, shrink bool) *HorizontalImageListWidget {
 	return &HorizontalImageListWidget{
 		images:    []*TexturedImage{},
 		showLabel: showLabel,
 		width:     0,
 		height:    0,
 		reverse:   reverse,
+		shrink:    shrink,
 		onClick:   onClick,
 	}
 }
@@ -83,7 +85,10 @@ func (s *HorizontalImageListWidget) Build() {
 			startX := float32(0)
 
 			for i, img := range s.images {
-				factor := 1 - (float32(i+1) * float32(0.05))
+				factor := float32(1)
+				if s.shrink {
+					factor = 1 - (float32(i+1) * float32(0.05))
+				}
 
 				imageRatio := img.Width / img.Height
 				targetHeight := s.height * factor

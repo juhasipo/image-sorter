@@ -26,6 +26,7 @@ type Ui struct {
 	currentImageTexture    *widget.TexturedImage
 	nextImages             []*widget.TexturedImage
 	previousImages         []*widget.TexturedImage
+	similarImages          []*widget.TexturedImage
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
@@ -37,6 +38,8 @@ type Ui struct {
 
 	nextImagesList     *widget.HorizontalImageListWidget
 	previousImagesList *widget.HorizontalImageListWidget
+	similarImagesList  *widget.HorizontalImageListWidget
+	similarImagesShown bool
 	widthInNumOfImage  int
 
 	api.Gui
@@ -105,8 +108,10 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			fixOrientation: false,
 			quality:        90,
 		},
-		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, true),
-		previousImagesList: widget.HorizontalImageList(onImageSelected, false, false),
+		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, true, true),
+		previousImagesList: widget.HorizontalImageList(onImageSelected, false, false, true),
+		similarImagesList:  widget.HorizontalImageList(onImageSelected, false, false, false),
+		similarImagesShown: false,
 		widthInNumOfImage:  0,
 	}
 
@@ -269,6 +274,10 @@ func (s *Ui) Run() {
 					width, height := giu.GetAvailableRegion()
 					h := height - bottomHeight
 
+					if s.similarImagesShown {
+						h -= 60
+					}
+
 					width = width - 30.0*2
 
 					pButton := giu.Button("<").
@@ -297,6 +306,17 @@ func (s *Ui) Run() {
 							),
 						).Build()
 				}),
+				giu.Condition(s.similarImagesShown, giu.Layout{
+					giu.Row(
+						giu.Button("Hide").
+							Size(50, 60).
+							OnClick(func() {
+								s.similarImagesShown = false
+							}),
+						s.similarImagesList.SetImages(s.similarImages).Size(giu.Auto, 60),
+					),
+				},
+					nil),
 				giu.Row(
 					giu.Dummy(0, bottomHeight),
 					giu.Button("Edit categories").OnClick(func() {
@@ -304,6 +324,7 @@ func (s *Ui) Run() {
 						s.showCategoryEditModal = true
 					}),
 					giu.Button("Search similar").OnClick(func() {
+						s.similarImagesShown = true
 						s.sender.SendToTopic(api.SimilarRequestSearch)
 					}),
 					giu.Button("Cast").OnClick(func() {
@@ -576,7 +597,16 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 			s.previousImages = append(s.previousImages, ti)
 		}
 	} else if command.Topic == api.ImageRequestSimilar {
-		//s.similarImagesView.SetImages(command.Images)
+		s.similarImages = []*widget.TexturedImage{}
+		for _, data := range command.Images {
+			ti := widget.NewTexturedImage(
+				data.ImageFile(),
+				float32(data.ImageData().Bounds().Dx()),
+				float32(data.ImageData().Bounds().Dy()),
+				s.imageCache,
+			)
+			s.similarImages = append(s.similarImages, ti)
+		}
 	}
 	giu.Update()
 }
