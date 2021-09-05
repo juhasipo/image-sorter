@@ -125,12 +125,20 @@ func (s *CategoryButtonWidget) Build() {
 	style.
 		SetStyle(giu.StyleVarItemSpacing, 0, 0).
 		SetStyle(giu.StyleVarItemInnerSpacing, 0, 0).
-		To(giu.Column(
-			giu.Row(
-				primaryButton,
-				menuButton,
+		To(giu.Child().
+			Size(
+				categoryPrimaryButtonWidth+categoryArrowButtonWidth,
+				categoryPrimaryButtonHeight+categoryIndicatorButtonHeight,
+			).
+			Flags(giu.WindowFlagsNoBackground).
+			Border(false).
+			Layout(
+				giu.Row(
+					primaryButton,
+					menuButton,
+				),
+				menu,
+				statusIndicator,
 			),
-			menu,
-			statusIndicator,
-		)).Build()
+		).Build()
 }
