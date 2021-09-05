@@ -31,6 +31,7 @@ type Ui struct {
 	currentCategoryId      apitype.CategoryId
 	currentProgress        progressModal
 	deviceModal            deviceModal
+	applyChangesModal      applyChangesModal
 	showCategoryEditModal  bool
 	categoryEditWidget     *widget.CategoryEditWidget
 
@@ -56,6 +57,14 @@ type deviceModal struct {
 	devices        []string
 	selectedIndex  int
 	showBackground bool
+}
+
+type applyChangesModal struct {
+	open           bool
+	label          string
+	keepOriginals  bool
+	fixOrientation bool
+	quality        int32
 }
 
 const (
@@ -88,6 +97,13 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			inProgress:     false,
 			devices:        []string{},
 			showBackground: true,
+		},
+		applyChangesModal: applyChangesModal{
+			open:           false,
+			label:          "Apply changes",
+			keepOriginals:  true,
+			fixOrientation: false,
+			quality:        90,
 		},
 		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, true),
 		previousImagesList: widget.HorizontalImageList(onImageSelected, false, false),
@@ -189,67 +205,9 @@ func (s *Ui) Run() {
 			categories = append(categories, categorizeButton)
 		}
 
-		var progressModalWidget giu.Widget
-		progressModalWidget = giu.PopupModal("Progress").
-			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
-			Layout(
-				giu.Label(s.currentProgress.label),
-				giu.Row(
-					giu.ProgressBar(float32(s.currentProgress.position)/float32(s.currentProgress.max)).
-						Overlay(fmt.Sprintf("%d/%d", s.currentProgress.position, s.currentProgress.max)),
-					giu.Button("Cancel").
-						Disabled(!s.currentProgress.canCancel).
-						OnClick(func() {
-							s.sender.SendToTopic(api.SimilarRequestStop)
-						}),
-				),
-				giu.Custom(func() {
-					if !s.currentProgress.open {
-						logger.Trace.Printf("Hide progress modal")
-						giu.CloseCurrentPopup()
-					}
-				}))
-
-		var deviceModalWidget giu.Widget
-		deviceModalWidget = giu.PopupModal("Device").
-			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoDecoration).
-			Layout(
-				giu.Label(s.deviceModal.label),
-				giu.Custom(func() {
-					if s.deviceModal.inProgress {
-						giu.ProgressIndicator("Searching...", 10, 10, 5).Build()
-					}
-				}),
-				giu.ListBox("Cast Devices", s.deviceModal.devices).
-					Size(300, 200).
-					OnChange(func(selectedIndex int) {
-						s.deviceModal.selectedIndex = selectedIndex
-					}),
-				giu.Checkbox("Show background", &s.deviceModal.showBackground),
-				giu.Row(
-					giu.Button("OK##SelectDevice").
-						Disabled(len(s.deviceModal.devices) == 0).
-						OnClick(func() {
-							s.sender.SendCommandToTopic(api.CastDeviceSelect, &api.SelectDeviceCommand{
-								Name:           s.deviceModal.devices[s.deviceModal.selectedIndex],
-								ShowBackground: s.deviceModal.showBackground,
-							})
-							s.deviceModal.open = false
-							s.deviceModal.inProgress = false
-						}),
-					giu.Button("Cancel##CancelDevice").
-						OnClick(func() {
-							s.sender.SendToTopic(api.SimilarRequestStop)
-							s.deviceModal.open = false
-							s.deviceModal.inProgress = false
-						}),
-				),
-				giu.Custom(func() {
-					if !s.deviceModal.open {
-						logger.Trace.Printf("Hide device list modal")
-						giu.CloseCurrentPopup()
-					}
-				}))
+		progressModalWidget := getProgressModal("Progress", s.sender, &s.currentProgress)
+		deviceModalWidget := getDeviceModal("Device", s.sender, &s.deviceModal)
+		applyChangesModalWidget := getApplyChangesModal("Apply Categories", s.sender, &s.applyChangesModal)
 
 		mainWindow := giu.SingleWindow()
 		if s.showCategoryEditModal {
@@ -300,6 +258,7 @@ func (s *Ui) Run() {
 				),
 				progressModalWidget,
 				deviceModalWidget,
+				applyChangesModalWidget,
 				giu.Custom(func() {
 					if s.currentProgress.open {
 						logger.Trace.Printf("Show progress modal")
@@ -355,14 +314,8 @@ func (s *Ui) Run() {
 						s.Init("")
 					}),
 					giu.Button("Apply Categories").OnClick(func() {
-						result := dialog.Message("Do you really want to persist these categories?").YesNo()
-						if result {
-							s.sender.SendCommandToTopic(api.CategoryPersistAll, &api.PersistCategorizationCommand{
-								KeepOriginals:  true,
-								FixOrientation: false,
-								Quality:        100,
-							})
-						}
+						s.applyChangesModal.open = true
+						giu.OpenPopup("Apply Categories")
 					}),
 				),
 				giu.PrepareMsgbox(),
@@ -384,6 +337,108 @@ func (s *Ui) Run() {
 			logger.Debug.Printf("Rendered UI in %s", renderTime)
 		}
 	})
+}
+
+func getProgressModal(id string, sender api.Sender, modal *progressModal) giu.Widget {
+	var progressModalWidget giu.Widget
+	progressModalWidget = giu.PopupModal(id).
+		Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
+		Layout(
+			giu.Label(modal.label),
+			giu.Row(
+				giu.ProgressBar(float32(modal.position)/float32(modal.max)).
+					Overlay(fmt.Sprintf("%d/%d", modal.position, modal.max)),
+				giu.Button("Cancel").
+					Disabled(!modal.canCancel).
+					OnClick(func() {
+						sender.SendToTopic(api.SimilarRequestStop)
+					}),
+			),
+			giu.Custom(func() {
+				if !modal.open {
+					logger.Trace.Printf("Hide progress modal")
+					giu.CloseCurrentPopup()
+				}
+			}))
+	return progressModalWidget
+}
+
+func getDeviceModal(id string, sender api.Sender, modal *deviceModal) giu.Widget {
+	var deviceModalWidget giu.Widget
+	deviceModalWidget = giu.PopupModal(id).
+		Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoDecoration).
+		Layout(
+			giu.Label(modal.label),
+			giu.Custom(func() {
+				if modal.inProgress {
+					giu.ProgressIndicator("Searching...", 10, 10, 5).Build()
+				}
+			}),
+			giu.ListBox("Found devices", modal.devices).
+				Size(300, 200).
+				OnChange(func(selectedIndex int) {
+					modal.selectedIndex = selectedIndex
+				}),
+			giu.Checkbox("Show blurred background", &modal.showBackground),
+			giu.Row(
+				giu.Button("OK##SelectDevice").
+					Disabled(len(modal.devices) == 0).
+					OnClick(func() {
+						sender.SendCommandToTopic(api.CastDeviceSelect, &api.SelectDeviceCommand{
+							Name:           modal.devices[modal.selectedIndex],
+							ShowBackground: modal.showBackground,
+						})
+						modal.open = false
+						modal.inProgress = false
+					}),
+				giu.Button("Cancel##CancelDevice").
+					OnClick(func() {
+						sender.SendToTopic(api.SimilarRequestStop)
+						modal.open = false
+						modal.inProgress = false
+					}),
+			),
+			giu.Custom(func() {
+				if !modal.open {
+					logger.Trace.Printf("Hide apply changes modal")
+					giu.CloseCurrentPopup()
+				}
+			}))
+	return deviceModalWidget
+}
+
+func getApplyChangesModal(id string, sender api.Sender, modal *applyChangesModal) giu.Widget {
+	var applyChangesModalWidget giu.Widget
+	applyChangesModalWidget = giu.PopupModal(id).
+		Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoDecoration).
+		Layout(
+			giu.Label(modal.label),
+			giu.Checkbox("Keep original images", &modal.keepOriginals),
+			giu.Checkbox("Fix orientation", &modal.fixOrientation),
+			giu.SliderInt("Quality", &modal.quality, 0, 100),
+			giu.Row(
+				giu.Button("Apply##ApplyChanges").
+					OnClick(func() {
+						sender.SendCommandToTopic(api.CategoryPersistAll, &api.PersistCategorizationCommand{
+							KeepOriginals:  modal.keepOriginals,
+							FixOrientation: modal.fixOrientation,
+							Quality:        int(modal.quality),
+						})
+						modal.open = false
+					}),
+				giu.Button("Cancel##ApplyChanges").
+					OnClick(func() {
+						sender.SendToTopic(api.SimilarRequestStop)
+						modal.open = false
+					}),
+			),
+			giu.Custom(func() {
+				if !modal.open {
+					logger.Trace.Printf("Hide device list modal")
+					giu.CloseCurrentPopup()
+				}
+			}))
+	return applyChangesModalWidget
 }
 
 func (s *Ui) handleKeyPress() bool {
