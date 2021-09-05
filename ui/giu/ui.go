@@ -108,8 +108,8 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			fixOrientation: false,
 			quality:        90,
 		},
-		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, true, true),
-		previousImagesList: widget.HorizontalImageList(onImageSelected, false, false, true),
+		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, false, true),
+		previousImagesList: widget.HorizontalImageList(onImageSelected, false, true, true),
 		similarImagesList:  widget.HorizontalImageList(onImageSelected, false, false, false),
 		similarImagesShown: false,
 		widthInNumOfImage:  0,
@@ -227,7 +227,7 @@ func (s *Ui) Run() {
 					height := float32(60)
 					buttonWidth := float32(15)
 					centerPieceWidth := float32(120)
-					listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
+					listWidth := (width - buttonWidth*2 - buttonWidth*2*2 - centerPieceWidth) / 2
 
 					widthInNumOfImage := int(listWidth/60) + 1
 
@@ -239,22 +239,38 @@ func (s *Ui) Run() {
 					s.widthInNumOfImage = widthInNumOfImage
 
 					giu.PushItemSpacing(0, 0)
-					pButton := giu.Button("<").
+					previousImageButton := giu.Button("<").
 						OnClick(func() {
 							s.sender.SendToTopic(api.ImageRequestPrevious)
 						}).
 						Size(buttonWidth, height)
-					nButton := giu.Button(">").
+					firstImageButton := giu.Button("<<").
+						OnClick(func() {
+							s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
+								Index: 0,
+							})
+						}).
+						Size(buttonWidth*2, height)
+					nextImageButton := giu.Button(">").
 						OnClick(func() {
 							s.sender.SendToTopic(api.ImageRequestNext)
 						}).
 						Size(buttonWidth, height)
+					lastImageButton := giu.Button(">>").
+						OnClick(func() {
+							s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
+								Index: -1,
+							})
+						}).
+						Size(buttonWidth*2, height)
 					giu.Row(
-						s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
-						pButton,
-						widget.ResizableImage(s.currentImageTexture).Size(120, height),
-						nButton,
+						firstImageButton,
 						s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
+						previousImageButton,
+						widget.ResizableImage(s.currentImageTexture).Size(120, height),
+						nextImageButton,
+						s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
+						lastImageButton,
 					).Build()
 					giu.PopStyle()
 				}),
