@@ -210,10 +210,6 @@ func (s *Ui) Run() {
 			categories = append(categories, categorizeButton)
 		}
 
-		progressModalWidget := getProgressModal("Progress", s.sender, &s.currentProgress)
-		deviceModalWidget := getDeviceModal("Device", s.sender, &s.deviceModal)
-		applyChangesModalWidget := getApplyChangesModal("Apply Categories", s.sender, &s.applyChangesModal)
-
 		mainWindow := giu.SingleWindow()
 		if s.showCategoryEditModal {
 			mainWindow.
@@ -277,13 +273,20 @@ func (s *Ui) Run() {
 				giu.Row(
 					widget.CategoryButtonView(categories),
 				),
-				progressModalWidget,
-				deviceModalWidget,
-				applyChangesModalWidget,
+				// Modals
+				getProgressModal("ProgressModal", s.sender, &s.currentProgress),
+				getDeviceModal("DeviceModal", s.sender, &s.deviceModal),
+				getApplyChangesModal("ApplyCategoriesModal", s.sender, &s.applyChangesModal),
 				giu.Custom(func() {
+					// Process modal states
 					if s.currentProgress.open {
-						logger.Trace.Printf("Show progress modal")
-						giu.OpenPopup("Progress")
+						giu.OpenPopup("ProgressModal")
+					}
+					if s.deviceModal.open {
+						giu.OpenPopup("DeviceModal")
+					}
+					if s.applyChangesModal.open {
+						giu.OpenPopup("ApplyCategoriesModal")
 					}
 				}),
 				giu.Custom(func() {
@@ -335,32 +338,18 @@ func (s *Ui) Run() {
 					nil),
 				giu.Row(
 					giu.Dummy(0, bottomHeight),
-					giu.Button("Edit categories").OnClick(func() {
-						s.categoryEditWidget.SetCategories(s.categories)
-						s.showCategoryEditModal = true
-					}),
-					giu.Button("Search similar").OnClick(func() {
-						s.similarImagesShown = true
-						s.sender.SendToTopic(api.SimilarRequestSearch)
-					}),
-					giu.Button("Cast").OnClick(func() {
-						giu.OpenPopup("Device")
-						s.FindDevices()
-					}),
-					giu.Button("Open directory").OnClick(func() {
-						s.Init("")
-					}),
-					giu.Button("Apply Categories").OnClick(func() {
-						s.applyChangesModal.open = true
-						giu.OpenPopup("Apply Categories")
-					}),
+					giu.Button("Edit categories").OnClick(s.openEditCategoriesView),
+					giu.Button("Search similar").OnClick(s.searchSimilar),
+					giu.Button("Cast").OnClick(s.openCastToDeviceView),
+					giu.Button("Open directory").OnClick(s.changeDirectory),
+					giu.Button("Apply Categories").OnClick(s.applyCategories),
 				),
 				giu.PrepareMsgbox(),
 			)
 
 			// Ignore all input when the progress bar is shown
 			// This prevents any unexpected changes
-			if !s.currentProgress.open {
+			if !s.currentProgress.open && !s.deviceModal.open && !s.applyChangesModal.open {
 				s.handleKeyPress()
 			}
 		}
@@ -377,8 +366,7 @@ func (s *Ui) Run() {
 }
 
 func getProgressModal(id string, sender api.Sender, modal *progressModal) giu.Widget {
-	var progressModalWidget giu.Widget
-	progressModalWidget = giu.PopupModal(id).
+	return giu.PopupModal(id).
 		Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
 		Layout(
 			giu.Label(modal.label),
@@ -393,16 +381,13 @@ func getProgressModal(id string, sender api.Sender, modal *progressModal) giu.Wi
 			),
 			giu.Custom(func() {
 				if !modal.open {
-					logger.Trace.Printf("Hide progress modal")
 					giu.CloseCurrentPopup()
 				}
 			}))
-	return progressModalWidget
 }
 
 func getDeviceModal(id string, sender api.Sender, modal *deviceModal) giu.Widget {
-	var deviceModalWidget giu.Widget
-	deviceModalWidget = giu.PopupModal(id).
+	return giu.PopupModal(id).
 		Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoDecoration).
 		Layout(
 			giu.Label(modal.label),
@@ -437,16 +422,13 @@ func getDeviceModal(id string, sender api.Sender, modal *deviceModal) giu.Widget
 			),
 			giu.Custom(func() {
 				if !modal.open {
-					logger.Trace.Printf("Hide apply changes modal")
 					giu.CloseCurrentPopup()
 				}
 			}))
-	return deviceModalWidget
 }
 
 func getApplyChangesModal(id string, sender api.Sender, modal *applyChangesModal) giu.Widget {
-	var applyChangesModalWidget giu.Widget
-	applyChangesModalWidget = giu.PopupModal(id).
+	return giu.PopupModal(id).
 		Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoDecoration).
 		Layout(
 			giu.Label(modal.label),
@@ -471,11 +453,9 @@ func getApplyChangesModal(id string, sender api.Sender, modal *applyChangesModal
 			),
 			giu.Custom(func() {
 				if !modal.open {
-					logger.Trace.Printf("Hide device list modal")
 					giu.CloseCurrentPopup()
 				}
 			}))
-	return applyChangesModalWidget
 }
 
 func (s *Ui) handleKeyPress() bool {
@@ -487,33 +467,17 @@ func (s *Ui) handleKeyPress() bool {
 	controlDown := giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
 
 	if giu.IsKeyPressed(giu.KeyF8) {
-		logger.Debug.Printf("Find devices")
-		s.FindDevices()
+		s.openCastToDeviceView()
 	}
 	if giu.IsKeyPressed(giu.KeyF10) {
 		logger.Debug.Printf("Show all images")
 		s.sender.SendToTopic(api.ImageShowAll)
 	}
-	if giu.IsKeyPressed(giu.KeyEscape) {
-		logger.Debug.Printf("Exit full screen")
-		s.ExitFullScreen()
-	}
-
-	if giu.IsKeyPressed(giu.KeyF11) || (giu.IsKeyPressed(giu.KeyEnter) && altDown) {
-		logger.Debug.Printf("Enter full screen")
-		noDistractionMode := controlDown
-		if noDistractionMode {
-			s.EnterFullScreenNoDistraction()
-		} else if s.fullscreen {
-			s.ExitFullScreen()
-		} else {
-			s.EnterFullScreen()
-		}
-	}
-
 	if giu.IsKeyPressed(giu.KeyF12) {
-		logger.Debug.Printf("Find similar images")
-		s.sender.SendToTopic(api.SimilarRequestSearch)
+		s.searchSimilar()
+	}
+	if giu.IsKeyPressed(giu.KeyEnter) && controlDown {
+		s.applyCategories()
 	}
 
 	// Navigation
@@ -554,24 +518,6 @@ func (s *Ui) handleKeyPress() bool {
 		ForceCategory:    controlDown,
 		ShowOnlyCategory: altDown,
 	})
-	/*else if command := s.topActionView.NewCommandForShortcut(key, s.imageView.CurrentImageFile()); command != nil {
-		switchToCategory := altDown
-		if switchToCategory {
-			s.sender.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{CategoryId: command.CategoryId})
-		} else {
-			command.StayOnSameImage = shiftDown
-			command.ForceToCategory = controlDown
-			s.sender.SendCommandToTopic(api.CategorizeImage, command)
-		}
-	} else if key == gdk.KEY_plus || key == gdk.KEY_KP_Add {
-		s.imageView.ZoomIn()
-	} else if key == gdk.KEY_minus || key == gdk.KEY_KP_Subtract {
-		s.imageView.ZoomOut()
-	} else if key == gdk.KEY_BackSpace {
-		s.imageView.ZoomToFit()
-	} else {
-		return false
-	}*/
 	return true
 }
 
@@ -581,12 +527,7 @@ func (s *Ui) UpdateCategories(categories *api.UpdateCategoriesCommand) {
 
 	s.categoryEditWidget.SetCategories(s.categories)
 	s.categoryKeyManager.Reset(categories.Categories)
-	//s.topActionView.UpdateCategories(categories)
 	s.sender.SendToTopic(api.ImageRequestCurrent)
-}
-
-func (s *Ui) UpdateCurrentImage() {
-	//s.imageView.UpdateCurrentImage()
 }
 
 func (s *Ui) SetImages(command *api.SetImagesCommand) {
@@ -628,8 +569,6 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 }
 
 func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
-	s.UpdateCurrentImage()
-
 	s.currentImageTexture.ChangeImage(
 		command.Image.ImageFile(),
 		float32(command.Image.ImageData().Bounds().Dx()),
@@ -656,18 +595,6 @@ func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 		logger.Debug.Printf("Marked image category: '%s'", category.Name())
 		s.currentImageCategories[category.Id()] = true
 	}
-
-	//for _, button := range s.topActionView.GetCategoryButtons() {
-	//	button.SetStatus(apitype.UNCATEGORIZE)
-	//}
-	//
-	//for _, category := range command.Categories {
-	//	logger.Debug.Printf("Marked image category: '%s'", category.Name())
-	//
-	//	if button, ok := s.topActionView.GetCategoryButton(category.Id()); ok {
-	//		button.SetStatus(apitype.CATEGORIZE)
-	//	}
-	//}
 }
 
 func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
@@ -701,37 +628,7 @@ func (s *Ui) CastFindDone() {
 	s.deviceModal.inProgress = true
 }
 
-func (s *Ui) ShowEditCategoriesModal() {
-}
-
-func (s *Ui) OpenFolderChooser(numOfButtons int) {
-}
-
-func (s *Ui) EnterFullScreenNoDistraction() {
-	s.fullscreen = true
-	//s.imageView.SetNoDistractionMode(true)
-	//s.topActionView.SetNoDistractionMode(true)
-	//s.bottomActionView.SetNoDistractionMode(true)
-}
-
-func (s *Ui) EnterFullScreen() {
-	s.fullscreen = true
-	//s.imageView.SetNoDistractionMode(false)
-	//s.topActionView.SetNoDistractionMode(false)
-	//s.bottomActionView.SetNoDistractionMode(false)
-	//s.bottomActionView.SetShowFullscreenButton(false)
-}
-
-func (s *Ui) ExitFullScreen() {
-	s.fullscreen = false
-	//s.imageView.SetNoDistractionMode(false)
-	//s.topActionView.SetNoDistractionMode(false)
-	//s.bottomActionView.SetNoDistractionMode(false)
-	//s.bottomActionView.SetShowFullscreenButton(true)
-}
-
 func (s *Ui) FindDevices() {
-	// s.castModal.StartSearch(s.application.GetActiveWindow())
 	s.deviceModal.devices = []string{}
 	s.deviceModal.inProgress = true
 	s.deviceModal.open = true
@@ -741,4 +638,27 @@ func (s *Ui) FindDevices() {
 func (s *Ui) ShowError(command *api.ErrorCommand) {
 	logger.Error.Printf("Error: %s", command.Message)
 	giu.Msgbox("Error", command.Message)
+}
+
+func (s *Ui) searchSimilar() {
+	s.similarImagesShown = true
+	s.sender.SendToTopic(api.SimilarRequestSearch)
+}
+
+func (s *Ui) openEditCategoriesView() {
+	s.categoryEditWidget.SetCategories(s.categories)
+	s.showCategoryEditModal = true
+}
+
+func (s *Ui) openCastToDeviceView() {
+	s.deviceModal.open = true
+	s.FindDevices()
+}
+
+func (s *Ui) applyCategories() {
+	s.applyChangesModal.open = true
+}
+
+func (s *Ui) changeDirectory() {
+	s.Init("")
 }
