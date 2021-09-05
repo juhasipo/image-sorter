@@ -38,11 +38,13 @@ func NewImageCopy(targetDir string, targetFile string, quality int) apitype.Imag
 }
 func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
 	imageFile := operationGroup.ImageFile()
-	imageData := operationGroup.ImageData()
-	exifData := operationGroup.ExifData()
 	logger.Debug.Printf("Copy %s", imageFile.Path())
 
 	if operationGroup.Modified() {
+		logger.Debug.Printf("Image %s has been modifier. Re-encoding the image...", imageFile.Path())
+		imageData := operationGroup.ImageData()
+		exifData := operationGroup.ExifData()
+
 		encodingOptions := &jpeg.Options{
 			Quality: s.quality,
 		}
@@ -64,7 +66,7 @@ func (s *ImageCopy) Apply(operationGroup *apitype.ImageOperationGroup) (image.Im
 		}
 	} else {
 		logger.Debug.Printf("Copy '%s' as is", imageFile.Path())
-		return imageData, exifData, util.CopyFile(imageFile.Directory(), imageFile.FileName(), s.dstPath, s.dstFile)
+		return nil, nil, util.CopyFile(imageFile.Directory(), imageFile.FileName(), s.dstPath, s.dstFile)
 	}
 }
 

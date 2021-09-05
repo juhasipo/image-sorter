@@ -13,9 +13,12 @@ type ImageOperation interface {
 type ImageOperationGroup struct {
 	imageFile       *ImageFile
 	exifData        *ExifData
-	img             image.Image
+	imageLoader     func()
+	imageData       image.Image
 	hasBeenModified bool
 	operations      []ImageOperation
+	loadImage       func(ImageId) (image.Image, error)
+	loadExifData    func(*ImageFile) (*ExifData, error)
 }
 
 func (s *ImageOperationGroup) ImageFile() *ImageFile {
@@ -23,10 +26,16 @@ func (s *ImageOperationGroup) ImageFile() *ImageFile {
 }
 
 func (s *ImageOperationGroup) ImageData() image.Image {
-	return s.img
+	if s.imageData == nil {
+		s.imageData, _ = s.loadImage(s.imageFile.Id())
+	}
+	return s.imageData
 }
 
 func (s *ImageOperationGroup) ExifData() *ExifData {
+	if s.exifData == nil {
+		s.exifData, _ = s.loadExifData(s.imageFile)
+	}
 	return s.exifData
 }
 
@@ -38,11 +47,11 @@ func (s *ImageOperationGroup) Operations() []ImageOperation {
 	return s.operations
 }
 
-func NewImageOperationGroup(imageFile *ImageFile, img image.Image, exifData *ExifData, operations []ImageOperation) *ImageOperationGroup {
+func NewImageOperationGroup(imageFile *ImageFile, loadImage func(ImageId) (image.Image, error), data func(*ImageFile) (*ExifData, error), operations []ImageOperation) *ImageOperationGroup {
 	return &ImageOperationGroup{
 		imageFile:       imageFile,
-		img:             img,
-		exifData:        exifData,
+		loadImage:       loadImage,
+		loadExifData:    data,
 		hasBeenModified: false,
 		operations:      operations,
 	}
@@ -56,9 +65,22 @@ func (s *ImageOperationGroup) Apply() error {
 	for _, operation := range s.operations {
 		logger.Debug.Printf("Applying: '%s'", operation)
 		var err error
-		if s.img, s.exifData, err = operation.Apply(s); err != nil {
+		imgData, exifData, err := operation.Apply(s)
+		if err != nil {
 			return err
 		}
+
+		if imgData != nil {
+			s.imageData = imgData
+			s.SetModified()
+		}
+
+		if exifData != nil {
+			s.exifData = exifData
+			s.SetModified()
+		}
 	}
+	s.imageData = nil
+	s.exifData = nil
 	return nil
 }

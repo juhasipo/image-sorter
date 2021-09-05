@@ -16,10 +16,8 @@ func NewImageRemove() apitype.ImageOperation {
 }
 func (s *ImageRemove) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
 	imageFile := operationGroup.ImageFile()
-	imageData := operationGroup.ImageData()
-	exifData := operationGroup.ExifData()
 	logger.Debug.Printf("Remove %s", imageFile.Path())
-	return imageData, exifData, util.RemoveFile(imageFile.Path())
+	return nil, nil, util.RemoveFile(imageFile.Path())
 }
 func (s *ImageRemove) String() string {
 	return "Remove"

@@ -127,7 +127,8 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 func (s *Service) ResolveFileOperations(
 	imageCategory map[apitype.ImageId]map[apitype.CategoryId]*api.CategorizedImage,
 	options *api.PersistCategorizationCommand,
-	progressCallback func(current int, total int)) []*apitype.ImageOperationGroup {
+	progressCallback func(current int, total int),
+) []*apitype.ImageOperationGroup {
 	var operationGroups []*apitype.ImageOperationGroup
 
 	i := 0
@@ -148,7 +149,8 @@ func (s *Service) ResolveFileOperations(
 func (s *Service) ResolveOperationsForGroup(
 	imageFile *apitype.ImageFile,
 	categoryEntries map[apitype.CategoryId]*api.CategorizedImage,
-	options *api.PersistCategorizationCommand) (*apitype.ImageOperationGroup, error) {
+	options *api.PersistCategorizationCommand,
+) (*apitype.ImageOperationGroup, error) {
 	dir, file := imageFile.Directory(), imageFile.FileName()
 
 	filters := s.filterService.GetFilters(imageFile.Id(), options)
@@ -167,15 +169,7 @@ func (s *Service) ResolveOperationsForGroup(
 		imageOperations = append(imageOperations, filter.NewImageRemove())
 	}
 
-	if fullImage, err := s.imageLoader.LoadImage(imageFile.Id()); err != nil {
-		s.sender.SendError("Could not load image"+imageFile.Path(), err)
-		return nil, err
-	} else if exifData, err := s.imageLoader.LoadExifData(imageFile); err != nil {
-		s.sender.SendError("Could not load exif data", err)
-		return nil, err
-	} else {
-		return apitype.NewImageOperationGroup(imageFile, fullImage, exifData, imageOperations), nil
-	}
+	return apitype.NewImageOperationGroup(imageFile, s.imageLoader.LoadImage, s.imageLoader.LoadExifData, imageOperations), nil
 }
 
 func (s *Service) Close() {

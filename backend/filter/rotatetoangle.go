@@ -19,17 +19,17 @@ func NewImageRotateToAngle(angle int) apitype.ImageOperation {
 	}
 }
 func (s *ImageRotateToAngle) Apply(operationGroup *apitype.ImageOperationGroup) (image.Image, *apitype.ExifData, error) {
-	imageFile := operationGroup.ImageFile()
-	imageData := operationGroup.ImageData()
-	exifData := operationGroup.ExifData()
 	if s.rotation != 0.0 {
+		imageFile := operationGroup.ImageFile()
+		imageData := operationGroup.ImageData()
+		exifData := operationGroup.ExifData()
 		logger.Debug.Printf("Rotate %s to andle %.0f", imageFile.Path(), s.rotation)
 		rotatedImage := imaging.Rotate(imageData, s.rotation, image.Black)
 		exifData.ResetExifRotate()
 		operationGroup.SetModified()
 		return rotatedImage, exifData, nil
 	} else {
-		return imageData, exifData, nil
+		return nil, nil, nil
 	}
 
 }
