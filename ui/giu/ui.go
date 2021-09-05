@@ -29,7 +29,8 @@ type Ui struct {
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
-	currentProgress        progress
+	currentProgress        progressModal
+	deviceModal            deviceModal
 	showCategoryEditModal  bool
 	categoryEditWidget     *widget.CategoryEditWidget
 
@@ -40,12 +41,21 @@ type Ui struct {
 	api.Gui
 }
 
-type progress struct {
+type progressModal struct {
 	open      bool
 	label     string
 	position  int
 	max       int
 	canCancel bool
+}
+
+type deviceModal struct {
+	open           bool
+	label          string
+	inProgress     bool
+	devices        []string
+	selectedIndex  int
+	showBackground bool
 }
 
 const (
@@ -66,11 +76,18 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		sender:              broker,
 		rootPath:            params.RootPath(),
 		currentImageTexture: widget.NewEmptyTexturedImage(imageCache),
-		currentProgress: progress{
+		currentProgress: progressModal{
 			open:     false,
 			label:    "",
 			position: 1,
 			max:      1,
+		},
+		deviceModal: deviceModal{
+			open:           false,
+			label:          "Cast to ChromeCast",
+			inProgress:     false,
+			devices:        []string{},
+			showBackground: true,
 		},
 		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, true),
 		previousImagesList: widget.HorizontalImageList(onImageSelected, false, false),
@@ -172,7 +189,8 @@ func (s *Ui) Run() {
 			categories = append(categories, categorizeButton)
 		}
 
-		modal := giu.PopupModal("Progress").
+		var progressModalWidget giu.Widget
+		progressModalWidget = giu.PopupModal("Progress").
 			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoTitleBar).
 			Layout(
 				giu.Label(s.currentProgress.label),
@@ -188,6 +206,47 @@ func (s *Ui) Run() {
 				giu.Custom(func() {
 					if !s.currentProgress.open {
 						logger.Trace.Printf("Hide progress modal")
+						giu.CloseCurrentPopup()
+					}
+				}))
+
+		var deviceModalWidget giu.Widget
+		deviceModalWidget = giu.PopupModal("Device").
+			Flags(giu.WindowFlagsAlwaysAutoResize|giu.WindowFlagsNoDecoration).
+			Layout(
+				giu.Label(s.deviceModal.label),
+				giu.Custom(func() {
+					if s.deviceModal.inProgress {
+						giu.ProgressIndicator("Searching...", 10, 10, 5).Build()
+					}
+				}),
+				giu.ListBox("Cast Devices", s.deviceModal.devices).
+					Size(300, 200).
+					OnChange(func(selectedIndex int) {
+						s.deviceModal.selectedIndex = selectedIndex
+					}),
+				giu.Checkbox("Show background", &s.deviceModal.showBackground),
+				giu.Row(
+					giu.Button("OK##SelectDevice").
+						Disabled(len(s.deviceModal.devices) == 0).
+						OnClick(func() {
+							s.sender.SendCommandToTopic(api.CastDeviceSelect, &api.SelectDeviceCommand{
+								Name:           s.deviceModal.devices[s.deviceModal.selectedIndex],
+								ShowBackground: s.deviceModal.showBackground,
+							})
+							s.deviceModal.open = false
+							s.deviceModal.inProgress = false
+						}),
+					giu.Button("Cancel##CancelDevice").
+						OnClick(func() {
+							s.sender.SendToTopic(api.SimilarRequestStop)
+							s.deviceModal.open = false
+							s.deviceModal.inProgress = false
+						}),
+				),
+				giu.Custom(func() {
+					if !s.deviceModal.open {
+						logger.Trace.Printf("Hide device list modal")
 						giu.CloseCurrentPopup()
 					}
 				}))
@@ -239,7 +298,8 @@ func (s *Ui) Run() {
 				giu.Row(
 					widget.CategoryButtonView(categories),
 				),
-				modal,
+				progressModalWidget,
+				deviceModalWidget,
 				giu.Custom(func() {
 					if s.currentProgress.open {
 						logger.Trace.Printf("Show progress modal")
@@ -286,6 +346,10 @@ func (s *Ui) Run() {
 					}),
 					giu.Button("Search similar").OnClick(func() {
 						s.sender.SendToTopic(api.SimilarRequestSearch)
+					}),
+					giu.Button("Cast").OnClick(func() {
+						giu.OpenPopup("Device")
+						s.FindDevices()
 					}),
 					giu.Button("Open directory").OnClick(func() {
 						s.Init("")
@@ -525,17 +589,15 @@ func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
 }
 
 func (s *Ui) DeviceFound(command *api.DeviceFoundCommand) {
-	//s.castModal.AddDevice(command.DeviceName)
+	s.deviceModal.devices = append(s.deviceModal.devices, command.DeviceName)
 }
 
 func (s *Ui) CastReady() {
 	s.sendCurrentImageChangedEvent()
 }
+
 func (s *Ui) CastFindDone() {
-	//if len(s.castModal.Devices()) == 0 {
-	//	s.castModal.SetNoDevices()
-	//}
-	//s.castModal.SearchDone()
+	s.deviceModal.inProgress = true
 }
 
 func (s *Ui) ShowEditCategoriesModal() {
@@ -569,6 +631,9 @@ func (s *Ui) ExitFullScreen() {
 
 func (s *Ui) FindDevices() {
 	// s.castModal.StartSearch(s.application.GetActiveWindow())
+	s.deviceModal.devices = []string{}
+	s.deviceModal.inProgress = true
+	s.deviceModal.open = true
 	s.sender.SendToTopic(api.CastDeviceSearch)
 }
 
