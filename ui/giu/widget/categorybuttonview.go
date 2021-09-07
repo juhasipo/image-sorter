@@ -18,11 +18,13 @@ func CategoryButtonView(buttons []*CategoryButtonWidget) *CategoryButtonViewWidg
 	}
 }
 
+const approximateButtonWidth = categoryPrimaryButtonWidth + categoryArrowButtonWidth + 8
+
 func (s *CategoryButtonViewWidget) Build() {
 	giu.Custom(func() {
 		regionWidth, _ := giu.GetAvailableRegion()
 
-		approximateButtonsWidth := float32(len(s.buttons) * 160.0)
+		approximateButtonsWidth := float32(len(s.buttons) * approximateButtonWidth)
 
 		offsetWidth := (regionWidth - approximateButtonsWidth) / 2.0
 		if offsetWidth < 0 {

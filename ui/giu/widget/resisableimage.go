@@ -65,6 +65,7 @@ func (s *ResizableImageWidget) Build() {
 
 	giu.Column(
 		dummyV,
-		giu.Row(dummyH, &s.ImageWidget),
+		giu.Row(dummyH, &s.ImageWidget, dummyH),
+		dummyV,
 	).Build()
 }

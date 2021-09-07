@@ -227,9 +227,9 @@ func (s *Ui) Run() {
 				giu.Custom(func() {
 					width, _ := giu.GetAvailableRegion()
 					height := float32(60)
-					buttonWidth := float32(15)
+					buttonWidth := float32(30)
 					centerPieceWidth := float32(120)
-					listWidth := (width - buttonWidth*2 - buttonWidth*2*2 - centerPieceWidth) / 2
+					listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
 
 					widthInNumOfImage := int(listWidth/60) + 1
 
@@ -241,21 +241,11 @@ func (s *Ui) Run() {
 					s.widthInNumOfImage = widthInNumOfImage
 
 					giu.PushItemSpacing(0, 0)
-					previousImageButton := giu.Button("<").
-						OnClick(func() {
-							s.sender.SendToTopic(api.ImageRequestPrevious)
-						}).
-						Size(buttonWidth, height)
 					firstImageButton := giu.Button("<<").
 						OnClick(func() {
 							s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
 								Index: 0,
 							})
-						}).
-						Size(buttonWidth*2, height)
-					nextImageButton := giu.Button(">").
-						OnClick(func() {
-							s.sender.SendToTopic(api.ImageRequestNext)
 						}).
 						Size(buttonWidth, height)
 					lastImageButton := giu.Button(">>").
@@ -264,13 +254,13 @@ func (s *Ui) Run() {
 								Index: -1,
 							})
 						}).
-						Size(buttonWidth*2, height)
+						Size(buttonWidth, height)
 					giu.Row(
 						firstImageButton,
 						s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
-						previousImageButton,
-						widget.ResizableImage(s.currentImageTexture).Size(120, height),
-						nextImageButton,
+						giu.Row(
+							widget.ResizableImage(s.currentImageTexture).Size(centerPieceWidth, height),
+						),
 						s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
 						lastImageButton,
 					).Build()
