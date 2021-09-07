@@ -81,8 +81,13 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFa
 		}
 	}
 
-	s.lastWidth = int(width * zoomFactor)
-	s.lastHeight = int(height * zoomFactor)
+	if zoomFactor >= 0 {
+		s.lastWidth = int(s.Width)
+		s.lastHeight = int(s.Height)
+	} else {
+		s.lastWidth = int(width)
+		s.lastHeight = int(height)
+	}
 
 	scaledImage, _ := s.imageCache.GetScaled(s.Image.Id(), apitype.SizeOf(s.lastWidth, s.lastHeight))
 	if scaledImage == nil {

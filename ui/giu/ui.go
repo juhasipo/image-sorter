@@ -48,7 +48,7 @@ type Ui struct {
 
 const defaultZoomLevel = 5
 
-var zoomLevels = []float32{0.01, 0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100}
+var zoomLevels = []float32{0.01, 0.1, 0.25, 0.5, 0.75, -1, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100}
 
 type progressModal struct {
 	open      bool
@@ -259,7 +259,8 @@ func (s *Ui) Run() {
 						firstImageButton,
 						s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
 						giu.Row(
-							widget.ResizableImage(s.currentImageTexture).Size(centerPieceWidth, height),
+							widget.ResizableImage(s.currentImageTexture).
+								Size(centerPieceWidth, height),
 						),
 						s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
 						lastImageButton,
@@ -317,7 +318,10 @@ func (s *Ui) Run() {
 									Size(width, h).
 									Border(true).
 									Flags(giu.WindowFlagsHorizontalScrollbar).
-									Layout(widget.ResizableImage(s.currentImageTexture).ZoomFactor(s.getZoomFactor())),
+									Layout(widget.ResizableImage(s.currentImageTexture).
+										ZoomFactor(s.getZoomFactor()).
+										ImageSize(s.currentImageTexture.Width, s.currentImageTexture.Height),
+									),
 								nButton,
 							),
 						).Build()
@@ -664,7 +668,12 @@ func (s *Ui) getZoomFactor() float32 {
 }
 
 func (s *Ui) getZoomPercent() string {
-	return fmt.Sprintf("%d %%", int(s.getZoomFactor()*100))
+	zoomFactor := s.getZoomFactor()
+	if zoomFactor < 0.0 {
+		return "Fit"
+	} else {
+		return fmt.Sprintf("%d %%", int(zoomFactor*100))
+	}
 }
 
 func (s *Ui) searchSimilar() {

@@ -5,9 +5,10 @@ import (
 )
 
 type ResizableImageWidget struct {
-	texturedImage       *TexturedImage
-	maxHeight, maxWidth float32
-	zoomFactor          float32
+	texturedImage           *TexturedImage
+	maxHeight, maxWidth     float32
+	zoomFactor              float32
+	imageWidth, imageHeight float32
 	giu.ImageWidget
 }
 
@@ -16,7 +17,7 @@ func ResizableImage(image *TexturedImage) *ResizableImageWidget {
 		texturedImage: image,
 		maxHeight:     0,
 		maxWidth:      0,
-		zoomFactor:    1,
+		zoomFactor:    -1,
 		ImageWidget:   *giu.Image(image.Texture),
 	}
 }
@@ -28,6 +29,12 @@ func (s *ResizableImageWidget) Size(width float32, height float32) *ResizableIma
 	return s
 }
 
+func (s *ResizableImageWidget) ImageSize(width float32, height float32) *ResizableImageWidget {
+	s.imageWidth = width
+	s.imageHeight = height
+	return s
+}
+
 func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32) *ResizableImageWidget {
 	s.zoomFactor = zoomFactor
 	return s
@@ -36,17 +43,28 @@ func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32) *ResizableImageWid
 func (s *ResizableImageWidget) Build() {
 	maxW, maxH := giu.GetAvailableRegion()
 
-	if s.maxWidth != 0 && s.maxHeight != 0 {
-		maxW = s.maxWidth
-		maxH = s.maxHeight
-	}
+	var newW float32
+	var newH float32
+	if s.zoomFactor < 0.0 { // Fit to size => Display area size affects the image size
+		// Check if area size is limited
+		// If yes, then those should be used for offset calculation
+		// and the image size calculation
+		if s.maxWidth != 0 && s.maxHeight != 0 {
+			maxW = s.maxWidth
+			maxH = s.maxHeight
+		}
 
-	newW := maxW * s.zoomFactor
-	newH := newW / s.texturedImage.Ratio
+		newW = maxW
+		newH = newW / s.texturedImage.Ratio
 
-	if newH > maxH {
-		newW = maxH * s.texturedImage.Ratio * s.zoomFactor
-		newH = maxH * s.zoomFactor
+		if newH > maxH {
+			newW = maxH * s.texturedImage.Ratio
+			newH = maxH
+		}
+	} else { // Show zoomed image => Display area size doesn't affect the image size
+		// Image size should be provided for the zoom to work
+		newW = s.imageWidth * s.zoomFactor
+		newH = newW / s.texturedImage.Ratio
 	}
 
 	offsetW := (maxW - newW) / 2.0
