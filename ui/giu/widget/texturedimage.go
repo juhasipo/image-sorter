@@ -75,18 +75,36 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFa
 		return nil
 	}
 
+	// First check what size is actually required
+	var requiredW float32
+	var requiredH float32
+	if zoomFactor < 0 {
+		// If zoom to fit, then just load what was asked
+		requiredW = width
+		requiredH = height
+	} else if zoomFactor < 1.0 {
+		// If zoomed out, load using the image size and zoom factor
+		requiredW = s.Width * zoomFactor
+		requiredH = s.Height * zoomFactor
+	} else {
+		// If zoomed in, just load the max size image
+		requiredW = s.Width
+		requiredH = s.Height
+	}
+
 	if s.newImageLoaded {
-		if s.Texture != nil && int(width) == s.lastWidth && int(height) == s.lastHeight {
+		// Only load new image if the image grows in size
+		// No need to optimize image usage in this case
+		if s.Texture != nil && int(requiredW) <= s.lastWidth && int(requiredH) <= s.lastHeight {
 			return s.Texture
 		}
 	}
 
-	if zoomFactor >= 0 {
-		s.lastWidth = int(s.Width)
-		s.lastHeight = int(s.Height)
-	} else {
-		s.lastWidth = int(width)
-		s.lastHeight = int(height)
+	s.lastWidth = int(requiredW)
+	s.lastHeight = int(requiredH)
+
+	if logger.IsLogLevel(logger.TRACE) {
+		logger.Trace.Printf("Load imageId=%d with new size (%d x %d)", s.Image.Id(), s.lastWidth, s.lastHeight)
 	}
 
 	scaledImage, _ := s.imageCache.GetScaled(s.Image.Id(), apitype.SizeOf(s.lastWidth, s.lastHeight))
