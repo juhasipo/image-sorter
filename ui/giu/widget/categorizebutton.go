@@ -93,7 +93,7 @@ func (s *CategoryButtonWidget) Build() {
 			}).Size(menuButtonWidth, menuButtonHeight),
 		)
 
-	primaryButton := giu.Button(s.name).
+	primaryButton := giu.Button(s.name+" ("+s.shortcut+")").
 		Size(categoryPrimaryButtonWidth, categoryPrimaryButtonHeight).
 		OnClick(func() {
 			stayOnImage := giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
