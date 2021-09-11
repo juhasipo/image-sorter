@@ -16,9 +16,12 @@ import (
 var options = &jpeg.DecoderOptions{}
 
 func NewImageLoader(imageStore *database.ImageStore) api.ImageLoader {
-	return &LibJPEGImageLoader{
+	logger.Debug.Printf("Initializing image loader...")
+	jpegLoader := &LibJPEGImageLoader{
 		imageStore: imageStore,
 	}
+	logger.Debug.Printf("Image loader initialized")
+	return jpegLoader
 }
 
 type LibJPEGImageLoader struct {

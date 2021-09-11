@@ -6,6 +6,7 @@ import (
 	"sync"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/common/logger"
 )
 
 type CacheContainer struct {
@@ -31,11 +32,14 @@ func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile) {
 }
 
 func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
-	return &DefaultImageStore{
+	logger.Debug.Printf("Initialize image cache...")
+	imageCache := &DefaultImageStore{
 		imageCache:  map[apitype.ImageId]*Instance{},
 		mux:         sync.Mutex{},
 		imageLoader: imageLoader,
 	}
+	logger.Debug.Printf("Image cache initialized")
+	return imageCache
 }
 
 func (s *DefaultImageStore) GetFull(imageId apitype.ImageId) (image.Image, error) {

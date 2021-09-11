@@ -43,11 +43,13 @@ func initAndRun(params *common.Params) {
 	defer services.Close()
 
 	// UI
+	logger.Debug.Printf("Initialize GUI")
 	gui := giuUi.NewUi(params, brokers.Broker, imageCache)
 
 	connectUiAndServices(params, stores, services, imageCache, brokers, gui)
 
-	// Everything has been initialized so it is time to start the UI
+	// Everything has been initialized, so it's time to start the UI
+	logger.Debug.Printf("Backend initialized, run GUI")
 	gui.Run()
 }
 
@@ -107,14 +109,17 @@ type Brokers struct {
 }
 
 func initializeEventBrokers() *Brokers {
+	logger.Debug.Printf("Initialize event brokers...")
 	brokers := &Brokers{
 		Broker:        event.InitBus(EventBusQueueSize),
 		DevNullBroker: event.InitDevNullBus(),
 	}
+	logger.Debug.Printf("Event brokers initialized")
 	return brokers
 }
 
 func connectUiAndServices(params *common.Params, stores *Stores, services *Services, imageCache api.ImageStore, brokers *Brokers, gui api.Gui) {
+	logger.Debug.Printf("Connecting events to handlers...")
 	// Initialize startup procedure run when the directory has been chosen
 	handleDirectoryChanged := func(directory string) {
 		logger.Info.Printf("Directory changed to '%s'", directory)
@@ -191,9 +196,12 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 
 	// Category -> UI
 	brokers.Broker.Subscribe(api.CategoriesUpdated, gui.UpdateCategories)
+
+	logger.Debug.Printf("Events connected to handlers")
 }
 
 func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
+	logger.Debug.Printf("Initialize services...")
 	filterService := filter.NewFilterService()
 	progressReporter := api.NewSenderProgressReporter(brokers.Broker)
 	imageLibrary := library.NewImageLibrary(imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore, progressReporter)
@@ -207,6 +215,7 @@ func initializeServices(params *common.Params, stores *Stores, brokers *Brokers,
 		ImageCategoryService:   imagecategory.NewImageCategoryService(brokers.Broker, imageService, filterService, imageLoader, stores.ImageCategoryStore),
 		CasterInstance:         caster.NewCaster(params, brokers.Broker, imageCache),
 	}
+	logger.Debug.Printf("Services initialized")
 	return services
 }
 
@@ -215,6 +224,7 @@ func initializeServices(params *common.Params, stores *Stores, brokers *Brokers,
 // right away. workDirDb will be initialized once the work dir
 // is known.
 func initializeStores() *Stores {
+	logger.Debug.Printf("Initialize stores and databases...")
 	homeDirDb := database.NewDatabase()
 	if currentUser, err := user.Current(); err != nil {
 		logger.Error.Fatal("Cannot load user")
@@ -239,5 +249,6 @@ func initializeStores() *Stores {
 		HomeDirDb:            homeDirDb,
 		WorkDirDb:            workDirDb,
 	}
+	logger.Debug.Printf("Stores and databases initialized")
 	return stores
 }
