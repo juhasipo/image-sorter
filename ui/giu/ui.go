@@ -389,11 +389,14 @@ func getProgressModal(id string, sender api.Sender, modal *progressModal) giu.Wi
 			giu.Row(
 				giu.ProgressBar(float32(modal.position)/float32(modal.max)).
 					Overlay(fmt.Sprintf("%d/%d", modal.position, modal.max)),
-				giu.Button("Cancel").
-					Disabled(!modal.canCancel).
-					OnClick(func() {
-						sender.SendToTopic(api.SimilarRequestStop)
-					}),
+				giu.Condition(modal.canCancel,
+					giu.Layout{
+						giu.Button("Cancel").
+							OnClick(func() {
+								sender.SendToTopic(api.SimilarRequestStop)
+							}),
+					},
+					nil),
 			),
 			giu.Custom(func() {
 				if !modal.open {
