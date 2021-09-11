@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/database"
 )
@@ -35,6 +36,20 @@ func (s *StubImageFileConverter) GetImageFileStats(imageFile *apitype.ImageFile)
 	return &StubFileInfo{modTime: time.Now()}, nil
 }
 
+type StubProgressReporter struct {
+	Current int
+	Total   int
+	api.ProgressReporter
+}
+
+func (s *StubProgressReporter) Update(name string, current int, total int, canCancel bool, modal bool) {
+	s.Current = current
+	s.Total = total
+}
+
+func (s *StubProgressReporter) Error(error string, err error) {
+}
+
 type StubFileInfo struct {
 	os.FileInfo
 
@@ -62,10 +77,22 @@ func TestDefaultImageStore_Initialize(t *testing.T) {
 	}
 	imageStore.AddImages(imageFiles)
 	storedImages, _ := imageStore.GetAllImages()
-	cache.Initialize(storedImages)
+	reporter := &StubProgressReporter{}
+	cache.Initialize(storedImages, reporter)
+
+	waitForCacheToFill(reporter)
 
 	a.Equal(uint64(60000), cache.GetByteSize())
 	a.InDelta(0.06, cache.GetSizeInMB(), 0.1)
+}
+
+func waitForCacheToFill(reporter *StubProgressReporter) {
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if reporter.Current == reporter.Total || time.Now().After(deadline) {
+			break
+		}
+	}
 }
 
 func TestDefaultImageStore_Purge(t *testing.T) {
@@ -88,7 +115,10 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 	imageFile0 := storedImages[0]
 	imageFile1 := storedImages[1]
 
-	cache.Initialize(storedImages)
+	reporter := &StubProgressReporter{}
+	cache.Initialize(storedImages, reporter)
+
+	waitForCacheToFill(reporter)
 
 	a.Equal(uint64(60000), cache.GetByteSize())
 

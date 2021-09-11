@@ -17,7 +17,7 @@ func (s *ImageExifRotate) Apply(operationGroup *apitype.ImageOperationGroup) (im
 	imageFile := operationGroup.ImageFile()
 	rotation, flipped := operationGroup.ImageFile().Rotation()
 
-	logger.Debug.Printf("Exif rotate %s: angle=%f, flipped=%s", imageFile.Path(), rotation, flipped)
+	logger.Debug.Printf("Exif rotate %s: angle=%f, flipped=%t", imageFile.Path(), rotation, flipped)
 
 	if rotation != 0.0 || flipped {
 		logger.Debug.Printf("Image %s needs to be rotated", imageFile.Path())
