@@ -4,6 +4,7 @@ import (
 	"image"
 	"runtime"
 	"sync"
+	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
@@ -25,10 +26,27 @@ func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.imageCache = map[apitype.ImageId]*Instance{}
-	for _, imageFile := range imageFiles {
+	go func() {
+		numOfImages := len(imageFiles)
+		logger.Debug.Printf("Start loading %d image instances in cache...", numOfImages)
+		startTime := time.Now()
+		for _, imageFile := range imageFiles {
+			s.loadImageInstance(imageFile)
+		}
+		endTime := time.Now()
+		totalTime := endTime.Sub(startTime)
+		avg := totalTime / time.Duration(numOfImages)
+		logger.Debug.Printf("All %d instances loaded in cache in %s (avg. %s)", numOfImages, totalTime.String(), avg.String())
+	}()
+	runtime.GC()
+}
+
+func (s *DefaultImageStore) loadImageInstance(imageFile *apitype.ImageFile) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	if _, ok := s.imageCache[imageFile.Id()]; !ok {
 		s.imageCache[imageFile.Id()] = NewInstance(imageFile.Id(), s.imageLoader)
 	}
-	runtime.GC()
 }
 
 func NewImageCache(imageLoader api.ImageLoader) api.ImageStore {
