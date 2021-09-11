@@ -18,7 +18,7 @@ type DefaultImageStore struct {
 	api.ImageStore
 }
 
-func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile) {
+func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile, reporter api.ProgressReporter) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.imageCache = map[apitype.ImageId]*Instance{}
@@ -26,8 +26,10 @@ func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile) {
 		numOfImages := len(imageFiles)
 		logger.Debug.Printf("Start loading %d image instances in cache...", numOfImages)
 		startTime := time.Now()
-		for _, imageFile := range imageFiles {
+		reporter.Update("Image cache", 0, numOfImages, false, false)
+		for i, imageFile := range imageFiles {
 			s.loadImageInstance(imageFile)
+			reporter.Update("Image cache", i+1, numOfImages, false, false)
 		}
 		endTime := time.Now()
 		totalTime := endTime.Sub(startTime)

@@ -17,6 +17,7 @@ type UpdateProgressCommand struct {
 	Current   int
 	Total     int
 	CanCancel bool
+	Modal     bool
 }
 
 type UpdateCategoriesCommand struct {

@@ -137,7 +137,7 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 			services.ImageService.InitializeFromDirectory(directory)
 
 			if len(services.ImageService.GetImageFiles()) > 0 {
-				imageCache.Initialize(services.ImageService.GetImageFiles())
+				imageCache.Initialize(services.ImageService.GetImageFiles(), api.NewSenderProgressReporter(brokers.Broker))
 			}
 
 			services.ImageCategoryService.InitializeForDirectory(directory)

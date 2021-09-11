@@ -30,7 +30,8 @@ type Ui struct {
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
-	currentProgress        progressModal
+	progressModal          progressModal
+	progressBackground     progressModal
 	deviceModal            deviceModal
 	applyChangesModal      applyChangesModal
 	showCategoryEditModal  bool
@@ -93,7 +94,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		sender:              broker,
 		rootPath:            params.RootPath(),
 		currentImageTexture: widget.NewEmptyTexturedImage(imageCache),
-		currentProgress: progressModal{
+		progressModal: progressModal{
 			open:     false,
 			label:    "",
 			position: 1,
@@ -223,6 +224,9 @@ func (s *Ui) Run() {
 			s.categoryEditWidget.HandleKeys()
 		} else {
 			bottomHeight := float32(30.0)
+			if s.progressBackground.open {
+				bottomHeight += float32(30.0)
+			}
 			mainWindow.Layout(
 				giu.Custom(func() {
 					width, _ := giu.GetAvailableRegion()
@@ -271,12 +275,12 @@ func (s *Ui) Run() {
 					widget.CategoryButtonView(categories),
 				),
 				// Modals
-				getProgressModal("ProgressModal", s.sender, &s.currentProgress),
+				getProgressModal("ProgressModal", s.sender, &s.progressModal),
 				getDeviceModal("DeviceModal", s.sender, &s.deviceModal),
 				getApplyChangesModal("ApplyCategoriesModal", s.sender, &s.applyChangesModal),
 				giu.Custom(func() {
 					// Process modal states
-					if s.currentProgress.open {
+					if s.progressModal.open {
 						giu.OpenPopup("ProgressModal")
 					}
 					if s.deviceModal.open {
@@ -337,6 +341,13 @@ func (s *Ui) Run() {
 					),
 				},
 					nil),
+				giu.Condition(s.progressBackground.open, giu.Layout{
+					giu.Row(
+						giu.Label("Caching images..."),
+						giu.ProgressBar(float32(s.progressBackground.position)/float32(s.progressBackground.max)).
+							Overlay(fmt.Sprintf("%d/%d", s.progressBackground.position, s.progressBackground.max)),
+					),
+				}, nil),
 				giu.Row(
 					giu.Dummy(0, bottomHeight),
 					giu.Button("Edit categories").OnClick(s.openEditCategoriesView),
@@ -354,7 +365,7 @@ func (s *Ui) Run() {
 
 			// Ignore all input when the progress bar is shown
 			// This prevents any unexpected changes
-			if !s.currentProgress.open && !s.deviceModal.open && !s.applyChangesModal.open {
+			if !s.progressModal.open && !s.deviceModal.open && !s.applyChangesModal.open {
 				s.handleKeyPress()
 			}
 		}
@@ -603,20 +614,27 @@ func (s *Ui) SetImageCategory(command *api.CategoriesCommand) {
 }
 
 func (s *Ui) UpdateProgress(command *api.UpdateProgressCommand) {
+	var progress *progressModal
+	if command.Modal {
+		progress = &s.progressModal
+	} else {
+		progress = &s.progressBackground
+	}
+
 	if command.Current == command.Total {
 		logger.Trace.Printf("Progress '%s' completed", command.Name)
-		s.currentProgress.open = false
-		s.currentProgress.label = ""
-		s.currentProgress.position = 1
-		s.currentProgress.max = 1
-		s.currentProgress.canCancel = false
+		progress.open = false
+		progress.label = ""
+		progress.position = 1
+		progress.max = 1
+		progress.canCancel = false
 	} else {
 		logger.Trace.Printf("Update progress '%s' %d/%d", command.Name, command.Current, command.Total)
-		s.currentProgress.open = true
-		s.currentProgress.label = command.Name
-		s.currentProgress.position = command.Current
-		s.currentProgress.max = command.Total
-		s.currentProgress.canCancel = command.CanCancel
+		progress.open = true
+		progress.label = command.Name
+		progress.position = command.Current
+		progress.max = command.Total
+		progress.canCancel = command.CanCancel
 	}
 	giu.Update()
 }

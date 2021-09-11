@@ -63,12 +63,12 @@ func (s *ImageLibrary) GenerateHashes() bool {
 	shouldSendSimilarImages := false
 	images, _ := s.imageStore.GetAllImages()
 	hashes, err := s.hashCalculator.GenerateHashes(images, func(current int, total int) {
-		s.progressReporter.Update("Calculating Hashes...", current, total, true)
+		s.progressReporter.Update("Calculating Hashes...", current, total, true, true)
 	})
 
 	if err == nil {
 		err = s.hashCalculator.BuildSimilarityIndex(hashes, func(current int, total int) {
-			s.progressReporter.Update("Building Similarity Index...", current, total, false)
+			s.progressReporter.Update("Building Similarity Index...", current, total, false, true)
 		})
 	}
 
@@ -77,7 +77,7 @@ func (s *ImageLibrary) GenerateHashes() bool {
 	}
 
 	// Always send 100% status even if cancelled so that the progress bar is hidden
-	s.progressReporter.Update("Done", 0, 0, true)
+	s.progressReporter.Update("Done", 0, 0, true, true)
 
 	// Only send if not cancelled or no error
 	if err == nil {
@@ -100,12 +100,12 @@ func (s *ImageLibrary) GetImagesInCategory(number int, offset int, categoryId ap
 
 func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile) error {
 	latestModifiedImageTimestamp := s.imageStore.GetLatestModifiedImage()
-	s.progressReporter.Update("Loading images...", 0, 2, false)
+	s.progressReporter.Update("Loading images...", 0, 2, false, true)
 	if err := s.addImagesToDb(imageList); err != nil {
 		return err
 	}
 
-	s.progressReporter.Update("Loading Meta Data...", 1, 2, false)
+	s.progressReporter.Update("Loading Meta Data...", 1, 2, false, true)
 
 	if modifiedImages, err := s.imageStore.GetAllImagesModifiedAfter(latestModifiedImageTimestamp); err != nil {
 		logger.Error.Print("cannot read images", err)
@@ -125,7 +125,7 @@ func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile) error {
 		}
 	}
 
-	s.progressReporter.Update("Done", 2, 2, false)
+	s.progressReporter.Update("Done", 2, 2, false, true)
 
 	return nil
 }
