@@ -10,10 +10,6 @@ import (
 	"vincit.fi/image-sorter/common/logger"
 )
 
-type CacheContainer struct {
-	img *image.NRGBA
-}
-
 type DefaultImageStore struct {
 	imageCache  map[apitype.ImageId]*Instance
 	mux         sync.Mutex
