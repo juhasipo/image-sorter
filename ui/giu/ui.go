@@ -51,8 +51,8 @@ type Ui struct {
 
 const defaultZoomLevel = 0
 
-var zoomLevels = []float32{-1, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 10, 15}
-var zoomLevelItems = []string{"Fit", "1 %", "5 %", "10 %", "25 %", "50 %", "75 %", "100 %", "200 %", "300 %", "400 %", "500 %", "1000 %", "1500 %"}
+var zoomLevels = []float32{-1, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.50, 1.75, 2, 3, 4, 5, 10, 15}
+var zoomLevelItems = []string{"Fit", "1 %", "5 %", "10 %", "25 %", "50 %", "75 %", "100 %", "125 %", "150 %", "175 %", "200 %", "300 %", "400 %", "500 %", "1000 %", "1500 %"}
 
 type progressModal struct {
 	open      bool
