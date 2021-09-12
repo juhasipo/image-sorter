@@ -223,54 +223,12 @@ func (s *Ui) Run() {
 				Layout(s.categoryEditWidget)
 			s.categoryEditWidget.HandleKeys()
 		} else {
-			bottomHeight := float32(30.0)
-			if s.progressBackground.open {
-				bottomHeight += float32(30.0)
-			}
+			progressHeight := float32(20.0)
+			actionsHeight := float32(30.0)
+			similarImagesHeight := float32(60.0)
+			paddings := float32(8.0)
 			mainWindow.Layout(
-				giu.Custom(func() {
-					width, _ := giu.GetAvailableRegion()
-					height := float32(60)
-					buttonWidth := float32(30)
-					centerPieceWidth := float32(120)
-					listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
-
-					widthInNumOfImage := int(listWidth/60) + 1
-
-					if widthInNumOfImage != s.widthInNumOfImage {
-						s.sender.SendCommandToTopic(api.ImageListSizeChanged, &api.ImageListCommand{
-							ImageListSize: widthInNumOfImage,
-						})
-					}
-					s.widthInNumOfImage = widthInNumOfImage
-
-					giu.PushItemSpacing(0, 0)
-					firstImageButton := giu.Button("<<").
-						OnClick(func() {
-							s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
-								Index: 0,
-							})
-						}).
-						Size(buttonWidth, height)
-					lastImageButton := giu.Button(">>").
-						OnClick(func() {
-							s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
-								Index: -1,
-							})
-						}).
-						Size(buttonWidth, height)
-					giu.Row(
-						firstImageButton,
-						s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
-						giu.Row(
-							widget.ResizableImage(s.currentImageTexture).
-								Size(centerPieceWidth, height),
-						),
-						s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
-						lastImageButton,
-					).Build()
-					giu.PopStyle()
-				}),
+				s.imagesWidget(),
 				giu.Row(
 					widget.CategoryButtonView(categories),
 				),
@@ -290,76 +248,25 @@ func (s *Ui) Run() {
 						giu.OpenPopup("ApplyCategoriesModal")
 					}
 				}),
-				giu.Custom(func() {
-					width, height := giu.GetAvailableRegion()
-					h := height - bottomHeight
-
-					if s.similarImagesShown {
-						h -= 60
-					}
-
-					width = width - 30.0*2
-
-					pButton := giu.Button("<").
-						OnClick(func() {
-							s.sender.SendToTopic(api.ImageRequestPrevious)
-						}).
-						Size(30, h)
-					nButton := giu.Button(">").
-						OnClick(func() {
-							s.sender.SendToTopic(api.ImageRequestNext)
-						}).
-						Size(30, h)
-
-					giu.Style().
-						SetStyle(giu.StyleVarItemSpacing, 0, 0).
-						SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
-						SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
-						To(
-							giu.Row(
-								pButton,
-								giu.Child().
-									Size(width, h).
-									Border(true).
-									Flags(giu.WindowFlagsHorizontalScrollbar).
-									Layout(widget.ResizableImage(s.currentImageTexture).
-										ZoomFactor(s.getZoomFactor()).
-										ImageSize(s.currentImageTexture.Width, s.currentImageTexture.Height),
-									),
-								nButton,
-							),
-						).Build()
-				}),
+				s.mainImageWidget(
+					paddings,
+					actionsHeight,
+					conditionalSize(s.similarImagesShown, similarImagesHeight),
+					conditionalSize(s.progressBackground.open, progressHeight),
+				),
 				giu.Condition(s.similarImagesShown, giu.Layout{
-					giu.Row(
-						giu.Button("Hide").
-							Size(50, 60).
-							OnClick(func() {
-								s.similarImagesShown = false
-							}),
-						s.similarImagesList.SetImages(s.similarImages).Size(giu.Auto, 60),
-					),
+					s.similarImagesWidget(similarImagesHeight),
 				},
 					nil),
 				giu.Condition(s.progressBackground.open, giu.Layout{
 					giu.Row(
 						giu.Label("Caching images..."),
 						giu.ProgressBar(float32(s.progressBackground.position)/float32(s.progressBackground.max)).
-							Overlay(fmt.Sprintf("%d/%d", s.progressBackground.position, s.progressBackground.max)),
+							Overlay(fmt.Sprintf("%d/%d", s.progressBackground.position, s.progressBackground.max)).
+							Size(giu.Auto, progressHeight),
 					),
 				}, nil),
-				giu.Row(
-					giu.Dummy(0, bottomHeight),
-					giu.Button("Edit categories").OnClick(s.openEditCategoriesView),
-					giu.Button("Search similar").OnClick(s.searchSimilar),
-					giu.Button("Cast").OnClick(s.openCastToDeviceView),
-					giu.Button("Open directory").OnClick(s.changeDirectory),
-					giu.Button("Apply Categories").OnClick(s.applyCategories),
-					giu.Button("+").OnClick(s.zoomIn),
-					giu.Button("Reset").OnClick(s.resetZoom),
-					giu.Label(s.getZoomPercent()),
-					giu.Button("-").OnClick(s.zoomOut),
-				),
+				s.actionsWidget(actionsHeight),
 				giu.PrepareMsgbox(),
 			)
 
@@ -378,6 +285,128 @@ func (s *Ui) Run() {
 		} else if renderTime >= 10*time.Millisecond {
 			logger.Debug.Printf("Rendered UI in %s", renderTime)
 		}
+	})
+}
+
+func (s *Ui) similarImagesWidget(height float32) *giu.RowWidget {
+	return giu.Row(
+		giu.Button("Hide").
+			Size(50, height).
+			OnClick(func() {
+				s.similarImagesShown = false
+			}),
+		s.similarImagesList.SetImages(s.similarImages).Size(giu.Auto, height),
+	)
+}
+
+func (s *Ui) actionsWidget(bottomHeight float32) *giu.RowWidget {
+	return giu.Row(
+		giu.Dummy(0, bottomHeight),
+		giu.Button("Edit categories").OnClick(s.openEditCategoriesView),
+		giu.Button("Search similar").OnClick(s.searchSimilar),
+		giu.Button("Cast").OnClick(s.openCastToDeviceView),
+		giu.Button("Open directory").OnClick(s.changeDirectory),
+		giu.Button("Apply Categories").OnClick(s.applyCategories),
+		giu.Button("+").OnClick(s.zoomIn),
+		giu.Button("Reset").OnClick(s.resetZoom),
+		giu.Label(s.getZoomPercent()),
+		giu.Button("-").OnClick(s.zoomOut),
+	)
+}
+
+func conditionalSize(condition bool, size float32) float32 {
+	if condition {
+		return size
+	} else {
+		return 0
+	}
+}
+
+func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
+	return giu.Custom(func() {
+		width, height := giu.GetAvailableRegion()
+		h := height
+		for _, hh := range bottomHeight {
+			h -= hh
+		}
+
+		width = width - 30.0*2
+
+		pButton := giu.Button("<").
+			OnClick(func() {
+				s.sender.SendToTopic(api.ImageRequestPrevious)
+			}).
+			Size(30, h)
+		nButton := giu.Button(">").
+			OnClick(func() {
+				s.sender.SendToTopic(api.ImageRequestNext)
+			}).
+			Size(30, h)
+
+		giu.Style().
+			SetStyle(giu.StyleVarItemSpacing, 0, 0).
+			SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
+			SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
+			To(
+				giu.Row(
+					pButton,
+					giu.Child().
+						Size(width, h).
+						Border(true).
+						Flags(giu.WindowFlagsHorizontalScrollbar).
+						Layout(widget.ResizableImage(s.currentImageTexture).
+							ZoomFactor(s.getZoomFactor()).
+							ImageSize(s.currentImageTexture.Width, s.currentImageTexture.Height),
+						),
+					nButton,
+				),
+			).Build()
+	})
+}
+
+func (s *Ui) imagesWidget() *giu.CustomWidget {
+	return giu.Custom(func() {
+		width, _ := giu.GetAvailableRegion()
+		height := float32(60)
+		buttonWidth := float32(30)
+		centerPieceWidth := float32(120)
+		listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
+
+		widthInNumOfImage := int(listWidth/60) + 1
+
+		if widthInNumOfImage != s.widthInNumOfImage {
+			s.sender.SendCommandToTopic(api.ImageListSizeChanged, &api.ImageListCommand{
+				ImageListSize: widthInNumOfImage,
+			})
+		}
+		s.widthInNumOfImage = widthInNumOfImage
+
+		giu.PushItemSpacing(0, 0)
+		firstImageButton := giu.Button("<<").
+			OnClick(func() {
+				s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
+					Index: 0,
+				})
+			}).
+			Size(buttonWidth, height)
+		lastImageButton := giu.Button(">>").
+			OnClick(func() {
+				s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
+					Index: -1,
+				})
+			}).
+			Size(buttonWidth, height)
+		giu.Row(
+			firstImageButton,
+			s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
+			giu.Row(
+				widget.ResizableImage(s.currentImageTexture).
+					Size(centerPieceWidth, height),
+			),
+			s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
+			lastImageButton,
+		).Build()
+		giu.PopStyle()
 	})
 }
 
