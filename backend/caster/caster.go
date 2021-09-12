@@ -316,7 +316,7 @@ func (s *Caster) CastImage(query *api.ImageCategoryQuery) {
 	s.imageQueueMux.Lock()
 	defer s.imageQueueMux.Unlock()
 	if query.ImageId != apitype.NoImage && s.server != nil {
-		logger.Debug.Printf("Adding to cast queue: '%d'", query.ImageId)
+		logger.Trace.Printf("Adding to cast queue: '%d'", query.ImageId)
 		s.imageQueue = query.ImageId
 
 		s.imageQueueBroker.SendToTopic(castImageEvent)
@@ -373,7 +373,7 @@ func (s *Caster) nextImageFromQueue() apitype.ImageId {
 
 	if s.imageQueue != apitype.NoImage {
 		img := s.imageQueue
-		logger.Debug.Printf("Getting from cast queue: '%d'", img)
+		logger.Trace.Printf("Getting from cast queue: '%d'", img)
 		s.imageQueue = apitype.NoImage
 		return img
 	} else {
