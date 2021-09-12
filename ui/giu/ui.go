@@ -24,6 +24,7 @@ type Ui struct {
 	categories             []*apitype.Category
 	rootPath               string
 	currentImageTexture    *widget.TexturedImage
+	currentImageWidget     *widget.ResizableImageWidget
 	nextImages             []*widget.TexturedImage
 	previousImages         []*widget.TexturedImage
 	similarImages          []*widget.TexturedImage
@@ -42,14 +43,15 @@ type Ui struct {
 	similarImagesList  *widget.HorizontalImageListWidget
 	similarImagesShown bool
 	widthInNumOfImage  int
-	zoomLevel          int
+	zoomLevel          int32
 
 	api.Gui
 }
 
-const defaultZoomLevel = 5
+const defaultZoomLevel = 0
 
-var zoomLevels = []float32{0.01, 0.1, 0.25, 0.5, 0.75, -1, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100}
+var zoomLevels = []float32{-1, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 10, 15}
+var zoomLevelItems = []string{"Fit", "1 %", "5 %", "10 %", "25 %", "50 %", "75 %", "100 %", "200 %", "300 %", "400 %", "500 %", "1000 %", "1500 %"}
 
 type progressModal struct {
 	open      bool
@@ -306,11 +308,16 @@ func (s *Ui) actionsWidget(bottomHeight float32) *giu.RowWidget {
 		giu.Button("Search similar").OnClick(s.searchSimilar),
 		giu.Button("Cast").OnClick(s.openCastToDeviceView),
 		giu.Button("Open directory").OnClick(s.changeDirectory),
+		giu.Custom(func() {
+			giu.Row(
+				giu.Combo("", s.getZoomPercent(), zoomLevelItems, &s.zoomLevel).Size(100),
+				giu.Button("-").OnClick(s.zoomOut),
+				giu.Button("+").OnClick(s.zoomIn),
+				giu.Button("Fit").OnClick(s.resetZoom),
+			).Build()
+		}),
+		giu.Dummy(-120, 0),
 		giu.Button("Apply Categories").OnClick(s.applyCategories),
-		giu.Button("+").OnClick(s.zoomIn),
-		giu.Button("Reset").OnClick(s.resetZoom),
-		giu.Label(s.getZoomPercent()),
-		giu.Button("-").OnClick(s.zoomOut),
 	)
 }
 
@@ -343,6 +350,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 			}).
 			Size(30, h)
 
+		s.currentImageWidget = widget.ResizableImage(s.currentImageTexture)
 		giu.Style().
 			SetStyle(giu.StyleVarItemSpacing, 0, 0).
 			SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
@@ -354,7 +362,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 						Size(width, h).
 						Border(true).
 						Flags(giu.WindowFlagsHorizontalScrollbar).
-						Layout(widget.ResizableImage(s.currentImageTexture).
+						Layout(s.currentImageWidget.
 							ZoomFactor(s.getZoomFactor()).
 							ImageSize(s.currentImageTexture.Width, s.currentImageTexture.Height),
 						),
@@ -561,6 +569,14 @@ func (s *Ui) handleKeyPress() bool {
 		}
 	}
 
+	// Zoom shortcuts are based on US layout at least for now
+	if giu.IsKeyPressed(giu.KeyKPAdd) || giu.IsKeyPressed(giu.KeyEqual) {
+		s.zoomIn()
+	}
+	if giu.IsKeyPressed(giu.KeyKPSubtract) || giu.IsKeyPressed(giu.KeyMinus) {
+		s.zoomOut()
+	}
+
 	s.categoryKeyManager.HandleKeys(&guiapi.CategoryAction{
 		StayOnImage:      shiftDown,
 		ForceCategory:    controlDown,
@@ -696,21 +712,40 @@ func (s *Ui) ShowError(command *api.ErrorCommand) {
 }
 
 func (s *Ui) zoomIn() {
-	s.zoomLevel++
-	if s.zoomLevel >= len(zoomLevels) {
-		s.zoomLevel = len(zoomLevels) - 1
+	// Zoom in by finding the next zoom level
+	// Using this algorithm so that the zoom in feature works
+	// also with the "fit to page" zoom level
+	currentZoom := s.getZoomFactor()
+	if currentZoom < 0 && s.currentImageWidget != nil {
+		currentZoom = s.currentImageWidget.CurrentActualZoom()
+	}
+	for i, level := range zoomLevels {
+		if level > currentZoom {
+			s.zoomLevel = int32(i)
+			break
+		}
+	}
+}
+
+func (s *Ui) zoomOut() {
+	// Zoom out by finding the next smaller zoom level
+	// Using this algorithm so that the zoom out feature works
+	// also with the "fit to page" zoom level
+	currentZoom := s.getZoomFactor()
+	if currentZoom < 0 && s.currentImageWidget != nil {
+		currentZoom = s.currentImageWidget.CurrentActualZoom()
+	}
+	for i, level := range zoomLevels {
+		if level < currentZoom {
+			s.zoomLevel = int32(i)
+			// No break here because we want to find the "maximum" smallest
+			// before the value goes above the target zoom level
+		}
 	}
 }
 
 func (s *Ui) resetZoom() {
 	s.zoomLevel = defaultZoomLevel
-}
-
-func (s *Ui) zoomOut() {
-	s.zoomLevel--
-	if s.zoomLevel < 0 {
-		s.zoomLevel = 0
-	}
 }
 
 func (s *Ui) getZoomFactor() float32 {
@@ -720,7 +755,11 @@ func (s *Ui) getZoomFactor() float32 {
 func (s *Ui) getZoomPercent() string {
 	zoomFactor := s.getZoomFactor()
 	if zoomFactor < 0.0 {
-		return "Fit"
+		fitPercentage := float32(1)
+		if s.currentImageWidget != nil {
+			fitPercentage = s.currentImageWidget.CurrentActualZoom()
+		}
+		return fmt.Sprintf("Fit (%d %%)", int(fitPercentage*100))
 	} else {
 		return fmt.Sprintf("%d %%", int(zoomFactor*100))
 	}

@@ -9,6 +9,7 @@ type ResizableImageWidget struct {
 	maxHeight, maxWidth     float32
 	zoomFactor              float32
 	imageWidth, imageHeight float32
+	currentActualZoom       float32
 	giu.ImageWidget
 }
 
@@ -40,6 +41,10 @@ func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32) *ResizableImageWid
 	return s
 }
 
+func (s *ResizableImageWidget) CurrentActualZoom() float32 {
+	return s.currentActualZoom
+}
+
 func (s *ResizableImageWidget) Build() {
 	maxW, maxH := giu.GetAvailableRegion()
 
@@ -61,6 +66,7 @@ func (s *ResizableImageWidget) Build() {
 			newW = maxH * s.texturedImage.Ratio
 			newH = maxH
 		}
+		s.currentActualZoom = newW / s.imageWidth
 	} else { // Show zoomed image => Display area size doesn't affect the image size
 		// Image size should be provided for the zoom to work
 		newW = s.imageWidth * s.zoomFactor
