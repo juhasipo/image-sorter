@@ -45,6 +45,7 @@ type Ui struct {
 	widthInNumOfImage  int
 	zoomLevel          int32
 
+	everythingLoaded bool
 	api.Gui
 }
 
@@ -173,6 +174,16 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 	return &gui
 }
 
+func (s *Ui) Pause() {
+	logger.Debug.Printf("UI waiting for backend services...")
+	s.everythingLoaded = false
+}
+
+func (s *Ui) Ready() {
+	logger.Debug.Printf("Backend services ready, UI can be started")
+	s.everythingLoaded = true
+}
+
 func (s *Ui) Init(directory string) {
 	if directory == "" {
 		logger.Debug.Printf("No root directory specified, open dialog")
@@ -189,6 +200,11 @@ func (s *Ui) Init(directory string) {
 func (s *Ui) Run() {
 	s.Init(s.rootPath)
 	s.win.Run(func() {
+		mainWindow := giu.SingleWindow()
+		if !s.everythingLoaded {
+			mainWindow.Layout(giu.Label("Loading services..."))
+			return
+		}
 		newWidth, newHeight := s.win.GetSize()
 
 		if newWidth != s.oldWidth || newHeight != s.oldHeight {
@@ -219,7 +235,6 @@ func (s *Ui) Run() {
 			categories = append(categories, categorizeButton)
 		}
 
-		mainWindow := giu.SingleWindow()
 		if s.showCategoryEditModal {
 			mainWindow.
 				Layout(s.categoryEditWidget)

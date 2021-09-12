@@ -45,6 +45,9 @@ type Gui interface {
 	ShowError(*ErrorCommand)
 	Run()
 
+	Pause()
+	Ready()
+
 	UpdateProgress(*UpdateProgressCommand)
 
 	DeviceFound(*DeviceFoundCommand)

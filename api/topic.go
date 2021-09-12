@@ -6,6 +6,8 @@ const (
 	// General
 	ProcessStatusUpdated Topic = "process-status-updated"
 	DirectoryChanged     Topic = "directory-changed"
+	BackendLoading       Topic = "backend-loading"
+	BackendReady         Topic = "backend-ready"
 	ShowError            Topic = "show-error"
 
 	// Image related

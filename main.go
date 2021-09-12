@@ -122,6 +122,7 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 	logger.Debug.Printf("Connecting events to handlers...")
 	// Initialize startup procedure run when the directory has been chosen
 	handleDirectoryChanged := func(directory string) {
+		brokers.Broker.SendToTopic(api.BackendLoading)
 		logger.Info.Printf("Directory changed to '%s'", directory)
 
 		if err := stores.WorkDirDb.InitializeForDirectory(directory, databaseFileName); err != nil {
@@ -143,8 +144,11 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 			services.ImageCategoryService.InitializeForDirectory(directory)
 
 			services.CategoryService.RequestCategories()
+			brokers.Broker.SendToTopic(api.BackendReady)
 		}
 	}
+	brokers.Broker.Subscribe(api.BackendLoading, gui.Pause)
+	brokers.Broker.Subscribe(api.BackendReady, gui.Ready)
 	brokers.Broker.Subscribe(api.DirectoryChanged, handleDirectoryChanged)
 
 	// Connect Topics to methods
