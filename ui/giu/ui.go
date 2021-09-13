@@ -541,7 +541,6 @@ func (s *Ui) handleKeyPress() bool {
 		s.openCastToDeviceView()
 	}
 	if giu.IsKeyPressed(giu.KeyF10) {
-		logger.Debug.Printf("Show all images")
 		s.sender.SendToTopic(api.ImageShowAll)
 	}
 	if giu.IsKeyPressed(giu.KeyF12) {
@@ -568,7 +567,6 @@ func (s *Ui) handleKeyPress() bool {
 	}
 
 	if giu.IsKeyPressed(giu.KeyLeft) {
-		logger.Debug.Printf("Previous")
 		if controlDown {
 			s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
@@ -576,7 +574,6 @@ func (s *Ui) handleKeyPress() bool {
 		}
 	}
 	if giu.IsKeyPressed(giu.KeyRight) {
-		logger.Debug.Printf("Next")
 		if controlDown {
 			s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: bigJumpSize})
 		} else {
