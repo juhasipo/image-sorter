@@ -11,39 +11,95 @@ import (
 )
 
 type DefaultImageStore struct {
-	imageCache  map[apitype.ImageId]*Instance
-	mux         sync.Mutex
-	imageLoader api.ImageLoader
+	imageCache    map[apitype.ImageId]*Instance
+	mux           sync.Mutex
+	imageLoader   api.ImageLoader
+	stopChannel   chan bool
+	outputChannel chan *Instance
 
 	api.ImageStore
 }
 
 func (s *DefaultImageStore) Initialize(imageFiles []*apitype.ImageFile, reporter api.ProgressReporter) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	s.imageCache = map[apitype.ImageId]*Instance{}
+	s.initializeCache()
+	numOfImages := len(imageFiles)
+	logger.Info.Printf("Start loading %d image instances in cache...", numOfImages)
+
+	threadCount := runtime.NumCPU()
+	logger.Info.Printf(" * Using %d threads", threadCount)
+	runtime.GOMAXPROCS(threadCount)
+
+	s.stopChannel = make(chan bool)
+	inputChannel := make(chan *apitype.ImageFile, numOfImages)
+	s.outputChannel = make(chan *Instance)
+
+	// Add images to input queue for goroutines
+	for _, imageFile := range imageFiles {
+		inputChannel <- imageFile
+	}
+
+	// Spin up goroutines which will process the data
+	// only same number as CPU cores so that we will only max X hashes are
+	// processed at once. Otherwise, the goroutines might start processing
+	// all images at once which would use all available RAM
+	for i := 0; i < threadCount; i++ {
+		go s.loadImageInstance(inputChannel, s.outputChannel, s.stopChannel)
+	}
+
 	go func() {
-		numOfImages := len(imageFiles)
-		logger.Debug.Printf("Start loading %d image instances in cache...", numOfImages)
 		startTime := time.Now()
 		reporter.Update("Image cache", 0, numOfImages, false, false)
-		for i, imageFile := range imageFiles {
-			s.loadImageInstance(imageFile)
-			reporter.Update("Image cache", i+1, numOfImages, false, false)
+		var i = 0
+		for instance := range s.outputChannel {
+			i++
+
+			s.addImageToCache(instance)
+			reporter.Update("Image cache", i, numOfImages, false, false)
+
+			if i == numOfImages {
+				if s.stopChannel != nil {
+					for i := 0; i < threadCount; i++ {
+						s.stopChannel <- true
+					}
+					close(s.outputChannel)
+					close(s.stopChannel)
+					s.stopChannel = nil
+				}
+			}
 		}
+		close(inputChannel)
+
 		endTime := time.Now()
 		totalTime := endTime.Sub(startTime)
 		avg := totalTime / time.Duration(numOfImages)
-		logger.Debug.Printf("All %d instances loaded in cache in %s (avg. %s)", numOfImages, totalTime.String(), avg.String())
+		logger.Info.Printf("All %d instances loaded in cache in %s (avg. %s)", numOfImages, totalTime.String(), avg.String())
+
+		runtime.GC()
 	}()
-	runtime.GC()
 }
 
-func (s *DefaultImageStore) loadImageInstance(imageFile *apitype.ImageFile) {
+func (s *DefaultImageStore) initializeCache() {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	if _, ok := s.imageCache[imageFile.Id()]; !ok {
-		s.imageCache[imageFile.Id()] = NewInstance(imageFile.Id(), s.imageLoader)
+	s.imageCache = map[apitype.ImageId]*Instance{}
+}
+
+func (s *DefaultImageStore) addImageToCache(instance *Instance) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.imageCache[instance.imageId] = instance
+}
+
+func (s *DefaultImageStore) loadImageInstance(inputChannel chan *apitype.ImageFile, outputChannel chan *Instance, quitChannel chan bool) {
+	for {
+		select {
+		case <-quitChannel:
+			return
+		case imageFile := <-inputChannel:
+			{
+				outputChannel <- NewInstance(imageFile.Id(), s.imageLoader)
+			}
+		}
 	}
 }
 
