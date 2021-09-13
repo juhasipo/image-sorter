@@ -94,16 +94,16 @@ func (s *HorizontalImageListWidget) Build() {
 				targetHeight := s.height * factor
 
 				width := imageRatio * targetHeight
-				hh := s.height - targetHeight
+				offsetHeight := (s.height - targetHeight) / 2
 
 				start := image.Point{
 					X: int(startX),
-					Y: int(hh),
+					Y: int(offsetHeight),
 				}
 				startX += width
 				end := image.Point{
 					X: int(startX),
-					Y: int(targetHeight + hh),
+					Y: int(targetHeight + offsetHeight),
 				}
 				startX += marginX
 
