@@ -79,6 +79,10 @@ func (s *TexturedImage) IsSame(other *TexturedImage) bool {
 	return s.Image.Id() == other.Image.Id()
 }
 
+func (s *TexturedImage) NewImageLoaded() bool {
+	return s.newImageLoaded
+}
+
 func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32) *giu.Texture {
 	if s.imageCache == nil || s.Image == nil {
 		return nil

@@ -2,6 +2,7 @@ package widget
 
 import (
 	"github.com/AllenDang/giu"
+	"image/color"
 )
 
 type ResizableImageWidget struct {
@@ -86,6 +87,15 @@ func (s *ResizableImageWidget) Build() {
 	dummyV := giu.Dummy(0, offsetH)
 	dummyH := giu.Dummy(offsetW, 20)
 	s.ImageWidget.Size(newW, newH)
+
+	if !s.texturedImage.NewImageLoaded() {
+		s.ImageWidget.TintColor(color.RGBA{
+			R: 64,
+			G: 64,
+			B: 64,
+			A: 255,
+		})
+	}
 
 	giu.Column(
 		dummyV,
