@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/upper/db/v4"
+	"sync"
 	"time"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
@@ -12,6 +13,7 @@ type ImageStore struct {
 	database           *Database
 	collection         db.Collection
 	imageFileConverter ImageFileConverter
+	mux                sync.Mutex
 }
 
 func NewImageStore(database *Database, imageFileConverter ImageFileConverter) *ImageStore {
@@ -33,6 +35,8 @@ func (s *ImageStore) getCollection() db.Collection {
 }
 
 func (s *ImageStore) AddImages(imageFiles []*apitype.ImageFile) error {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	return s.getCollection().Session().Tx(func(sess db.Session) error {
 		for _, imageFile := range imageFiles {
 			if _, err := s.addImage(sess, imageFile); err != nil {
@@ -45,6 +49,8 @@ func (s *ImageStore) AddImages(imageFiles []*apitype.ImageFile) error {
 }
 
 func (s *ImageStore) AddImage(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	return s.addImage(s.getCollection().Session(), imageFile)
 }
 
@@ -113,6 +119,8 @@ func (s *ImageStore) addImage(session db.Session, imageFile *apitype.ImageFile) 
 }
 
 func (s *ImageStore) GetImageCount(categoryId apitype.CategoryId) int {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	res := s.getCollection().Session().SQL().
 		Select(db.Raw("count(1) AS c")).
 		From("image")
@@ -133,6 +141,8 @@ func (s *ImageStore) GetImageCount(categoryId apitype.CategoryId) int {
 }
 
 func (s *ImageStore) GetLatestModifiedImage() time.Time {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	res := s.getCollection().Session().SQL().
 		Select(db.Raw("modified_timestamp AS t")).
 		From("image").
@@ -151,10 +161,14 @@ func (s *ImageStore) GetLatestModifiedImage() time.Time {
 }
 
 func (s *ImageStore) GetAllImages() ([]*apitype.ImageFile, error) {
-	return s.GetImagesInCategory(-1, 0, apitype.NoCategory)
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	return s.getImagesInCategory(-1, 0, apitype.NoCategory)
 }
 
 func (s *ImageStore) GetAllImagesModifiedAfter(timestamp time.Time) ([]*apitype.ImageFile, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	var images []Image
 	searchCondition := db.Cond{
 		"modified_timestamp >": timestamp,
@@ -168,11 +182,15 @@ func (s *ImageStore) GetAllImagesModifiedAfter(timestamp time.Time) ([]*apitype.
 }
 
 func (s *ImageStore) GetNextImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	startIndex := currentIndex + 1
-	return s.GetImagesInCategory(number, startIndex, categoryId)
+	return s.getImagesInCategory(number, startIndex, categoryId)
 }
 
 func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	prevIndex := currentIndex - number
 	if prevIndex < 0 {
 		prevIndex = 0
@@ -181,7 +199,7 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 
 	if size < 0 {
 		return []*apitype.ImageFile{}, nil
-	} else if images, err := s.GetImagesInCategory(size, prevIndex, categoryId); err != nil {
+	} else if images, err := s.getImagesInCategory(size, prevIndex, categoryId); err != nil {
 		return nil, err
 	} else {
 		util.Reverse(images)
@@ -190,6 +208,12 @@ func (s *ImageStore) GetPreviousImagesInCategory(number int, currentIndex int, c
 }
 
 func (s *ImageStore) GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	return s.getImagesInCategory(number, offset, categoryId)
+}
+
+func (s *ImageStore) getImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
 	if number == 0 {
 		return make([]*apitype.ImageFile, 0), nil
 	}
@@ -227,6 +251,8 @@ const (
 )
 
 func (s *ImageStore) FindByDirAndFile(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	return s.findByDirAndFile(s.getCollection(), imageFile)
 }
 
@@ -298,6 +324,8 @@ func (s *ImageStore) update(collection db.Collection, imageId apitype.ImageId, i
 }
 
 func (s *ImageStore) GetImageById(imageId apitype.ImageId) *apitype.ImageFile {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	var image Image
 	err := s.getCollection().Find(db.Cond{"id": imageId}).One(&image)
 
@@ -315,5 +343,7 @@ func (s *ImageStore) GetImageById(imageId apitype.ImageId) *apitype.ImageFile {
 }
 
 func (s *ImageStore) RemoveImage(imageId apitype.ImageId) error {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	return s.getCollection().Find(db.Cond{"id": imageId}).Delete()
 }
