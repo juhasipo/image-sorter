@@ -9,48 +9,62 @@ import (
 )
 
 type TexturedImage struct {
-	Width          float32
-	Height         float32
-	Ratio          float32
-	Texture        *giu.Texture
-	oldTexture     *giu.Texture
-	Image          *apitype.ImageFile
-	oldImage       *apitype.ImageFile
-	lastWidth      int
-	lastHeight     int
-	newImageLoaded bool
-	imageCache     api.ImageStore
+	Width            float32
+	Height           float32
+	Ratio            float32
+	Texture          *giu.Texture
+	oldTexture       *giu.Texture
+	Image            *apitype.ImageFile
+	ImageFileAndData *apitype.ImageFileAndData
+	oldImage         *apitype.ImageFile
+	lastWidth        int
+	lastHeight       int
+	newImageLoaded   bool
+	imageCache       api.ImageStore
 }
 
 var cache = map[apitype.ImageId]*giu.Texture{}
 
-func NewTexturedImage(image *apitype.ImageFile, width float32, height float32, imageCache api.ImageStore) *TexturedImage {
+func NewTexturedImage(image *apitype.ImageFileAndData, imageCache api.ImageStore) *TexturedImage {
+	width := float32(0)
+	height := float32(0)
+	var imageFile *apitype.ImageFile
+	if image != nil {
+		width = float32(image.ImageData().Bounds().Dx())
+		height = float32(image.ImageData().Bounds().Dy())
+		imageFile = image.ImageFile()
+	}
+
 	return &TexturedImage{
-		Width:          width,
-		Height:         height,
-		Ratio:          width / height,
-		Texture:        nil,
-		oldTexture:     nil,
-		Image:          image,
-		oldImage:       nil,
-		lastWidth:      -1,
-		lastHeight:     -1,
-		newImageLoaded: false,
-		imageCache:     imageCache,
+		Width:            width,
+		Height:           height,
+		Ratio:            width / height,
+		Texture:          nil,
+		oldTexture:       nil,
+		Image:            imageFile,
+		ImageFileAndData: image,
+		oldImage:         nil,
+		lastWidth:        -1,
+		lastHeight:       -1,
+		newImageLoaded:   false,
+		imageCache:       imageCache,
 	}
 }
 
 func NewEmptyTexturedImage(imageCache api.ImageStore) *TexturedImage {
-	return NewTexturedImage(nil, 0, 0, imageCache)
+	return NewTexturedImage(nil, imageCache)
 }
 
-func (s *TexturedImage) ChangeImage(image *apitype.ImageFile, width float32, height float32) {
+func (s *TexturedImage) ChangeImage(image *apitype.ImageFileAndData) {
 	s.oldTexture = s.Texture
 	s.newImageLoaded = false
 
 	s.oldImage = s.Image
-	s.Image = image
+	s.Image = image.ImageFile()
+	s.ImageFileAndData = image
 
+	width := float32(s.ImageFileAndData.ImageData().Bounds().Dx())
+	height := float32(s.ImageFileAndData.ImageData().Bounds().Dy())
 	s.Width = width
 	s.Height = height
 	s.Ratio = width / height

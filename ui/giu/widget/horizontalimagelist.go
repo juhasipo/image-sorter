@@ -11,14 +11,15 @@ import (
 var imageHoverOverlayColor = color.RGBA{R: 255, G: 255, B: 255, A: 64}
 
 type HorizontalImageListWidget struct {
-	images    []*TexturedImage
-	showLabel bool
-	width     float32
-	reverse   bool
-	shrink    bool
-	height    float32
-	onClick   func(*apitype.ImageFile)
-	mux       sync.Mutex
+	images           []*TexturedImage
+	showLabel        bool
+	width            float32
+	reverse          bool
+	shrink           bool
+	height           float32
+	onClick          func(*apitype.ImageFile)
+	highlightedImage *apitype.ImageFileAndData
+	mux              sync.Mutex
 }
 
 func HorizontalImageList(onClick func(*apitype.ImageFile), showLabel bool, reverse bool, shrink bool) *HorizontalImageListWidget {
@@ -73,6 +74,10 @@ func (s *HorizontalImageListWidget) SetImages(images []*TexturedImage) *Horizont
 	return s
 }
 
+func (s *HorizontalImageListWidget) HighlightedImage() *apitype.ImageFileAndData {
+	return s.highlightedImage
+}
+
 func (s *HorizontalImageListWidget) Build() {
 	giu.Child().
 		Layout(giu.Custom(func() {
@@ -84,6 +89,7 @@ func (s *HorizontalImageListWidget) Build() {
 			canvas := giu.GetCanvas()
 			startX := float32(0)
 
+			s.highlightedImage = nil
 			for i, img := range s.images {
 				factor := float32(1)
 				if s.shrink {
@@ -126,6 +132,7 @@ func (s *HorizontalImageListWidget) Build() {
 					}
 					canvas.AddImage(img.Texture, start, end)
 					if mousePos.In(imgArea) {
+						s.highlightedImage = s.images[i].ImageFileAndData
 						giu.SetMouseCursor(giu.MouseCursorHand)
 						if giu.IsMouseClicked(giu.MouseButtonLeft) {
 							s.onClick(s.images[i].Image)

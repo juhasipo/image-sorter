@@ -244,8 +244,30 @@ func (s *Ui) Run() {
 			actionsHeight := float32(30.0)
 			similarImagesHeight := float32(60.0)
 			paddings := float32(8.0)
+			imageName := ""
+			imageInfo := ""
+			var highlightedImage *apitype.ImageFileAndData
+			if s.nextImagesList.HighlightedImage() != nil {
+				highlightedImage = s.nextImagesList.HighlightedImage()
+			} else if s.previousImagesList.HighlightedImage() != nil {
+				highlightedImage = s.previousImagesList.HighlightedImage()
+			} else if s.currentImageTexture.Image != nil {
+				highlightedImage = s.currentImageTexture.ImageFileAndData
+			}
+
+			if highlightedImage != nil {
+				imageName = highlightedImage.ImageFile().FileName()
+				imageInfo = fmt.Sprintf("(%d x %d)",
+					s.currentImageTexture.ImageFileAndData.ImageData().Bounds().Dx(),
+					s.currentImageTexture.ImageFileAndData.ImageData().Bounds().Dy(),
+				)
+			}
 			mainWindow.Layout(
 				s.imagesWidget(),
+				giu.Row(
+					giu.Label(imageName),
+					giu.Condition(imageInfo != "", giu.Layout{giu.Label(imageInfo)}, giu.Layout{giu.Label("")}),
+				),
 				giu.Row(
 					widget.CategoryButtonView(categories),
 				),
@@ -611,9 +633,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 		s.nextImages = []*widget.TexturedImage{}
 		for _, data := range command.Images {
 			ti := widget.NewTexturedImage(
-				data.ImageFile(),
-				float32(data.ImageData().Bounds().Dx()),
-				float32(data.ImageData().Bounds().Dy()),
+				data,
 				s.imageCache,
 			)
 			s.nextImages = append(s.nextImages, ti)
@@ -622,9 +642,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 		s.previousImages = []*widget.TexturedImage{}
 		for _, data := range command.Images {
 			ti := widget.NewTexturedImage(
-				data.ImageFile(),
-				float32(data.ImageData().Bounds().Dx()),
-				float32(data.ImageData().Bounds().Dy()),
+				data,
 				s.imageCache,
 			)
 			s.previousImages = append(s.previousImages, ti)
@@ -633,9 +651,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 		s.similarImages = []*widget.TexturedImage{}
 		for _, data := range command.Images {
 			ti := widget.NewTexturedImage(
-				data.ImageFile(),
-				float32(data.ImageData().Bounds().Dx()),
-				float32(data.ImageData().Bounds().Dy()),
+				data,
 				s.imageCache,
 			)
 			s.similarImages = append(s.similarImages, ti)
@@ -645,10 +661,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 }
 
 func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
-	s.currentImageTexture.ChangeImage(
-		command.Image.ImageFile(),
-		float32(command.Image.ImageData().Bounds().Dx()),
-		float32(command.Image.ImageData().Bounds().Dy()))
+	s.currentImageTexture.ChangeImage(command.Image)
 	width, height := s.win.GetSize()
 	s.currentCategoryId = command.CategoryId
 	s.currentImageTexture.LoadImageAsTexture(float32(width), float32(height), s.getZoomFactor())
