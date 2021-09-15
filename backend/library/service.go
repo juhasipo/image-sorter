@@ -89,7 +89,7 @@ func (s *Service) RequestGenerateHashes() {
 	if image, _, _, err := s.getCurrentImage(); err != nil {
 		s.sender.SendError("Error while generating hashes", err)
 	} else {
-		s.sendSimilarImages(image.ImageFile().Id())
+		s.sendSimilarImages(image.Id())
 	}
 }
 
@@ -110,7 +110,7 @@ func (s *Service) checkHashStatus() bool {
 	}
 }
 
-func (s *Service) getCurrentImage() (*apitype.ImageFileAndData, *apitype.ImageMetaData, int, error) {
+func (s *Service) getCurrentImage() (*apitype.ImageFile, *apitype.ImageMetaData, int, error) {
 	return s.library.GetImageAtIndex(s.index, s.selectedCategoryId)
 }
 
@@ -285,7 +285,7 @@ func (s *Service) sendImages(sendCurrentImage bool) {
 		}
 
 		if s.shouldSendSimilar {
-			s.sendSimilarImages(currentImage.ImageFile().Id())
+			s.sendSimilarImages(currentImage.Id())
 		}
 	}
 }

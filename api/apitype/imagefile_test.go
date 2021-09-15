@@ -20,13 +20,13 @@ func TestImageFile_String(t *testing.T) {
 	var nilImageFile *ImageFile
 	a.Equal("ImageFile<nil>", nilImageFile.String())
 	a.Equal("ImageFile<invalid>", NewImageFile("", "").String())
-	a.Equal("ImageFile{file.jpeg}", NewImageFileWithId(2, "/some/dir", "file.jpeg").String())
+	a.Equal("ImageFile{file.jpeg}", NewImageFileWithId(2, "/some/dir", "file.jpeg", 400, 300).String())
 }
 
 func TestValidImageFile(t *testing.T) {
 	a := assert.New(t)
 
-	imageFile := NewImageFileWithId(1, "some/dir", "file.jpeg")
+	imageFile := NewImageFileWithId(1, "some/dir", "file.jpeg", 400, 300)
 
 	t.Run("Validity", func(t *testing.T) {
 		a.True(imageFile.IsValid())
@@ -42,7 +42,7 @@ func TestValidImageFile(t *testing.T) {
 func TestInvalidImageFile(t *testing.T) {
 	a := assert.New(t)
 
-	imageFile := NewImageFileWithId(NoImage, "", "")
+	imageFile := NewImageFileWithId(NoImage, "", "", 400, 300)
 
 	t.Run("Validity", func(t *testing.T) {
 		a.False(imageFile.IsValid())

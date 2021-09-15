@@ -91,11 +91,11 @@ func TestService_moveToImage(t *testing.T) {
 
 	t.Run("Find by ID no category", func(tt *testing.T) {
 		imageFiles := []*apitype.ImageFile{
-			apitype.NewImageFileWithId(1, "/tmp", "foo1"),
-			apitype.NewImageFileWithId(2, "/tmp", "foo2"),
-			apitype.NewImageFileWithId(3, "/tmp", "foo3"),
-			apitype.NewImageFileWithId(4, "/tmp", "foo4"),
-			apitype.NewImageFileWithId(5, "/tmp", "foo5"),
+			apitype.NewImageFileWithId(1, "/tmp", "foo1", 400, 300),
+			apitype.NewImageFileWithId(2, "/tmp", "foo2", 400, 300),
+			apitype.NewImageFileWithId(3, "/tmp", "foo3", 400, 300),
+			apitype.NewImageFileWithId(4, "/tmp", "foo4", 400, 300),
+			apitype.NewImageFileWithId(5, "/tmp", "foo5", 400, 300),
 		}
 		sutService.AddImageFiles(imageFiles)
 
@@ -113,11 +113,11 @@ func TestService_moveToImage(t *testing.T) {
 
 	t.Run("Find by ID in category", func(tt *testing.T) {
 		imageFiles := []*apitype.ImageFile{
-			apitype.NewImageFileWithId(1, "/tmp", "foo1"),
-			apitype.NewImageFileWithId(2, "/tmp", "foo2"),
-			apitype.NewImageFileWithId(3, "/tmp", "foo3"),
-			apitype.NewImageFileWithId(4, "/tmp", "foo4"),
-			apitype.NewImageFileWithId(5, "/tmp", "foo5"),
+			apitype.NewImageFileWithId(1, "/tmp", "foo1", 400, 300),
+			apitype.NewImageFileWithId(2, "/tmp", "foo2", 400, 300),
+			apitype.NewImageFileWithId(3, "/tmp", "foo3", 400, 300),
+			apitype.NewImageFileWithId(4, "/tmp", "foo4", 400, 300),
+			apitype.NewImageFileWithId(5, "/tmp", "foo5", 400, 300),
 		}
 		sutService.AddImageFiles(imageFiles)
 		category1, _ := categoryStore.AddCategory(apitype.NewCategory("category1", "cat1", "C"))

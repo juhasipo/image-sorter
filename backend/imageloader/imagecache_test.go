@@ -69,27 +69,33 @@ func TestDefaultImageStore_Initialize(t *testing.T) {
 	loader := NewImageLoader(imageStore)
 	cache := NewImageCache(loader)
 
-	a.Equal(uint64(0), cache.GetByteSize())
+	a.Equal(0, int(cache.GetByteSize()))
 
 	imageFiles := []*apitype.ImageFile{
 		apitype.NewImageFile(testAssetsDir, "horizontal.jpg"),
 		apitype.NewImageFile(testAssetsDir, "vertical.jpg"),
 	}
-	imageStore.AddImages(imageFiles)
-	storedImages, _ := imageStore.GetAllImages()
-	reporter := &StubProgressReporter{}
-	cache.Initialize(storedImages, reporter)
+	err := imageStore.AddImages(imageFiles)
 
-	waitForCacheToFill(reporter)
+	if a.Nil(err) {
+		storedImages, _ := imageStore.GetAllImages()
+		reporter := &StubProgressReporter{}
+		cache.Initialize(storedImages, reporter)
 
-	a.Equal(uint64(60000), cache.GetByteSize())
-	a.InDelta(0.06, cache.GetSizeInMB(), 0.1)
+		waitForCacheToFill(reporter)
+
+		a.Equal(60000, int(cache.GetByteSize()))
+		a.InDelta(0.06, cache.GetSizeInMB(), 0.1)
+	}
 }
 
 func waitForCacheToFill(reporter *StubProgressReporter) {
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(5 * time.Minute)
 	for {
-		if reporter.Current == reporter.Total || time.Now().After(deadline) {
+		if reporter.Current == reporter.Total && reporter.Total > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
 			break
 		}
 	}
@@ -110,29 +116,33 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 		apitype.NewImageFile(testAssetsDir, "horizontal.jpg"),
 		apitype.NewImageFile(testAssetsDir, "vertical.jpg"),
 	}
-	_ = imageStore.AddImages(imageFiles)
-	storedImages, _ := imageStore.GetAllImages()
-	imageFile0 := storedImages[0]
-	imageFile1 := storedImages[1]
 
-	reporter := &StubProgressReporter{}
-	cache.Initialize(storedImages, reporter)
+	err := imageStore.AddImages(imageFiles)
 
-	waitForCacheToFill(reporter)
+	if err != nil {
+		storedImages, _ := imageStore.GetAllImages()
+		imageFile0 := storedImages[0]
+		imageFile1 := storedImages[1]
 
-	a.Equal(uint64(60000), cache.GetByteSize())
+		reporter := &StubProgressReporter{}
+		cache.Initialize(storedImages, reporter)
 
-	_, _ = cache.GetFull(imageFile0.Id())
-	_, _ = cache.GetFull(imageFile1.Id())
-	size := apitype.SizeOf(100, 100)
-	_, _ = cache.GetScaled(imageFile0.Id(), size)
-	_, _ = cache.GetScaled(imageFile1.Id(), size)
+		waitForCacheToFill(reporter)
 
-	a.Equal(uint64(79967424), cache.GetByteSize())
-	a.InDelta(76.3, cache.GetSizeInMB(), 0.1)
+		a.Equal(60000, int(cache.GetByteSize()))
 
-	cache.Purge()
-	a.Equal(uint64(60000), cache.GetByteSize())
+		_, _ = cache.GetFull(imageFile0.Id())
+		_, _ = cache.GetFull(imageFile1.Id())
+		size := apitype.SizeOf(100, 100)
+		_, _ = cache.GetScaled(imageFile0.Id(), size)
+		_, _ = cache.GetScaled(imageFile1.Id(), size)
+
+		a.Equal(79967424, int(cache.GetByteSize()))
+		a.InDelta(76.3, cache.GetSizeInMB(), 0.1)
+
+		cache.Purge()
+		a.Equal(60000, int(cache.GetByteSize()))
+	}
 }
 
 func TestDefaultImageStore_GetFull(t *testing.T) {

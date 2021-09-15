@@ -246,20 +246,20 @@ func (s *Ui) Run() {
 			paddings := float32(8.0)
 			imageName := ""
 			imageInfo := ""
-			var highlightedImage *apitype.ImageFileAndData
+			var highlightedImage *apitype.ImageFile
 			if s.nextImagesList.HighlightedImage() != nil {
 				highlightedImage = s.nextImagesList.HighlightedImage()
 			} else if s.previousImagesList.HighlightedImage() != nil {
 				highlightedImage = s.previousImagesList.HighlightedImage()
 			} else if s.currentImageTexture.Image != nil {
-				highlightedImage = s.currentImageTexture.ImageFileAndData
+				highlightedImage = s.currentImageTexture.Image
 			}
 
 			if highlightedImage != nil {
-				imageName = highlightedImage.ImageFile().FileName()
+				imageName = highlightedImage.FileName()
 				imageInfo = fmt.Sprintf("(%d x %d)",
-					s.currentImageTexture.ImageFileAndData.ImageData().Bounds().Dx(),
-					s.currentImageTexture.ImageFileAndData.ImageData().Bounds().Dy(),
+					int(s.currentImageTexture.Width),
+					int(s.currentImageTexture.Height),
 				)
 			}
 			mainWindow.Layout(

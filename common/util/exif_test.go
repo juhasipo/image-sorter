@@ -12,7 +12,7 @@ func TestLoadExifData(t *testing.T) {
 	a := assert.New(t)
 
 	t.Run("Horizontal image", func(t *testing.T) {
-		data, err := LoadExifData(apitype.NewImageFileWithId(1, testAssetsDir, "horizontal.jpg"))
+		data, err := LoadExifData(apitype.NewImageFileWithId(1, testAssetsDir, "horizontal.jpg", 400, 300))
 		a.Nil(err)
 		a.Equal(uint8(1), data.ExifOrientation())
 		a.Equal(int16(0), data.Rotation())
@@ -20,7 +20,7 @@ func TestLoadExifData(t *testing.T) {
 	})
 
 	t.Run("Vertical image", func(t *testing.T) {
-		data, err := LoadExifData(apitype.NewImageFileWithId(2, testAssetsDir, "vertical.jpg"))
+		data, err := LoadExifData(apitype.NewImageFileWithId(2, testAssetsDir, "vertical.jpg", 300, 400))
 		a.Nil(err)
 		a.Equal(uint8(6), data.ExifOrientation())
 		a.Equal(int16(270), data.Rotation())

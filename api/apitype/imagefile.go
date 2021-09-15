@@ -23,6 +23,8 @@ type ImageFile struct {
 	byteSize  int64
 	rotation  float64
 	flipped   bool
+	width     int
+	height    int
 }
 
 func (s *ImageFile) IsValid() bool {
@@ -34,7 +36,7 @@ var (
 	supportedFileEndings = map[string]bool{".jpg": true, ".jpeg": true}
 )
 
-func NewImageFileWithId(id ImageId, fileDir string, fileName string) *ImageFile {
+func NewImageFileWithId(id ImageId, fileDir string, fileName string, width int, height int) *ImageFile {
 	return &ImageFile{
 		id:        id,
 		directory: fileDir,
@@ -43,10 +45,12 @@ func NewImageFileWithId(id ImageId, fileDir string, fileName string) *ImageFile 
 		byteSize:  0,
 		rotation:  0.0,
 		flipped:   false,
+		width:     width,
+		height:    height,
 	}
 }
 
-func NewImageFileWithIdSizeAndOrientation(id ImageId, fileDir string, fileName string, byteSize int64, rotation float64, flipped bool) *ImageFile {
+func NewImageFileWithIdSizeAndOrientation(id ImageId, fileDir string, fileName string, byteSize int64, rotation float64, flipped bool, width int, height int) *ImageFile {
 	return &ImageFile{
 		id:        id,
 		directory: fileDir,
@@ -55,11 +59,13 @@ func NewImageFileWithIdSizeAndOrientation(id ImageId, fileDir string, fileName s
 		byteSize:  byteSize,
 		rotation:  rotation,
 		flipped:   flipped,
+		width:     width,
+		height:    height,
 	}
 }
 
 func NewImageFile(fileDir string, fileName string) *ImageFile {
-	return NewImageFileWithIdSizeAndOrientation(NoImage, fileDir, fileName, 0, 0.0, false)
+	return NewImageFileWithIdSizeAndOrientation(NoImage, fileDir, fileName, 0, 0.0, false, 0, 0)
 }
 
 func GetEmptyImageFile() *ImageFile {
@@ -142,6 +148,14 @@ func (s *ImageFile) ByteSizeInMB() float64 {
 
 func (s *ImageFile) Rotation() (float64, bool) {
 	return s.rotation, s.flipped
+}
+
+func (s *ImageFile) Width() int {
+	return s.width
+}
+
+func (s *ImageFile) Height() int {
+	return s.height
 }
 
 func NewImageMetaData(data map[string]string) *ImageMetaData {

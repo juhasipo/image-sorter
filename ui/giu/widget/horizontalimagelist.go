@@ -18,7 +18,7 @@ type HorizontalImageListWidget struct {
 	shrink           bool
 	height           float32
 	onClick          func(*apitype.ImageFile)
-	highlightedImage *apitype.ImageFileAndData
+	highlightedImage *apitype.ImageFile
 	mux              sync.Mutex
 }
 
@@ -74,7 +74,7 @@ func (s *HorizontalImageListWidget) SetImages(images []*TexturedImage) *Horizont
 	return s
 }
 
-func (s *HorizontalImageListWidget) HighlightedImage() *apitype.ImageFileAndData {
+func (s *HorizontalImageListWidget) HighlightedImage() *apitype.ImageFile {
 	return s.highlightedImage
 }
 
@@ -132,7 +132,7 @@ func (s *HorizontalImageListWidget) Build() {
 					}
 					canvas.AddImage(img.Texture, start, end)
 					if mousePos.In(imgArea) {
-						s.highlightedImage = s.images[i].ImageFileAndData
+						s.highlightedImage = s.images[i].Image
 						giu.SetMouseCursor(giu.MouseCursorHand)
 						if giu.IsMouseClicked(giu.MouseButtonLeft) {
 							s.onClick(s.images[i].Image)

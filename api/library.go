@@ -70,11 +70,11 @@ type ImageLibrary interface {
 
 	GetImagesInCategory(number int, offset int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error)
 	GetImageFileById(imageId apitype.ImageId) *apitype.ImageFile
-	GetImageAtIndex(index int, categoryId apitype.CategoryId) (*apitype.ImageFileAndData, *apitype.ImageMetaData, int, error)
-	GetNextImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFileAndData, error)
-	GetPreviousImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFileAndData, error)
+	GetImageAtIndex(index int, categoryId apitype.CategoryId) (*apitype.ImageFile, *apitype.ImageMetaData, int, error)
+	GetNextImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error)
+	GetPreviousImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error)
 
 	GenerateHashes() bool
-	GetSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFileAndData, bool, error)
+	GetSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFile, bool, error)
 	StopHashes()
 }

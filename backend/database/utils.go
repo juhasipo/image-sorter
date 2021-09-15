@@ -15,7 +15,7 @@ func idToCategoryId(id interface{}) apitype.CategoryId {
 
 func toImageFile(image *Image) (*apitype.ImageFile, error) {
 	return apitype.NewImageFileWithIdSizeAndOrientation(
-		image.Id, image.Directory, image.FileName, image.ByteSize, float64(image.ImageAngle), image.ImageFlip,
+		image.Id, image.Directory, image.FileName, image.ByteSize, float64(image.ImageAngle), image.ImageFlip, int(image.Width), int(image.Height),
 	), nil
 }
 

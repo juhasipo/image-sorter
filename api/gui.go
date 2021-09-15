@@ -25,7 +25,7 @@ type UpdateCategoriesCommand struct {
 }
 
 type UpdateImageCommand struct {
-	Image      *apitype.ImageFileAndData
+	Image      *apitype.ImageFile
 	MetaData   *apitype.ImageMetaData
 	Index      int
 	Total      int
@@ -34,7 +34,7 @@ type UpdateImageCommand struct {
 
 type SetImagesCommand struct {
 	Topic  Topic
-	Images []*apitype.ImageFileAndData
+	Images []*apitype.ImageFile
 }
 
 type Gui interface {

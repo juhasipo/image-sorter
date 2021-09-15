@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	emptyImageFiles = []*apitype.ImageFileAndData{}
+	emptyImageFiles = []*apitype.ImageFile{}
 )
 
 type ImageList func(number int) []*apitype.ImageFile
@@ -152,28 +152,25 @@ func (s *ImageLibrary) GetImageFileById(imageId apitype.ImageId) *apitype.ImageF
 
 // Private API
 
-func (s *ImageLibrary) GetImageAtIndex(index int, categoryId apitype.CategoryId) (*apitype.ImageFileAndData, *apitype.ImageMetaData, int, error) {
+func (s *ImageLibrary) GetImageAtIndex(index int, categoryId apitype.CategoryId) (*apitype.ImageFile, *apitype.ImageMetaData, int, error) {
 	imageCount := s.imageStore.GetImageCount(categoryId)
 	if index >= 0 && index < imageCount {
 		images, _ := s.imageStore.GetImagesInCategory(1, index, categoryId)
 		imageFile := images[0]
-		if full, err := s.imageCache.GetFull(imageFile.Id()); err != nil {
-			logger.Error.Print("Error while loading full image", err)
-			return apitype.NewEmptyImageContainer(), apitype.NewInvalidImageMetaData(), 0, err
-		} else if metaData, err := s.imageMetaDataStore.GetMetaDataByImageId(imageFile.Id()); err != nil {
-			return apitype.NewEmptyImageContainer(), apitype.NewInvalidImageMetaData(), 0, nil
+		if metaData, err := s.imageMetaDataStore.GetMetaDataByImageId(imageFile.Id()); err != nil {
+			return apitype.GetEmptyImageFile(), apitype.NewInvalidImageMetaData(), 0, nil
 		} else {
-			return apitype.NewImageContainer(imageFile, full), metaData, index, nil
+			return imageFile, metaData, index, nil
 		}
 	}
-	return apitype.NewEmptyImageContainer(), apitype.NewInvalidImageMetaData(), 0, nil
+	return apitype.GetEmptyImageFile(), apitype.NewInvalidImageMetaData(), 0, nil
 }
 
 func (s *ImageLibrary) GetTotalImages(categoryId apitype.CategoryId) int {
 	return s.imageStore.GetImageCount(categoryId)
 }
 
-func (s *ImageLibrary) GetNextImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFileAndData, error) {
+func (s *ImageLibrary) GetNextImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
 	if images, err := s.imageStore.GetNextImagesInCategory(count, index, categoryId); err != nil {
 		return emptyImageFiles, err
 	} else {
@@ -181,7 +178,7 @@ func (s *ImageLibrary) GetNextImages(index int, count int, categoryId apitype.Ca
 	}
 }
 
-func (s *ImageLibrary) GetPreviousImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFileAndData, error) {
+func (s *ImageLibrary) GetPreviousImages(index int, count int, categoryId apitype.CategoryId) ([]*apitype.ImageFile, error) {
 	if slice, err := s.imageStore.GetPreviousImagesInCategory(count, index, categoryId); err != nil {
 		return emptyImageFiles, err
 	} else if images, err := s.toImageContainers(slice); err != nil {
@@ -191,15 +188,10 @@ func (s *ImageLibrary) GetPreviousImages(index int, count int, categoryId apityp
 	}
 }
 
-func (s *ImageLibrary) toImageContainers(nextImageFiles []*apitype.ImageFile) ([]*apitype.ImageFileAndData, error) {
-	images := make([]*apitype.ImageFileAndData, len(nextImageFiles))
+func (s *ImageLibrary) toImageContainers(nextImageFiles []*apitype.ImageFile) ([]*apitype.ImageFile, error) {
+	images := make([]*apitype.ImageFile, len(nextImageFiles))
 	for i, imageFile := range nextImageFiles {
-		if thumbnail, err := s.imageCache.GetThumbnail(imageFile.Id()); err != nil {
-			logger.Error.Print("Error while loading thumbnail", err)
-			return emptyImageFiles, err
-		} else {
-			images[i] = apitype.NewImageContainer(imageFile, thumbnail)
-		}
+		images[i] = imageFile
 	}
 
 	return images, nil
@@ -221,24 +213,19 @@ func (s *ImageLibrary) getThreadCount() int {
 	return cpuCores
 }
 
-func (s *ImageLibrary) GetSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFileAndData, bool, error) {
+func (s *ImageLibrary) GetSimilarImages(imageId apitype.ImageId) ([]*apitype.ImageFile, bool, error) {
 	similarImages := s.similarityIndex.GetSimilarImages(imageId)
 	if len(similarImages) > 0 {
-		containers := make([]*apitype.ImageFileAndData, len(similarImages))
+		containers := make([]*apitype.ImageFile, len(similarImages))
 		i := 0
 		for _, similar := range similarImages {
-			if thumbnail, err := s.imageCache.GetThumbnail(similar.Id()); err != nil {
-				logger.Error.Print("Error while loading thumbnail", err)
-				return emptyImageFiles, false, err
-			} else {
-				containers[i] = apitype.NewImageContainer(similar, thumbnail)
-			}
+			containers[i] = similar
 			i++
 		}
 
 		return containers, true, nil
 	} else {
-		return []*apitype.ImageFileAndData{}, false, nil
+		return []*apitype.ImageFile{}, false, nil
 	}
 }
 
