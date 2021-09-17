@@ -86,16 +86,25 @@ func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.Ima
 	fileStatEnd := time.Now()
 	logger.Trace.Printf(" - Loaded file info in %s", fileStatEnd.Sub(fileStatStart))
 
+	width := exifData.ImageWidth()
+	height := exifData.ImageHeight()
+	rotation := int(exifData.Rotation())
+	if rotation == 90 || rotation == 270 {
+		tmp := width
+		width = height
+		height = tmp
+	}
+
 	return &Image{
 		Name:            imageFile.FileName(),
 		FileName:        imageFile.FileName(),
 		Directory:       imageFile.Directory(),
 		ByteSize:        fileStat.Size(),
 		ExifOrientation: exifData.ExifOrientation(),
-		ImageAngle:      int(exifData.Rotation()),
+		ImageAngle:      rotation,
 		CreatedTime:     exifData.CreatedTime(),
-		Width:           exifData.ImageWidth(),
-		Height:          exifData.ImageHeight(),
+		Width:           width,
+		Height:          height,
 		ModifiedTime:    fileStat.ModTime(),
 	}, exifData.Values(), nil
 }

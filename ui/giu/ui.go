@@ -25,6 +25,7 @@ type Ui struct {
 	rootPath               string
 	currentImageTexture    *widget.TexturedImage
 	currentImageWidget     *widget.ResizableImageWidget
+	currentThumbnailWidget *widget.ResizableImageWidget
 	nextImages             []*widget.TexturedImage
 	previousImages         []*widget.TexturedImage
 	similarImages          []*widget.TexturedImage
@@ -158,7 +159,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 				}
 			} else {
 				broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
-					ImageId:         gui.currentImageTexture.Image.Id(),
+					ImageId:         gui.currentImageTexture.Image().Id(),
 					CategoryId:      def.categoryId,
 					Operation:       operation,
 					StayOnSameImage: action.StayOnImage,
@@ -251,15 +252,15 @@ func (s *Ui) Run() {
 				highlightedImage = s.nextImagesList.HighlightedImage()
 			} else if s.previousImagesList.HighlightedImage() != nil {
 				highlightedImage = s.previousImagesList.HighlightedImage()
-			} else if s.currentImageTexture.Image != nil {
-				highlightedImage = s.currentImageTexture.Image
+			} else if s.currentImageTexture.Image() != nil {
+				highlightedImage = s.currentImageTexture.Image()
 			}
 
 			if highlightedImage != nil {
 				imageName = highlightedImage.FileName()
 				imageInfo = fmt.Sprintf("(%d x %d)",
-					int(s.currentImageTexture.Width),
-					int(s.currentImageTexture.Height),
+					highlightedImage.Width(),
+					highlightedImage.Height(),
 				)
 			}
 			mainWindow.Layout(
@@ -387,7 +388,12 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 			}).
 			Size(30, h)
 
-		s.currentImageWidget = widget.ResizableImage(s.currentImageTexture)
+		if s.currentImageWidget == nil {
+			s.currentImageWidget = widget.ResizableImage(s.currentImageTexture)
+		} else {
+			s.currentImageWidget.UpdateImage(s.currentImageTexture)
+		}
+
 		giu.Style().
 			SetStyle(giu.StyleVarItemSpacing, 0, 0).
 			SetColor(giu.StyleColorBorder, color.RGBA{0, 0, 0, 255}).
@@ -401,7 +407,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 						Flags(giu.WindowFlagsHorizontalScrollbar).
 						Layout(s.currentImageWidget.
 							ZoomFactor(s.getZoomFactor()).
-							ImageSize(s.currentImageTexture.Width, s.currentImageTexture.Height),
+							ImageSize(s.currentImageTexture.Width(), s.currentImageTexture.Height()),
 						),
 					nButton,
 				),
@@ -426,6 +432,12 @@ func (s *Ui) imagesWidget() *giu.CustomWidget {
 		}
 		s.widthInNumOfImage = widthInNumOfImage
 
+		if s.currentThumbnailWidget == nil {
+			s.currentThumbnailWidget = widget.ResizableImage(s.currentImageTexture)
+		}
+		s.currentThumbnailWidget.UpdateImage(s.currentImageTexture)
+		s.currentThumbnailWidget.Size(centerPieceWidth, height)
+
 		giu.PushItemSpacing(0, 0)
 		firstImageButton := giu.Button("<<").
 			OnClick(func() {
@@ -444,10 +456,7 @@ func (s *Ui) imagesWidget() *giu.CustomWidget {
 		giu.Row(
 			firstImageButton,
 			s.previousImagesList.Size(listWidth, height).SetImages(s.previousImages),
-			giu.Row(
-				widget.ResizableImage(s.currentImageTexture).
-					Size(centerPieceWidth, height),
-			),
+			giu.Row(s.currentThumbnailWidget),
 			s.nextImagesList.Size(listWidth, height).SetImages(s.nextImages),
 			lastImageButton,
 		).Build()
@@ -673,7 +682,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		ImageId: s.currentImageTexture.Image.Id(),
+		ImageId: s.currentImageTexture.Image().Id(),
 	})
 }
 

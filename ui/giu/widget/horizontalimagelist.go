@@ -96,7 +96,7 @@ func (s *HorizontalImageListWidget) Build() {
 					factor = 1 - (float32(i+1) * float32(0.05))
 				}
 
-				imageRatio := img.Width / img.Height
+				imageRatio := img.Width() / img.Height()
 				targetHeight := s.height * factor
 
 				width := imageRatio * targetHeight
@@ -119,7 +119,7 @@ func (s *HorizontalImageListWidget) Build() {
 					end.X = tmp
 				}
 
-				if img.Texture != nil {
+				if img.Texture() != nil {
 					start.X += pos.X
 					start.Y += pos.Y
 					end.X += pos.X
@@ -130,12 +130,12 @@ func (s *HorizontalImageListWidget) Build() {
 						Min: start,
 						Max: end,
 					}
-					canvas.AddImage(img.Texture, start, end)
+					canvas.AddImage(img.Texture(), start, end)
 					if mousePos.In(imgArea) {
-						s.highlightedImage = s.images[i].Image
+						s.highlightedImage = s.images[i].Image()
 						giu.SetMouseCursor(giu.MouseCursorHand)
 						if giu.IsMouseClicked(giu.MouseButtonLeft) {
-							s.onClick(s.images[i].Image)
+							s.onClick(s.images[i].Image())
 						}
 						canvas.AddRectFilled(start, end, imageHoverOverlayColor, 0, giu.DrawFlagsNone)
 					}
