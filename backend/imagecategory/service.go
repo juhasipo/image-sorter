@@ -121,7 +121,7 @@ func (s *Service) PersistImageCategories(options *api.PersistCategorizationComma
 		})
 	}
 
-	s.sender.SendCommandToTopic(api.DirectoryChanged, s.rootDir)
+	s.sender.SendCommandToTopic(api.DirectoryChanged, &api.DirectoryChangedCommand{Directory: s.rootDir})
 }
 
 func (s *Service) ResolveFileOperations(

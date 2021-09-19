@@ -13,28 +13,34 @@ type CategorizeCommand struct {
 	NextImageDelay  time.Duration
 	ForceToCategory bool
 
-	apitype.Command
+	apitype.NotThrottled
 }
 
 type CategoriesCommand struct {
 	Categories []*apitype.Category
 
-	apitype.Command
+	apitype.NotThrottled
 }
 
 type CategorizedImage struct {
 	Category  *apitype.Category
 	Operation apitype.Operation
+
+	apitype.NotThrottled
 }
 
 type ImageCategoryQuery struct {
 	ImageId apitype.ImageId
+
+	apitype.NotThrottled
 }
 
 type PersistCategorizationCommand struct {
 	KeepOriginals  bool
 	FixOrientation bool
 	Quality        int
+
+	apitype.NotThrottled
 }
 
 type ImageCategoryService interface {

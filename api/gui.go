@@ -6,10 +6,12 @@ import (
 
 type ErrorCommand struct {
 	Message string
+	apitype.NotThrottled
 }
 
 type DeviceFoundCommand struct {
 	DeviceName string
+	apitype.NotThrottled
 }
 
 type UpdateProgressCommand struct {
@@ -18,10 +20,12 @@ type UpdateProgressCommand struct {
 	Total     int
 	CanCancel bool
 	Modal     bool
+	apitype.NotThrottled
 }
 
 type UpdateCategoriesCommand struct {
 	Categories []*apitype.Category
+	apitype.NotThrottled
 }
 
 type UpdateImageCommand struct {
@@ -30,11 +34,13 @@ type UpdateImageCommand struct {
 	Index      int
 	Total      int
 	CategoryId apitype.CategoryId
+	apitype.Throttled
 }
 
 type SetImagesCommand struct {
 	Topic  Topic
 	Images []*apitype.ImageFile
+	apitype.NotThrottled
 }
 
 type Gui interface {

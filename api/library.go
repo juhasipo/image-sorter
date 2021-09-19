@@ -5,32 +5,44 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 )
 
+type DirectoryChangedCommand struct {
+	Directory string
+
+	apitype.NotThrottled
+}
+
 type ImagesQuery struct {
 	ImageFiles []*apitype.ImageFile
-	apitype.Command
+
+	apitype.NotThrottled
 }
 
 type ImageQuery struct {
 	Id apitype.ImageId
-	apitype.Command
+
+	apitype.NotThrottled
 }
 type ImageAtQuery struct {
 	Index int
-	apitype.Command
+
+	apitype.NotThrottled
 }
 
 type SelectCategoryCommand struct {
 	CategoryId apitype.CategoryId
-	apitype.Command
+
+	apitype.NotThrottled
 }
 
 type ImageListCommand struct {
 	ImageListSize int
-	apitype.Command
+
+	apitype.NotThrottled
 }
 type SimilarImagesCommand struct {
 	SendSimilarImages bool
-	apitype.Command
+
+	apitype.NotThrottled
 }
 
 type ImageService interface {

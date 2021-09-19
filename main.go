@@ -121,7 +121,8 @@ func initializeEventBrokers() *Brokers {
 func connectUiAndServices(params *common.Params, stores *Stores, services *Services, imageCache api.ImageStore, brokers *Brokers, gui api.Gui) {
 	logger.Debug.Printf("Connecting events to handlers...")
 	// Initialize startup procedure run when the directory has been chosen
-	handleDirectoryChanged := func(directory string) {
+	handleDirectoryChanged := func(command *api.DirectoryChangedCommand) {
+		directory := command.Directory
 		brokers.Broker.SendToTopic(api.BackendLoading)
 		logger.Info.Printf("Directory changed to '%s'", directory)
 

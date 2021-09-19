@@ -195,7 +195,7 @@ func (s *Ui) Init(directory string) {
 	}
 	logger.Debug.Printf("Opening directory '%s'", directory)
 
-	s.sender.SendCommandToTopic(api.DirectoryChanged, directory)
+	s.sender.SendCommandToTopic(api.DirectoryChanged, &api.DirectoryChangedCommand{Directory: directory})
 }
 
 func (s *Ui) Run() {
