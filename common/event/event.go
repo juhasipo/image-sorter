@@ -10,7 +10,7 @@ import (
 	"vincit.fi/image-sorter/common/logger"
 )
 
-const debounceWindowLength = time.Millisecond * 100
+const debounceWindowLength = time.Millisecond * 300
 
 type debounceEntry struct {
 	topic     api.Topic

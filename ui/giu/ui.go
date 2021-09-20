@@ -86,12 +86,6 @@ const (
 )
 
 func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
-	onImageSelected := func(imageFile *apitype.ImageFile) {
-		broker.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
-			Id: imageFile.Id(),
-		})
-	}
-
 	gui := Ui{
 		win:                 giu.NewMasterWindow("Image Sorter", defaultWindowWidth, defaultWindowHeight, 0),
 		imageCache:          imageCache,
@@ -118,13 +112,18 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			fixOrientation: false,
 			quality:        90,
 		},
-		nextImagesList:     widget.HorizontalImageList(onImageSelected, false, false, true),
-		previousImagesList: widget.HorizontalImageList(onImageSelected, false, true, true),
-		similarImagesList:  widget.HorizontalImageList(onImageSelected, false, false, false),
 		similarImagesShown: false,
 		widthInNumOfImage:  0,
 		zoomLevel:          defaultZoomLevel,
 	}
+
+	onImageSelected := func(imageFile *apitype.ImageFile) {
+		gui.jumpToImageId(imageFile.Id())
+	}
+
+	gui.nextImagesList = widget.HorizontalImageList(onImageSelected, false, false, true)
+	gui.previousImagesList = widget.HorizontalImageList(onImageSelected, false, true, true)
+	gui.similarImagesList = widget.HorizontalImageList(onImageSelected, false, false, false)
 
 	gui.categoryEditWidget = widget.CategoryEdit(
 		func(asDefault bool, categories []*apitype.Category) {
@@ -379,12 +378,12 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 
 		pButton := giu.Button("<").
 			OnClick(func() {
-				s.sender.SendToTopic(api.ImageRequestPrevious)
+				s.jumpToOffset(-1)
 			}).
 			Size(30, h)
 		nButton := giu.Button(">").
 			OnClick(func() {
-				s.sender.SendToTopic(api.ImageRequestNext)
+				s.jumpToOffset(1)
 			}).
 			Size(30, h)
 
@@ -441,16 +440,12 @@ func (s *Ui) imagesWidget() *giu.CustomWidget {
 		giu.PushItemSpacing(0, 0)
 		firstImageButton := giu.Button("<<").
 			OnClick(func() {
-				s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
-					Index: 0,
-				})
+				s.jumpToIndex(0)
 			}).
 			Size(buttonWidth, height)
 		lastImageButton := giu.Button(">>").
 			OnClick(func() {
-				s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
-					Index: -1,
-				})
+				s.jumpToIndex(-1)
 			}).
 			Size(buttonWidth, height)
 		giu.Row(
@@ -584,31 +579,31 @@ func (s *Ui) handleKeyPress() bool {
 	// Navigation
 
 	if giu.IsKeyPressed(giu.KeyPageUp) {
-		s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: hugeJumpSize})
+		s.jumpToOffset(-hugeJumpSize)
 	}
 	if giu.IsKeyPressed(giu.KeyPageUp) {
-		s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: hugeJumpSize})
+		s.jumpToOffset(hugeJumpSize)
 	}
 
 	if giu.IsKeyPressed(giu.KeyHome) {
-		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: 0})
+		s.jumpToIndex(0)
 	}
 	if giu.IsKeyPressed(giu.KeyEnd) {
-		s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{Index: -1})
+		s.jumpToIndex(-1)
 	}
 
 	if giu.IsKeyPressed(giu.KeyLeft) {
 		if controlDown {
-			s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: bigJumpSize})
+			s.jumpToOffset(-bigJumpSize)
 		} else {
-			s.sender.SendToTopic(api.ImageRequestPrevious)
+			s.jumpToOffset(-1)
 		}
 	}
 	if giu.IsKeyPressed(giu.KeyRight) {
 		if controlDown {
-			s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: bigJumpSize})
+			s.jumpToOffset(bigJumpSize)
 		} else {
-			s.sender.SendToTopic(api.ImageRequestNext)
+			s.jumpToOffset(1)
 		}
 	}
 
@@ -626,6 +621,47 @@ func (s *Ui) handleKeyPress() bool {
 		ShowOnlyCategory: altDown,
 	})
 	return true
+}
+
+func (s *Ui) jumpToOffset(jumpSize int) {
+	if jumpSize == 0 {
+		return
+	}
+
+	s.currentImageTexture.ClearTexture()
+
+	jumpMagnitude := jumpSize
+	if jumpMagnitude < 0 {
+		jumpMagnitude = 0 - jumpMagnitude
+	}
+
+	if jumpSize < 0 {
+		if jumpSize == -1 {
+			s.sender.SendToTopic(api.ImageRequestPrevious)
+		} else {
+			s.sender.SendCommandToTopic(api.ImageRequestPreviousOffset, &api.ImageAtQuery{Index: jumpMagnitude})
+		}
+	} else if jumpSize > 0 {
+		if jumpSize == 1 {
+			s.sender.SendToTopic(api.ImageRequestNext)
+		} else {
+			s.sender.SendCommandToTopic(api.ImageRequestNextOffset, &api.ImageAtQuery{Index: jumpMagnitude})
+		}
+	}
+}
+
+func (s *Ui) jumpToIndex(index int) {
+	s.currentImageTexture.ClearTexture()
+	s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
+		Index: index,
+	})
+}
+
+func (s *Ui) jumpToImageId(imageId apitype.ImageId) {
+	s.currentImageTexture.ClearTexture()
+	s.sender.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
+		Id: imageId,
+	})
 }
 
 func (s *Ui) UpdateCategories(categories *api.UpdateCategoriesCommand) {

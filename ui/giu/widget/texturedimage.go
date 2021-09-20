@@ -100,23 +100,43 @@ func (s *TexturedImage) NewImageLoaded() bool {
 }
 
 func (s *TexturedImage) Width() float32 {
-	return s.current.Width
+	if s.current != nil {
+		return s.current.Width
+	} else {
+		return 0
+	}
 }
 
 func (s *TexturedImage) Height() float32 {
-	return s.current.Height
+	if s.current != nil {
+		return s.current.Height
+	} else {
+		return 0
+	}
 }
 
 func (s *TexturedImage) Ratio() float32 {
-	return s.current.Ratio
+	if s.current != nil {
+		return s.current.Ratio
+	} else {
+		return 1
+	}
 }
 
 func (s *TexturedImage) Texture() *giu.Texture {
-	return s.current.Texture
+	if s.current != nil {
+		return s.current.Texture
+	} else {
+		return nil
+	}
 }
 
 func (s *TexturedImage) Image() *apitype.ImageFile {
-	return s.current.Image
+	if s.current != nil {
+		return s.current.Image
+	} else {
+		return nil
+	}
 }
 
 func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32) *giu.Texture {
@@ -182,6 +202,13 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFa
 		}
 	}
 	return s.current.Texture
+}
+
+func (s *TexturedImage) ClearTexture() {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	s.current.Texture = nil
 }
 
 func (s *TexturedImage) LoadImageAsTextureThumbnail() *giu.Texture {
