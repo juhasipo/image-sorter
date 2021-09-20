@@ -389,6 +389,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 
 		if s.currentImageWidget == nil {
 			s.currentImageWidget = widget.ResizableImage(s.currentImageTexture)
+			s.currentImageWidget.SetZoomHandlers(s.zoomIn, s.zoomOut)
 		} else {
 			s.currentImageWidget.UpdateImage(s.currentImageTexture)
 		}

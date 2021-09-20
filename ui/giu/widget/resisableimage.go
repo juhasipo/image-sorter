@@ -14,6 +14,8 @@ type ResizableImageWidget struct {
 	currentActualZoom       float32
 	tintScale               float32
 	delta                   time.Time
+	onZoomIn                func()
+	onZoomOut               func()
 	giu.ImageWidget
 }
 
@@ -47,6 +49,11 @@ func (s *ResizableImageWidget) ImageSize(width float32, height float32) *Resizab
 func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32) *ResizableImageWidget {
 	s.zoomFactor = zoomFactor
 	return s
+}
+
+func (s *ResizableImageWidget) SetZoomHandlers(onZoomIn func(), onZoomOut func()) {
+	s.onZoomIn = onZoomIn
+	s.onZoomOut = onZoomOut
 }
 
 func (s *ResizableImageWidget) CurrentActualZoom() float32 {
@@ -102,6 +109,20 @@ func (s *ResizableImageWidget) Build() {
 		B: tintValue,
 		A: tintValue,
 	})
+
+	if giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl) {
+		// TODO: Somehow prevent image scroll when zooming
+		delta := giu.Context.IO().GetMouseWheelDelta()
+		if delta > 0 {
+			if s.onZoomIn != nil {
+				s.onZoomIn()
+			}
+		} else if delta < 0 {
+			if s.onZoomOut != nil {
+				s.onZoomOut()
+			}
+		}
+	}
 
 	giu.Column(
 		dummyV,
