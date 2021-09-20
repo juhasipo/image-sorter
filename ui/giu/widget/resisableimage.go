@@ -4,12 +4,14 @@ import (
 	"github.com/AllenDang/giu"
 	"image/color"
 	"time"
+	"vincit.fi/image-sorter/ui/giu/guiapi"
 )
 
 type ResizableImageWidget struct {
 	texturedImage           *TexturedImage
 	maxHeight, maxWidth     float32
 	zoomFactor              float32
+	zoomMode                guiapi.ZoomMode
 	imageWidth, imageHeight float32
 	currentActualZoom       float32
 	tintScale               float32
@@ -24,7 +26,8 @@ func ResizableImage(image *TexturedImage) *ResizableImageWidget {
 		texturedImage: image,
 		maxHeight:     0,
 		maxWidth:      0,
-		zoomFactor:    -1,
+		zoomFactor:    1,
+		zoomMode:      guiapi.ZoomFit,
 		ImageWidget:   *giu.Image(image.Texture()),
 		tintScale:     1,
 		delta:         time.Now(),
@@ -46,8 +49,9 @@ func (s *ResizableImageWidget) ImageSize(width float32, height float32) *Resizab
 	return s
 }
 
-func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32) *ResizableImageWidget {
+func (s *ResizableImageWidget) ZoomFactor(zoomFactor float32, zoomMode guiapi.ZoomMode) *ResizableImageWidget {
 	s.zoomFactor = zoomFactor
+	s.zoomMode = zoomMode
 	return s
 }
 
@@ -57,7 +61,11 @@ func (s *ResizableImageWidget) SetZoomHandlers(onZoomIn func(), onZoomOut func()
 }
 
 func (s *ResizableImageWidget) CurrentActualZoom() float32 {
-	return s.currentActualZoom
+	if s.imageWidth > 0 {
+		return s.currentActualZoom
+	} else {
+		return 1
+	}
 }
 
 func (s *ResizableImageWidget) Build() {
@@ -65,7 +73,7 @@ func (s *ResizableImageWidget) Build() {
 
 	var newW float32
 	var newH float32
-	if s.zoomFactor < 0.0 { // Fit to size => Display area size affects the image size
+	if s.zoomMode == guiapi.ZoomFit {
 		// Check if area size is limited
 		// If yes, then those should be used for offset calculation
 		// and the image size calculation

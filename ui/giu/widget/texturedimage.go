@@ -7,6 +7,7 @@ import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/ui/giu/guiapi"
 )
 
 type textureEntry struct {
@@ -139,7 +140,7 @@ func (s *TexturedImage) Image() *apitype.ImageFile {
 	}
 }
 
-func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32) *giu.Texture {
+func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32, zoomMode guiapi.ZoomMode) *giu.Texture {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -150,7 +151,7 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFa
 	// First check what size is actually required
 	var requiredW float32
 	var requiredH float32
-	if zoomFactor < 0 {
+	if zoomMode == guiapi.ZoomFit {
 		// If zoom to fit, then just load what was asked
 		requiredW = width
 		requiredH = height
