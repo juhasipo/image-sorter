@@ -24,10 +24,8 @@ type TexturedImage struct {
 	lastWidth  int
 	lastHeight int
 	imageCache api.ImageStore
-	mux        sync.Mutex
+	generalMux sync.RWMutex
 }
-
-var cache = map[apitype.ImageId]*giu.Texture{}
 
 func NewTexturedImage(image *apitype.ImageFile, imageCache api.ImageStore) *TexturedImage {
 	width := float32(0)
@@ -63,8 +61,8 @@ func NewEmptyTexturedImage(imageCache api.ImageStore) *TexturedImage {
 }
 
 func (s *TexturedImage) ChangeImage(image *apitype.ImageFile) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
+	s.generalMux.Lock()
+	defer s.generalMux.Unlock()
 
 	width := float32(image.Width())
 	height := float32(image.Height())
@@ -87,6 +85,9 @@ func (s *TexturedImage) ChangeImage(image *apitype.ImageFile) {
 }
 
 func (s *TexturedImage) IsSame(other *TexturedImage) bool {
+	s.generalMux.RLock()
+	defer s.generalMux.RUnlock()
+
 	if s == nil || s.current == nil {
 		return false
 	}
@@ -101,50 +102,62 @@ func (s *TexturedImage) NewImageLoaded() bool {
 }
 
 func (s *TexturedImage) Width() float32 {
-	if s.current != nil {
-		return s.current.Width
+	c := s.getCurrent()
+	if c != nil {
+		return c.Width
 	} else {
 		return 0
 	}
 }
 
 func (s *TexturedImage) Height() float32 {
-	if s.current != nil {
-		return s.current.Height
+	c := s.getCurrent()
+	if c != nil {
+		return c.Height
 	} else {
 		return 0
 	}
 }
 
 func (s *TexturedImage) Ratio() float32 {
-	if s.current != nil {
-		return s.current.Ratio
+	c := s.getCurrent()
+	if c != nil {
+		return c.Ratio
 	} else {
 		return 1
 	}
 }
 
 func (s *TexturedImage) Texture() *giu.Texture {
-	if s.current != nil {
-		return s.current.Texture
+	c := s.getCurrent()
+	if c != nil {
+		return c.Texture
 	} else {
 		return nil
 	}
 }
 
 func (s *TexturedImage) Image() *apitype.ImageFile {
-	if s.current != nil {
-		return s.current.Image
+	c := s.getCurrent()
+	if c != nil {
+		return c.Image
 	} else {
 		return nil
 	}
 }
 
-func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32, zoomMode guiapi.ZoomMode) *giu.Texture {
-	s.mux.Lock()
-	defer s.mux.Unlock()
+func (s *TexturedImage) getCurrent() *textureEntry {
+	return s.current
+}
 
-	if s.imageCache == nil || s.current == nil {
+func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFactor float32, zoomMode guiapi.ZoomMode) *giu.Texture {
+	s.generalMux.Lock()
+	current := s.getCurrent()
+	loading := s.loading
+	lastWidth, lastHeight := s.lastWidth, s.lastHeight
+	s.generalMux.Unlock()
+
+	if s.imageCache == nil || current == nil {
 		return nil
 	}
 
@@ -157,88 +170,103 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFa
 		requiredH = height
 	} else if zoomFactor < 1.0 {
 		// If zoomed out, load using the image size and zoom factor
-		requiredW = s.current.Width * zoomFactor
-		requiredH = s.current.Height * zoomFactor
+		requiredW = current.Width * zoomFactor
+		requiredH = current.Height * zoomFactor
 	} else {
 		// If zoomed in, just load the max size image
-		requiredW = s.current.Width
-		requiredH = s.current.Height
+		requiredW = current.Width
+		requiredH = current.Height
 	}
 
-	if s.current != nil {
-		// Only load new image if the image grows in size
-		// No need to optimize image usage in this case
-		if s.current.Texture != nil && int(requiredW) <= s.lastWidth && int(requiredH) <= s.lastHeight {
-			return s.current.Texture
-		}
+	// Only load new image if the image grows in size
+	// No need to optimize image usage in this case
+	if current.Texture != nil && int(requiredW) <= lastWidth && int(requiredH) <= lastHeight {
+		return current.Texture
 	}
 
+	s.generalMux.Lock()
 	s.lastWidth = int(requiredW)
 	s.lastHeight = int(requiredH)
+	lastWidth, lastHeight = s.lastWidth, s.lastHeight
+	s.generalMux.Unlock()
 
 	if logger.IsLogLevel(logger.TRACE) {
-		logger.Trace.Printf("Load imageId=%d with new size (%d x %d)", s.current.Image.Id(), s.lastWidth, s.lastHeight)
+		logger.Trace.Printf("Load imageId=%d with new size (%d x %d)", current.Image.Id(), lastWidth, lastHeight)
 	}
 
-	if s.loading != nil {
-		scaledImage, _ := s.imageCache.GetScaled(s.loading.Image.Id(), apitype.SizeOf(s.lastWidth, s.lastHeight))
-		if scaledImage == nil {
-			s.current.Texture = nil
-		} else {
-			go func() {
-				s.mux.Lock()
-				defer s.mux.Unlock()
-				loadedTexture, err := giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
-
-				if s.loading != nil {
-					s.loading.Texture = loadedTexture
-					s.current = s.loading
-					s.loading = nil
-					if err != nil {
-						logger.Error.Print(err)
+	if loading != nil {
+		toLoadId, toLoadWidth, toLoadHeight := loading.Image.Id(), lastWidth, lastHeight
+		go func() {
+			if toLoadId == apitype.NoImage {
+				current.Texture = nil
+			} else {
+				scaledImage, _ := s.imageCache.GetScaled(toLoadId, apitype.SizeOf(toLoadWidth, toLoadHeight))
+				if scaledImage == nil || (toLoadWidth <= 0 || toLoadHeight <= 0) {
+					s.generalMux.Lock()
+					current.Texture = nil
+					s.generalMux.Unlock()
+				} else {
+					loadedTexture, err := giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
+					s.generalMux.Lock()
+					if s.loading != nil {
+						s.loading.Texture = loadedTexture
+						s.current = s.loading
+						s.loading = nil
+						if err != nil {
+							logger.Error.Print(err)
+						}
 					}
+					s.generalMux.Unlock()
 				}
-				giu.Update()
-			}()
-		}
+			}
+			giu.Update()
+		}()
 	}
 	return s.current.Texture
 }
 
 func (s *TexturedImage) ClearTexture() {
-	s.mux.Lock()
-	defer s.mux.Unlock()
+	s.generalMux.Lock()
+	defer s.generalMux.Unlock()
 
 	s.current.Texture = nil
 }
 
 func (s *TexturedImage) LoadImageAsTextureThumbnail() *giu.Texture {
-	if s.imageCache == nil || s.current == nil || s.current.Image == nil {
+	s.generalMux.Lock()
+	current := s.getCurrent()
+	loading := s.loading
+	s.generalMux.Unlock()
+
+	if s.imageCache == nil || current == nil || current.Image == nil {
 		return nil
 	}
 
-	if s.loading == nil {
-		if s.current.Texture != nil {
-			return s.current.Texture
-		}
+	if loading == nil && current.Texture != nil {
+		return current.Texture
 	}
 
-	if s.loading != nil {
-		scaledImage, _ := s.imageCache.GetThumbnail(s.loading.Image.Id())
-		if scaledImage == nil {
-			s.current.Texture = nil
-		} else {
-			go func() {
-				var err error
-				s.loading.Texture, err = giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
+	if loading != nil {
+		toLoadId := loading.Image.Id()
+		go func() {
+			scaledImage, _ := s.imageCache.GetThumbnail(toLoadId)
+			if scaledImage == nil {
+				s.generalMux.Lock()
+				current.Texture = nil
+				s.generalMux.Unlock()
+			} else {
+				texture, err := giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
+				s.generalMux.Lock()
+				s.loading.Texture = texture
 				s.current = s.loading
 				s.loading = nil
 				if err != nil {
 					logger.Error.Print(err)
 				}
-				giu.Update()
-			}()
-		}
+				s.generalMux.Unlock()
+			}
+			giu.Update()
+		}()
 	}
 	return s.current.Texture
 }

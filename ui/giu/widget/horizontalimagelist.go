@@ -96,7 +96,7 @@ func (s *HorizontalImageListWidget) Build() {
 					factor = 1 - (float32(i+1) * float32(0.05))
 				}
 
-				imageRatio := img.Width() / img.Height()
+				imageRatio := img.Ratio()
 				targetHeight := s.height * factor
 
 				width := imageRatio * targetHeight
