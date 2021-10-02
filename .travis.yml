@@ -1,0 +1,25 @@
+language: go
+
+go:
+  - "1.15"
+
+jobs:
+  include:
+    - name: "Linux build"
+      os: linux
+      install:
+        - go get -v -t -d ./...
+        - go get gotest.tools/gotestsum
+      script:
+        - gotestsum --junitfile unit-tests.xml
+        - ./script/build-linux.sh
+      after_success: ./script/package-linux.sh
+    - name: "Windows build"
+      os: windows
+      install:
+        - go get -v -t -d ./...
+        - go get gotest.tools/gotestsum
+      script:
+        - gotestsum --junitfile unit-tests.xml
+        - ./script/build-win.sh
+      after_success: ./script/package-win.sh
