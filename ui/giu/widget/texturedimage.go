@@ -19,12 +19,13 @@ type textureEntry struct {
 }
 
 type TexturedImage struct {
-	current    *textureEntry
-	loading    *textureEntry
-	lastWidth  int
-	lastHeight int
-	imageCache api.ImageStore
-	generalMux sync.RWMutex
+	current      *textureEntry
+	loading      *textureEntry
+	lastWidth    int
+	lastHeight   int
+	imageCache   api.ImageStore
+	generalMux   sync.RWMutex
+	imageLoadMux sync.Mutex
 }
 
 func NewTexturedImage(image *apitype.ImageFile, imageCache api.ImageStore) *TexturedImage {
@@ -63,6 +64,8 @@ func NewEmptyTexturedImage(imageCache api.ImageStore) *TexturedImage {
 func (s *TexturedImage) ChangeImage(image *apitype.ImageFile) {
 	s.generalMux.Lock()
 	defer s.generalMux.Unlock()
+
+	logger.Debug.Printf("Changing image to %d", image.Id())
 
 	width := float32(image.Width())
 	height := float32(image.Height())
@@ -196,27 +199,25 @@ func (s *TexturedImage) LoadImageAsTexture(width float32, height float32, zoomFa
 
 	if loading != nil {
 		toLoadId, toLoadWidth, toLoadHeight := loading.Image.Id(), lastWidth, lastHeight
+		s.imageLoadMux.Lock()
 		go func() {
+			defer s.imageLoadMux.Unlock()
 			if toLoadId == apitype.NoImage {
 				current.Texture = nil
 			} else {
+				logger.Trace.Printf("Loading image %d", toLoadId)
 				scaledImage, _ := s.imageCache.GetScaled(toLoadId, apitype.SizeOf(toLoadWidth, toLoadHeight))
 				if scaledImage == nil || (toLoadWidth <= 0 || toLoadHeight <= 0) {
 					s.generalMux.Lock()
 					current.Texture = nil
 					s.generalMux.Unlock()
 				} else {
-					loadedTexture, err := giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
-					s.generalMux.Lock()
-					if s.loading != nil {
-						s.loading.Texture = loadedTexture
-						s.current = s.loading
-						s.loading = nil
-						if err != nil {
-							logger.Error.Print(err)
-						}
+					texture, err := giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
+					if err != nil {
+						logger.Error.Print(err)
 					}
-					s.generalMux.Unlock()
+					logger.Trace.Printf("Switch image to %d", toLoadId)
+					s.switchTexture(texture)
 				}
 			}
 			giu.Update()
@@ -248,7 +249,9 @@ func (s *TexturedImage) LoadImageAsTextureThumbnail() *giu.Texture {
 
 	if loading != nil {
 		toLoadId := loading.Image.Id()
+		s.imageLoadMux.Lock()
 		go func() {
+			defer s.imageLoadMux.Unlock()
 			scaledImage, _ := s.imageCache.GetThumbnail(toLoadId)
 			if scaledImage == nil {
 				s.generalMux.Lock()
@@ -256,17 +259,26 @@ func (s *TexturedImage) LoadImageAsTextureThumbnail() *giu.Texture {
 				s.generalMux.Unlock()
 			} else {
 				texture, err := giu.NewTextureFromRgba(scaledImage.(*image.RGBA))
-				s.generalMux.Lock()
-				s.loading.Texture = texture
-				s.current = s.loading
-				s.loading = nil
 				if err != nil {
 					logger.Error.Print(err)
 				}
-				s.generalMux.Unlock()
+				s.switchTexture(texture)
 			}
 			giu.Update()
 		}()
 	}
 	return s.current.Texture
+}
+
+func (s *TexturedImage) switchTexture(texture *giu.Texture) {
+	s.generalMux.Lock()
+	defer s.generalMux.Unlock()
+	if s.loading != nil {
+		s.loading.Texture = texture
+		s.current = s.loading
+		s.loading = nil
+	} else {
+		s.current.Texture = texture
+		logger.Warn.Printf("Trying to change current image to loaded, but no loaded image available")
+	}
 }
