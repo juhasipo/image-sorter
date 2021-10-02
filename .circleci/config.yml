@@ -1,22 +1,56 @@
 # Golang CircleCI 2.0 configuration file
 #
 # Check https://circleci.com/docs/2.0/language-go/ for more details
-version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/golang:1.14
+version: 2.1
 
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+orbs:
+  windows: circleci/windows@2.4.0
+
+jobs:
+  build-win:
+    executor:
+      name: windows/default
+      shell: bash.exe
+      version: edge
+    working_directory: /go/src/github.com/vincit/image-sorter
     steps:
       - checkout
-      - run: sudo apt-get --allow-releaseinfo-change update
-      - run: sudo apt-get install -y libgtk-3-dev libjpeg-dev dpkg-dev devscripts
+      - run: choco install mingw
+      - run:
+          name: "Install GCC toolchain and Lib JPEG"
+          command: C:\tools\msys64\msys2_shell.cmd -defterm -no-start -c 'pacman --noconfirm -Syuu mingw-w64-x86_64-toolchain mingw-w64-x86_64-libjpeg-turbo'
+          shell: cmd.exe
+      - run: curl -SL -o gotestsum.tar.gz "https://github.com/gotestyourself/gotestsum/releases/download/v1.7.0/gotestsum_1.7.0_windows_amd64.tar.gz"
+      - run: tar -xzf gotestsum.tar.gz
       - run: go get -v -t -d ./...
-      - run: gotestsum --junitfile unit-tests.xml
+      #- run: ./gotestsum.exe --junitfile unit-tests.xml
       - store_test_results:
           path: .
-      - run: ./script/build-linux.sh
-      - run: ./script/package-linux.sh
+      - run: ./script/build-win.sh
+      - run: ./script/package-win.sh
       - store_artifacts:
-          path: deploy/linux/artifacts
+          path: deploy/win/artifacts
+#  build-linux:
+#    docker:
+#      - image: circleci/golang:1.14
+#
+#    working_directory: /go/src/github.com/vincit/image-sorter
+#    steps:
+#      - checkout
+#      - run: sudo apt-get --allow-releaseinfo-change update
+#      - run: sudo apt-get install -y libgtk-3-dev libjpeg-dev dpkg-dev devscripts
+#      - run: go get -v -t -d ./...
+#      - run: gotestsum --junitfile unit-tests.xml
+#      - store_test_results:
+#          path: .
+#      - run: ./script/build-linux.sh
+#      - run: ./script/package-linux.sh
+#      - store_artifacts:
+#          path: deploy/linux/artifacts
+
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      #- build-linux
+      - build-win
