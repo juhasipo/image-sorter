@@ -1,0 +1,65 @@
+name: Image Sorter
+on: [ push ]
+jobs:
+  Build-Linux:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15.0'
+      - name: Setup gotestsum
+        uses: autero1/action-gotestsum@v1.0.0
+        with:
+          gotestsum_version: '1.7.0'
+      - uses: openrndr/setup-opengl@v1.1
+      - run: xvfb-run glxinfo
+      - run: sudo apt-get --allow-releaseinfo-change update
+      - run: sudo apt-get install -y libgtk-3-dev libjpeg-dev dpkg-dev devscripts libgl1-mesa-dev xorg-dev
+      - run: go get -v -t -d ./...
+      - run: gotestsum --junitfile unit-tests.xml
+      - run: ./script/build-linux.sh
+#      - run: ./script/package-linux.sh
+#  Build-Windows:
+#    runs-on: windows-2019
+#    env:
+#      CGO_CFLAGS: "-g -O2 -I/d/a/_temp/msys/msys64/mingw64/include -L/d/a/_temp/msys/msys64/mingw64/lib"
+#      CGO_CPPFLAGS: "-g -O2 -I/d/a/_temp/msys/msys64/mingw64/include -L/d/a/_temp/msys/msys64/mingw64/lib"
+#      CGO_CXXFLAGS: "-g -O2 -I/d/a/_temp/msys/msys64/mingw64/include -L/d/a/_temp/msys/msys64/mingw64/lib"
+#      CGO_LDFLAGS: "-g -O2 -L/d/a/_temp/msys/msys64/mingw64/lib"
+#      CGO_ENABLED: 1
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: actions/setup-go@v2
+#        with:
+#          go-version: '^1.15.0'
+#      - name: Install MSYS2 with MinGW64 and Lib JPEG Turbo
+#        uses: msys2/setup-msys2@v2
+#        with:
+#          msystem: MINGW64
+#          update: true
+#          install: >-
+#            mingw-w64-x86_64-toolchain
+#            mingw-w64-x86_64-libjpeg-turbo
+#      - run: printenv
+#        shell: bash
+#      - run: ls /d/a/_temp/msys/msys64/mingw64/lib
+#        shell: bash
+#      - run: ls /d/a/_temp/msys/msys64/mingw64/include
+#        shell: bash
+#      - name: Setup gotestsum
+#        uses: autero1/action-gotestsum@v1.0.0
+#        with:
+#          gotestsum_version: '1.7.0'
+#      - name: Install dependencies
+#        run: go get -v -t -d ./...
+#      - name: Install gotestsum
+#        run: go get -v -t -d gotest.tools/gotestsum
+#      - name: Run tests
+#        run: gotestsum --junitfile unit-tests.xml
+#      - name: Build
+#        run: ./script/build-win.sh
+#        shell: msys2 {0}
+#      - name: Package
+#        run: ./script/package-win.sh
+#        shell: msys2 {0}
