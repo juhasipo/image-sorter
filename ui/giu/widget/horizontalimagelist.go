@@ -6,12 +6,13 @@ import (
 	"image/color"
 	"sync"
 	"vincit.fi/image-sorter/api/apitype"
+	"vincit.fi/image-sorter/ui/giu/guiapi"
 )
 
 var imageHoverOverlayColor = color.RGBA{R: 255, G: 255, B: 255, A: 64}
 
 type HorizontalImageListWidget struct {
-	images           []*TexturedImage
+	images           []*guiapi.TexturedImage
 	showLabel        bool
 	width            float32
 	reverse          bool
@@ -24,7 +25,7 @@ type HorizontalImageListWidget struct {
 
 func HorizontalImageList(onClick func(*apitype.ImageFile), showLabel bool, reverse bool, shrink bool) *HorizontalImageListWidget {
 	return &HorizontalImageListWidget{
-		images:    []*TexturedImage{},
+		images:    []*guiapi.TexturedImage{},
 		showLabel: showLabel,
 		width:     0,
 		height:    0,
@@ -40,17 +41,17 @@ func (s *HorizontalImageListWidget) Size(width float32, height float32) *Horizon
 	return s
 }
 
-func (s *HorizontalImageListWidget) SetImages(images []*TexturedImage) *HorizontalImageListWidget {
+func (s *HorizontalImageListWidget) SetImages(images []*guiapi.TexturedImage) *HorizontalImageListWidget {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	var newHorizontalImageList []*TexturedImage
-	var changedImages []*TexturedImage
+	var newHorizontalImageList []*guiapi.TexturedImage
+	var changedImages []*guiapi.TexturedImage
 
 	// Very naive algorithm to find out which images
 	// need to be reloaded and which can be re-used
 	for _, image := range images {
-		var found *TexturedImage = nil
+		var found *guiapi.TexturedImage = nil
 		for _, texturedImage := range s.images {
 			if image.IsSame(texturedImage) {
 				found = texturedImage
@@ -66,10 +67,6 @@ func (s *HorizontalImageListWidget) SetImages(images []*TexturedImage) *Horizont
 	}
 
 	s.images = newHorizontalImageList
-
-	for _, texturedImage := range changedImages {
-		texturedImage.LoadImageAsTextureThumbnail()
-	}
 
 	return s
 }
@@ -96,7 +93,7 @@ func (s *HorizontalImageListWidget) Build() {
 					factor = 1 - (float32(i+1) * float32(0.05))
 				}
 
-				imageRatio := img.Ratio()
+				imageRatio := img.Ratio
 				targetHeight := s.height * factor
 
 				width := imageRatio * targetHeight
@@ -119,7 +116,7 @@ func (s *HorizontalImageListWidget) Build() {
 					end.X = tmp
 				}
 
-				if img.Texture() != nil {
+				if img.Texture != nil {
 					start.X += pos.X
 					start.Y += pos.Y
 					end.X += pos.X
@@ -130,12 +127,12 @@ func (s *HorizontalImageListWidget) Build() {
 						Min: start,
 						Max: end,
 					}
-					canvas.AddImage(img.Texture(), start, end)
+					canvas.AddImage(img.Texture, start, end)
 					if mousePos.In(imgArea) {
-						s.highlightedImage = s.images[i].Image()
+						s.highlightedImage = s.images[i].Image
 						giu.SetMouseCursor(giu.MouseCursorHand)
 						if giu.IsMouseClicked(giu.MouseButtonLeft) {
-							s.onClick(s.images[i].Image())
+							s.onClick(s.images[i].Image)
 						}
 						canvas.AddRectFilled(start, end, imageHoverOverlayColor, 0, giu.DrawFlagsNone)
 					}

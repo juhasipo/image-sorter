@@ -23,12 +23,12 @@ type Ui struct {
 	sender                 api.Sender
 	categories             []*apitype.Category
 	rootPath               string
-	currentImageTexture    *widget.TexturedImage
+	imageManager           *ImageManager
 	currentImageWidget     *widget.ResizableImageWidget
 	currentThumbnailWidget *widget.ResizableImageWidget
-	nextImages             []*widget.TexturedImage
-	previousImages         []*widget.TexturedImage
-	similarImages          []*widget.TexturedImage
+	nextImages             []*guiapi.TexturedImage
+	previousImages         []*guiapi.TexturedImage
+	similarImages          []*guiapi.TexturedImage
 	categoryKeyManager     *CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
@@ -89,11 +89,11 @@ const (
 
 func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
 	gui := Ui{
-		win:                 giu.NewMasterWindow("Image Sorter", defaultWindowWidth, defaultWindowHeight, 0),
-		imageCache:          imageCache,
-		sender:              broker,
-		rootPath:            params.RootPath(),
-		currentImageTexture: widget.NewEmptyTexturedImage(imageCache),
+		win:          giu.NewMasterWindow("Image Sorter", defaultWindowWidth, defaultWindowHeight, 0),
+		imageCache:   imageCache,
+		sender:       broker,
+		rootPath:     params.RootPath(),
+		imageManager: NewImageManager(imageCache),
 		progressModal: progressModal{
 			open:     false,
 			label:    "",
@@ -162,7 +162,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 				}
 			} else {
 				broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
-					ImageId:         gui.currentImageTexture.Image().Id(),
+					ImageId:         gui.imageManager.CurrentImage().Id(),
 					CategoryId:      def.categoryId,
 					Operation:       operation,
 					StayOnSameImage: action.StayOnImage,
@@ -216,10 +216,9 @@ func (s *Ui) Run() {
 				logger.Trace.Printf("Window size changed from (%d x %d) to (%d x %d)",
 					s.oldWidth, s.oldHeight, newWidth, newHeight)
 			}
-			factor, mode := s.getZoomFactor()
-			go s.currentImageTexture.LoadImageAsTexture(float32(newWidth), float32(newHeight), factor, mode)
 			s.oldWidth = newWidth
 			s.oldHeight = newHeight
+			s.imageManager.SetSize(float32(newWidth), float32(newHeight), s.zoomMode, s.currentZoom)
 		}
 
 		renderStart := time.Now()
@@ -256,8 +255,8 @@ func (s *Ui) Run() {
 				highlightedImage = s.nextImagesList.HighlightedImage()
 			} else if s.previousImagesList.HighlightedImage() != nil {
 				highlightedImage = s.previousImagesList.HighlightedImage()
-			} else if s.currentImageTexture.Image() != nil {
-				highlightedImage = s.currentImageTexture.Image()
+			} else if s.imageManager.CurrentImage() != nil {
+				highlightedImage = s.imageManager.CurrentImage()
 			}
 
 			if highlightedImage != nil {
@@ -403,10 +402,10 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 			Size(30, h)
 
 		if s.currentImageWidget == nil {
-			s.currentImageWidget = widget.ResizableImage(s.currentImageTexture)
+			s.currentImageWidget = widget.ResizableImage(s.imageManager.CurrentImageTexture())
 			s.currentImageWidget.SetZoomHandlers(s.zoomIn, s.zoomOut)
 		} else {
-			s.currentImageWidget.UpdateImage(s.currentImageTexture)
+			s.currentImageWidget.UpdateImage(s.imageManager.CurrentImageTexture())
 		}
 
 		giu.Style().
@@ -422,7 +421,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 						Flags(giu.WindowFlagsHorizontalScrollbar).
 						Layout(s.currentImageWidget.
 							ZoomFactor(s.getZoomFactor()).
-							ImageSize(s.currentImageTexture.Width(), s.currentImageTexture.Height()),
+							ImageSize(s.imageManager.CurrentImageTexture().Width, s.imageManager.CurrentImageTexture().Height),
 						),
 					nButton,
 				),
@@ -448,9 +447,9 @@ func (s *Ui) imagesWidget() *giu.CustomWidget {
 		s.widthInNumOfImage = widthInNumOfImage
 
 		if s.currentThumbnailWidget == nil {
-			s.currentThumbnailWidget = widget.ResizableImage(s.currentImageTexture)
+			s.currentThumbnailWidget = widget.ResizableImage(s.imageManager.CurrentImageTexture())
 		}
-		s.currentThumbnailWidget.UpdateImage(s.currentImageTexture)
+		s.currentThumbnailWidget.UpdateImage(s.imageManager.CurrentImageTexture())
 		s.currentThumbnailWidget.Size(centerPieceWidth, height)
 
 		giu.PushItemSpacing(0, 0)
@@ -644,7 +643,7 @@ func (s *Ui) jumpToOffset(jumpSize int) {
 		return
 	}
 
-	s.currentImageTexture.ClearTexture()
+	//s.imageManager.SetCurrentImage(nil)
 
 	jumpMagnitude := jumpSize
 	if jumpMagnitude < 0 {
@@ -667,14 +666,14 @@ func (s *Ui) jumpToOffset(jumpSize int) {
 }
 
 func (s *Ui) jumpToIndex(index int) {
-	s.currentImageTexture.ClearTexture()
+	//s.imageManager.SetCurrentImage(nil)
 	s.sender.SendCommandToTopic(api.ImageRequestAtIndex, &api.ImageAtQuery{
 		Index: index,
 	})
 }
 
 func (s *Ui) jumpToImageId(imageId apitype.ImageId) {
-	s.currentImageTexture.ClearTexture()
+	//s.imageManager.SetCurrentImage(nil)
 	s.sender.SendCommandToTopic(api.ImageRequest, &api.ImageQuery{
 		Id: imageId,
 	})
@@ -691,30 +690,21 @@ func (s *Ui) UpdateCategories(categories *api.UpdateCategoriesCommand) {
 
 func (s *Ui) SetImages(command *api.SetImagesCommand) {
 	if command.Topic == api.ImageRequestNext {
-		s.nextImages = []*widget.TexturedImage{}
+		s.nextImages = []*guiapi.TexturedImage{}
 		for _, data := range command.Images {
-			ti := widget.NewTexturedImage(
-				data,
-				s.imageCache,
-			)
+			ti := s.imageManager.GetThumbnailTexture(data)
 			s.nextImages = append(s.nextImages, ti)
 		}
 	} else if command.Topic == api.ImageRequestPrevious {
-		s.previousImages = []*widget.TexturedImage{}
+		s.previousImages = []*guiapi.TexturedImage{}
 		for _, data := range command.Images {
-			ti := widget.NewTexturedImage(
-				data,
-				s.imageCache,
-			)
+			ti := s.imageManager.GetThumbnailTexture(data)
 			s.previousImages = append(s.previousImages, ti)
 		}
 	} else if command.Topic == api.ImageRequestSimilar {
-		s.similarImages = []*widget.TexturedImage{}
+		s.similarImages = []*guiapi.TexturedImage{}
 		for _, data := range command.Images {
-			ti := widget.NewTexturedImage(
-				data,
-				s.imageCache,
-			)
+			ti := s.imageManager.GetThumbnailTexture(data)
 			s.similarImages = append(s.similarImages, ti)
 		}
 	}
@@ -722,11 +712,9 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 }
 
 func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
-	s.currentImageTexture.ChangeImage(command.Image)
 	width, height := s.win.GetSize()
+	s.imageManager.SetCurrentImage(command.Image, float32(width), float32(height), s.zoomMode, s.currentZoom)
 	s.currentCategoryId = command.CategoryId
-	factor, mode := s.getZoomFactor()
-	s.currentImageTexture.LoadImageAsTexture(float32(width), float32(height), factor, mode)
 	s.sendCurrentImageChangedEvent()
 
 	s.imageCache.Purge()
@@ -735,7 +723,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		ImageId: s.currentImageTexture.Image().Id(),
+		ImageId: s.imageManager.CurrentImage().Id(),
 	})
 }
 

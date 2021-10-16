@@ -34,7 +34,7 @@ type UpdateImageCommand struct {
 	Index      int
 	Total      int
 	CategoryId apitype.CategoryId
-	apitype.Throttled
+	apitype.NotThrottled
 }
 
 type SetImagesCommand struct {

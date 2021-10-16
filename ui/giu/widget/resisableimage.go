@@ -8,7 +8,7 @@ import (
 )
 
 type ResizableImageWidget struct {
-	texturedImage           *TexturedImage
+	texturedImage           *guiapi.TexturedImage
 	maxHeight, maxWidth     float32
 	zoomFactor              float32
 	zoomMode                guiapi.ZoomMode
@@ -21,14 +21,14 @@ type ResizableImageWidget struct {
 	giu.ImageWidget
 }
 
-func ResizableImage(image *TexturedImage) *ResizableImageWidget {
+func ResizableImage(image *guiapi.TexturedImage) *ResizableImageWidget {
 	return &ResizableImageWidget{
 		texturedImage: image,
 		maxHeight:     0,
 		maxWidth:      0,
 		zoomFactor:    1,
 		zoomMode:      guiapi.ZoomFit,
-		ImageWidget:   *giu.Image(image.Texture()),
+		ImageWidget:   *giu.Image(image.Texture),
 		tintScale:     1,
 		delta:         time.Now(),
 	}
@@ -83,17 +83,17 @@ func (s *ResizableImageWidget) Build() {
 		}
 
 		newW = maxW
-		newH = newW / s.texturedImage.Ratio()
+		newH = newW / s.texturedImage.Ratio
 
 		if newH > maxH {
-			newW = maxH * s.texturedImage.Ratio()
+			newW = maxH * s.texturedImage.Ratio
 			newH = maxH
 		}
 		s.currentActualZoom = newW / s.imageWidth
 	} else { // Show zoomed image => Display area size doesn't affect the image size
 		// Image size should be provided for the zoom to work
 		newW = s.imageWidth * s.zoomFactor
-		newH = newW / s.texturedImage.Ratio()
+		newH = newW / s.texturedImage.Ratio
 	}
 
 	offsetW := (maxW - newW) / 2.0
@@ -141,7 +141,7 @@ func (s *ResizableImageWidget) Build() {
 }
 
 func (s *ResizableImageWidget) resolveTintValue() uint8 {
-	if s.texturedImage.NewImageLoaded() {
+	if !s.texturedImage.IsLoading {
 		if s.tintScale < 1 {
 			s.tintScale += 0.1
 			giu.Update()
@@ -165,10 +165,10 @@ func (s *ResizableImageWidget) resolveTintValue() uint8 {
 	return tintValue
 }
 
-func (s *ResizableImageWidget) UpdateImage(texture *TexturedImage) {
+func (s *ResizableImageWidget) UpdateImage(texture *guiapi.TexturedImage) {
 	if s != nil {
 		s.texturedImage = texture
-		s.ImageWidget = *giu.Image(texture.Texture())
+		s.ImageWidget = *giu.Image(texture.Texture)
 		giu.Update()
 	}
 }
