@@ -144,12 +144,17 @@ func (s *DefaultImageStore) getImage(imageId apitype.ImageId) *Instance {
 }
 
 func (s *DefaultImageStore) Purge() {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	for _, instance := range s.imageCache {
 		instance.Purge()
 	}
+	runtime.GC()
 }
 
 func (s *DefaultImageStore) GetByteSize() (byteSize uint64) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	for _, instance := range s.imageCache {
 		byteSize += uint64(instance.GetByteLength())
 	}
