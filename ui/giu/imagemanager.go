@@ -14,11 +14,12 @@ import (
 
 type ImageManager struct {
 	currentDebounceEntry *debounceEntry
-	currentImageEntry    *imageEntry
+	activeImageEntry     imageEntry
+	loadedImageEntry     imageEntry
 	mainImageMutex       sync.Mutex
 	thumbnailMutex       sync.Mutex
 	imageCache           api.ImageStore
-	currentTexture       *guiapi.TexturedImage
+	loadedImageTexture   *guiapi.TexturedImage
 	thumbnailCache       map[apitype.ImageId]*guiapi.TexturedImage
 }
 
@@ -29,17 +30,23 @@ func NewImageManager(imageCache api.ImageStore) *ImageManager {
 			timer:     nil,
 			cancelled: true,
 		},
-		currentImageEntry: &imageEntry{
+		activeImageEntry: imageEntry{
 			currentImage: nil,
 			width:        0,
 			height:       0,
 			zoomMode:     guiapi.ZoomFit,
 		},
-		mainImageMutex: sync.Mutex{},
-		thumbnailMutex: sync.Mutex{},
-		thumbnailCache: map[apitype.ImageId]*guiapi.TexturedImage{},
-		imageCache:     imageCache,
-		currentTexture: nil,
+		loadedImageEntry: imageEntry{
+			currentImage: nil,
+			width:        0,
+			height:       0,
+			zoomMode:     guiapi.ZoomFit,
+		},
+		mainImageMutex:     sync.Mutex{},
+		thumbnailMutex:     sync.Mutex{},
+		thumbnailCache:     map[apitype.ImageId]*guiapi.TexturedImage{},
+		imageCache:         imageCache,
+		loadedImageTexture: nil,
 	}
 }
 
@@ -105,13 +112,21 @@ func (s *ImageManager) GetThumbnailTexture(imageFile *apitype.ImageFile) *guiapi
 	}
 }
 
-func (s *ImageManager) CurrentImage() *apitype.ImageFile {
-	return s.currentImageEntry.currentImage
+func (s *ImageManager) ActiveImageId() apitype.ImageId {
+	if s.activeImageEntry.currentImage != nil {
+		return s.activeImageEntry.currentImage.Id()
+	} else {
+		return apitype.NoImage
+	}
 }
 
-func (s *ImageManager) CurrentImageTexture() *guiapi.TexturedImage {
-	if s.currentTexture != nil {
-		return s.currentTexture
+func (s *ImageManager) LoadedImage() *apitype.ImageFile {
+	return s.loadedImageEntry.currentImage
+}
+
+func (s *ImageManager) LoadedImageTexture() *guiapi.TexturedImage {
+	if s.loadedImageTexture != nil {
+		return s.loadedImageTexture
 	} else {
 		return guiapi.NewEmptyTexturedImage()
 	}
@@ -119,17 +134,24 @@ func (s *ImageManager) CurrentImageTexture() *guiapi.TexturedImage {
 
 func (s *ImageManager) SetSize(width float32, height float32, zoomMode guiapi.ZoomMode, zoomFactor float32) {
 	if s.currentDebounceEntry != nil {
-		s.SetCurrentImage(s.currentImageEntry.currentImage, width, height, zoomMode, zoomFactor)
+		s.SetCurrentImage(s.loadedImageEntry.currentImage, width, height, zoomMode, zoomFactor)
 	}
 }
 func (s *ImageManager) SetCurrentImage(newImage *apitype.ImageFile, width float32, height float32, zoomMode guiapi.ZoomMode, zoomFactor float32) {
 	if newImage != nil {
 		s.mainImageMutex.Lock()
-		oldEntry := s.currentDebounceEntry
-		imageChanged := newImage.Id() != oldEntry.imageFile.Id()
+		s.activeImageEntry.currentImage = newImage
+		s.activeImageEntry.width = width
+		s.activeImageEntry.height = height
+		s.activeImageEntry.zoomMode = zoomMode
+		s.activeImageEntry.zoomFactor = zoomFactor
+		oldDebounceEntry := s.currentDebounceEntry
 		s.mainImageMutex.Unlock()
-		if oldEntry != nil {
-			oldEntry.Cancel()
+
+		imageChanged := true
+		if oldDebounceEntry != nil {
+			imageChanged = newImage.Id() != oldDebounceEntry.imageFile.Id()
+			oldDebounceEntry.Cancel()
 		}
 
 		newEntry := &debounceEntry{
@@ -142,17 +164,17 @@ func (s *ImageManager) SetCurrentImage(newImage *apitype.ImageFile, width float3
 
 		s.mainImageMutex.Lock()
 		s.currentDebounceEntry = newEntry
-		if s.currentTexture != nil {
+		if s.loadedImageTexture != nil {
 			if useThumbnailAsPlaceholder {
 				s.thumbnailMutex.Lock()
 				if thumbnail, ok := s.thumbnailCache[newImage.Id()]; ok {
-					s.currentTexture.SetLoaded(thumbnail)
+					s.loadedImageTexture.SetLoaded(thumbnail)
 				} else {
-					s.currentTexture.IsLoading = imageChanged
+					s.loadedImageTexture.IsLoading = imageChanged
 				}
 				s.thumbnailMutex.Unlock()
 			} else {
-				s.currentTexture.IsLoading = imageChanged
+				s.loadedImageTexture.IsLoading = imageChanged
 			}
 		}
 
@@ -205,12 +227,12 @@ func (s *ImageManager) createDelayedSendFunc(entry *debounceEntry, duration time
 			texturedImage := guiapi.NewTexturedImage(imageFile, texture)
 
 			s.mainImageMutex.Lock()
-			s.currentTexture = texturedImage
-			s.currentImageEntry.currentImage = imageFile
-			s.currentImageEntry.width = width
-			s.currentImageEntry.height = height
-			s.currentImageEntry.zoomMode = zoomMode
-			s.currentTexture.IsLoading = false
+			s.loadedImageEntry.currentImage = imageFile
+			s.loadedImageEntry.width = width
+			s.loadedImageEntry.height = height
+			s.loadedImageEntry.zoomMode = zoomMode
+
+			s.loadedImageTexture = texturedImage
 			s.mainImageMutex.Unlock()
 
 			logger.Trace.Printf("Loading image %d completed", imageFile.Id())

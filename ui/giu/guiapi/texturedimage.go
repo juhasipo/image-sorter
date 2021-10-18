@@ -23,11 +23,12 @@ func NewTexturedImage(image *apitype.ImageFile, texture *giu.Texture) *TexturedI
 	}
 
 	return &TexturedImage{
-		Texture: texture,
-		Image:   image,
-		Width:   width,
-		Height:  height,
-		Ratio:   width / height,
+		Texture:   texture,
+		Image:     image,
+		Width:     width,
+		Height:    height,
+		Ratio:     width / height,
+		IsLoading: false,
 	}
 }
 

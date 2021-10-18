@@ -162,7 +162,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 				}
 			} else {
 				broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
-					ImageId:         gui.imageManager.CurrentImage().Id(),
+					ImageId:         gui.imageManager.LoadedImage().Id(),
 					CategoryId:      def.categoryId,
 					Operation:       operation,
 					StayOnSameImage: action.StayOnImage,
@@ -255,8 +255,8 @@ func (s *Ui) Run() {
 				highlightedImage = s.nextImagesList.HighlightedImage()
 			} else if s.previousImagesList.HighlightedImage() != nil {
 				highlightedImage = s.previousImagesList.HighlightedImage()
-			} else if s.imageManager.CurrentImage() != nil {
-				highlightedImage = s.imageManager.CurrentImage()
+			} else if s.imageManager.LoadedImage() != nil {
+				highlightedImage = s.imageManager.LoadedImage()
 			}
 
 			if highlightedImage != nil {
@@ -402,10 +402,10 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 			Size(30, h)
 
 		if s.currentImageWidget == nil {
-			s.currentImageWidget = widget.ResizableImage(s.imageManager.CurrentImageTexture())
+			s.currentImageWidget = widget.ResizableImage(s.imageManager.LoadedImageTexture())
 			s.currentImageWidget.SetZoomHandlers(s.zoomIn, s.zoomOut)
 		} else {
-			s.currentImageWidget.UpdateImage(s.imageManager.CurrentImageTexture())
+			s.currentImageWidget.UpdateImage(s.imageManager.LoadedImageTexture())
 		}
 
 		giu.Style().
@@ -421,7 +421,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 						Flags(giu.WindowFlagsHorizontalScrollbar).
 						Layout(s.currentImageWidget.
 							ZoomFactor(s.getZoomFactor()).
-							ImageSize(s.imageManager.CurrentImageTexture().Width, s.imageManager.CurrentImageTexture().Height),
+							ImageSize(s.imageManager.LoadedImageTexture().Width, s.imageManager.LoadedImageTexture().Height),
 						),
 					nButton,
 				),
@@ -447,9 +447,9 @@ func (s *Ui) imagesWidget() *giu.CustomWidget {
 		s.widthInNumOfImage = widthInNumOfImage
 
 		if s.currentThumbnailWidget == nil {
-			s.currentThumbnailWidget = widget.ResizableImage(s.imageManager.CurrentImageTexture())
+			s.currentThumbnailWidget = widget.ResizableImage(s.imageManager.LoadedImageTexture())
 		}
-		s.currentThumbnailWidget.UpdateImage(s.imageManager.CurrentImageTexture())
+		s.currentThumbnailWidget.UpdateImage(s.imageManager.LoadedImageTexture())
 		s.currentThumbnailWidget.Size(centerPieceWidth, height)
 
 		giu.PushItemSpacing(0, 0)
@@ -723,7 +723,7 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 
 func (s *Ui) sendCurrentImageChangedEvent() {
 	s.sender.SendCommandToTopic(api.ImageChanged, &api.ImageCategoryQuery{
-		ImageId: s.imageManager.CurrentImage().Id(),
+		ImageId: s.imageManager.ActiveImageId(),
 	})
 }
 
