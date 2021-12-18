@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"testing"
+	"vincit.fi/image-sorter/backend/dbapi"
 )
 
 func TestDatabase_InitializeForDirectory(t *testing.T) {
@@ -35,10 +36,10 @@ func TestDatabase_MigrateDB(t *testing.T) {
 	a.Nil(err)
 
 	t.Run("First migration", func(t *testing.T) {
-		a.Equal(TableNotExist, sut.Migrate())
+		a.Equal(dbapi.TableNotExist, sut.Migrate())
 	})
 	t.Run("Second migration", func(t *testing.T) {
-		a.Equal(TableExists, sut.Migrate())
+		a.Equal(dbapi.TableExists, sut.Migrate())
 	})
 
 	sut.Close()

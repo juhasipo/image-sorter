@@ -6,7 +6,7 @@ import (
 	"testing"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/backend/internal/database"
 	"vincit.fi/image-sorter/common"
 )
 
@@ -44,8 +44,7 @@ func TestFromCategoriesStrings(t *testing.T) {
 	a := assert.New(t)
 
 	t.Run("Zero", func(t *testing.T) {
-		values := []string{
-		}
+		values := []string{}
 		categories := fromCategoriesStrings(values)
 		a.Equal(0, len(categories))
 	})

@@ -4,7 +4,8 @@ import (
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/sqlite"
 	"path/filepath"
-	"vincit.fi/image-sorter/backend/util"
+	"vincit.fi/image-sorter/backend/dbapi"
+	"vincit.fi/image-sorter/backend/internal/util"
 	"vincit.fi/image-sorter/common/constants"
 	"vincit.fi/image-sorter/common/logger"
 )
@@ -59,14 +60,7 @@ func (s *Database) InitializeForDirectory(directory string, file string) error {
 	return nil
 }
 
-type TableExist bool
-
-const (
-	TableNotExist TableExist = false
-	TableExists   TableExist = true
-)
-
-func (s *Database) Migrate() TableExist {
+func (s *Database) Migrate() dbapi.TableExist {
 	logger.Info.Printf("Running migrations")
 	tablesExists := s.doesTablesExists()
 
@@ -98,9 +92,9 @@ func (s *Database) Migrate() TableExist {
 	logger.Info.Print("All migrations done")
 
 	if tablesExists {
-		return TableExists
+		return dbapi.TableExists
 	} else {
-		return TableNotExist
+		return dbapi.TableNotExist
 	}
 }
 

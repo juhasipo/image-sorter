@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"unsafe"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/util"
+	"vincit.fi/image-sorter/backend/internal/util"
 	"vincit.fi/image-sorter/common/logger"
 )
 

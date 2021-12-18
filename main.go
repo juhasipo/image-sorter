@@ -2,18 +2,11 @@ package main
 
 import (
 	"fmt"
-	"os/user"
 	"strings"
 	"vincit.fi/image-sorter/api"
-	"vincit.fi/image-sorter/backend/caster"
-	"vincit.fi/image-sorter/backend/category"
-	"vincit.fi/image-sorter/backend/database"
-	"vincit.fi/image-sorter/backend/filter"
-	"vincit.fi/image-sorter/backend/imagecategory"
-	"vincit.fi/image-sorter/backend/imageloader"
-	"vincit.fi/image-sorter/backend/library"
+	"vincit.fi/image-sorter/backend"
+	"vincit.fi/image-sorter/backend/dbapi"
 	"vincit.fi/image-sorter/common"
-	"vincit.fi/image-sorter/common/event"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/common/util"
 	giuUi "vincit.fi/image-sorter/ui/giu"
@@ -32,21 +25,19 @@ func main() {
 func initAndRun(params *common.Params) {
 	printHeaderToLogger()
 
-	stores := initializeStores()
+	stores := backend.InitializeStores(databaseFileName)
 	defer stores.Close()
 
-	brokers := initializeEventBrokers()
+	brokers := backend.InitializeEventBrokers(EventBusQueueSize)
 
-	imageLoader := imageloader.NewImageLoader(stores.ImageStore)
-	imageCache := imageloader.NewImageCache(imageLoader)
-	services := initializeServices(params, stores, brokers, imageCache, imageLoader)
+	services := backend.InitializeServices(params, stores, brokers)
 	defer services.Close()
 
 	// UI
 	logger.Debug.Printf("Initialize GUI")
-	gui := giuUi.NewUi(params, brokers.Broker, imageCache)
+	gui := giuUi.NewUi(params, brokers.Broker, services.ImageCache)
 
-	connectUiAndServices(params, stores, services, imageCache, brokers, gui)
+	connectUiAndServices(params, stores, services, brokers, gui)
 
 	// Everything has been initialized, so it's time to start the UI
 	logger.Debug.Printf("Backend initialized, run GUI")
@@ -68,57 +59,7 @@ func printHeaderToLogger() {
 	logger.Info.Printf(separator)
 }
 
-type Stores struct {
-	ImageStore           *database.ImageStore
-	ImageMetaDataStore   *database.ImageMetaDataStore
-	SimilarityIndex      *database.SimilarityIndex
-	CategoryStore        *database.CategoryStore
-	DefaultCategoryStore *database.CategoryStore
-	ImageCategoryStore   *database.ImageCategoryStore
-	StatusStore          *database.StatusStore
-	HomeDirDb            *database.Database
-	WorkDirDb            *database.Database
-}
-
-func (s *Stores) Close() {
-	defer s.HomeDirDb.Close()
-	defer s.WorkDirDb.Close()
-}
-
-type Services struct {
-	CategoryService        api.CategoryService
-	DefaultCategoryService api.CategoryService
-	ImageService           api.ImageService
-	ImageLibrary           api.ImageLibrary
-	FilterService          *filter.FilterService
-	ImageCategoryService   api.ImageCategoryService
-	CasterInstance         api.Caster
-}
-
-func (s *Services) Close() {
-	defer s.CategoryService.Close()
-	defer s.DefaultCategoryService.Close()
-	defer s.ImageService.Close()
-	defer s.ImageCategoryService.Close()
-	defer s.CasterInstance.Close()
-}
-
-type Brokers struct {
-	Broker        *event.Broker
-	DevNullBroker *event.Broker
-}
-
-func initializeEventBrokers() *Brokers {
-	logger.Debug.Printf("Initialize event brokers...")
-	brokers := &Brokers{
-		Broker:        event.InitBus(EventBusQueueSize),
-		DevNullBroker: event.InitDevNullBus(),
-	}
-	logger.Debug.Printf("Event brokers initialized")
-	return brokers
-}
-
-func connectUiAndServices(params *common.Params, stores *Stores, services *Services, imageCache api.ImageStore, brokers *Brokers, gui api.Gui) {
+func connectUiAndServices(params *common.Params, stores *backend.Stores, services *backend.Services, brokers *backend.Brokers, gui api.Gui) {
 	logger.Debug.Printf("Connecting events to handlers...")
 	// Initialize startup procedure run when the directory has been chosen
 	handleDirectoryChanged := func(command *api.DirectoryChangedCommand) {
@@ -129,7 +70,7 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 		if err := stores.WorkDirDb.InitializeForDirectory(directory, databaseFileName); err != nil {
 			logger.Error.Fatal("Error opening database", err)
 		} else {
-			if tableExist := stores.WorkDirDb.Migrate(); tableExist == database.TableNotExist {
+			if tableExist := stores.WorkDirDb.Migrate(); tableExist == dbapi.TableNotExist {
 				if defaultCategories, err := stores.DefaultCategoryStore.GetCategories(); err != nil {
 					logger.Error.Print("Error while trying to load default categories ", err)
 				} else {
@@ -139,7 +80,7 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 			services.ImageService.InitializeFromDirectory(directory)
 
 			if len(services.ImageService.GetImageFiles()) > 0 {
-				imageCache.Initialize(services.ImageService.GetImageFiles(), api.NewSenderProgressReporter(brokers.Broker))
+				services.ImageCache.Initialize(services.ImageService.GetImageFiles(), api.NewSenderProgressReporter(brokers.Broker))
 			}
 
 			services.ImageCategoryService.InitializeForDirectory(directory)
@@ -203,57 +144,4 @@ func connectUiAndServices(params *common.Params, stores *Stores, services *Servi
 	brokers.Broker.Subscribe(api.CategoriesUpdated, gui.UpdateCategories)
 
 	logger.Debug.Printf("Events connected to handlers")
-}
-
-func initializeServices(params *common.Params, stores *Stores, brokers *Brokers, imageCache api.ImageStore, imageLoader api.ImageLoader) *Services {
-	logger.Debug.Printf("Initialize services...")
-	filterService := filter.NewFilterService()
-	progressReporter := api.NewSenderProgressReporter(brokers.Broker)
-	imageLibrary := library.NewImageLibrary(imageCache, imageLoader, stores.SimilarityIndex, stores.ImageStore, stores.ImageMetaDataStore, progressReporter)
-	imageService := library.NewImageService(brokers.Broker, imageLibrary, stores.StatusStore)
-	services := &Services{
-		CategoryService:        category.NewCategoryService(params, brokers.Broker, stores.CategoryStore),
-		DefaultCategoryService: category.NewCategoryService(params, brokers.DevNullBroker, stores.DefaultCategoryStore),
-		ImageService:           imageService,
-		ImageLibrary:           imageLibrary,
-		FilterService:          filterService,
-		ImageCategoryService:   imagecategory.NewImageCategoryService(brokers.Broker, imageService, filterService, imageLoader, stores.ImageCategoryStore),
-		CasterInstance:         caster.NewCaster(params, brokers.Broker, imageCache),
-	}
-	logger.Debug.Printf("Services initialized")
-	return services
-}
-
-// Initialize the configuration DB in user's home folder and
-// DB for the working directory. Home dir DB can be initialized
-// right away. workDirDb will be initialized once the work dir
-// is known.
-func initializeStores() *Stores {
-	logger.Debug.Printf("Initialize stores and databases...")
-	homeDirDb := database.NewDatabase()
-	if currentUser, err := user.Current(); err != nil {
-		logger.Error.Fatal("Cannot load user")
-	} else {
-		if err := homeDirDb.InitializeForDirectory(currentUser.HomeDir, databaseFileName); err != nil {
-			logger.Error.Fatal("Error opening database", err)
-		} else {
-			_ = homeDirDb.Migrate()
-		}
-	}
-
-	workDirDb := database.NewDatabase()
-
-	stores := &Stores{
-		ImageStore:           database.NewImageStore(workDirDb, &database.FileSystemImageFileConverter{}),
-		ImageMetaDataStore:   database.NewImageMetaDataStore(workDirDb),
-		SimilarityIndex:      database.NewSimilarityIndex(workDirDb),
-		CategoryStore:        database.NewCategoryStore(workDirDb),
-		ImageCategoryStore:   database.NewImageCategoryStore(workDirDb),
-		DefaultCategoryStore: database.NewCategoryStore(homeDirDb),
-		StatusStore:          database.NewStatusStore(workDirDb),
-		HomeDirDb:            homeDirDb,
-		WorkDirDb:            workDirDb,
-	}
-	logger.Debug.Printf("Stores and databases initialized")
-	return stores
 }

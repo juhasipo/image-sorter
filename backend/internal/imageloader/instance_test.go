@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/backend/internal/database"
 )
 
 func TestInstance_GetFull(t *testing.T) {

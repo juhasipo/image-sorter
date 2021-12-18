@@ -13,12 +13,14 @@ type HashResult struct {
 	imageId     apitype.ImageId
 	hash        *duplo.Hash
 	imageLoader api.ImageLoader
+	err         error
 }
 
-func ReturnResult(channel chan *HashResult, imageId apitype.ImageId, hash *duplo.Hash) {
+func ReturnResult(channel chan *HashResult, imageId apitype.ImageId, hash *duplo.Hash, err error) {
 	channel <- &HashResult{
 		imageId: imageId,
 		hash:    hash,
+		err:     err,
 	}
 }
 
@@ -33,10 +35,10 @@ func hashImage(input chan *apitype.ImageFile, output chan *HashResult, quitChann
 		case imageFile := <-input:
 			{
 				if decodedImage, err := openImageForHashing(imageLoader, imageFile); err != nil {
-					ReturnResult(output, imageFile.Id(), nil)
+					ReturnResult(output, imageFile.Id(), nil, err)
 				} else {
 					hash := generateHash(decodedImage, imageFile)
-					ReturnResult(output, imageFile.Id(), &hash)
+					ReturnResult(output, imageFile.Id(), &hash, nil)
 				}
 			}
 		}

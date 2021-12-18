@@ -4,10 +4,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/backend/internal/database"
 )
 
-const testAssetsDir = "../../testassets"
+const testAssetsDir = "../../../testassets"
 
 func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 	a := assert.New(t)

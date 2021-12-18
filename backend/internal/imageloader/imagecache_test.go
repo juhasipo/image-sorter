@@ -7,7 +7,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/backend/internal/database"
 )
 
 type StubImageFileConverter struct {

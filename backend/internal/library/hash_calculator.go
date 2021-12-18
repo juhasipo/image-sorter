@@ -8,7 +8,7 @@ import (
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/backend/internal/database"
 	"vincit.fi/image-sorter/common/logger"
 	"vincit.fi/image-sorter/duplo"
 )
@@ -64,15 +64,24 @@ func (s *HashCalculator) GenerateHashes(images []*apitype.ImageFile, statusCallb
 
 		var mux sync.Mutex
 
-		var i = 0
+		var totalHashesProcessed = 0
+		var successfulHashes = 0
+		var errors []error
 		for result := range s.outputChannel {
-			i++
-			s.addHashToMap(result, hashes, &mux)
+			totalHashesProcessed++
 
-			statusCallback(i, hashExpected)
-			s.hashIndex.Add(result.imageId, *result.hash)
+			if result.err == nil {
 
-			if i == hashExpected {
+				s.addHashToMap(result, hashes, &mux)
+
+				statusCallback(totalHashesProcessed, hashExpected)
+				s.hashIndex.Add(result.imageId, *result.hash)
+				successfulHashes++
+			} else {
+				errors = append(errors, result.err)
+			}
+
+			if totalHashesProcessed == hashExpected {
 				s.StopHashes()
 			}
 		}
@@ -80,8 +89,16 @@ func (s *HashCalculator) GenerateHashes(images []*apitype.ImageFile, statusCallb
 
 		endTime := time.Now()
 		d := endTime.Sub(startTime)
-		logger.Info.Printf("%d hashes generated in %s", hashExpected, d.String())
-		avg := d.Milliseconds() / int64(hashExpected)
+		logger.Info.Printf("%d hashes generated in %s (%d errors)", hashExpected, d.String(), len(errors))
+
+		if len(errors) > 0 {
+			logger.Error.Printf("Errors while processing hashes")
+			for _, err := range errors {
+				logger.Error.Printf(" - %s", err)
+			}
+		}
+
+		avg := d.Milliseconds() / int64(successfulHashes)
 		// Remember to take thread count otherwise the avg time is too small
 		f := time.Millisecond * time.Duration(avg) * time.Duration(s.threadCount)
 		logger.Info.Printf("  On average: %s/image", f.String())

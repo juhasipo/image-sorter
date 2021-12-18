@@ -4,7 +4,7 @@ import (
 	"strings"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/backend/database"
+	"vincit.fi/image-sorter/backend/internal/database"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
 )
