@@ -6,7 +6,7 @@ import (
 	"image/color"
 	"sync"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/ui/giu/guiapi"
+	"vincit.fi/image-sorter/ui/giu/internal/guiapi"
 )
 
 var imageHoverOverlayColor = color.RGBA{R: 255, G: 255, B: 255, A: 64}

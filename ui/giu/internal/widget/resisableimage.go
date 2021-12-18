@@ -4,7 +4,7 @@ import (
 	"github.com/AllenDang/giu"
 	"image/color"
 	"time"
-	"vincit.fi/image-sorter/ui/giu/guiapi"
+	"vincit.fi/image-sorter/ui/giu/internal/guiapi"
 )
 
 type ResizableImageWidget struct {

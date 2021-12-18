@@ -1,4 +1,4 @@
-package gtk
+package internal
 
 import (
 	"github.com/AllenDang/giu"
@@ -9,7 +9,7 @@ import (
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/ui/giu/guiapi"
+	"vincit.fi/image-sorter/ui/giu/internal/guiapi"
 )
 
 type ImageManager struct {

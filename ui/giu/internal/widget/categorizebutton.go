@@ -6,7 +6,7 @@ import (
 	"image"
 	"image/color"
 	"vincit.fi/image-sorter/api/apitype"
-	"vincit.fi/image-sorter/ui/giu/guiapi"
+	"vincit.fi/image-sorter/ui/giu/internal/guiapi"
 )
 
 type CategoryButtonWidget struct {

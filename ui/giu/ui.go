@@ -10,8 +10,9 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/common"
 	"vincit.fi/image-sorter/common/logger"
-	"vincit.fi/image-sorter/ui/giu/guiapi"
-	"vincit.fi/image-sorter/ui/giu/widget"
+	"vincit.fi/image-sorter/ui/giu/internal"
+	"vincit.fi/image-sorter/ui/giu/internal/guiapi"
+	"vincit.fi/image-sorter/ui/giu/internal/widget"
 )
 
 type Ui struct {
@@ -23,13 +24,13 @@ type Ui struct {
 	sender                 api.Sender
 	categories             []*apitype.Category
 	rootPath               string
-	imageManager           *ImageManager
+	imageManager           *internal.ImageManager
 	currentImageWidget     *widget.ResizableImageWidget
 	currentThumbnailWidget *widget.ResizableImageWidget
 	nextImages             []*guiapi.TexturedImage
 	previousImages         []*guiapi.TexturedImage
 	similarImages          []*guiapi.TexturedImage
-	categoryKeyManager     *CategoryKeyManager
+	categoryKeyManager     *internal.CategoryKeyManager
 	currentImageCategories map[apitype.CategoryId]bool
 	currentCategoryId      apitype.CategoryId
 	progressModal          progressModal
@@ -93,7 +94,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		imageCache:   imageCache,
 		sender:       broker,
 		rootPath:     params.RootPath(),
-		imageManager: NewImageManager(imageCache),
+		imageManager: internal.NewImageManager(imageCache),
 		progressModal: progressModal{
 			open:     false,
 			label:    "",
@@ -143,11 +144,11 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		},
 	)
 
-	gui.categoryKeyManager = &CategoryKeyManager{
-		callback: func(def *CategoryDef, action *guiapi.CategoryAction) {
+	gui.categoryKeyManager = &internal.CategoryKeyManager{
+		Callback: func(def *internal.CategoryDef, action *guiapi.CategoryAction) {
 			operation := apitype.CATEGORIZE
 			if !action.ForceCategory {
-				if _, ok := gui.currentImageCategories[def.categoryId]; ok {
+				if _, ok := gui.currentImageCategories[def.CategoryId]; ok {
 					operation = apitype.UNCATEGORIZE
 				}
 			}
@@ -155,7 +156,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			if action.ShowOnlyCategory {
 				if gui.currentCategoryId == apitype.NoCategory {
 					broker.SendCommandToTopic(api.CategoriesShowOnly, &api.SelectCategoryCommand{
-						CategoryId: def.categoryId,
+						CategoryId: def.CategoryId,
 					})
 				} else {
 					broker.SendToTopic(api.ImageShowAll)
@@ -163,7 +164,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 			} else {
 				broker.SendCommandToTopic(api.CategorizeImage, &api.CategorizeCommand{
 					ImageId:         gui.imageManager.LoadedImage().Id(),
-					CategoryId:      def.categoryId,
+					CategoryId:      def.CategoryId,
 					Operation:       operation,
 					StayOnSameImage: action.StayOnImage,
 					NextImageDelay:  100,
