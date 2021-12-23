@@ -3,6 +3,7 @@ package backend
 import (
 	"os/user"
 	"vincit.fi/image-sorter/api"
+	"vincit.fi/image-sorter/backend/dbapi"
 	"vincit.fi/image-sorter/backend/internal/caster"
 	"vincit.fi/image-sorter/backend/internal/category"
 	"vincit.fi/image-sorter/backend/internal/database"
@@ -23,13 +24,21 @@ type Stores struct {
 	DefaultCategoryStore *database.CategoryStore
 	ImageCategoryStore   *database.ImageCategoryStore
 	StatusStore          *database.StatusStore
-	HomeDirDb            *database.Database
-	WorkDirDb            *database.Database
+	homeDirDb            *database.Database
+	workDirDb            *database.Database
 }
 
 func (s *Stores) Close() {
-	defer s.HomeDirDb.Close()
-	defer s.WorkDirDb.Close()
+	defer s.homeDirDb.Close()
+	defer s.workDirDb.Close()
+}
+
+func (s *Stores) InitializeForDirectory(directory string, file string) error {
+	return s.workDirDb.InitializeForDirectory(directory, file)
+}
+
+func (s *Stores) Migrate() dbapi.TableExist {
+	return s.workDirDb.Migrate()
 }
 
 type Services struct {
@@ -96,7 +105,7 @@ func InitializeServices(params *common.Params, stores *Stores, brokers *Brokers)
 // right away. workDirDb will be initialized once the work dir
 // is known.
 func InitializeStores(databaseFileName string) *Stores {
-	logger.Debug.Printf("Initialize stores and databases...")
+	logger.Debug.Printf("Initialize databases...")
 	homeDirDb := database.NewDatabase()
 	if currentUser, err := user.Current(); err != nil {
 		logger.Error.Fatal("Cannot load user")
@@ -110,6 +119,7 @@ func InitializeStores(databaseFileName string) *Stores {
 
 	workDirDb := database.NewDatabase()
 
+	logger.Debug.Printf("Initialize backend stores...")
 	stores := &Stores{
 		ImageStore:           database.NewImageStore(workDirDb, &database.FileSystemImageFileConverter{}),
 		ImageMetaDataStore:   database.NewImageMetaDataStore(workDirDb),
@@ -118,8 +128,8 @@ func InitializeStores(databaseFileName string) *Stores {
 		ImageCategoryStore:   database.NewImageCategoryStore(workDirDb),
 		DefaultCategoryStore: database.NewCategoryStore(homeDirDb),
 		StatusStore:          database.NewStatusStore(workDirDb),
-		HomeDirDb:            homeDirDb,
-		WorkDirDb:            workDirDb,
+		homeDirDb:            homeDirDb,
+		workDirDb:            workDirDb,
 	}
 	logger.Debug.Printf("Stores and databases initialized")
 	return stores

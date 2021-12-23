@@ -67,10 +67,10 @@ func connectUiAndServices(params *common.Params, stores *backend.Stores, service
 		brokers.Broker.SendToTopic(api.BackendLoading)
 		logger.Info.Printf("Directory changed to '%s'", directory)
 
-		if err := stores.WorkDirDb.InitializeForDirectory(directory, databaseFileName); err != nil {
+		if err := stores.InitializeForDirectory(directory, databaseFileName); err != nil {
 			logger.Error.Fatal("Error opening database", err)
 		} else {
-			if tableExist := stores.WorkDirDb.Migrate(); tableExist == dbapi.TableNotExist {
+			if tableExist := stores.Migrate(); tableExist == dbapi.TableNotExist {
 				if defaultCategories, err := stores.DefaultCategoryStore.GetCategories(); err != nil {
 					logger.Error.Print("Error while trying to load default categories ", err)
 				} else {
