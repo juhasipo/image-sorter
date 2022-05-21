@@ -100,7 +100,7 @@ func (s *CategoryButtonWidget) Build() {
 			forceCategory := giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
 			categorizeAction(operation, stayOnImage, forceCategory)
 		})
-	menuButton := giu.ArrowButton("Menu", giu.DirectionDown).OnClick(func() {
+	menuButton := giu.ArrowButton(giu.DirectionDown).ID("Menu").OnClick(func() {
 		giu.OpenPopup(menuName)
 	})
 

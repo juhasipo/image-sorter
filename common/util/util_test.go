@@ -26,11 +26,6 @@ func TestReverseIntArray(t *testing.T) {
 	assert.Equal(t, values, expected)
 }
 
-func TestReverseNil(t *testing.T) {
-	assert.New(t)
-	Reverse(nil)
-}
-
 func TestReverseEmpty(t *testing.T) {
 	assert.New(t)
 

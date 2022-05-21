@@ -100,13 +100,11 @@ func (s *ImageManager) GetThumbnailTexture(imageFile *apitype.ImageFile) *guiapi
 				return
 			}
 
-			loadedTexture, err := giu.NewTextureFromRgba(thumbnail.(*image.RGBA))
-			if err != nil {
-				logger.Error.Print(err)
-				return
-			}
-			loadedEntry := guiapi.NewTexturedImage(imageFile, loadedTexture)
-			newEntry.SetLoaded(loadedEntry)
+			giu.NewTextureFromRgba(thumbnail.(*image.RGBA), func(loadedTexture *giu.Texture) {
+				loadedEntry := guiapi.NewTexturedImage(imageFile, loadedTexture)
+				newEntry.SetLoaded(loadedEntry)
+			})
+
 		}()
 		return newEntry
 	}
@@ -219,24 +217,21 @@ func (s *ImageManager) createDelayedSendFunc(entry *debounceEntry, duration time
 			if err != nil {
 				logger.Error.Print(err)
 			}
-			texture, err := giu.NewTextureFromRgba(img.(*image.RGBA))
+			giu.NewTextureFromRgba(img.(*image.RGBA), func(texture *giu.Texture) {
+				texturedImage := guiapi.NewTexturedImage(imageFile, texture)
 
-			if err != nil {
-				logger.Error.Print(err)
-			}
-			texturedImage := guiapi.NewTexturedImage(imageFile, texture)
+				s.mainImageMutex.Lock()
+				s.loadedImageEntry.currentImage = imageFile
+				s.loadedImageEntry.width = width
+				s.loadedImageEntry.height = height
+				s.loadedImageEntry.zoomMode = zoomMode
 
-			s.mainImageMutex.Lock()
-			s.loadedImageEntry.currentImage = imageFile
-			s.loadedImageEntry.width = width
-			s.loadedImageEntry.height = height
-			s.loadedImageEntry.zoomMode = zoomMode
+				s.loadedImageTexture = texturedImage
+				s.mainImageMutex.Unlock()
 
-			s.loadedImageTexture = texturedImage
-			s.mainImageMutex.Unlock()
-
-			logger.Trace.Printf("Loading image %d completed", imageFile.Id())
-			runtime.GC()
+				logger.Trace.Printf("Loading image %d completed", imageFile.Id())
+				runtime.GC()
+			})
 		} else {
 			if logger.IsLogLevel(logger.TRACE) {
 				logger.Trace.Printf("Skip sending cancelled image %d", imageFile.Id())

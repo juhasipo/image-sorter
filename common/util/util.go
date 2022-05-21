@@ -2,16 +2,14 @@ package util
 
 import (
 	"math"
-	"reflect"
 )
 
-func Reverse(arr interface{}) {
-	if arr != nil {
-		length := reflect.ValueOf(arr).Len()
-		swap := reflect.Swapper(arr)
-		for i, j := 0, length-1; i < j; i, j = i+1, j-1 {
-			swap(i, j)
-		}
+func Reverse[K any](arr []K) {
+	length := len(arr)
+	for i, j := 0, length-1; i < j; i, j = i+1, j-1 {
+		v := arr[i]
+		arr[i] = arr[j]
+		arr[j] = v
 	}
 }
 

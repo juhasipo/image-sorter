@@ -547,7 +547,7 @@ func getApplyChangesModal(id string, sender api.Sender, modal *applyChangesModal
 			giu.Label(modal.label),
 			giu.Checkbox("Keep original images", &modal.keepOriginals),
 			giu.Checkbox("Fix orientation", &modal.fixOrientation),
-			giu.SliderInt("Quality", &modal.quality, 0, 100),
+			giu.SliderInt(&modal.quality, 0, 100).Label("Quality"),
 			giu.Row(
 				giu.Button("Apply##ApplyChanges").
 					OnClick(func() {
