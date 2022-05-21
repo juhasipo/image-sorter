@@ -9,7 +9,7 @@ import (
 	"vincit.fi/image-sorter/common/util"
 )
 
-func idToCategoryId(id interface{}) apitype.CategoryId {
+func idToCategoryId(id any) apitype.CategoryId {
 	return apitype.CategoryId(id.(int64))
 }
 

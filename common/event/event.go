@@ -93,7 +93,7 @@ func InitDevNullBus() *Broker {
 	}
 }
 
-func (s *Broker) Subscribe(topic api.Topic, fn interface{}) {
+func (s *Broker) Subscribe(topic api.Topic, fn any) {
 	if s.bus == nil {
 		return
 	}
@@ -104,7 +104,7 @@ func (s *Broker) Subscribe(topic api.Topic, fn interface{}) {
 	}
 }
 
-type GuiCallback func(data ...interface{})
+type GuiCallback func(data ...any)
 
 func (s *Broker) SendToTopic(topic api.Topic) {
 	if s.bus == nil {
