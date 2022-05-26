@@ -9,48 +9,77 @@ import (
 func TestReverseStringArray(t *testing.T) {
 	assert.New(t)
 
-	values := []string{"A", "B", "C"}
-	Reverse(values)
+	t.Run("int", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			var values []int
+			Reverse(values)
 
-	expected := []string{"C", "B", "A"}
-	assert.Equal(t, values, expected)
+			var expected []int
+			assert.Equal(t, values, expected)
+		})
+		t.Run("one", func(t *testing.T) {
+			values := []int{101}
+			Reverse(values)
+
+			expected := []int{101}
+			assert.Equal(t, values, expected)
+		})
+		t.Run("many", func(t *testing.T) {
+
+			values := []int{101, 100, 102}
+			Reverse(values)
+
+			expected := []int{102, 100, 101}
+			assert.Equal(t, values, expected)
+		})
+	})
+
+	t.Run("string", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			var values []string
+			Reverse(values)
+
+			var expected []string
+			assert.Equal(t, values, expected)
+		})
+		t.Run("one", func(t *testing.T) {
+			values := []string{"A"}
+			Reverse(values)
+
+			expected := []string{"A"}
+			assert.Equal(t, values, expected)
+		})
+		t.Run("many", func(t *testing.T) {
+			values := []string{"A", "B", "C"}
+			Reverse(values)
+
+			expected := []string{"C", "B", "A"}
+			assert.Equal(t, values, expected)
+		})
+	})
 }
 
-func TestReverseIntArray(t *testing.T) {
-	assert.New(t)
-
-	values := []int{101, 100, 102}
-	Reverse(values)
-
-	expected := []int{102, 100, 101}
-	assert.Equal(t, values, expected)
-}
-
-func TestReverseEmpty(t *testing.T) {
-	assert.New(t)
-
-	var values []int
-
-	Reverse(values)
-
-	var expected []int
-	assert.Equal(t, values, expected)
-}
-
-func TestMaxInt_None(t *testing.T) {
+func TestMaxInt(t *testing.T) {
 	a := assert.New(t)
-	a.Equal(math.MinInt32, MaxInt())
-}
 
-func TestMaxInt_One(t *testing.T) {
-	a := assert.New(t)
-	a.Equal(10, MaxInt(10))
-}
-
-func TestMaxInt_Many(t *testing.T) {
-	a := assert.New(t)
-	a.Equal(5, MaxInt(1, 2, 3, 4, 5))
-	a.Equal(5, MaxInt(-1, -2, 5, 4, 1))
-	a.Equal(-1, MaxInt(-1, -2, -3, -4, -5))
-	a.Equal(5, MaxInt(5, 1, 2, 4, 3))
+	t.Run("none", func(t *testing.T) {
+		a.Equal(math.MinInt32, MaxInt())
+	})
+	t.Run("one", func(t *testing.T) {
+		a.Equal(10, MaxInt(10))
+	})
+	t.Run("many", func(t *testing.T) {
+		t.Run("positive", func(t *testing.T) {
+			a.Equal(5, MaxInt(1, 2, 3, 4, 5))
+		})
+		t.Run("negative and positive", func(t *testing.T) {
+			a.Equal(5, MaxInt(-1, -2, 5, 4, 1))
+		})
+		t.Run("negative", func(t *testing.T) {
+			a.Equal(-1, MaxInt(-1, -2, -3, -4, -5))
+		})
+		t.Run("not in order", func(t *testing.T) {
+			a.Equal(5, MaxInt(5, 1, 2, 4, 3))
+		})
+	})
 }
