@@ -48,6 +48,8 @@ type Ui struct {
 	zoomMode           guiapi.ZoomMode
 	zoomLevel          int32
 	currentZoom        float32
+	totalImageCount    int
+	currentImagePos    int
 
 	everythingLoaded bool
 	api.Gui
@@ -260,6 +262,11 @@ func (s *Ui) Run() {
 				highlightedImage = s.imageManager.LoadedImage()
 			}
 
+			var progressPercent = 0
+			if s.totalImageCount > 0 {
+				progressPercent = int(float32(s.currentImagePos) / float32(s.totalImageCount) * 100.0)
+			}
+			progress := fmt.Sprintf("%d/%d (%d %%): ", s.currentImagePos, s.totalImageCount, progressPercent)
 			if highlightedImage != nil {
 				imageName = highlightedImage.FileName()
 				imageInfo = fmt.Sprintf("(%d x %d)",
@@ -270,6 +277,7 @@ func (s *Ui) Run() {
 			mainWindow.Layout(
 				s.imagesWidget(),
 				giu.Row(
+					giu.Label(progress),
 					giu.Label(imageName),
 					giu.Condition(imageInfo != "", giu.Layout{giu.Label(imageInfo)}, giu.Layout{giu.Label("")}),
 				),
@@ -719,6 +727,8 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	s.sendCurrentImageChangedEvent()
 
 	s.imageCache.Purge()
+	s.totalImageCount = command.Total
+	s.currentImagePos = command.Index + 1
 	giu.Update()
 }
 
