@@ -7,6 +7,7 @@ import (
 	"vincit.fi/image-sorter/api/apitype"
 	"vincit.fi/image-sorter/backend/internal/database"
 	"vincit.fi/image-sorter/common/logger"
+	"vincit.fi/image-sorter/common/util"
 )
 
 var (
@@ -234,15 +235,15 @@ func (s *ImageLibrary) removeMissingImages(imageFiles []*apitype.ImageFile) erro
 		logger.Error.Print("Error while loading images", err)
 		return err
 	} else {
-		var existing = map[string]bool{}
+		var existing = util.NewSet[string]()
 		var toRemove = map[apitype.ImageId]*apitype.ImageFile{}
 
 		for _, imageFile := range imageFiles {
-			existing[imageFile.FileName()] = true
+			existing.Add(imageFile.FileName())
 		}
 
 		for _, image := range images {
-			if _, ok := existing[image.FileName()]; !ok {
+			if !existing.Contains(image.FileName()) {
 				toRemove[image.Id()] = image
 			}
 		}
