@@ -37,6 +37,7 @@ type CategoryEditWidget struct {
 	selectedCategoryToEdit int
 	onSave                 func(asDefault bool, categories []*apitype.Category)
 	onClose                func()
+	rowAdded               int
 }
 
 func CategoryEdit(onSave func(asDefault bool, categories []*apitype.Category), onClose func()) *CategoryEditWidget {
@@ -45,6 +46,7 @@ func CategoryEdit(onSave func(asDefault bool, categories []*apitype.Category), o
 		selectedCategoryToEdit: -1,
 		onSave:                 onSave,
 		onClose:                onClose,
+		rowAdded:               -1,
 	}
 }
 
@@ -74,7 +76,13 @@ func (s *CategoryEditWidget) Build() {
 			ci := i
 			cat := category
 			tableRow := giu.TableRow(
-				giu.InputText(&cat.name),
+				giu.Custom(func() {
+					giu.InputText(&cat.name).Build()
+					if s.rowAdded == i {
+						giu.SetKeyboardFocusHereV(-1)
+						s.rowAdded = -1
+					}
+				}),
 				giu.InputText(&cat.subPath).Hint(cat.name),
 				giu.Custom(func() {
 					n := cat.shortcut
@@ -101,6 +109,7 @@ func (s *CategoryEditWidget) Build() {
 					subPath:  "",
 					shortcut: "",
 				})
+				s.rowAdded = len(s.categories) - 1
 			}),
 			giu.Row(),
 			giu.Row(),
