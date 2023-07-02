@@ -397,26 +397,26 @@ func conditionalSize(condition bool, size float32) float32 {
 	}
 }
 
-func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
+func (s *Ui) mainImageWidget(widgetHeights ...float32) *giu.CustomWidget {
 	return giu.Custom(func() {
-		width, height := giu.GetAvailableRegion()
-		h := height
-		for _, hh := range bottomHeight {
-			h -= hh
+		availableWidth, availableHeight := giu.GetAvailableRegion()
+		height := availableHeight
+		for _, widgetHeight := range widgetHeights {
+			height -= widgetHeight
 		}
 
-		width = width - 30.0*2
+		availableWidth = availableWidth - 30.0*2
 
-		pButton := giu.Button("<").
+		previousButton := giu.Button("<").
 			OnClick(func() {
 				s.jumpToOffset(-1)
 			}).
-			Size(30, h)
-		nButton := giu.Button(">").
+			Size(30, height)
+		nextButton := giu.Button(">").
 			OnClick(func() {
 				s.jumpToOffset(1)
 			}).
-			Size(30, h)
+			Size(30, height)
 
 		loadedImageTexture := s.imageManager.LoadedImageTexture()
 		if s.currentImageWidget == nil {
@@ -432,16 +432,16 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 			SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
 			To(
 				giu.Row(
-					pButton,
+					previousButton,
 					giu.Child().
-						Size(width, h).
+						Size(availableWidth, height).
 						Border(true).
 						Flags(giu.WindowFlagsHorizontalScrollbar).
 						Layout(s.currentImageWidget.
 							ZoomFactor(s.getZoomFactor()).
 							ImageSize(loadedImageTexture.Width, loadedImageTexture.Height),
 						),
-					nButton,
+					nextButton,
 				),
 			).Build()
 	})
@@ -449,11 +449,11 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 
 func (s *Ui) imagesWidget() *giu.CustomWidget {
 	return giu.Custom(func() {
-		width, _ := giu.GetAvailableRegion()
+		availableWidth, _ := giu.GetAvailableRegion()
 		height := float32(60)
 		buttonWidth := float32(30)
 		centerPieceWidth := float32(120)
-		listWidth := (width - buttonWidth*2 - centerPieceWidth) / 2
+		listWidth := (availableWidth - buttonWidth*2 - centerPieceWidth) / 2
 
 		widthInNumOfImage := int(listWidth/60) + 1
 
