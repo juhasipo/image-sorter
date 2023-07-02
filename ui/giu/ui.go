@@ -205,6 +205,9 @@ func (s *Ui) Init(directory string) {
 }
 
 func (s *Ui) Run() {
+	currentScale := giu.Context.GetPlatform().GetContentScale()
+	logger.Info.Print("Scale", currentScale)
+
 	s.Init(s.rootPath)
 	s.win.Run(func() {
 		mainWindow := giu.SingleWindow()
@@ -410,11 +413,12 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 			}).
 			Size(30, h)
 
+		loadedImageTexture := s.imageManager.LoadedImageTexture()
 		if s.currentImageWidget == nil {
-			s.currentImageWidget = widget.ResizableImage(s.imageManager.LoadedImageTexture())
+			s.currentImageWidget = widget.ResizableImage(loadedImageTexture)
 			s.currentImageWidget.SetZoomHandlers(s.zoomIn, s.zoomOut)
 		} else {
-			s.currentImageWidget.UpdateImage(s.imageManager.LoadedImageTexture())
+			s.currentImageWidget.UpdateImage(loadedImageTexture)
 		}
 
 		giu.Style().
@@ -430,7 +434,7 @@ func (s *Ui) mainImageWidget(bottomHeight ...float32) *giu.CustomWidget {
 						Flags(giu.WindowFlagsHorizontalScrollbar).
 						Layout(s.currentImageWidget.
 							ZoomFactor(s.getZoomFactor()).
-							ImageSize(s.imageManager.LoadedImageTexture().Width, s.imageManager.LoadedImageTexture().Height),
+							ImageSize(loadedImageTexture.Width, loadedImageTexture.Height),
 						),
 					nButton,
 				),
