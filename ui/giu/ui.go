@@ -277,6 +277,13 @@ func (s *Ui) Run() {
 					highlightedImage.Height(),
 				)
 			}
+			var categoriesView giu.Widget
+			if len(categories) > 0 {
+				categoriesView = giu.Row(widget.CategoryButtonView(categories))
+			} else {
+				categoriesView = giu.Row(giu.Label("No categories defined. Please edit categories."), giu.Button("Edit categories").OnClick(s.openEditCategoriesView))
+			}
+
 			mainWindow.Layout(
 				s.imagesWidget(),
 				giu.Row(
@@ -284,9 +291,7 @@ func (s *Ui) Run() {
 					giu.Label(imageName),
 					giu.Condition(imageInfo != "", giu.Layout{giu.Label(imageInfo)}, giu.Layout{giu.Label("")}),
 				),
-				giu.Row(
-					widget.CategoryButtonView(categories),
-				),
+				categoriesView,
 				// Modals
 				getProgressModal("ProgressModal", s.sender, &s.progressModal),
 				getDeviceModal("DeviceModal", s.sender, &s.deviceModal),
