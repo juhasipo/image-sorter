@@ -196,6 +196,10 @@ func (s *Ui) Init(directory string) {
 		logger.Debug.Printf("No root directory specified, open dialog")
 		var err error
 		if directory, err = dialog.Directory().Title("Choose Image Directory").Browse(); err != nil {
+			if err == dialog.ErrCancelled {
+				logger.Debug.Printf("User cancelled directory selection")
+				return
+			}
 			logger.Error.Fatal("Error while trying to load directory", err)
 		}
 	}
