@@ -140,5 +140,5 @@ func (s *Broker) SendError(message string, err error) {
 		formattedMessage = message
 	}
 	logger.Error.Printf("Error: %s", formattedMessage)
-	s.SendCommandToTopic(api.ShowError, &api.ErrorCommand{Message: message})
+	s.SendCommandToTopic(api.ShowError, &api.ErrorCommand{Message: formattedMessage})
 }

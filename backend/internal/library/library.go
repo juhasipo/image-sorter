@@ -201,8 +201,10 @@ func (s *ImageLibrary) toImageContainers(nextImageFiles []*apitype.ImageFile) ([
 func (s *ImageLibrary) updateImages(rootDir string) (time.Time, error) {
 	imageFiles := apitype.LoadImageFiles(rootDir)
 	if err := s.AddImageFiles(imageFiles); err != nil {
+		logger.Error.Println("Error while adding images:", err)
 		return time.Unix(0, 0), err
 	} else if err := s.removeMissingImages(imageFiles); err != nil {
+		logger.Error.Println("Error while removing missing images:", err)
 		return time.Unix(0, 0), err
 	} else {
 		return s.imageStore.GetLatestModifiedImage(), nil
