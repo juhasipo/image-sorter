@@ -25,7 +25,7 @@ var migrations = []migration{
 			    created_timestamp DATETIME,
 			    modified_timestamp DATETIME,
 			
-			    UNIQUE (directory, file_name),
+			    UNIQUE (file_name),
 			    UNIQUE (name)
 			);
 

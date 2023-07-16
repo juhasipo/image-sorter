@@ -13,7 +13,7 @@ var (
 )
 
 func initSimilarityIndexTest() {
-	database := NewInMemoryDatabase()
+	database := NewInMemoryDatabase("")
 	sut = NewSimilarityIndex(database)
 	imageStore = NewImageStore(database, &StubImageFileConverter{})
 }

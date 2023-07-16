@@ -84,7 +84,7 @@ func (s *ImageStore) addImage(session db.Session, imageFile *apitype.ImageFile) 
 		insertEnd := time.Now()
 		logger.Trace.Printf(" - Added image to DB in %s", insertEnd.Sub(insertStart))
 
-		return s.findByDirAndFile(collection, imageFile)
+		return s.findByFileName(collection, imageFile)
 	}
 
 	modifiedId, err := s.findModifiedId(collection, imageFile)
@@ -112,9 +112,9 @@ func (s *ImageStore) addImage(session db.Session, imageFile *apitype.ImageFile) 
 		updateEnd := time.Now()
 		logger.Trace.Printf(" - Image meta data updated %s", updateEnd.Sub(updateStart))
 
-		return s.findByDirAndFile(collection, imageFile)
+		return s.findByFileName(collection, imageFile)
 	} else {
-		return s.findByDirAndFile(collection, imageFile)
+		return s.findByFileName(collection, imageFile)
 	}
 }
 
@@ -177,7 +177,7 @@ func (s *ImageStore) GetAllImagesModifiedAfter(timestamp time.Time) ([]*apitype.
 	if err := s.getCollection().Find(searchCondition).OrderBy("name").All(&images); err != nil {
 		return nil, err
 	} else {
-		return toImageFiles(images), nil
+		return toImageFiles(images, s.database.BasePath()), nil
 	}
 }
 
@@ -239,7 +239,7 @@ func (s *ImageStore) getImagesInCategory(number int, offset int, categoryId apit
 	if err := res.All(&images); err != nil {
 		return nil, err
 	} else {
-		return toImageFiles(images), nil
+		return toImageFiles(images, s.database.BasePath()), nil
 	}
 }
 
@@ -250,24 +250,23 @@ const (
 	desc sortDir = "DESC"
 )
 
-func (s *ImageStore) FindByDirAndFile(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
+func (s *ImageStore) FindByFileName(imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	return s.findByDirAndFile(s.getCollection(), imageFile)
+	return s.findByFileName(s.getCollection(), imageFile)
 }
 
-func (s *ImageStore) findByDirAndFile(collection db.Collection, imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
+func (s *ImageStore) findByFileName(collection db.Collection, imageFile *apitype.ImageFile) (*apitype.ImageFile, error) {
 	var imageFiles []Image
 	err := collection.
 		Find(db.Cond{
-			"directory": imageFile.Directory(),
 			"file_name": imageFile.FileName(),
 		}).
 		All(&imageFiles)
 	if err != nil {
 		return nil, err
 	} else if len(imageFiles) == 1 {
-		return toImageFile(&imageFiles[0])
+		return toImageFile(&imageFiles[0], s.database.BasePath())
 	} else {
 		return nil, nil
 	}
@@ -280,7 +279,6 @@ func (s *ImageStore) Exists(imageFile *apitype.ImageFile) (bool, error) {
 func (s *ImageStore) exists(collection db.Collection, imageFile *apitype.ImageFile) (bool, error) {
 	return collection.
 		Find(db.Cond{
-			"directory": imageFile.Directory(),
 			"file_name": imageFile.FileName(),
 		}).
 		Exists()
@@ -303,7 +301,6 @@ func (s *ImageStore) findModifiedId(collection db.Collection, imageFile *apitype
 	var images []Image
 	err = collection.
 		Find(db.Cond{
-			"directory":            imageFile.Directory(),
 			"file_name":            imageFile.FileName(),
 			"modified_timestamp <": stat.ModTime(),
 		}).All(&images)
@@ -333,7 +330,7 @@ func (s *ImageStore) GetImageById(imageId apitype.ImageId) *apitype.ImageFile {
 		logger.Error.Print("Could not find image ", err)
 	}
 
-	imageFile, err := toImageFile(&image)
+	imageFile, err := toImageFile(&image, s.database.BasePath())
 	if err != nil {
 		logger.Error.Print("Could not find image ", err)
 	}

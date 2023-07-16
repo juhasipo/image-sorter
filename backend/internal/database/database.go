@@ -11,11 +11,12 @@ import (
 )
 
 type Database struct {
-	session db.Session
-	dbPath  string
+	session  db.Session
+	dbPath   string
+	basePath string
 }
 
-func NewInMemoryDatabase() *Database {
+func NewInMemoryDatabase(basePath string) *Database {
 	logger.Info.Printf("Initializing in-memory database")
 	var settings = sqlite.ConnectionURL{
 		Database: "memory.db",
@@ -29,7 +30,7 @@ func NewInMemoryDatabase() *Database {
 		logger.Error.Fatal("Error opening database ", err)
 	}
 
-	database := Database{session: session}
+	database := Database{session: session, basePath: basePath}
 
 	database.Migrate()
 
@@ -40,10 +41,15 @@ func NewDatabase() *Database {
 	return &Database{}
 }
 
+func (s *Database) BasePath() string {
+	return s.basePath
+}
+
 func (s *Database) InitializeForDirectory(directory string, file string) error {
 	if err := util.MakeDirectoriesIfNotExist(directory, filepath.Join(directory, constants.ImageSorterDir)); err != nil {
 		return err
 	}
+	s.basePath = directory
 
 	s.dbPath = filepath.Join(directory, constants.ImageSorterDir, file)
 	logger.Info.Printf("Initializing database %s", s.dbPath)
@@ -57,6 +63,12 @@ func (s *Database) InitializeForDirectory(directory string, file string) error {
 	}
 
 	s.session = session
+	// Get database engine version from session
+	var version map[string]interface{}
+	err = s.session.SQL().Select(db.Func("sqlite_version")).One(&version)
+
+	logger.Info.Printf("Database initialized. Using SQLite version %s", version["sqlite_version()"])
+
 	return nil
 }
 

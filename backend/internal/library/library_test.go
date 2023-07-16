@@ -64,7 +64,6 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 			Id:              0,
 			Name:            imageFile.FileName(),
 			FileName:        imageFile.FileName(),
-			Directory:       imageFile.Directory(),
 			ByteSize:        1234,
 			ExifOrientation: 1,
 			ImageAngle:      90,
@@ -138,7 +137,7 @@ func setup() {
 }
 
 func initializeSut() *ImageLibrary {
-	memoryDatabase := database.NewInMemoryDatabase()
+	memoryDatabase := database.NewInMemoryDatabase("")
 	imageStore = database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 	imageMetaDataStore = database.NewImageMetaDataStore(memoryDatabase)
 	categoryStore = database.NewCategoryStore(memoryDatabase)
@@ -244,185 +243,185 @@ func TestGetCurrentImage_Navigate_ManyImages(t *testing.T) {
 }
 
 /*
-func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
-	a := assert.New(t)
+	func TestGetCurrentImage_Navigate_Jump(t *testing.T) {
+		a := assert.New(t)
 
-	sut = initializeSut()
+		sut = initializeSut()
 
-	imageFiles := []*apitype.ImageFile{
-		apitype.NewImageFile("/tmp", "foo0"),
-		apitype.NewImageFile("/tmp", "foo1"),
-		apitype.NewImageFile("/tmp", "foo2"),
-		apitype.NewImageFile("/tmp", "foo3"),
-		apitype.NewImageFile("/tmp", "foo4"),
-		apitype.NewImageFile("/tmp", "foo5"),
-		apitype.NewImageFile("/tmp", "foo6"),
-		apitype.NewImageFile("/tmp", "foo7"),
-		apitype.NewImageFile("/tmp", "foo8"),
-		apitype.NewImageFile("/tmp", "foo9"),
+		imageFiles := []*apitype.ImageFile{
+			apitype.NewImageFile("/tmp", "foo0"),
+			apitype.NewImageFile("/tmp", "foo1"),
+			apitype.NewImageFile("/tmp", "foo2"),
+			apitype.NewImageFile("/tmp", "foo3"),
+			apitype.NewImageFile("/tmp", "foo4"),
+			apitype.NewImageFile("/tmp", "foo5"),
+			apitype.NewImageFile("/tmp", "foo6"),
+			apitype.NewImageFile("/tmp", "foo7"),
+			apitype.NewImageFile("/tmp", "foo8"),
+			apitype.NewImageFile("/tmp", "foo9"),
+		}
+		sut.AddImageFiles(imageFiles, sender)
+
+		t.Run("Jump to forward 5 images", func(t *testing.T) {
+			sut.MoveToNextImageWithOffset(5)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(5, index)
+			a.Equal("foo5", img.FileName())
+		})
+
+		t.Run("Jump beyond the last", func(t *testing.T) {
+			sut.MoveToNextImageWithOffset(10)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(9, index)
+			a.Equal("foo9", img.FileName())
+		})
+
+		t.Run("Jump back to 5 images", func(t *testing.T) {
+			sut.MoveToPreviousImageWithOffset(5)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(4, index)
+			a.Equal("foo4", img.FileName())
+		})
+
+		t.Run("Jump beyond the first", func(t *testing.T) {
+			sut.MoveToPreviousImageWithOffset(10)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(0, index)
+			a.Equal("foo0", img.FileName())
+		})
 	}
-	sut.AddImageFiles(imageFiles, sender)
 
-	t.Run("Jump to forward 5 images", func(t *testing.T) {
-		sut.MoveToNextImageWithOffset(5)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(5, index)
-		a.Equal("foo5", img.FileName())
-	})
+	func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
+		a := assert.New(t)
 
-	t.Run("Jump beyond the last", func(t *testing.T) {
-		sut.MoveToNextImageWithOffset(10)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(9, index)
-		a.Equal("foo9", img.FileName())
-	})
+		sut = initializeSut()
 
-	t.Run("Jump back to 5 images", func(t *testing.T) {
-		sut.MoveToPreviousImageWithOffset(5)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(4, index)
-		a.Equal("foo4", img.FileName())
-	})
+		imageFiles := []*apitype.ImageFile{
+			apitype.NewImageFile("/tmp", "foo0"),
+			apitype.NewImageFile("/tmp", "foo1"),
+			apitype.NewImageFile("/tmp", "foo2"),
+			apitype.NewImageFile("/tmp", "foo3"),
+			apitype.NewImageFile("/tmp", "foo4"),
+			apitype.NewImageFile("/tmp", "foo5"),
+			apitype.NewImageFile("/tmp", "foo6"),
+			apitype.NewImageFile("/tmp", "foo7"),
+			apitype.NewImageFile("/tmp", "foo8"),
+			apitype.NewImageFile("/tmp", "foo9"),
+		}
+		sut.AddImageFiles(imageFiles, sender)
 
-	t.Run("Jump beyond the first", func(t *testing.T) {
-		sut.MoveToPreviousImageWithOffset(10)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(0, index)
-		a.Equal("foo0", img.FileName())
-	})
-}
+		t.Run("Index first image", func(t *testing.T) {
+			sut.MoveToImageAt(0)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(0, index)
+			a.Equal("foo0", img.FileName())
+		})
 
-func TestGetCurrentImage_Navigate_AtIndex(t *testing.T) {
-	a := assert.New(t)
+		t.Run("Index 5", func(t *testing.T) {
+			sut.MoveToImageAt(5)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(5, index)
+			a.Equal("foo5", img.FileName())
+		})
 
-	sut = initializeSut()
+		t.Run("Index last image", func(t *testing.T) {
+			sut.MoveToImageAt(9)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(9, index)
+			a.Equal("foo9", img.FileName())
+		})
 
-	imageFiles := []*apitype.ImageFile{
-		apitype.NewImageFile("/tmp", "foo0"),
-		apitype.NewImageFile("/tmp", "foo1"),
-		apitype.NewImageFile("/tmp", "foo2"),
-		apitype.NewImageFile("/tmp", "foo3"),
-		apitype.NewImageFile("/tmp", "foo4"),
-		apitype.NewImageFile("/tmp", "foo5"),
-		apitype.NewImageFile("/tmp", "foo6"),
-		apitype.NewImageFile("/tmp", "foo7"),
-		apitype.NewImageFile("/tmp", "foo8"),
-		apitype.NewImageFile("/tmp", "foo9"),
+		t.Run("Index after the last gives the last image", func(t *testing.T) {
+			sut.MoveToImageAt(10)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(9, index)
+			a.Equal("foo9", img.FileName())
+		})
+
+		t.Run("Index last image with negative index", func(t *testing.T) {
+			sut.MoveToImageAt(-1)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(9, index)
+			a.Equal("foo9", img.FileName())
+		})
+
+		t.Run("Index second to last image with negative index", func(t *testing.T) {
+			sut.MoveToImageAt(-2)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(8, index)
+			a.Equal("foo8", img.FileName())
+		})
+
+		t.Run("Too big negative index returns the first", func(t *testing.T) {
+			sut.MoveToImageAt(-100)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(0, index)
+			a.Equal("foo0", img.FileName())
+		})
 	}
-	sut.AddImageFiles(imageFiles, sender)
 
-	t.Run("Index first image", func(t *testing.T) {
-		sut.MoveToImageAt(0)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(0, index)
-		a.Equal("foo0", img.FileName())
-	})
+	func TestGetCurrentImage_Navigate_ImageId(t *testing.T) {
+		a := assert.New(t)
 
-	t.Run("Index 5", func(t *testing.T) {
-		sut.MoveToImageAt(5)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(5, index)
-		a.Equal("foo5", img.FileName())
-	})
+		sut = initializeSut()
 
-	t.Run("Index last image", func(t *testing.T) {
-		sut.MoveToImageAt(9)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(9, index)
-		a.Equal("foo9", img.FileName())
-	})
+		sut.AddImageFiles([]*apitype.ImageFile{
+			apitype.NewImageFile("/tmp", "foo0"),
+			apitype.NewImageFile("/tmp", "foo1"),
+			apitype.NewImageFile("/tmp", "foo2"),
+			apitype.NewImageFile("/tmp", "foo3"),
+			apitype.NewImageFile("/tmp", "foo4"),
+		}, sender)
+		imageFiles, _ := imageStore.GetAllImages()
 
-	t.Run("Index after the last gives the last image", func(t *testing.T) {
-		sut.MoveToImageAt(10)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(9, index)
-		a.Equal("foo9", img.FileName())
-	})
+		t.Run("foo1", func(t *testing.T) {
+			sut.MoveToImage(imageFiles[1].Id())
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(1, index)
+			a.Equal("foo1", img.FileName())
+		})
+		t.Run("foo3", func(t *testing.T) {
+			sut.MoveToImage(imageFiles[3].Id())
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(3, index)
+			a.Equal("foo3", img.FileName())
+		})
 
-	t.Run("Index last image with negative index", func(t *testing.T) {
-		sut.MoveToImageAt(-1)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(9, index)
-		a.Equal("foo9", img.FileName())
-	})
-
-	t.Run("Index second to last image with negative index", func(t *testing.T) {
-		sut.MoveToImageAt(-2)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(8, index)
-		a.Equal("foo8", img.FileName())
-	})
-
-	t.Run("Too big negative index returns the first", func(t *testing.T) {
-		sut.MoveToImageAt(-100)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(0, index)
-		a.Equal("foo0", img.FileName())
-	})
-}
-
-func TestGetCurrentImage_Navigate_ImageId(t *testing.T) {
-	a := assert.New(t)
-
-	sut = initializeSut()
-
-	sut.AddImageFiles([]*apitype.ImageFile{
-		apitype.NewImageFile("/tmp", "foo0"),
-		apitype.NewImageFile("/tmp", "foo1"),
-		apitype.NewImageFile("/tmp", "foo2"),
-		apitype.NewImageFile("/tmp", "foo3"),
-		apitype.NewImageFile("/tmp", "foo4"),
-	}, sender)
-	imageFiles, _ := imageStore.GetAllImages()
-
-	t.Run("foo1", func(t *testing.T) {
-		sut.MoveToImage(imageFiles[1].Id())
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(1, index)
-		a.Equal("foo1", img.FileName())
-	})
-	t.Run("foo3", func(t *testing.T) {
-		sut.MoveToImage(imageFiles[3].Id())
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(3, index)
-		a.Equal("foo3", img.FileName())
-	})
-
-	t.Run("NoImage stays on the current image", func(t *testing.T) {
-		sut.MoveToImage(apitype.NoImage)
-		img, metaData, index, _ := sut.getCurrentImage()
-		a.NotNil(img)
-		a.NotNil(metaData)
-		a.Equal(3, index)
-		a.Equal("foo3", img.FileName())
-	})
-}
+		t.Run("NoImage stays on the current image", func(t *testing.T) {
+			sut.MoveToImage(apitype.NoImage)
+			img, metaData, index, _ := sut.getCurrentImage()
+			a.NotNil(img)
+			a.NotNil(metaData)
+			a.Equal(3, index)
+			a.Equal("foo3", img.FileName())
+		})
+	}
 */
 func TestGetNextImages(t *testing.T) {
 	a := assert.New(t)

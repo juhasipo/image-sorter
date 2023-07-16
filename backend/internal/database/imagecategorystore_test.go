@@ -12,7 +12,7 @@ var (
 )
 
 func initImageCategoryStoreTest() *ImageCategoryStore {
-	database := NewInMemoryDatabase()
+	database := NewInMemoryDatabase("")
 	icsImageStore = NewImageStore(database, &StubImageFileConverter{})
 	icsCategoryStore = NewCategoryStore(database)
 

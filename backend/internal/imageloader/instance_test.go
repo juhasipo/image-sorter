@@ -10,7 +10,7 @@ import (
 func TestInstance_GetFull(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
 	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
@@ -75,7 +75,7 @@ func TestInstance_GetFull(t *testing.T) {
 func TestInstance_GetScaled(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
 	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
@@ -169,7 +169,7 @@ func TestInstance_GetScaled(t *testing.T) {
 func TestInstance_GetThumbnail(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
 	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
@@ -235,7 +235,7 @@ func TestInstance_GetThumbnail(t *testing.T) {
 func TestInstance_Purge(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
 	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))

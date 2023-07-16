@@ -45,7 +45,7 @@ func (s *ImageMetaDataStore) GetMetaDataByImageId(imageId apitype.ImageId) (*api
 	return apitype.NewImageMetaData(md), nil
 }
 
-func (s *ImageMetaDataStore) GetAllImagesWithoutMetaData() ([]*apitype.ImageFile, error) {
+func (s *ImageMetaDataStore) GetAllImagesWithoutMetaData(basePath string) ([]*apitype.ImageFile, error) {
 	var images []Image
 	res := s.getCollection().Session().SQL().
 		Select("image.*").
@@ -59,7 +59,7 @@ func (s *ImageMetaDataStore) GetAllImagesWithoutMetaData() ([]*apitype.ImageFile
 	if err := res.All(&images); err != nil {
 		return nil, err
 	} else {
-		return toImageFiles(images), nil
+		return toImageFiles(images, basePath), nil
 	}
 }
 

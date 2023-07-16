@@ -13,16 +13,16 @@ func idToCategoryId(id any) apitype.CategoryId {
 	return apitype.CategoryId(id.(int64))
 }
 
-func toImageFile(image *Image) (*apitype.ImageFile, error) {
+func toImageFile(image *Image, basePath string) (*apitype.ImageFile, error) {
 	return apitype.NewImageFileWithIdSizeAndOrientation(
-		image.Id, image.Directory, image.FileName, image.ByteSize, float64(image.ImageAngle), image.ImageFlip, int(image.Width), int(image.Height),
+		image.Id, basePath, image.FileName, image.ByteSize, float64(image.ImageAngle), image.ImageFlip, int(image.Width), int(image.Height),
 	), nil
 }
 
-func toImageFiles(images []Image) []*apitype.ImageFile {
+func toImageFiles(images []Image, basePath string) []*apitype.ImageFile {
 	imageFiles := make([]*apitype.ImageFile, len(images))
 	for i, image := range images {
-		imageFiles[i], _ = toImageFile(&image)
+		imageFiles[i], _ = toImageFile(&image, basePath)
 	}
 	return imageFiles
 }
@@ -98,7 +98,6 @@ func (s *FileSystemImageFileConverter) ImageFileToDbImage(imageFile *apitype.Ima
 	return &Image{
 		Name:            imageFile.FileName(),
 		FileName:        imageFile.FileName(),
-		Directory:       imageFile.Directory(),
 		ByteSize:        fileStat.Size(),
 		ExifOrientation: exifData.ExifOrientation(),
 		ImageAngle:      rotation,

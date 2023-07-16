@@ -15,7 +15,7 @@ var (
 )
 
 func initImageStoreTest() *ImageStore {
-	database := NewInMemoryDatabase()
+	database := NewInMemoryDatabase("")
 	imageStoreImageFileConverter = &StubImageFileConverter{}
 	isCategoryStore = NewCategoryStore(database)
 	isImageCategoryStore = NewImageCategoryStore(database)
@@ -730,7 +730,7 @@ func TestImageStore_FindByDirAndFile(t *testing.T) {
 	a.Nil(err)
 
 	t.Run("Image found", func(t *testing.T) {
-		image, err := sut.FindByDirAndFile(apitype.NewImageFile("images", "image3"))
+		image, err := sut.FindByFileName(apitype.NewImageFile("images", "image3"))
 
 		a.Nil(err)
 
@@ -740,7 +740,7 @@ func TestImageStore_FindByDirAndFile(t *testing.T) {
 	})
 
 	t.Run("Image not found", func(t *testing.T) {
-		image, err := sut.FindByDirAndFile(apitype.NewImageFile("images", "foo"))
+		image, err := sut.FindByFileName(apitype.NewImageFile("images", "foo"))
 
 		a.Nil(err)
 

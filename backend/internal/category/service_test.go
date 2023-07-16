@@ -91,7 +91,7 @@ func TestResetCategories(t *testing.T) {
 	sender := new(MockSender)
 	sender.On("SendCommandToTopic", api.CategoriesUpdated, mock.Anything).Return()
 
-	memoryDatabase := database.NewInMemoryDatabase()
+	memoryDatabase := database.NewInMemoryDatabase("")
 	categoryStore := database.NewCategoryStore(memoryDatabase)
 	sut := NewCategoryService(params, sender, categoryStore)
 

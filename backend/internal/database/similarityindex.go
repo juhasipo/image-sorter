@@ -94,7 +94,7 @@ func (s *SimilarityIndex) GetSimilarImages(imageId apitype.ImageId) []*apitype.I
 		OrderBy("image_similar.rank").
 		All(&images)
 
-	return toImageFiles(images)
+	return toImageFiles(images, s.database.BasePath())
 }
 
 func (s *SimilarityIndex) GetIndexSize() (uint64, error) {

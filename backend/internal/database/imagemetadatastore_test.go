@@ -11,7 +11,7 @@ var (
 )
 
 func initImageMetaDataStoreTest() *ImageMetaDataStore {
-	database := NewInMemoryDatabase()
+	database := NewInMemoryDatabase("")
 
 	imdsImageStore = NewImageStore(database, &StubImageFileConverter{})
 
@@ -70,7 +70,7 @@ func TestImageMetaDataStore_GetAllImagesWithoutMetaData(t *testing.T) {
 		err := sut.AddMetaData(image1.Id(), initMetaData)
 		a.Nil(err)
 
-		images, err := sut.GetAllImagesWithoutMetaData()
+		images, err := sut.GetAllImagesWithoutMetaData("")
 		a.Nil(err)
 		a.NotNil(images)
 
@@ -104,7 +104,7 @@ func TestImageMetaDataStore_GetAllImagesWithoutMetaData(t *testing.T) {
 		err = sut.AddMetaData(image3.Id(), initMetaData3)
 		a.Nil(err)
 
-		images, err := sut.GetAllImagesWithoutMetaData()
+		images, err := sut.GetAllImagesWithoutMetaData("")
 		a.Nil(err)
 		a.NotNil(images)
 

@@ -7,7 +7,7 @@ import (
 )
 
 func initSUT() *CategoryStore {
-	return NewCategoryStore(NewInMemoryDatabase())
+	return NewCategoryStore(NewInMemoryDatabase(""))
 }
 
 func TestCategoryStore_AddCategory(t *testing.T) {
@@ -144,8 +144,7 @@ func TestCategoryStore_ResetCategories(t *testing.T) {
 	})
 
 	t.Run("Reset with no values", func(t *testing.T) {
-		err = sut.ResetCategories([]*apitype.Category{
-		})
+		err = sut.ResetCategories([]*apitype.Category{})
 
 		if a.Nil(err) {
 			categories, err := sut.GetCategories()

@@ -25,6 +25,7 @@ type ImageLibrary struct {
 	imageMetaDataStore *database.ImageMetaDataStore
 	hashCalculator     *HashCalculator
 	progressReporter   api.ProgressReporter
+	directory          string
 
 	api.ImageLibrary
 }
@@ -45,6 +46,7 @@ func NewImageLibrary(imageCache api.ImageStore, imageLoader api.ImageLoader,
 }
 
 func (s *ImageLibrary) InitializeFromDirectory(directory string) (time.Time, error) {
+	s.directory = directory
 	return s.updateImages(directory)
 }
 
@@ -111,7 +113,7 @@ func (s *ImageLibrary) AddImageFiles(imageList []*apitype.ImageFile) error {
 	if modifiedImages, err := s.imageStore.GetAllImagesModifiedAfter(latestModifiedImageTimestamp); err != nil {
 		logger.Error.Print("cannot read images", err)
 		return err
-	} else if imagesWithoutMetaData, err := s.imageMetaDataStore.GetAllImagesWithoutMetaData(); err != nil {
+	} else if imagesWithoutMetaData, err := s.imageMetaDataStore.GetAllImagesWithoutMetaData(s.directory); err != nil {
 		logger.Error.Print("cannot read images", err)
 		return err
 	} else {

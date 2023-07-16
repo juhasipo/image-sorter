@@ -20,7 +20,6 @@ func (s *StubImageFileConverter) ImageFileToDbImage(imageFile *apitype.ImageFile
 		Id:              0,
 		Name:            imageFile.FileName(),
 		FileName:        imageFile.FileName(),
-		Directory:       imageFile.Directory(),
 		ByteSize:        1234,
 		ExifOrientation: 1,
 		ImageAngle:      90,
@@ -63,7 +62,7 @@ func (s *StubFileInfo) ModTime() time.Time {
 func TestDefaultImageStore_Initialize(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
@@ -104,7 +103,7 @@ func waitForCacheToFill(reporter *StubProgressReporter) {
 func TestDefaultImageStore_Purge(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
@@ -148,7 +147,7 @@ func TestDefaultImageStore_Purge(t *testing.T) {
 func TestDefaultImageStore_GetFull(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
@@ -180,7 +179,7 @@ func TestDefaultImageStore_GetFull(t *testing.T) {
 func TestDefaultImageStore_GetScaled(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)
@@ -215,7 +214,7 @@ func TestDefaultImageStore_GetScaled(t *testing.T) {
 func TestDefaultImageStore_GetThumbnail(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &StubImageFileConverter{})
 
 	loader := NewImageLoader(imageStore)

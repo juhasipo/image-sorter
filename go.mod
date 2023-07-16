@@ -33,7 +33,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/imroc/req v0.3.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.1 // indirect
+	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/miekg/dns v1.1.27 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

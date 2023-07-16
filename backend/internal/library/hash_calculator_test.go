@@ -13,7 +13,7 @@ const testAssetsDir = "../../../testassets"
 func TestHashCalculator_GenerateHashes(t *testing.T) {
 	a := assert.New(t)
 
-	memoryDatabase := database.NewInMemoryDatabase()
+	memoryDatabase := database.NewInMemoryDatabase(testAssetsDir)
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 
@@ -46,7 +46,7 @@ func TestHashCalculator_GenerateHashes(t *testing.T) {
 func TestHashCalculator_GenerateHashes_Error(t *testing.T) {
 	a := assert.New(t)
 
-	memoryDatabase := database.NewInMemoryDatabase()
+	memoryDatabase := database.NewInMemoryDatabase(testAssetsDir)
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 
@@ -107,7 +107,7 @@ func TestHashCalculator_StopHashes(t *testing.T) {
 func TestHashCalculator_BuildSimilarityIndex(t *testing.T) {
 	a := assert.New(t)
 
-	memoryDatabase := database.NewInMemoryDatabase()
+	memoryDatabase := database.NewInMemoryDatabase(testAssetsDir)
 	similarityIndex := database.NewSimilarityIndex(memoryDatabase)
 	imageStore := database.NewImageStore(memoryDatabase, &StubImageFileConverter{})
 

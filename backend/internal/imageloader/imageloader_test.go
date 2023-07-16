@@ -12,7 +12,7 @@ const testAssetsDir = "../../../testassets"
 func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
 	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
@@ -43,7 +43,7 @@ func TestLibJPEGImageLoader_LoadImage(t *testing.T) {
 func TestLibJPEGImageLoader_LoadImageScaled(t *testing.T) {
 	a := assert.New(t)
 
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemoryDatabase(testAssetsDir)
 	imageStore := database.NewImageStore(db, &database.FileSystemImageFileConverter{})
 
 	horizontal, _ := imageStore.AddImage(apitype.NewImageFile(testAssetsDir, "horizontal.jpg"))
