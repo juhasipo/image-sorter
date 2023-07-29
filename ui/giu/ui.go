@@ -873,12 +873,14 @@ func (s *Ui) getZoomFactor() (float32, guiapi.ZoomMode) {
 
 func (s *Ui) getZoomPercent() string {
 	zoomFactor, zoomMode := s.getZoomFactor()
-	if zoomMode == guiapi.ZoomCustom {
-		return fmt.Sprintf("%d %%", int(zoomFactor*100))
-	} else if zoomMode == guiapi.ZoomFixed {
-		return fmt.Sprintf("%d %%", int(zoomFactor*100))
-	} else {
-		return fmt.Sprintf("Fit (%d %%)", int(zoomFactor*100))
+	zoomFactorFmt := internal.FormatZoomFactor(zoomFactor)
+	switch zoomMode {
+	case guiapi.ZoomCustom, guiapi.ZoomFixed:
+		return zoomFactorFmt
+	case guiapi.ZoomFit:
+		return fmt.Sprintf("Fit (%s)", zoomFactorFmt)
+	default:
+		return ""
 	}
 }
 

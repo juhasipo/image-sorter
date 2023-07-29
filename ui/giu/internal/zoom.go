@@ -1,6 +1,9 @@
 package internal
 
-import "vincit.fi/image-sorter/ui/giu/internal/guiapi"
+import (
+	"fmt"
+	"vincit.fi/image-sorter/ui/giu/internal/guiapi"
+)
 
 const defaultZoomIndex = 0
 
@@ -118,4 +121,8 @@ func init() {
 
 func ZoomLabels() []string {
 	return zoomLevelLabels
+}
+
+func FormatZoomFactor(factor float32) string {
+	return fmt.Sprintf("%d %%", int(100*factor))
 }
