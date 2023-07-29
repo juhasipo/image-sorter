@@ -5,6 +5,7 @@ import (
 	"github.com/AllenDang/giu"
 	"github.com/OpenDiablo2/dialog"
 	"image/color"
+	"sort"
 	"time"
 	"vincit.fi/image-sorter/api"
 	"vincit.fi/image-sorter/api/apitype"
@@ -39,17 +40,19 @@ type Ui struct {
 	applyChangesModal      applyChangesModal
 	showCategoryEditModal  bool
 	categoryEditWidget     *widget.CategoryEditWidget
+	showMetaData           bool
 
-	nextImagesList     *widget.HorizontalImageListWidget
-	previousImagesList *widget.HorizontalImageListWidget
-	similarImagesList  *widget.HorizontalImageListWidget
-	similarImagesShown bool
-	widthInNumOfImage  int
-	zoomMode           guiapi.ZoomMode
-	zoomLevel          int32
-	currentZoom        float32
-	totalImageCount    int
-	currentImagePos    int
+	nextImagesList       *widget.HorizontalImageListWidget
+	previousImagesList   *widget.HorizontalImageListWidget
+	similarImagesList    *widget.HorizontalImageListWidget
+	similarImagesShown   bool
+	widthInNumOfImage    int
+	zoomMode             guiapi.ZoomMode
+	zoomLevel            int32
+	currentZoom          float32
+	totalImageCount      int
+	currentImagePos      int
+	currentImageMetaData []string
 
 	everythingLoaded bool
 	api.Gui
@@ -288,9 +291,17 @@ func (s *Ui) Run() {
 				categoriesView = giu.Row(giu.Label("No categories defined. Please edit categories."), giu.Button("Edit categories").OnClick(s.openEditCategoriesView))
 			}
 
+			showMetaDataButtonLable := ""
+			if s.showMetaData {
+				showMetaDataButtonLable = "Hide metadata"
+			} else {
+				showMetaDataButtonLable = "Show metadata"
+			}
+
 			mainWindow.Layout(
 				s.imagesWidget(),
 				giu.Row(
+					giu.Button(showMetaDataButtonLable).OnClick(s.toggleShowMetaData),
 					giu.Label(progress),
 					giu.Label(imageName),
 					giu.Condition(imageInfo != "", giu.Layout{giu.Label(imageInfo)}, giu.Layout{giu.Label("")}),
@@ -313,6 +324,8 @@ func (s *Ui) Run() {
 					}
 				}),
 				s.mainImageWidget(
+					s.showMetaData,
+					s.currentImageMetaData,
 					paddings,
 					actionsHeight,
 					conditionalSize(s.similarImagesShown, similarImagesHeight),
@@ -414,7 +427,9 @@ func conditionalSize(condition bool, size float32) float32 {
 	}
 }
 
-func (s *Ui) mainImageWidget(widgetHeights ...float32) *giu.CustomWidget {
+const metaDataWidth = float32(300)
+
+func (s *Ui) mainImageWidget(showMetaData bool, metaData []string, widgetHeights ...float32) *giu.CustomWidget {
 	return giu.Custom(func() {
 		availableWidth, availableHeight := giu.GetAvailableRegion()
 		height := availableHeight
@@ -423,6 +438,9 @@ func (s *Ui) mainImageWidget(widgetHeights ...float32) *giu.CustomWidget {
 		}
 
 		availableWidth = availableWidth - 30.0*2
+		if showMetaData {
+			availableWidth -= metaDataWidth
+		}
 
 		previousButton := giu.Button("<").
 			OnClick(func() {
@@ -449,6 +467,13 @@ func (s *Ui) mainImageWidget(widgetHeights ...float32) *giu.CustomWidget {
 			SetColor(giu.StyleColorChildBg, color.RGBA{0, 0, 0, 255}).
 			To(
 				giu.Row(
+					giu.Condition(showMetaData,
+						giu.Layout{
+							giu.Child().
+								Size(metaDataWidth, height).
+								Layout(giu.ListBox("imageMetaData", metaData))},
+						giu.Layout{giu.Dummy(0, 0)},
+					),
 					previousButton,
 					giu.Child().
 						Size(availableWidth, height).
@@ -619,6 +644,9 @@ func (s *Ui) handleKeyPress() bool {
 	if giu.IsKeyPressed(giu.KeyF10) {
 		s.sender.SendToTopic(api.ImageShowAll)
 	}
+	if giu.IsKeyPressed(giu.KeyF11) {
+		s.toggleShowMetaData()
+	}
 	if giu.IsKeyPressed(giu.KeyF12) {
 		s.searchSimilar()
 	}
@@ -755,6 +783,12 @@ func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	s.imageCache.Purge()
 	s.totalImageCount = command.Total
 	s.currentImagePos = command.Index + 1
+	s.currentImageMetaData = []string{}
+	for k, v := range command.MetaData.MetaData() {
+		s.currentImageMetaData = append(s.currentImageMetaData, fmt.Sprintf("%s: %s", k, v))
+	}
+	sort.Strings(s.currentImageMetaData)
+
 	giu.Update()
 }
 
@@ -906,4 +940,8 @@ func (s *Ui) applyCategories() {
 
 func (s *Ui) changeDirectory() {
 	s.Init("")
+}
+
+func (s *Ui) toggleShowMetaData() {
+	s.showMetaData = !s.showMetaData
 }
