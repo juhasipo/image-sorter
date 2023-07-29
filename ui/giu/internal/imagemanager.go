@@ -130,19 +130,19 @@ func (s *ImageManager) LoadedImageTexture() *guiapi.TexturedImage {
 	}
 }
 
-func (s *ImageManager) SetSize(width float32, height float32, zoomMode guiapi.ZoomMode, zoomFactor float32) {
+func (s *ImageManager) SetSize(width float32, height float32, zoomStatus *ZoomStatus) {
 	if s.currentDebounceEntry != nil {
-		s.SetCurrentImage(s.loadedImageEntry.currentImage, width, height, zoomMode, zoomFactor)
+		s.SetCurrentImage(s.loadedImageEntry.currentImage, width, height, zoomStatus)
 	}
 }
-func (s *ImageManager) SetCurrentImage(newImage *apitype.ImageFile, width float32, height float32, zoomMode guiapi.ZoomMode, zoomFactor float32) {
+func (s *ImageManager) SetCurrentImage(newImage *apitype.ImageFile, width float32, height float32, zoomStatus *ZoomStatus) {
 	if newImage != nil {
 		s.mainImageMutex.Lock()
 		s.activeImageEntry.currentImage = newImage
 		s.activeImageEntry.width = width
 		s.activeImageEntry.height = height
-		s.activeImageEntry.zoomMode = zoomMode
-		s.activeImageEntry.zoomFactor = zoomFactor
+		s.activeImageEntry.zoomMode = zoomStatus.ZoomMode()
+		s.activeImageEntry.zoomFactor = zoomStatus.ZoomLevel()
 		oldDebounceEntry := s.currentDebounceEntry
 		s.mainImageMutex.Unlock()
 
@@ -156,8 +156,8 @@ func (s *ImageManager) SetCurrentImage(newImage *apitype.ImageFile, width float3
 			imageFile:  newImage,
 			width:      width,
 			height:     height,
-			zoomMode:   zoomMode,
-			zoomFactor: zoomFactor,
+			zoomMode:   zoomStatus.ZoomMode(),
+			zoomFactor: zoomStatus.ZoomLevel(),
 		}
 
 		s.mainImageMutex.Lock()

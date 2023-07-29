@@ -46,9 +46,7 @@ type Ui struct {
 	similarImagesList    *widget.HorizontalImageListWidget
 	similarImagesShown   bool
 	widthInNumOfImage    int
-	zoomMode             guiapi.ZoomMode
-	zoomLevel            int32
-	currentZoom          float32
+	zoomStatus           *internal.ZoomStatus
 	totalImageCount      int
 	currentImagePos      int
 	currentImageMetaData []string
@@ -56,11 +54,6 @@ type Ui struct {
 	everythingLoaded bool
 	api.Gui
 }
-
-const defaultZoomLevel = 0
-
-var zoomLevels = []float32{1, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.50, 1.75, 2, 3, 4, 5, 10, 15}
-var zoomLevelItems = []string{"Fit", "1 %", "5 %", "10 %", "25 %", "50 %", "75 %", "100 %", "125 %", "150 %", "175 %", "200 %", "300 %", "400 %", "500 %", "1000 %", "1500 %"}
 
 type progressModal struct {
 	open      bool
@@ -90,6 +83,7 @@ type applyChangesModal struct {
 const (
 	defaultWindowWidth  = 800
 	defaultWindowHeight = 600
+	zoomStep            = 0.1
 )
 
 func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
@@ -121,9 +115,7 @@ func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) 
 		},
 		similarImagesShown: false,
 		widthInNumOfImage:  0,
-		zoomLevel:          defaultZoomLevel,
-		zoomMode:           guiapi.ZoomFit,
-		currentZoom:        1,
+		zoomStatus:         internal.NewZoomStatus(),
 	}
 
 	onImageSelected := func(imageFile *apitype.ImageFile) {
@@ -230,7 +222,7 @@ func (s *Ui) Run() {
 			}
 			s.oldWidth = newWidth
 			s.oldHeight = newHeight
-			s.imageManager.SetSize(float32(newWidth), float32(newHeight), s.zoomMode, s.currentZoom)
+			s.imageManager.SetSize(float32(newWidth), float32(newHeight), s.zoomStatus)
 		}
 
 		renderStart := time.Now()
@@ -380,6 +372,7 @@ const narrowButtonPaddingHorizontal = 10
 const buttonPaddingVertical = 5
 
 func (s *Ui) actionsWidget(bottomHeight float32) giu.Widget {
+	zoomLevel := s.zoomStatus.SelectedZoom()
 	return giu.Column(
 		giu.Dummy(0, 5),
 		giu.Row(
@@ -395,15 +388,13 @@ func (s *Ui) actionsWidget(bottomHeight float32) giu.Widget {
 			giu.Custom(func() {
 				giu.Style().SetStyle(giu.StyleVarFramePadding, narrowButtonPaddingHorizontal, buttonPaddingVertical).To(
 					giu.Row(
-						giu.Combo("", s.getZoomPercent(), zoomLevelItems, &s.zoomLevel).
+						giu.Combo("", s.getZoomPercent(), internal.ZoomLabels(), &zoomLevel).
 							Size(100).
 							OnChange(func() {
-								if s.zoomLevel == 0 {
-									s.zoomMode = guiapi.ZoomFit
-									s.currentZoom = 1
+								if zoomLevel == 0 {
+									s.zoomStatus.SetZoomFit()
 								} else {
-									s.currentZoom = zoomLevels[s.zoomLevel]
-									s.zoomMode = guiapi.ZoomFixed
+									s.zoomStatus.SetZoomLevel(zoomLevel)
 								}
 							}),
 						giu.Button("-").OnClick(s.zoomOut),
@@ -775,7 +766,7 @@ func (s *Ui) SetImages(command *api.SetImagesCommand) {
 
 func (s *Ui) SetCurrentImage(command *api.UpdateImageCommand) {
 	width, height := s.win.GetSize()
-	s.imageManager.SetCurrentImage(command.Image, float32(width), float32(height), s.zoomMode, s.currentZoom)
+	s.imageManager.SetCurrentImage(command.Image, float32(width), float32(height), s.zoomStatus)
 	s.currentCategoryId = command.CategoryId
 	s.sendCurrentImageChangedEvent()
 
@@ -857,52 +848,25 @@ func (s *Ui) ShowError(command *api.ErrorCommand) {
 }
 
 func (s *Ui) zoomIn() {
-	// Zoom in by finding the next zoom level
-	// Using this algorithm so that the zoom in feature works
-	// also with the "fit to page" zoom level
-	currentZoom := s.currentZoom
-	if s.zoomMode == guiapi.ZoomFit {
-		currentZoom = s.currentImageWidget.CurrentActualZoom()
-	}
-	currentZoom += 0.1
-
-	if currentZoom > 15 {
-		currentZoom = 15
-	}
-	s.zoomMode = guiapi.ZoomCustom
-	s.currentZoom = currentZoom
+	s.zoomStatus.ZoomIn(s.currentImageWidget.CurrentActualZoom(), zoomStep)
 }
 
 func (s *Ui) zoomOut() {
-	// Zoom out by finding the next smaller zoom level
-	// Using this algorithm so that the zoom out feature works
-	// also with the "fit to page" zoom level
-	currentZoom := s.currentZoom
-	if s.zoomMode == guiapi.ZoomFit {
-		currentZoom = s.currentImageWidget.CurrentActualZoom()
-	}
-	currentZoom -= 0.1
-
-	if currentZoom < 0.1 {
-		currentZoom = 0.1
-	}
-	s.zoomMode = guiapi.ZoomCustom
-	s.currentZoom = currentZoom
+	s.zoomStatus.ZoomOut(s.currentImageWidget.CurrentActualZoom(), zoomStep)
 }
 
 func (s *Ui) resetZoom() {
-	s.zoomLevel = defaultZoomLevel
-	s.zoomMode = guiapi.ZoomFit
+	s.zoomStatus.ResetZoom()
 }
 
 func (s *Ui) getZoomFactor() (float32, guiapi.ZoomMode) {
-	if s.zoomMode == guiapi.ZoomCustom || s.zoomMode == guiapi.ZoomFixed {
-		return s.currentZoom, s.zoomMode
+	if s.zoomStatus.ZoomMode() == guiapi.ZoomCustom || s.zoomStatus.ZoomMode() == guiapi.ZoomFixed {
+		return s.zoomStatus.ZoomLevel(), s.zoomStatus.ZoomMode()
 	} else {
 		if s.currentImageWidget != nil {
-			return s.currentImageWidget.CurrentActualZoom(), s.zoomMode
+			return s.currentImageWidget.CurrentActualZoom(), s.zoomStatus.ZoomMode()
 		} else {
-			return 1, s.zoomMode
+			return 1, s.zoomStatus.ZoomMode()
 		}
 	}
 }
