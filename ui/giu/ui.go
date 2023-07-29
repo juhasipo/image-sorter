@@ -621,7 +621,8 @@ func getApplyChangesModal(id string, sender api.Sender, modal *applyChangesModal
 }
 
 func (s *Ui) handleKeyPress() bool {
-	const bigJumpSize = 10
+	const mediumJumpSize = 10
+	const bigJumpSize = 50
 	const hugeJumpSize = 100
 
 	shiftDown := giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
@@ -661,14 +662,18 @@ func (s *Ui) handleKeyPress() bool {
 	}
 
 	if giu.IsKeyPressed(giu.KeyLeft) {
-		if controlDown {
+		if shiftDown {
+			s.jumpToOffset(-mediumJumpSize)
+		} else if controlDown {
 			s.jumpToOffset(-bigJumpSize)
 		} else {
 			s.jumpToOffset(-1)
 		}
 	}
 	if giu.IsKeyPressed(giu.KeyRight) {
-		if controlDown {
+		if shiftDown {
+			s.jumpToOffset(mediumJumpSize)
+		} else if controlDown {
 			s.jumpToOffset(bigJumpSize)
 		} else {
 			s.jumpToOffset(1)
