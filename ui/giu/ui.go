@@ -20,7 +20,6 @@ type Ui struct {
 	// General
 	win                    *giu.MasterWindow
 	oldWidth, oldHeight    int
-	fullscreen             bool
 	imageCache             api.ImageStore
 	sender                 api.Sender
 	categories             []*apitype.Category
