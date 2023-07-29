@@ -646,7 +646,7 @@ func (s *Ui) handleKeyPress() bool {
 
 	// Navigation
 
-	if giu.IsKeyPressed(giu.KeyPageUp) {
+	if giu.IsKeyPressed(giu.KeyPageDown) {
 		s.jumpToOffset(-hugeJumpSize)
 	}
 	if giu.IsKeyPressed(giu.KeyPageUp) {
