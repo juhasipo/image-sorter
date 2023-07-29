@@ -255,7 +255,7 @@ func (s *Ui) Run() {
 			s.categoryEditWidget.HandleKeys()
 		} else {
 			progressHeight := float32(20.0)
-			actionsHeight := float32(30.0)
+			actionsHeight := float32(35.0)
 			similarImagesHeight := float32(60.0)
 			paddings := float32(8.0)
 			imageName := ""
@@ -363,34 +363,47 @@ func (s *Ui) similarImagesWidget(height float32) *giu.RowWidget {
 	)
 }
 
-func (s *Ui) actionsWidget(bottomHeight float32) *giu.RowWidget {
-	return giu.Row(
-		giu.Dummy(0, bottomHeight),
-		giu.Button("Edit categories").OnClick(s.openEditCategoriesView),
-		giu.Button("Search similar").OnClick(s.searchSimilar),
-		giu.Button("Cast").OnClick(s.openCastToDeviceView),
-		giu.Button("Open directory").OnClick(s.changeDirectory),
-		giu.Custom(func() {
-			giu.Row(
-				giu.Combo("", s.getZoomPercent(), zoomLevelItems, &s.zoomLevel).
-					Size(100).
-					OnChange(func() {
-						if s.zoomLevel == 0 {
-							s.zoomMode = guiapi.ZoomFit
-							s.currentZoom = 1
-						} else {
-							s.currentZoom = zoomLevels[s.zoomLevel]
-							s.zoomMode = guiapi.ZoomFixed
-						}
-					}),
-				giu.Button("-").OnClick(s.zoomOut),
-				giu.Button("+").OnClick(s.zoomIn),
-				giu.Button("Fit").OnClick(s.resetZoom),
-			).Build()
-		}),
-		giu.Dummy(-120, 0),
-		giu.Button("Apply Categories").OnClick(s.applyCategories),
-	)
+const buttonPaddingHorizontal = 20
+const narrowButtonPaddingHorizontal = 10
+const buttonPaddingVertical = 5
+
+func (s *Ui) actionsWidget(bottomHeight float32) giu.Widget {
+	return giu.Column(
+		giu.Dummy(0, 5),
+		giu.Row(
+			giu.Dummy(0, bottomHeight),
+			giu.Style().SetStyle(giu.StyleVarFramePadding, buttonPaddingHorizontal, buttonPaddingVertical).To(
+				giu.Row(
+					giu.Button("Edit categories").OnClick(s.openEditCategoriesView),
+					giu.Button("Search similar").OnClick(s.searchSimilar),
+					giu.Button("Cast").OnClick(s.openCastToDeviceView),
+					giu.Button("Open directory").OnClick(s.changeDirectory),
+				),
+			),
+			giu.Custom(func() {
+				giu.Style().SetStyle(giu.StyleVarFramePadding, narrowButtonPaddingHorizontal, buttonPaddingVertical).To(
+					giu.Row(
+						giu.Combo("", s.getZoomPercent(), zoomLevelItems, &s.zoomLevel).
+							Size(100).
+							OnChange(func() {
+								if s.zoomLevel == 0 {
+									s.zoomMode = guiapi.ZoomFit
+									s.currentZoom = 1
+								} else {
+									s.currentZoom = zoomLevels[s.zoomLevel]
+									s.zoomMode = guiapi.ZoomFixed
+								}
+							}),
+						giu.Button("-").OnClick(s.zoomOut),
+						giu.Button("+").OnClick(s.zoomIn),
+						giu.Button("Fit").OnClick(s.resetZoom),
+					)).Build()
+			}),
+			giu.Dummy(-160, 0),
+			giu.Style().SetStyle(giu.StyleVarFramePadding, buttonPaddingHorizontal, buttonPaddingVertical).To(
+				giu.Button("Apply Categories").OnClick(s.applyCategories),
+			),
+		))
 }
 
 func conditionalSize(condition bool, size float32) float32 {

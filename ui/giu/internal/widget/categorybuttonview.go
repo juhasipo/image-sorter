@@ -31,9 +31,12 @@ func (s *CategoryButtonViewWidget) Build() {
 			offsetWidth = 0
 		}
 
-		giu.Row(
-			giu.Dummy(offsetWidth, 0),
-			giu.Row(s.buttons...),
+		giu.Column(
+			giu.Row(
+				giu.Dummy(offsetWidth, 0),
+				giu.Row(s.buttons...),
+			),
+			giu.Dummy(0, 5),
 		).Build()
 	}).Build()
 }
