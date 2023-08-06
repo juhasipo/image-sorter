@@ -84,6 +84,11 @@ const (
 	defaultWindowWidth  = 800
 	defaultWindowHeight = 600
 	zoomStep            = 0.1
+
+	normalJumpSize = 1
+	mediumJumpSize = 10
+	bigJumpSize    = 50
+	hugeJumpSize   = 100
 )
 
 func NewUi(params *common.Params, broker api.Sender, imageCache api.ImageStore) api.Gui {
@@ -419,6 +424,26 @@ func conditionalSize(condition bool, size float32) float32 {
 
 const metaDataWidth = float32(300)
 
+type ModifierValue[V comparable] struct {
+	normalText V
+	shiftText  V
+	altText    V
+	ctrlText   V
+}
+
+func valueByModifiers[V comparable](texts *ModifierValue[V]) V {
+	shiftDown, altDown, controlDown := getModifierStates()
+	if shiftDown {
+		return texts.shiftText
+	} else if altDown {
+		return texts.altText
+	} else if controlDown {
+		return texts.ctrlText
+	} else {
+		return texts.normalText
+	}
+}
+
 func (s *Ui) mainImageWidget(showMetaData bool, metaData []string, widgetHeights ...float32) *giu.CustomWidget {
 	return giu.Custom(func() {
 		availableWidth, availableHeight := giu.GetAvailableRegion()
@@ -434,12 +459,18 @@ func (s *Ui) mainImageWidget(showMetaData bool, metaData []string, widgetHeights
 
 		previousButton := giu.Button("<").
 			OnClick(func() {
-				s.jumpToOffset(-1)
+				s.jumpToOffset(-getJumpSizeWithModifiers())
 			}).
 			Size(30, height)
-		nextButton := giu.Button(">").
+		jumpSizeWithModifier := getJumpSizeWithModifiers()
+		nextButton := giu.Button(valueByModifiers(&ModifierValue[string]{
+			normalText: ">",
+			shiftText:  fmt.Sprintf(">>\n%d", jumpSizeWithModifier),
+			altText:    fmt.Sprintf(">>\n%d", jumpSizeWithModifier),
+			ctrlText:   fmt.Sprintf(">>>\n%d", jumpSizeWithModifier),
+		})).
 			OnClick(func() {
-				s.jumpToOffset(1)
+				s.jumpToOffset(jumpSizeWithModifier)
 			}).
 			Size(30, height)
 
@@ -621,13 +652,7 @@ func getApplyChangesModal(id string, sender api.Sender, modal *applyChangesModal
 }
 
 func (s *Ui) handleKeyPress() bool {
-	const mediumJumpSize = 10
-	const bigJumpSize = 50
-	const hugeJumpSize = 100
-
-	shiftDown := giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
-	altDown := giu.IsKeyDown(giu.KeyLeftAlt) || giu.IsKeyDown(giu.KeyRightAlt)
-	controlDown := giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
+	shiftDown, altDown, controlDown := getModifierStates()
 
 	if giu.IsKeyPressed(giu.KeyF8) {
 		s.openCastToDeviceView()
@@ -662,22 +687,10 @@ func (s *Ui) handleKeyPress() bool {
 	}
 
 	if giu.IsKeyPressed(giu.KeyLeft) {
-		if shiftDown {
-			s.jumpToOffset(-mediumJumpSize)
-		} else if controlDown {
-			s.jumpToOffset(-bigJumpSize)
-		} else {
-			s.jumpToOffset(-1)
-		}
+		s.jumpToOffset(-getJumpSizeWithModifiers())
 	}
 	if giu.IsKeyPressed(giu.KeyRight) {
-		if shiftDown {
-			s.jumpToOffset(mediumJumpSize)
-		} else if controlDown {
-			s.jumpToOffset(bigJumpSize)
-		} else {
-			s.jumpToOffset(1)
-		}
+		s.jumpToOffset(getJumpSizeWithModifiers())
 	}
 
 	// Zoom shortcuts are based on US layout at least for now
@@ -694,6 +707,13 @@ func (s *Ui) handleKeyPress() bool {
 		ShowOnlyCategory: altDown,
 	})
 	return true
+}
+
+func getModifierStates() (shiftDown bool, altDown bool, controlDown bool) {
+	shiftDown = isShiftDown()
+	altDown = isAltDown()
+	controlDown = isControlDown()
+	return
 }
 
 func (s *Ui) jumpToOffset(jumpSize int) {
@@ -914,4 +934,25 @@ func (s *Ui) changeDirectory() {
 
 func (s *Ui) toggleShowMetaData() {
 	s.showMetaData = !s.showMetaData
+}
+
+func isControlDown() bool {
+	return giu.IsKeyDown(giu.KeyLeftControl) || giu.IsKeyDown(giu.KeyRightControl)
+}
+
+func isAltDown() bool {
+	return giu.IsKeyDown(giu.KeyLeftAlt) || giu.IsKeyDown(giu.KeyRightAlt)
+}
+
+func isShiftDown() bool {
+	return giu.IsKeyDown(giu.KeyLeftShift) || giu.IsKeyDown(giu.KeyRightShift)
+}
+
+func getJumpSizeWithModifiers() int {
+	return valueByModifiers(&ModifierValue[int]{
+		normalText: normalJumpSize,
+		shiftText:  mediumJumpSize,
+		altText:    bigJumpSize,
+		ctrlText:   hugeJumpSize,
+	})
 }
