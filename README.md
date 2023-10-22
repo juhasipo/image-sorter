@@ -1,11 +1,10 @@
 Image Sorter
 ============
 
-GTK3 application for sorting images to different folders
+giu application for sorting images to different folders
 
 # Requirements
 
-* GTK3
 * libjpeg (or libjpeg-turbo8)
 
 # Shortcuts
